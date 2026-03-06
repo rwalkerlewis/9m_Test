@@ -692,6 +692,11 @@ def main() -> None:
 
     default_source = spherical_to_cartesian(args.distance, args.azimuth, args.elevation)
     default_source[2] += args.source_height
+    print(
+        "Initial source from spherical params: "
+        f"azimuth={args.azimuth:.1f}°, elevation={args.elevation:.1f}°, distance={args.distance:.2f}m -> "
+        f"x={default_source[0]:.2f}m, y={default_source[1]:.2f}m, z={default_source[2]:.2f}m"
+    )
     legs = parse_legs(legs_cfg, default_source)
     if legs:
         print(f"Loaded {len(legs)} legs. Total trajectory duration={leg_duration_summary(legs):.2f}s")
@@ -709,6 +714,11 @@ def main() -> None:
     )
 
     wavfile.write(args.output, fs, float32_to_pcm(output))
+    print(
+        "Trajectory endpoints: "
+        f"start=({trajectory[0,0]:.2f}, {trajectory[0,1]:.2f}, {trajectory[0,2]:.2f}) "
+        f"end=({trajectory[-1,0]:.2f}, {trajectory[-1,1]:.2f}, {trajectory[-1,2]:.2f})"
+    )
     print(f"Wrote {output.shape[1]}-channel output to {args.output}")
 
     field_x, field_y, field = solve_helmholtz(domain, source_xy=trajectory[-1, :2], frequency_hz=args.helmholtz_freq)
