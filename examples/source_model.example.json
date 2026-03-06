@@ -1,0 +1,9 @@
+{
+  "sample_rate": 48000,
+  "duration_s": 14.0,
+  "blade_count": 4,
+  "rpm": 4200.0,
+  "harmonics": 16,
+  "mod_depth": 0.3,
+  "broadband_level": 0.15
+}
