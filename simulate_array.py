@@ -315,9 +315,21 @@ def sample_path_materials(domain: DomainConfig, p0: np.ndarray, p1: np.ndarray, 
 
 
 def apply_fractional_delay(x: np.ndarray, delay_samples: float, global_indices: np.ndarray) -> np.ndarray:
-    positions = global_indices - delay_samples
-    xp = np.arange(len(x))
-    return np.interp(positions, xp, x, left=0.0, right=0.0).astype(np.float32)
+    positions = global_indices.astype(np.float64) - float(delay_samples)
+    i0 = np.floor(positions).astype(np.int64)
+    frac = positions - i0
+    i1 = i0 + 1
+
+    y = np.zeros(len(global_indices), dtype=np.float32)
+    valid = (i0 >= 0) & (i1 < len(x))
+    if not np.any(valid):
+        return y
+
+    base = x[i0[valid]]
+    nxt = x[i1[valid]]
+    y_valid = (1.0 - frac[valid]) * base + frac[valid] * nxt
+    y[valid] = y_valid.astype(np.float32)
+    return y
 
 
 def synthesize_interferer(n_samples: int, fs: int, mode: str, seed: int, freq_hz: float = 480.0) -> np.ndarray:
