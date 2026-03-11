@@ -14,9 +14,18 @@
       }
     }
   },
-  "postCreateCommand": "pip install -e .",
+  "postCreateCommand": "pip install -e . && git config --global --add safe.directory /workspace",
   "remoteUser": "devuser",
   "containerUser": "devuser",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "mounts": [
+    "source=${localEnv:SSH_AUTH_SOCK},target=/ssh-agent,type=bind,consistency=cached"
+  ],
+  "containerEnv": {
+    "SSH_AUTH_SOCK": "/ssh-agent"
+  },
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "overrideCommand": true

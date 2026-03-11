@@ -6,6 +6,7 @@ RUN apt-get update && \
         libsndfile1 \
         ffmpeg \
         git \
+        openssh-client \
         sudo \
     && rm -rf /var/lib/apt/lists/*
 
