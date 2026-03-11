@@ -58,7 +58,6 @@ def plot_wavefield(
     output_path: str = "wavefield.png",
     receivers: np.ndarray | None = None,
     source_xy: np.ndarray | None = None,
-    rays: list[np.ndarray] | None = None,
     title: str = "Helmholtz wavefield",
 ) -> None:
     """Save a figure of the Helmholtz pressure magnitude with optional overlays."""
@@ -74,9 +73,6 @@ def plot_wavefield(
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("|p(x, y)| (pressure magnitude)")
 
-    if rays is not None:
-        for ray in rays:
-            ax.plot(ray[:, 0], ray[:, 1], color="#5ec9ff", lw=0.7, alpha=0.55)
     if receivers is not None:
         ax.scatter(
             receivers[:, 0], receivers[:, 1],

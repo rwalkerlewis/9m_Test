@@ -8,11 +8,11 @@ from acoustic_sim.model import (
     create_gradient_model,
     create_layered_model,
     create_uniform_model,
+    create_valley_model,
     model_from_array,
 )
 from acoustic_sim.sampling import check_cfl, check_spatial_sampling, suggest_dx
 from acoustic_sim.solver import solve_helmholtz
-from acoustic_sim.raytrace import trace_rays
 from acoustic_sim.receivers import create_receiver_circle, create_receiver_line
 from acoustic_sim.io import load_json, load_model, model_from_json, save_model
 from acoustic_sim.plotting import plot_velocity_model, plot_wavefield
@@ -29,6 +29,7 @@ __all__ = [
     "create_receiver_circle",
     "create_receiver_line",
     "create_uniform_model",
+    "create_valley_model",
     "load_json",
     "load_model",
     "model_from_array",
@@ -38,5 +39,4 @@ __all__ = [
     "save_model",
     "solve_helmholtz",
     "suggest_dx",
-    "trace_rays",
 ]

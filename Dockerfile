@@ -34,4 +34,4 @@ RUN chown -R ${USERNAME}:${USERNAME} /workspace
 
 USER ${USERNAME}
 
-ENTRYPOINT ["acoustic-sim"]
+CMD ["bash"]

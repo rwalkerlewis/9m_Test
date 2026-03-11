@@ -12,9 +12,9 @@ from acoustic_sim.model import (
     create_gradient_model,
     create_layered_model,
     create_uniform_model,
+    create_valley_model,
 )
 from acoustic_sim.plotting import plot_velocity_model, plot_wavefield
-from acoustic_sim.raytrace import trace_rays
 from acoustic_sim.receivers import create_receiver_circle, create_receiver_line
 from acoustic_sim.sampling import check_spatial_sampling
 from acoustic_sim.solver import solve_helmholtz
@@ -37,7 +37,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     mg.add_argument(
         "--model-preset",
-        choices=["uniform", "layered", "gradient", "checkerboard"],
+        choices=["uniform", "layered", "gradient", "checkerboard", "valley"],
         default=None,
         help="Use a built-in velocity model preset",
     )
@@ -84,11 +84,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--min-ppw", type=float, default=10.0,
                         help="Minimum required points per wavelength")
 
-    # --- ray tracing ---
-    parser.add_argument("--plot-rays", action="store_true",
-                        help="Overlay ray-tracing visualisation")
-    parser.add_argument("--ray-count", type=int, default=24)
-    parser.add_argument("--ray-steps", type=int, default=2000)
+    # --- valley geometry ---
+    parser.add_argument("--hill-south-y", type=float, default=-20.0,
+                        help="y centre of southern ridge [m]")
+    parser.add_argument("--hill-north-y", type=float, default=20.0,
+                        help="y centre of northern ridge [m]")
+    parser.add_argument("--hill-peak-height", type=float, default=18.0,
+                        help="Maximum ridge height [m]")
+    parser.add_argument("--saddle-width", type=float, default=12.0,
+                        help="Width of the saddle notch [m]")
+    parser.add_argument("--saddle-depth", type=float, default=0.55,
+                        help="Saddle depth fraction (0=none, 1=floor)")
+    parser.add_argument("--dirt-velocity", type=float, default=1500.0,
+                        help="Wave speed inside hills [m/s]")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed for hill shapes")
 
     # --- outputs ---
     parser.add_argument("--velocity-plot", type=str, default="velocity_model.png")
@@ -135,6 +145,18 @@ def main(argv: list[str] | None = None) -> None:
             model = create_checkerboard_model(
                 args.x_min, args.x_max, args.y_min, args.y_max, args.dx,
             )
+        elif preset == "valley":
+            model = create_valley_model(
+                args.x_min, args.x_max, args.y_min, args.y_max, args.dx,
+                air_velocity=args.bg_velocity,
+                dirt_velocity=args.dirt_velocity,
+                seed=args.seed,
+                hill_south_y=args.hill_south_y,
+                hill_north_y=args.hill_north_y,
+                hill_peak_height=args.hill_peak_height,
+                saddle_width=args.saddle_width,
+                saddle_depth_frac=args.saddle_depth,
+            )
         else:
             model = create_uniform_model(
                 args.x_min, args.x_max, args.y_min, args.y_max, args.dx,
@@ -176,18 +198,10 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Solving Helmholtz at {args.frequency:.1f} Hz …")
     field = solve_helmholtz(model, source_xy, args.frequency)
 
-    # ---- optional ray tracing ----
-    rays = None
-    if args.plot_rays:
-        rays = trace_rays(
-            source_xy, model,
-            ray_count=args.ray_count, max_steps=args.ray_steps,
-        )
-
     # ---- wavefield plot ----
     plot_wavefield(
         model, field, output_path=args.field_plot,
-        receivers=receivers, source_xy=source_xy, rays=rays,
+        receivers=receivers, source_xy=source_xy,
     )
 
     # ---- optional model save ----

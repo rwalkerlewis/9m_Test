@@ -16,6 +16,7 @@ from acoustic_sim.model import (
     create_gradient_model,
     create_layered_model,
     create_uniform_model,
+    create_valley_model,
 )
 
 
@@ -79,6 +80,20 @@ def model_from_json(cfg: dict[str, Any]) -> VelocityModel:
             cell_size=float(cfg.get("cell_size", 4.0)),
             v_base=background,
             perturbation=float(cfg.get("perturbation", 20.0)),
+        )
+    elif model_type == "valley":
+        model = create_valley_model(
+            x_min, x_max, y_min, y_max, dx,
+            air_velocity=background,
+            dirt_velocity=float(cfg.get("dirt_velocity", 1500.0)),
+            seed=int(cfg.get("seed", 42)),
+            hill_south_y=float(cfg.get("hill_south_y", -20.0)),
+            hill_north_y=float(cfg.get("hill_north_y", 20.0)),
+            hill_peak_height=float(cfg.get("hill_peak_height", 18.0)),
+            hill_base_width=float(cfg.get("hill_base_width", 60.0)),
+            saddle_x=float(cfg.get("saddle_x", 0.0)),
+            saddle_width=float(cfg.get("saddle_width", 12.0)),
+            saddle_depth_frac=float(cfg.get("saddle_depth_frac", 0.55)),
         )
     else:
         model = create_uniform_model(x_min, x_max, y_min, y_max, dx, background)
