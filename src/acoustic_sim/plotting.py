@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
@@ -93,3 +96,189 @@ def plot_wavefield(
     fig.savefig(output_path, dpi=170)
     plt.close(fig)
     print(f"Wrote wavefield plot to {output_path}")
+
+
+# ---------------------------------------------------------------------------
+# FDTD gather plot
+# ---------------------------------------------------------------------------
+
+def plot_gather(
+    traces: np.ndarray,
+    dt: float,
+    output_path: str = "gather.png",
+    title: str = "Receiver Gather",
+    clip_percentile: float = 99.0,
+    cmap: str = "seismic",
+) -> None:
+    """Plot receiver traces as a seismic-style image gather.
+
+    Parameters
+    ----------
+    traces : np.ndarray, shape ``(n_receivers, n_samples)``
+    dt : float
+        Timestep [s] between samples.
+    """
+    n_recv, n_samp = traces.shape
+    t_axis = np.arange(n_samp) * dt
+
+    clip = np.percentile(np.abs(traces), clip_percentile)
+    clip = max(clip, 1e-30)
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+    im = ax.imshow(
+        traces.T,
+        aspect="auto",
+        cmap=cmap,
+        vmin=-clip,
+        vmax=clip,
+        origin="upper",
+        extent=[0, n_recv, t_axis[-1], t_axis[0]],
+    )
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label("Pressure")
+    ax.set_xlabel("Receiver index")
+    ax.set_ylabel("Time [s]")
+    ax.set_title(title)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=170)
+    plt.close(fig)
+    print(f"Wrote gather plot to {output_path}")
+
+
+# ---------------------------------------------------------------------------
+# FDTD wavefield snapshot
+# ---------------------------------------------------------------------------
+
+def save_snapshot(
+    model: VelocityModel,
+    field: np.ndarray,
+    step: int,
+    output_dir: str,
+    receivers: np.ndarray | None = None,
+    source_xy: np.ndarray | None = None,
+    vmin: float | None = None,
+    vmax: float | None = None,
+    title: str | None = None,
+) -> None:
+    """Save a single wavefield snapshot as a numbered PNG.
+
+    File is written to ``{output_dir}/snapshot_{step:06d}.png``.
+    """
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    out_path = os.path.join(output_dir, f"snapshot_{step:06d}.png")
+
+    ext = model.extent
+    fig, ax = plt.subplots(figsize=(8, 6))
+    im = ax.imshow(
+        field,
+        origin="lower",
+        extent=[ext[0], ext[1], ext[2], ext[3]],
+        cmap="RdBu_r",
+        aspect="equal",
+        vmin=vmin,
+        vmax=vmax,
+    )
+    fig.colorbar(im, ax=ax, label="Pressure")
+    if receivers is not None:
+        ax.scatter(
+            receivers[:, 0], receivers[:, 1],
+            s=12, c="cyan", edgecolors="black", linewidths=0.3, zorder=5,
+        )
+    if source_xy is not None:
+        ax.scatter(
+            source_xy[0], source_xy[1],
+            s=60, c="yellow", marker="*", edgecolors="black", zorder=6,
+        )
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
+    ax.set_title(title or f"Step {step}")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=120)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Domain visualisation (velocity + attenuation + wind + receivers)
+# ---------------------------------------------------------------------------
+
+def plot_domain(
+    model: VelocityModel,
+    output_path: str = "domain.png",
+    receivers: np.ndarray | None = None,
+    source_xy: np.ndarray | None = None,
+    attenuation: np.ndarray | None = None,
+    wind_vx: float = 0.0,
+    wind_vy: float = 0.0,
+    title: str = "Domain",
+) -> None:
+    """Plot the velocity model with optional overlays.
+
+    * Semi-transparent green overlay where *attenuation > 0* (vegetation).
+    * A quiver arrow showing wind direction / magnitude.
+    * Receiver and source markers.
+    """
+    ext = model.extent
+    fig, ax = plt.subplots(figsize=(9, 7))
+    im = ax.imshow(
+        model.values,
+        origin="lower",
+        extent=[ext[0], ext[1], ext[2], ext[3]],
+        cmap="terrain",
+        aspect="equal",
+    )
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label("Wave speed [m/s]")
+
+    # Vegetation overlay.
+    if attenuation is not None:
+        veg_mask = np.ma.masked_where(attenuation < 1e-6, attenuation)
+        ax.imshow(
+            veg_mask,
+            origin="lower",
+            extent=[ext[0], ext[1], ext[2], ext[3]],
+            cmap="Greens",
+            alpha=0.45,
+            aspect="equal",
+        )
+
+    # Wind arrow.
+    if abs(wind_vx) > 1e-6 or abs(wind_vy) > 1e-6:
+        # Place arrow in the upper-left corner of the domain.
+        cx = ext[0] + 0.12 * (ext[1] - ext[0])
+        cy = ext[3] - 0.10 * (ext[3] - ext[2])
+        mag = (wind_vx**2 + wind_vy**2) ** 0.5
+        scale = 0.10 * (ext[1] - ext[0]) / max(mag, 1e-8)
+        ax.annotate(
+            "",
+            xy=(cx + wind_vx * scale, cy + wind_vy * scale),
+            xytext=(cx, cy),
+            arrowprops=dict(arrowstyle="->", color="white", lw=2),
+        )
+        ax.text(
+            cx, cy - 0.04 * (ext[3] - ext[2]),
+            f"Wind {mag:.1f} m/s",
+            color="white", fontsize=7, ha="center",
+        )
+
+    if receivers is not None:
+        ax.scatter(
+            receivers[:, 0], receivers[:, 1],
+            s=20, c="cyan", edgecolors="black", linewidths=0.4,
+            zorder=5, label="Receivers",
+        )
+    if source_xy is not None:
+        ax.scatter(
+            source_xy[0], source_xy[1],
+            s=80, c="yellow", marker="*", edgecolors="black",
+            zorder=6, label="Source",
+        )
+
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
+    ax.set_title(title)
+    if receivers is not None or source_xy is not None:
+        ax.legend(loc="upper right", fontsize=8)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=170)
+    plt.close(fig)
+    print(f"Wrote domain plot to {output_path}")

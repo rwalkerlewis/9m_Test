@@ -8,6 +8,8 @@ RUN apt-get update && \
         git \
         openssh-client \
         sudo \
+        libopenmpi-dev \
+        openmpi-bin \
     && rm -rf /var/lib/apt/lists/*
 
 ARG USERNAME=devuser

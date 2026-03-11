@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.egg-info/
 *.egg
+src/*.egg-info/
 dist/
 build/
 *.whl
@@ -29,6 +30,7 @@ Thumbs.db
 *.png
 *.npy
 *.npz
+output/
 
 # Audio files (tracked in audio/ but ignore stray ones)
 *.wav
