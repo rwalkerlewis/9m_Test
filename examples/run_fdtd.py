@@ -250,11 +250,20 @@ def main(argv: list[str] | None = None) -> None:
     # ---- Domain plot (rank 0) --------------------------------------------
     if rank == 0:
         src_xy = np.array([args.source_x, args.source_y])
+        # Build source path for moving sources.
+        if args.source_type == "moving":
+            src_path = np.column_stack([
+                np.linspace(args.source_x, args.source_x1, 20),
+                np.linspace(args.source_y, args.source_y1, 20),
+            ])
+        else:
+            src_path = None
         plot_domain(
             model,
             output_path=str(out / "domain.png"),
             receivers=receivers,
             source_xy=src_xy,
+            source_path=src_path,
             attenuation=meta.attenuation,
             wind_vx=meta.wind_vx,
             wind_vy=meta.wind_vy,

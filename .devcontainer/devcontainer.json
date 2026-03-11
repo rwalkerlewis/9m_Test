@@ -1,8 +1,7 @@
 {
   "name": "Acoustic Sim",
-  "build": {
-    "dockerfile": "../Dockerfile"
-  },
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "dev",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -14,7 +13,7 @@
       }
     }
   },
-  "postCreateCommand": "pip install -e . && git config --global --add safe.directory /workspace",
+  "postCreateCommand": "pip install -e '.[cuda]' && git config --global --add safe.directory /workspace",
   "remoteUser": "devuser",
   "containerUser": "devuser",
   "features": {
@@ -27,6 +26,5 @@
     "SSH_AUTH_SOCK": "/ssh-agent"
   },
   "workspaceFolder": "/workspace",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "overrideCommand": true
 }

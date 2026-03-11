@@ -30,6 +30,7 @@ def plot_velocity_model(
         extent=[ext[0], ext[1], ext[2], ext[3]],
         cmap="seismic",
         aspect="equal",
+        interpolation="bicubic",
     )
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("Wave speed [m/s]")
@@ -72,6 +73,7 @@ def plot_wavefield(
         extent=[ext[0], ext[1], ext[2], ext[3]],
         cmap="magma",
         aspect="equal",
+        interpolation="bicubic",
     )
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("|p(x, y)| (pressure magnitude)")
@@ -98,6 +100,19 @@ def plot_wavefield(
     print(f"Wrote wavefield plot to {output_path}")
 
 
+# Reference pressure for dB SPL (threshold of hearing in air).
+_P_REF = 20e-6  # 20 µPa
+
+
+def _to_db_spl(p: np.ndarray, floor_db: float = -60.0) -> np.ndarray:
+    """Convert pressure to dB SPL, floored at *floor_db* below peak."""
+    mag = np.abs(p)
+    mag = np.where(mag < _P_REF * 1e-6, _P_REF * 1e-6, mag)  # avoid log(0)
+    db = 20.0 * np.log10(mag / _P_REF)
+    db_max = float(np.max(db))
+    return np.clip(db, db_max + floor_db, None)
+
+
 # ---------------------------------------------------------------------------
 # FDTD gather plot
 # ---------------------------------------------------------------------------
@@ -107,35 +122,39 @@ def plot_gather(
     dt: float,
     output_path: str = "gather.png",
     title: str = "Receiver Gather",
-    clip_percentile: float = 99.0,
-    cmap: str = "seismic",
+    db_range: float = 60.0,
+    cmap: str = "inferno",
 ) -> None:
-    """Plot receiver traces as a seismic-style image gather.
+    """Plot receiver traces as a dB SPL gather.
 
     Parameters
     ----------
     traces : np.ndarray, shape ``(n_receivers, n_samples)``
     dt : float
         Timestep [s] between samples.
+    db_range : float
+        Dynamic range in dB below peak to display.
     """
     n_recv, n_samp = traces.shape
     t_axis = np.arange(n_samp) * dt
 
-    clip = np.percentile(np.abs(traces), clip_percentile)
-    clip = max(clip, 1e-30)
+    db = _to_db_spl(traces, floor_db=-db_range)
+    db_max = float(np.max(db))
+    db_min = db_max - db_range
 
     fig, ax = plt.subplots(figsize=(10, 7))
     im = ax.imshow(
-        traces.T,
+        db.T,
         aspect="auto",
         cmap=cmap,
-        vmin=-clip,
-        vmax=clip,
+        vmin=db_min,
+        vmax=db_max,
         origin="upper",
         extent=[0, n_recv, t_axis[-1], t_axis[0]],
+        interpolation="bicubic",
     )
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label("Pressure")
+    cbar.set_label("SPL [dB re 20 µPa]")
     ax.set_xlabel("Receiver index")
     ax.set_ylabel("Time [s]")
     ax.set_title(title)
@@ -156,29 +175,33 @@ def save_snapshot(
     output_dir: str,
     receivers: np.ndarray | None = None,
     source_xy: np.ndarray | None = None,
-    vmin: float | None = None,
-    vmax: float | None = None,
+    db_range: float = 60.0,
     title: str | None = None,
 ) -> None:
-    """Save a single wavefield snapshot as a numbered PNG.
+    """Save a single wavefield snapshot as a numbered PNG in dB SPL.
 
     File is written to ``{output_dir}/snapshot_{step:06d}.png``.
     """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     out_path = os.path.join(output_dir, f"snapshot_{step:06d}.png")
 
+    db = _to_db_spl(field, floor_db=-db_range)
+    db_max = float(np.max(db))
+    db_min = db_max - db_range
+
     ext = model.extent
     fig, ax = plt.subplots(figsize=(8, 6))
     im = ax.imshow(
-        field,
+        db,
         origin="lower",
         extent=[ext[0], ext[1], ext[2], ext[3]],
-        cmap="RdBu_r",
+        cmap="inferno",
         aspect="equal",
-        vmin=vmin,
-        vmax=vmax,
+        vmin=db_min,
+        vmax=db_max,
+        interpolation="bicubic",
     )
-    fig.colorbar(im, ax=ax, label="Pressure")
+    fig.colorbar(im, ax=ax, label="SPL [dB re 20 µPa]")
     if receivers is not None:
         ax.scatter(
             receivers[:, 0], receivers[:, 1],
@@ -206,6 +229,7 @@ def plot_domain(
     output_path: str = "domain.png",
     receivers: np.ndarray | None = None,
     source_xy: np.ndarray | None = None,
+    source_path: np.ndarray | None = None,
     attenuation: np.ndarray | None = None,
     wind_vx: float = 0.0,
     wind_vy: float = 0.0,
@@ -215,6 +239,7 @@ def plot_domain(
 
     * Semi-transparent green overlay where *attenuation > 0* (vegetation).
     * A quiver arrow showing wind direction / magnitude.
+    * An arrowed dashed line for *source_path* (shape ``(N, 2)``).
     * Receiver and source markers.
     """
     ext = model.extent
@@ -225,6 +250,7 @@ def plot_domain(
         extent=[ext[0], ext[1], ext[2], ext[3]],
         cmap="terrain",
         aspect="equal",
+        interpolation="bicubic",
     )
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("Wave speed [m/s]")
@@ -266,7 +292,36 @@ def plot_domain(
             s=20, c="cyan", edgecolors="black", linewidths=0.4,
             zorder=5, label="Receivers",
         )
-    if source_xy is not None:
+    # Source path arrows for moving sources.
+    if source_path is not None and len(source_path) >= 2:
+        ax.plot(
+            source_path[:, 0], source_path[:, 1],
+            ls="--", lw=1.4, color="yellow", alpha=0.8, zorder=5,
+        )
+        # Draw arrowheads along the path.
+        n_arrows = min(5, len(source_path) - 1)
+        idxs = np.linspace(0, len(source_path) - 2, n_arrows, dtype=int)
+        for i in idxs:
+            dx = source_path[i + 1, 0] - source_path[i, 0]
+            dy = source_path[i + 1, 1] - source_path[i, 1]
+            ax.annotate(
+                "",
+                xy=(source_path[i + 1, 0], source_path[i + 1, 1]),
+                xytext=(source_path[i, 0], source_path[i, 1]),
+                arrowprops=dict(arrowstyle="->", color="yellow", lw=1.6),
+            )
+        # Mark start and end.
+        ax.scatter(
+            source_path[0, 0], source_path[0, 1],
+            s=80, c="yellow", marker="*", edgecolors="black",
+            zorder=6, label="Source start",
+        )
+        ax.scatter(
+            source_path[-1, 0], source_path[-1, 1],
+            s=60, c="orange", marker="s", edgecolors="black",
+            zorder=6, label="Source end",
+        )
+    elif source_xy is not None:
         ax.scatter(
             source_xy[0], source_xy[1],
             s=80, c="yellow", marker="*", edgecolors="black",

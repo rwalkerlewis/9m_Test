@@ -370,8 +370,8 @@ class FDTDSolver:
         if snapshot_dir is not None and self.comm.Get_rank() == 0:
             Path(snapshot_dir).mkdir(parents=True, exist_ok=True)
 
-        # Estimate vmin/vmax from first few steps for consistent colorscale.
-        snap_vmax = 0.0
+        # Fixed pressure colour-scale (symmetric about zero).
+        snap_db_range = 60.0
 
         for n in range(self.n_steps):
             # 1. Halo exchange (on numpy arrays — transfer from GPU if needed).
@@ -461,9 +461,6 @@ class FDTDSolver:
                     loc_int = self.p_now[g:-g, g:-g]
                 global_field = m.gather_field(np.ascontiguousarray(loc_int))
                 if self.comm.Get_rank() == 0 and global_field is not None:
-                    vmax_now = float(np.max(np.abs(global_field)))
-                    if vmax_now > snap_vmax:
-                        snap_vmax = vmax_now
                     from acoustic_sim.plotting import save_snapshot
 
                     save_snapshot(
@@ -473,8 +470,7 @@ class FDTDSolver:
                         snapshot_dir,
                         receivers=self.receivers,
                         source_xy=np.array([src_x, src_y]),
-                        vmin=-max(snap_vmax, 1e-30),
-                        vmax=max(snap_vmax, 1e-30),
+                        db_range=snap_db_range,
                     )
 
             if verbose and self.comm.Get_rank() == 0 and n % max(self.n_steps // 10, 1) == 0:

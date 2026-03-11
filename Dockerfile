@@ -1,7 +1,9 @@
-FROM python:3.12-slim
+FROM nvidia/cuda:12.6.3-devel-ubuntu24.04
 
+# Python 3.12 + system deps
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        python3 python3-dev python3-venv python3-pip \
         build-essential \
         libsndfile1 \
         ffmpeg \
@@ -10,6 +12,7 @@ RUN apt-get update && \
         sudo \
         libopenmpi-dev \
         openmpi-bin \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
 ARG USERNAME=devuser
@@ -29,7 +32,7 @@ WORKDIR /workspace
 
 COPY pyproject.toml requirements.txt ./
 COPY src/ src/
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir --break-system-packages -e ".[cuda]"
 
 COPY . .
 RUN chown -R ${USERNAME}:${USERNAME} /workspace
