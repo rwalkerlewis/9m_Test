@@ -1,0 +1,20 @@
+{
+  "bounds": {
+    "x_min": -50.0,
+    "x_max": 50.0,
+    "y_min": -50.0,
+    "y_max": 50.0
+  },
+  "dx": 0.5,
+  "type": "valley",
+  "background_velocity": 343.0,
+  "dirt_velocity": 1500.0,
+  "seed": 42,
+  "hill_south_y": -20.0,
+  "hill_north_y": 20.0,
+  "hill_peak_height": 18.0,
+  "hill_base_width": 60.0,
+  "saddle_x": 0.0,
+  "saddle_width": 12.0,
+  "saddle_depth_frac": 0.55
+}

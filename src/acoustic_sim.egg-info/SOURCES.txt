@@ -6,7 +6,6 @@ src/acoustic_sim/cli.py
 src/acoustic_sim/io.py
 src/acoustic_sim/model.py
 src/acoustic_sim/plotting.py
-src/acoustic_sim/raytrace.py
 src/acoustic_sim/receivers.py
 src/acoustic_sim/sampling.py
 src/acoustic_sim/solver.py
