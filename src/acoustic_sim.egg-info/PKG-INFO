@@ -6,3 +6,6 @@ Requires-Python: >=3.10
 Requires-Dist: numpy
 Requires-Dist: scipy
 Requires-Dist: matplotlib
+Requires-Dist: mpi4py
+Provides-Extra: cuda
+Requires-Dist: cupy-cuda12x; extra == "cuda"

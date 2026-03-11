@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.egg-info/
 *.egg
+src/*.egg-info/
 dist/
 build/
 *.whl
