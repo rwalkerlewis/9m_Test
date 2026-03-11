@@ -1,177 +1,141 @@
-# Audio Processing Home Task — Realistic Synthetic Source Extension
+# acoustic-sim — 2D Acoustic Simulation
 
-This repository now includes a significantly more realistic synthetic-array simulation pipeline built from the original example.
-
-Implemented additions:
-
-- **3D source positioning** with azimuth, distance, and **elevation**
-- **Moving source trajectories** from input **legs** (path + speed)
-- **Configurable propagation domain** with material contrasts (air/vegetation/topography/etc.)
-- **Multiple source models**
-  - File playback (`input.wav`)
-  - Synthetic propeller model (blade count/RPM/harmonics/modulation/noise)
-  - Tone/noise diagnostic models
-- **Array realism effects**
-  - Self-noise and wind-like low-frequency noise
-  - Per-microphone gain/phase mismatch
-  - Interferer sources
-  - Simple multipath/scattering effect
-- **Coincident Helmholtz propagation model** solved on the domain
-- **Ray-tracing visualization overlay** on top of Helmholtz field plot
+2D acoustic simulation built around a user-defined velocity model stored as a
+NumPy array, with Helmholtz (frequency-domain) solving, heterogeneous ray
+tracing, and spatial-sampling validation.
 
 ---
 
-## Dependencies
+## Project Structure
 
-The script uses:
+```
+├── src/acoustic_sim/       # Python package
+│   ├── __init__.py         # Public API re-exports
+│   ├── __main__.py         # python -m acoustic_sim
+│   ├── cli.py              # Argument parsing & main entry point
+│   ├── model.py            # VelocityModel + creation helpers + anomalies
+│   ├── sampling.py         # Spatial-sampling & CFL checks
+│   ├── solver.py           # 2D Helmholtz solver
+│   ├── raytrace.py         # 2D heterogeneous ray tracing
+│   ├── receivers.py        # Receiver geometry helpers
+│   ├── io.py               # JSON/NPZ load & save
+│   └── plotting.py         # Velocity model & wavefield plots
+├── audio/                  # Sound / WAV files
+├── examples/               # Example JSON velocity model configs
+├── simulate_array.py       # Legacy entry point (thin wrapper)
+├── pyproject.toml          # Package metadata & dependencies
+├── Dockerfile
+├── docker-compose.yml
+└── .devcontainer/
+    └── devcontainer.json
+```
 
-- `numpy`
-- `scipy`
-- `matplotlib`
+---
 
-Install with:
+## Installation
 
 ```bash
-python3 -m pip install numpy scipy matplotlib
+pip install -e .
+```
+
+Or use the Docker dev container (runs as non-root `devuser`):
+
+```bash
+docker compose up dev
 ```
 
 ---
 
 ## Quick Start
 
-### 1) Legacy-like run (file source, static source geometry)
+### Built-in preset
 
 ```bash
-python3 simulate_array.py input.wav --output output_16ch.wav
+acoustic-sim --model-preset gradient --frequency 40 --plot-rays
 ```
 
-### 2) Static 3D source (add elevation)
+### From JSON config
 
 ```bash
-python3 simulate_array.py input.wav \
-  --azimuth 70 \
-  --elevation 18 \
-  --distance 7 \
-  --output output_16ch_static3d.wav \
-  --field-plot field_static3d.png \
-  --plot-rays
+acoustic-sim --model-file examples/domain.example.json --frequency 40 --plot-rays
 ```
 
-### 3) Moving source from legs + domain materials + Helmholtz + ray tracing
+### From a saved .npz model
 
 ```bash
-python3 simulate_array.py input.wav \
-  --legs-file examples/legs.example.json \
-  --domain-file examples/domain.example.json \
-  --output output_16ch_moving.wav \
-  --field-plot field_moving.png \
-  --plot-rays \
-  --ray-count 36 \
-  --ray-bounces 2 \
-  --max-seconds 15
+acoustic-sim --model-npz my_model.npz --frequency 30
 ```
 
-### 4) Synthetic propeller source model (no input.wav needed)
+### Programmatic use
 
-```bash
-python3 simulate_array.py \
-  --source-model propeller \
-  --source-model-file examples/source_model.example.json \
-  --legs-file examples/legs.example.json \
-  --domain-file examples/domain.example.json \
-  --output output_propeller_16ch.wav \
-  --field-plot field_propeller.png \
-  --plot-rays
+```python
+import numpy as np
+from acoustic_sim import model_from_array, check_spatial_sampling, solve_helmholtz
+
+values = np.random.uniform(300, 400, (100, 100))
+model = model_from_array(values, -20, 20, -20, 20)
+
+sampling = check_spatial_sampling(model, frequency_hz=40.0)
+print(sampling["message"])
+
+source = np.array([0.0, 0.0])
+field = solve_helmholtz(model, source, frequency_hz=40.0)
 ```
 
 ---
 
-## Legs JSON format (`--legs-file`)
+## Velocity Model JSON Format
 
-`examples/legs.example.json`:
+`examples/domain.example.json`:
 
 ```json
 {
-  "start": [4.0, 12.0, 2.0],
-  "legs": [
-    { "end": [8.0, 8.0, 2.4], "speed_m_s": 2.2 },
-    { "end": [12.0, 2.0, 3.0], "speed_m_s": 3.0 }
+  "bounds": { "x_min": -20, "x_max": 20, "y_min": -20, "y_max": 20 },
+  "dx": 0.4,
+  "type": "gradient",
+  "background_velocity": 343.0,
+  "v_bottom": 360.0,
+  "v_top": 320.0,
+  "anomalies": [
+    { "type": "circle", "center": [8, -5], "radius": 3.5, "velocity": 290 },
+    { "type": "rectangle", "x_min": -4, "x_max": 4, "y_min": 8, "y_max": 14, "velocity": 310 }
   ]
 }
 ```
 
-Notes:
-
-- Coordinates are `[x, y, z]` in meters.
-- If a leg omits `start`, it begins at the previous leg's end.
-- `speed_m_s` defines temporal progression over that segment.
+Supported model types: `uniform`, `layered`, `gradient`, `checkerboard`.
 
 ---
 
-## Domain JSON format (`--domain-file`)
+## Spatial Sampling Checks
 
-`examples/domain.example.json` provides:
+The CLI automatically validates that grid spacing is sufficient:
 
-- Global bounds and grid spacing (`dx`)
-- Material table (`wave_speed`, `attenuation`, `scattering`)
-- Region list (`rectangle` and `circle` supported), each assigning a material
+- **Points-per-wavelength**: `λ_min / dx ≥ 10` (configurable via `--min-ppw`)
+- **CFL** (for time-domain extensions): `c_max · dt / dx ≤ 1/√2`
 
-This domain influences:
-
-1. Time-domain simulation (effective delay/attenuation/scattering along source-to-mic paths)
-2. Helmholtz field solve (spatially varying wave speed + damping)
+```
+PASS: 18.1 pts/wavelength >= 10 required. (lambda_min=7.250 m, dx=0.4000 m, ...)
+```
 
 ---
 
-## Source Models
+## Docker
 
-Use `--source-model`:
+The container runs as a non-root user (`devuser`, UID 1000).
 
-- `file` (default): mono WAV from positional `input` argument
-- `propeller`: harmonic blade-pass model + modulation + broadband component
-- `tone`: single-frequency synthetic tone
-- `noise`: synthetic band-limited noise
+```bash
+# Interactive dev shell
+docker compose run dev
 
-Additional options include:
-
-- `--blade-count`, `--rpm`, `--harmonics`, `--mod-depth`, `--broadband-level`
-- `--duration`, `--sample-rate`
-- `--source-model-file` for JSON-based parameter presets
+# Run simulation directly
+docker compose run simulate --model-preset gradient --frequency 40 --plot-rays
+```
 
 ---
 
-## Helmholtz + Ray Overlay
+## Dependencies
 
-The solver computes a 2D frequency-domain pressure field:
-
-\[
-\nabla^2 p + k(x,y)^2 p = -s
-\]
-
-with spatially varying medium properties derived from the domain/material map.
-
-The saved plot (`--field-plot`) includes:
-
-- Helmholtz magnitude field
-- Domain region outlines
-- Microphone positions
-- Source path and start/end points
-- Optional ray-tracing overlay (`--plot-rays`) with configurable count and bounce depth
-
----
-
-## Key assumptions / limitations
-
-- The Helmholtz field is 2D (`x-y`) for visualization and computational tractability.
-- Time-domain moving-source simulation uses blockwise updates and fractional delay approximation.
-- Ray tracing is a visualization-oriented geometric approximation (box-boundary reflections), not a full wave solver.
-
----
-
-## Files
-
-- `simulate_array.py` - main simulator + Helmholtz/ray plotting
-- `examples/legs.example.json` - moving trajectory definition
-- `examples/domain.example.json` - domain/material definition
-- `examples/source_model.example.json` - propeller source model preset
-- `input.wav` - mono recording for file source model
+- numpy
+- scipy
+- matplotlib

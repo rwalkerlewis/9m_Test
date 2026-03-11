@@ -1,0 +1,24 @@
+{
+  "bounds": {
+    "x_min": -20.0,
+    "x_max": 20.0,
+    "y_min": -20.0,
+    "y_max": 20.0
+  },
+  "dx": 0.4,
+  "type": "layered",
+  "background_velocity": 343.0,
+  "layers": [
+    { "y": -10.0, "velocity": 360.0 },
+    { "y":   0.0, "velocity": 343.0 },
+    { "y":  10.0, "velocity": 320.0 }
+  ],
+  "anomalies": [
+    {
+      "type": "circle",
+      "center": [5.0, -5.0],
+      "radius": 3.0,
+      "velocity": 280.0
+    }
+  ]
+}

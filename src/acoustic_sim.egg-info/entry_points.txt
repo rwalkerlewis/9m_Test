@@ -1,0 +1,2 @@
+[console_scripts]
+acoustic-sim = acoustic_sim.cli:main

@@ -1,5 +1,5 @@
 {
-  "name": "9m Array Simulator",
+  "name": "Acoustic Sim",
   "build": {
     "dockerfile": "../Dockerfile"
   },
@@ -10,12 +10,13 @@
         "ms-python.pylint"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python"
+        "python.defaultInterpreterPath": "/opt/venv/bin/python"
       }
     }
   },
-  "postCreateCommand": "pip install --no-cache-dir -r requirements.txt",
-  "remoteUser": "root",
+  "postCreateCommand": "pip install -e .",
+  "remoteUser": "devuser",
+  "containerUser": "devuser",
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "overrideCommand": true

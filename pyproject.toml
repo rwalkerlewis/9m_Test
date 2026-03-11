@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acoustic-sim"
+version = "0.1.0"
+description = "2D acoustic simulation on user-defined velocity models"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+
+[project.scripts]
+acoustic-sim = "acoustic_sim.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

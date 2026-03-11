@@ -1,23 +1,22 @@
 services:
   dev:
     build: .
+    user: devuser
     volumes:
       - .:/workspace
     working_dir: /workspace
-    entrypoint: ["bash"]
+    entrypoint: ["/bin/bash", "-c", "ln -sfn /opt/venv /workspace/.venv && exec bash"]
     stdin_open: true
     tty: true
 
   simulate:
     build: .
+    user: devuser
     volumes:
       - .:/workspace
     working_dir: /workspace
     # Override entrypoint args via: docker compose run simulate [args...]
     # Example:
-    #   docker compose run simulate --source-model propeller \
-    #     --source-model-file examples/source_model.example.json \
-    #     --legs-file examples/legs.example.json \
-    #     --domain-file examples/domain.example.json \
-    #     --output output_propeller_16ch.wav \
-    #     --field-plot field_propeller.png --plot-rays
+    #   docker compose run simulate \
+    #     --model-file examples/domain.example.json \
+    #     --frequency 40 --plot-rays

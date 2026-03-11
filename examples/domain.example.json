@@ -1,59 +1,29 @@
 {
   "bounds": {
-    "x_min": -24.0,
-    "x_max": 24.0,
+    "x_min": -20.0,
+    "x_max": 20.0,
     "y_min": -20.0,
-    "y_max": 26.0
+    "y_max": 20.0
   },
-  "dx": 0.45,
-  "default_material": "air",
-  "materials": {
-    "air": {
-      "wave_speed": 343.0,
-      "attenuation": 0.002,
-      "scattering": 0.05
-    },
-    "vegetation": {
-      "wave_speed": 329.0,
-      "attenuation": 0.014,
-      "scattering": 0.22
-    },
-    "topography": {
-      "wave_speed": 358.0,
-      "attenuation": 0.009,
-      "scattering": 0.12
-    },
-    "wetland": {
-      "wave_speed": 336.0,
-      "attenuation": 0.019,
-      "scattering": 0.15
-    }
-  },
-  "regions": [
+  "dx": 0.4,
+  "type": "gradient",
+  "background_velocity": 343.0,
+  "v_bottom": 360.0,
+  "v_top": 320.0,
+  "anomalies": [
     {
-      "name": "north_tree_band",
-      "type": "rectangle",
-      "material": "vegetation",
-      "xmin": -8.0,
-      "xmax": 8.0,
-      "ymin": 6.0,
-      "ymax": 18.0
-    },
-    {
-      "name": "south_wetland",
-      "type": "rectangle",
-      "material": "wetland",
-      "xmin": -18.0,
-      "xmax": -4.0,
-      "ymin": -14.0,
-      "ymax": -4.0
-    },
-    {
-      "name": "eastern_hill",
       "type": "circle",
-      "material": "topography",
-      "center": [10.0, -3.0],
-      "radius": 4.5
+      "center": [8.0, -5.0],
+      "radius": 3.5,
+      "velocity": 290.0
+    },
+    {
+      "type": "rectangle",
+      "x_min": -4.0,
+      "x_max": 4.0,
+      "y_min": 8.0,
+      "y_max": 14.0,
+      "velocity": 310.0
     }
   ]
 }
