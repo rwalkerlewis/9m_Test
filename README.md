@@ -1,8 +1,9 @@
 # acoustic-sim — 2D Acoustic Simulation
 
 2D acoustic simulation built around a user-defined velocity model stored as a
-NumPy array, with Helmholtz (frequency-domain) solving, heterogeneous ray
-tracing, and spatial-sampling validation.
+NumPy array.  Includes a **Helmholtz (frequency-domain) solver** and a
+**time-domain FDTD solver** with MPI parallelisation and optional CUDA
+acceleration.
 
 ---
 
@@ -12,16 +13,21 @@ tracing, and spatial-sampling validation.
 ├── src/acoustic_sim/       # Python package
 │   ├── __init__.py         # Public API re-exports
 │   ├── __main__.py         # python -m acoustic_sim
-│   ├── cli.py              # Argument parsing & main entry point
+│   ├── cli.py              # Argument parsing & Helmholtz entry point
 │   ├── model.py            # VelocityModel + creation helpers + anomalies
 │   ├── sampling.py         # Spatial-sampling & CFL checks
 │   ├── solver.py           # 2D Helmholtz solver
-│   ├── raytrace.py         # 2D heterogeneous ray tracing
+│   ├── backend.py          # NumPy / CuPy backend abstraction
+│   ├── sources.py          # Audio source signals (WAV, propeller, tone, …)
+│   ├── domains.py          # Domain builders (isotropic, wind, hills+veg)
+│   ├── fdtd.py             # 2D FDTD solver with MPI + optional CUDA
 │   ├── receivers.py        # Receiver geometry helpers
 │   ├── io.py               # JSON/NPZ load & save
-│   └── plotting.py         # Velocity model & wavefield plots
+│   └── plotting.py         # Velocity model, wavefield, gather & snapshot plots
 ├── audio/                  # Sound / WAV files
-├── examples/               # Example JSON velocity model configs
+├── examples/               # Example JSON configs & runner scripts
+│   ├── run_fdtd.py         # Single FDTD run with full CLI control
+│   └── run_all_examples.py # Orchestrate all 18 example combinations
 ├── simulate_array.py       # Legacy entry point (thin wrapper)
 ├── pyproject.toml          # Package metadata & dependencies
 ├── Dockerfile
@@ -38,7 +44,21 @@ tracing, and spatial-sampling validation.
 pip install -e .
 ```
 
-Or use the Docker dev container (runs as non-root `devuser`):
+MPI support requires an MPI library (e.g. OpenMPI):
+
+```bash
+# Ubuntu / Debian
+sudo apt-get install libopenmpi-dev openmpi-bin
+pip install mpi4py
+```
+
+Optional CUDA acceleration (requires an NVIDIA GPU):
+
+```bash
+pip install -e ".[cuda]"
+```
+
+Or use the Docker dev container:
 
 ```bash
 docker compose up dev
@@ -46,90 +66,119 @@ docker compose up dev
 
 ---
 
-## Quick Start
-
-### Built-in preset
+## Quick Start — Helmholtz (frequency-domain)
 
 ```bash
-acoustic-sim --model-preset gradient --frequency 40 --plot-rays
-```
-
-### From JSON config
-
-```bash
-acoustic-sim --model-file examples/domain.example.json --frequency 40 --plot-rays
-```
-
-### From a saved .npz model
-
-```bash
-acoustic-sim --model-npz my_model.npz --frequency 30
-```
-
-### Programmatic use
-
-```python
-import numpy as np
-from acoustic_sim import model_from_array, check_spatial_sampling, solve_helmholtz
-
-values = np.random.uniform(300, 400, (100, 100))
-model = model_from_array(values, -20, 20, -20, 20)
-
-sampling = check_spatial_sampling(model, frequency_hz=40.0)
-print(sampling["message"])
-
-source = np.array([0.0, 0.0])
-field = solve_helmholtz(model, source, frequency_hz=40.0)
+acoustic-sim --model-preset gradient --frequency 40
 ```
 
 ---
 
-## Velocity Model JSON Format
+## Quick Start — FDTD (time-domain, MPI)
 
-`examples/domain.example.json`:
+### Single run
 
-```json
-{
-  "bounds": { "x_min": -20, "x_max": 20, "y_min": -20, "y_max": 20 },
-  "dx": 0.4,
-  "type": "gradient",
-  "background_velocity": 343.0,
-  "v_bottom": 360.0,
-  "v_top": 320.0,
-  "anomalies": [
-    { "type": "circle", "center": [8, -5], "radius": 3.5, "velocity": 290 },
-    { "type": "rectangle", "x_min": -4, "x_max": 4, "y_min": 8, "y_max": 14, "velocity": 310 }
-  ]
-}
+```bash
+# Static source, isotropic domain, circular array, Ricker wavelet
+mpirun -np 4 python examples/run_fdtd.py \
+    --domain isotropic --source-type static \
+    --source-signal ricker --source-freq 25 \
+    --array circular --receiver-radius 15 \
+    --total-time 0.3 --output-dir output/quick_test
+
+# Static source with a WAV file as the source signal
+mpirun -np 4 python examples/run_fdtd.py \
+    --domain isotropic --source-type static \
+    --source-signal file --source-wav audio/input.wav --max-seconds 0.3 \
+    --array linear --output-dir output/wav_test
+
+# Moving source with propeller model, wind domain
+mpirun -np 4 python examples/run_fdtd.py \
+    --domain wind --wind-speed 15 --wind-dir 45 \
+    --source-type moving --source-x -30 --source-y 0 \
+    --source-x1 30 --source-y1 0 --source-speed 50 \
+    --source-signal propeller \
+    --array concentric --output-dir output/wind_moving
 ```
 
-Supported model types: `uniform`, `layered`, `gradient`, `checkerboard`.
+### Run all 18 example combinations
+
+```bash
+python examples/run_all_examples.py --np 4
+```
+
+This runs every combination of:
+
+| Source Type | Domain                | Array Geometry |
+|-------------|-----------------------|----------------|
+| static      | isotropic             | concentric     |
+| moving      | isotropic + wind      | circular       |
+|             | hills + vegetation    | linear         |
+
+Each run produces in its output directory:
+
+| File | Description |
+|------|-------------|
+| `domain.png` | Velocity model + receivers + source + wind overlay |
+| `gather.png` | Seismic-style receiver gather (receiver × time) |
+| `traces.npy` | Raw trace data, shape `(n_receivers, n_samples)` |
+| `metadata.json` | Simulation parameters (dt, positions, etc.) |
+| `snapshots/` | Numbered PNG frames of the wavefield for movie assembly |
 
 ---
 
-## Spatial Sampling Checks
+## Source Signal Options
 
-The CLI automatically validates that grid spacing is sufficient:
+The FDTD solver accepts any 1-D time-series as the source signal.  Built-in
+options:
 
-- **Points-per-wavelength**: `λ_min / dx ≥ 10` (configurable via `--min-ppw`)
-- **CFL** (for time-domain extensions): `c_max · dt / dx ≤ 1/√2`
+| `--source-signal` | Description |
+|-------------------|-------------|
+| `file`            | Load a WAV file (`--source-wav`), LP-filter to grid resolution, resample |
+| `propeller`       | Synthetic rotor noise (blade harmonics + broadband) |
+| `tone`            | Pure sine wave at `--source-freq` Hz |
+| `noise`           | Band-limited coloured noise |
+| `ricker`          | Ricker (Mexican-hat) wavelet at `--source-freq` Hz |
 
+Audio files are automatically low-pass filtered at the grid's maximum
+resolvable frequency (`c_min / (10 × dx)`) and resampled to the simulation
+timestep to ensure physical correctness.
+
+---
+
+## MPI & CUDA
+
+**MPI**: The FDTD solver uses 2-D Cartesian domain decomposition.  Each rank
+owns a rectangular sub-domain with one-cell ghost (halo) layers exchanged
+every timestep.
+
+```bash
+mpirun -np 8 python examples/run_fdtd.py ...
 ```
-PASS: 18.1 pts/wavelength >= 10 required. (lambda_min=7.250 m, dx=0.4000 m, ...)
-```
+
+**CUDA**: Pass `--use-cuda` to offload array operations to the GPU via CuPy.
+Falls back to NumPy automatically if CuPy is not installed or no GPU is
+detected.
+
+---
+
+## Spatial Sampling & CFL
+
+The CLI automatically validates grid resolution:
+
+- **Points-per-wavelength**: `λ_min / dx ≥ 10`
+- **CFL**: `c_max · dt / dx ≤ 1/√2` (dt auto-computed with 0.9× safety margin)
 
 ---
 
 ## Docker
 
-The container runs as a non-root user (`devuser`, UID 1000).
-
 ```bash
 # Interactive dev shell
 docker compose run dev
 
-# Run simulation directly
-docker compose run simulate --model-preset gradient --frequency 40 --plot-rays
+# Run simulation
+docker compose run simulate --model-preset gradient --frequency 40
 ```
 
 ---
@@ -139,3 +188,5 @@ docker compose run simulate --model-preset gradient --frequency 40 --plot-rays
 - numpy
 - scipy
 - matplotlib
+- mpi4py
+- *Optional*: cupy-cuda12x (for GPU acceleration)

@@ -29,6 +29,7 @@ Thumbs.db
 *.png
 *.npy
 *.npz
+output/
 
 # Audio files (tracked in audio/ but ignore stray ones)
 *.wav
