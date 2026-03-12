@@ -218,6 +218,17 @@ def compute_beam_power(
 # Multi-peak detection
 # -----------------------------------------------------------------------
 
+def _parabolic_interp_1d(y_minus: float, y_center: float, y_plus: float) -> float:
+    """Sub-sample offset from parabolic fit through 3 points.
+
+    Returns offset in [-0.5, 0.5] from the centre sample.
+    """
+    denom = 2.0 * (2.0 * y_center - y_minus - y_plus)
+    if abs(denom) < 1e-30:
+        return 0.0
+    return (y_minus - y_plus) / denom
+
+
 def find_multiple_peaks(
     coherence_map: np.ndarray,
     grid_x: np.ndarray,
@@ -226,8 +237,13 @@ def find_multiple_peaks(
     min_separation_m: float = 20.0,
     max_sources: int = 5,
 ) -> list[dict]:
-    """Find up to *max_sources* peaks with exclusion zones."""
+    """Find up to *max_sources* peaks with exclusion zones.
+
+    Uses parabolic sub-grid interpolation around each peak for
+    sub-grid-cell position accuracy.
+    """
     coh = coherence_map.copy()
+    n_gx, n_gy = coh.shape
     dx = grid_x[1] - grid_x[0] if len(grid_x) > 1 else 1.0
     dy = grid_y[1] - grid_y[0] if len(grid_y) > 1 else 1.0
     excl_ix = max(int(np.ceil(min_separation_m / dx)), 1)
@@ -239,13 +255,27 @@ def find_multiple_peaks(
         if peak_val < threshold:
             break
         ix, iy = np.unravel_index(int(np.argmax(coh)), coh.shape)
+
+        # Sub-grid parabolic interpolation.
+        off_x = 0.0
+        if 0 < ix < n_gx - 1:
+            off_x = _parabolic_interp_1d(
+                coh[ix - 1, iy], coh[ix, iy], coh[ix + 1, iy])
+        off_y = 0.0
+        if 0 < iy < n_gy - 1:
+            off_y = _parabolic_interp_1d(
+                coh[ix, iy - 1], coh[ix, iy], coh[ix, iy + 1])
+
+        x_interp = float(grid_x[ix]) + off_x * dx
+        y_interp = float(grid_y[iy]) + off_y * dy
+
         peaks.append({
-            "x": float(grid_x[ix]),
-            "y": float(grid_y[iy]),
+            "x": x_interp,
+            "y": y_interp,
             "coherence": peak_val,
         })
-        coh[max(ix - excl_ix, 0):min(ix + excl_ix + 1, coh.shape[0]),
-            max(iy - excl_iy, 0):min(iy + excl_iy + 1, coh.shape[1])] = 0.0
+        coh[max(ix - excl_ix, 0):min(ix + excl_ix + 1, n_gx),
+            max(iy - excl_iy, 0):min(iy + excl_iy + 1, n_gy)] = 0.0
 
     return peaks
 

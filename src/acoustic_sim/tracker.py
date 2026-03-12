@@ -165,6 +165,8 @@ def run_tracker(
     headings = []
 
     prev_t = None
+    # For velocity initialization from first two detections.
+    _first_det: dict | None = None
 
     for det in detections:
         t = det["time"]
@@ -176,9 +178,32 @@ def run_tracker(
 
         if not kf._initialised:
             if is_det:
-                kf.initialise(mx, my)
+                if _first_det is None:
+                    # Store first detection, wait for second.
+                    _first_det = {"x": mx, "y": my, "t": t}
+                    times.append(t)
+                    positions.append([mx, my])
+                    velocities.append([0.0, 0.0])
+                    covariances.append(kf.get_covariance())
+                    speeds.append(0.0)
+                    headings.append(0.0)
+                    prev_t = t
+                    continue
+                else:
+                    # Second detection: estimate velocity and initialise.
+                    dt_init = t - _first_det["t"]
+                    if dt_init > 1e-12:
+                        vx0 = (mx - _first_det["x"]) / dt_init
+                        vy0 = (my - _first_det["y"]) / dt_init
+                    else:
+                        vx0, vy0 = 0.0, 0.0
+                    kf.initialise(mx, my)
+                    kf.x[2] = vx0
+                    kf.x[3] = vy0
+                    # Tighter velocity uncertainty since we have an estimate.
+                    kf.P[2, 2] = 10.0
+                    kf.P[3, 3] = 10.0
             else:
-                # Nothing to track yet.
                 times.append(t)
                 positions.append([float("nan"), float("nan")])
                 velocities.append([0.0, 0.0])
