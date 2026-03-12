@@ -24,7 +24,11 @@ from acoustic_sim.receivers import (
     create_receiver_custom,
     create_receiver_l_shaped,
     create_receiver_line,
+    create_receiver_log_spiral,
+    create_receiver_nested_circular,
     create_receiver_random,
+    create_receiver_random_disk,
+    print_array_diagnostics,
 )
 from acoustic_sim.io import load_json, load_model, model_from_json, save_model
 from acoustic_sim.plotting import (
@@ -72,7 +76,7 @@ from acoustic_sim.domains import (
 )
 from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
 from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
-from acoustic_sim.config import DetectionConfig
+from acoustic_sim.config import DetectionConfig, sound_speed_from_temperature
 from acoustic_sim.noise import (
     add_all_noise,
     generate_sensor_noise,
@@ -82,16 +86,21 @@ from acoustic_sim.noise import (
     perturb_mic_positions,
 )
 from acoustic_sim.processor import (
-    apply_filter_bank,
     blank_transients,
+    broadband_weighted_sum,
+    build_polar_grid,
     calibrate_positions,
-    compute_beam_power,
+    compute_csdm,
     compute_sensor_weights,
-    compute_travel_times,
-    create_filter_bank,
+    compute_steering_vectors,
+    compute_travel_times_polar,
+    conventional_beam_power,
     detect_stationary,
-    find_multiple_peaks,
+    find_peaks_polar,
     matched_field_process,
+    mvdr_beam_power,
+    polar_to_cartesian,
+    select_harmonic_bins,
 )
 from acoustic_sim.tracker import (
     KalmanTracker,
@@ -160,7 +169,11 @@ __all__ = [
     "create_receiver_custom",
     "create_receiver_l_shaped",
     "create_receiver_line",
+    "create_receiver_log_spiral",
+    "create_receiver_nested_circular",
     "create_receiver_random",
+    "create_receiver_random_disk",
+    "print_array_diagnostics",
     # ── I/O ──
     "load_json",
     "load_model",
@@ -225,16 +238,21 @@ __all__ = [
     "inject_transient",
     "perturb_mic_positions",
     # ── Processor ──
-    "apply_filter_bank",
     "blank_transients",
+    "broadband_weighted_sum",
+    "build_polar_grid",
     "calibrate_positions",
-    "compute_beam_power",
+    "compute_csdm",
     "compute_sensor_weights",
-    "compute_travel_times",
-    "create_filter_bank",
+    "compute_steering_vectors",
+    "compute_travel_times_polar",
+    "conventional_beam_power",
     "detect_stationary",
-    "find_multiple_peaks",
+    "find_peaks_polar",
     "matched_field_process",
+    "mvdr_beam_power",
+    "polar_to_cartesian",
+    "select_harmonic_bins",
     # ── Tracker ──
     "KalmanTracker",
     "MultiTargetTracker",
