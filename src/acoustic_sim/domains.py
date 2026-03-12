@@ -245,12 +245,13 @@ def create_urban_echo_domain(
 
     xx, yy = np.meshgrid(x, y)
 
+    # Place buildings away from centre — at least 1/3 of domain half-width.
+    min_dist = max((x_max - x_min) / 6.0, 2.0 * building_size)
     for _ in range(n_buildings):
-        # Place building away from centre (at least 30 m from origin).
-        while True:
+        for _attempt in range(200):
             bx = rng.uniform(x_min + building_size, x_max - building_size)
             by = rng.uniform(y_min + building_size, y_max - building_size)
-            if np.hypot(bx, by) > 30.0:
+            if np.hypot(bx, by) > min_dist:
                 break
         mask = (
             (xx >= bx - building_size / 2) & (xx <= bx + building_size / 2) &
