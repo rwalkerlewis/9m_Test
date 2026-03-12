@@ -498,15 +498,15 @@ def parse_args(argv: list[str] | None = None) -> DetectionConfig:
     p.add_argument("--domain", default="isotropic",
                    choices=["isotropic", "wind", "hills_vegetation",
                             "echo_canyon", "urban_echo"])
-    p.add_argument("--total-time", type=float, default=2.0)
-    p.add_argument("--dx", type=float, default=0.2)
-    p.add_argument("--x-min", type=float, default=-100.0)
-    p.add_argument("--x-max", type=float, default=100.0)
-    p.add_argument("--y-min", type=float, default=-100.0)
-    p.add_argument("--y-max", type=float, default=100.0)
+    p.add_argument("--total-time", type=float, default=0.5)
+    p.add_argument("--dx", type=float, default=0.05)
+    p.add_argument("--x-min", type=float, default=-15.0)
+    p.add_argument("--x-max", type=float, default=15.0)
+    p.add_argument("--y-min", type=float, default=-15.0)
+    p.add_argument("--y-max", type=float, default=15.0)
     p.add_argument("--n-mics", type=int, default=16)
     p.add_argument("--array-type", default="circular")
-    p.add_argument("--array-radius", type=float, default=15.0)
+    p.add_argument("--array-radius", type=float, default=0.5)
     p.add_argument("--drone-speed", type=float, default=15.0)
     p.add_argument("--source-level-dB", type=float, default=90.0)
     p.add_argument("--fundamental-freq", type=float, default=150.0)
@@ -515,8 +515,8 @@ def parse_args(argv: list[str] | None = None) -> DetectionConfig:
     p.add_argument("--no-stationary", action="store_true",
                    help="Disable the stationary noise source")
     p.add_argument("--output-dir", default="output/detection")
-    p.add_argument("--grid-spacing", type=float, default=5.0)
-    p.add_argument("--detection-threshold", type=float, default=0.3)
+    p.add_argument("--grid-spacing", type=float, default=1.0)
+    p.add_argument("--detection-threshold", type=float, default=0.15)
     p.add_argument("--snapshot-interval", type=int, default=0)
 
     args = p.parse_args(argv)

@@ -35,17 +35,18 @@ from acoustic_sim.plotting import plot_study_comparison
 # -----------------------------------------------------------------------
 
 def _base_cfg(override: DetectionConfig | None = None) -> DetectionConfig:
-    """Return a fast-running base config for studies."""
+    """Return a base config for studies at the correct array scale.
+
+    Uses the DetectionConfig defaults which are already set for a
+    0.5 m radius array, dx = 0.05 m, 30 × 30 m domain.
+    """
     if override is not None:
         cfg = copy.deepcopy(override)
     else:
         cfg = DetectionConfig()
-    # Fast defaults for studies.
-    cfg.total_time = 0.5
+    # Ensure studies don't run the expensive stationary-source FDTD
+    # unless explicitly enabled by the study.
     cfg.stationary_source_enabled = False
-    cfg.mfp_detection_threshold = 0.15
-    cfg.source_start = (-60.0, 30.0)
-    cfg.source_end = (60.0, 30.0)
     return cfg
 
 
@@ -209,7 +210,7 @@ def study_multi_drone(
     cfg2 = _base_cfg(base_config)
     cfg2.max_sources = 2
     cfg2.stationary_source_enabled = True
-    cfg2.stationary_source_pos = (-40.0, -30.0)
+    cfg2.stationary_source_pos = (-8.0, -6.0)
     cfg2.stationary_source_freq = 150.0  # same as drone to test separation
     cfg2.stationary_source_level_dB = 90.0
     cfg2.output_dir = os.path.join(output_dir, "2_drones")

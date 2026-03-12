@@ -203,15 +203,22 @@ def compute_beam_power(
     if sensor_weights is None:
         sensor_weights = np.ones(n_mics)
 
-    # Individual trace power in window (for normalisation).
+    # Count active sensors and compute per-sensor power for normalisation.
+    n_active = 0
     total_indiv = 0.0
     for m in range(n_mics):
         if sensor_weights[m] < 0.5:
             continue
         seg = filtered_traces[m, window_start:wend]
         total_indiv += np.sum(seg ** 2)
-    if total_indiv < 1e-30:
+        n_active += 1
+    if total_indiv < 1e-30 or n_active == 0:
         return np.zeros((n_gx, n_gy))
+
+    # Normalisation factor: for perfect coherence among N sensors,
+    # beam_power = N² × per-sensor-power, so dividing by N × total_indiv
+    # gives a coherence in [0, 1].
+    norm = n_active * total_indiv
 
     coherence = np.zeros((n_gx, n_gy))
 
@@ -232,7 +239,7 @@ def compute_beam_power(
             if n_valid == 0:
                 continue
             beam = np.sum(stack ** 2)
-            coherence[ix, iy] = beam / total_indiv
+            coherence[ix, iy] = beam / norm
 
     return coherence
 
