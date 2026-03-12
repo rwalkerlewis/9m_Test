@@ -361,6 +361,10 @@ Returns `(xp, is_cuda)` where `xp` is either `numpy` or `cupy`. Falls back to Nu
 
 **Purpose:** Source signal generators and trajectory classes.
 
+#### WAV File Loading
+
+`load_wav_mono(path: str) -> tuple[np.ndarray, int]` — Load a WAV file, convert to mono float32 in [-1, 1], return `(audio, sample_rate)`. Handles PCM int16, int32, uint8, and float formats.
+
 #### Signal Generators
 
 | Function | Description | Key Parameters |

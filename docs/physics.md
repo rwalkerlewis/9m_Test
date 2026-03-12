@@ -78,7 +78,7 @@ Anomalies (circular or rectangular regions with altered velocity) can be added t
 
 Physical boundaries in open-air acoustics require absorbing conditions to prevent artificial reflections from domain edges. The code implements two mechanisms:
 
-1. **Sponge layer (FDTD)**: A damping zone of width `damping_width` cells at each edge applies a damping coefficient `σ(x, y)` that ramps quadratically from zero at the inner edge to `damping_max` at the domain boundary. This dissipates outgoing waves. See [Algorithms — FDTD Solver](algorithms.md#2-fdtd-solver-algorithm).
+1. **Sponge layer (FDTD)**: A damping zone of width `damping_width` cells at each edge applies a damping coefficient `σ(x, y)` that ramps quadratically from zero at the inner edge to `damping_max` at the domain boundary. This dissipates outgoing waves. See [Algorithms — FDTD Solver](algorithms.md#2-fdtd-solver).
 
 2. **Complex wavenumber (Helmholtz)**: The absorbing layer adds an imaginary component to the wavenumber: `k² → k²(1 + iσ)`, which causes exponential decay of the field within the sponge zone.
 
@@ -459,7 +459,7 @@ For the explicit leapfrog FDTD scheme on a 2D square grid, the Courant–Friedri
 C = c_max · dt / dx ≤ 1/√2 ≈ 0.707
 ```
 
-where `C` is the Courant number. For higher-order FD stencils, the CFL limit depends on the stencil's spectral radius (see [Algorithms — FDTD Solver](algorithms.md#2-fdtd-solver-algorithm) for the generalised formula).
+where `C` is the Courant number. For higher-order FD stencils, the CFL limit depends on the stencil's spectral radius (see [Algorithms — FDTD Solver](algorithms.md#2-fdtd-solver) for the generalised formula).
 
 The code auto-computes `dt` with a 0.9× safety margin:
 
