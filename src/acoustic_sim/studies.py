@@ -55,19 +55,26 @@ def _collect(result: dict) -> dict:
     return {
         "detection_rate": result.get("detection_rate", 0.0),
         "mean_loc_error": result.get("mean_loc_error", float("nan")),
+        "first_shot_miss": result.get("first_shot_miss", float("nan")),
+        "first_shot_hit": result.get("first_shot_hit", False),
+        "first_shot_pattern": result.get("first_shot_pattern", float("nan")),
+        "mean_miss": result.get("mean_miss", float("nan")),
     }
 
 
 def _print_table(rows: list[dict], title: str) -> None:
-    print(f"\n{'=' * 60}")
+    print(f"\n{'=' * 70}")
     print(f"  {title}")
-    print(f"{'=' * 60}")
-    print(f"  {'Case':<25s} {'Det %':>7s} {'Loc err':>8s}")
-    print(f"  {'-'*25} {'-'*7} {'-'*8}")
+    print(f"{'=' * 70}")
+    print(f"  {'Case':<25s} {'Det %':>6s} {'Loc':>6s} {'1st Miss':>8s} {'Pattern':>8s} {'Hit?':>5s}")
+    print(f"  {'-'*25} {'-'*6} {'-'*6} {'-'*8} {'-'*8} {'-'*5}")
     for r in rows:
         det = f"{r['detection_rate']*100:.0f}%"
-        err = f"{r['mean_loc_error']:.1f}m" if np.isfinite(r["mean_loc_error"]) else "N/A"
-        print(f"  {r['label']:<25s} {det:>7s} {err:>8s}")
+        loc = f"{r['mean_loc_error']:.1f}m" if np.isfinite(r["mean_loc_error"]) else "N/A"
+        miss = f"{r['first_shot_miss']:.2f}m" if np.isfinite(r["first_shot_miss"]) else "N/A"
+        pat = f"{r['first_shot_pattern']:.2f}m" if np.isfinite(r["first_shot_pattern"]) else "N/A"
+        hit = "YES" if r["first_shot_hit"] else "NO"
+        print(f"  {r['label']:<25s} {det:>6s} {loc:>6s} {miss:>8s} {pat:>8s} {hit:>5s}")
     print()
 
 
@@ -100,6 +107,7 @@ def study_array_geometry(
     plot_study_comparison(
         [r["label"] for r in rows],
         {"Detection Rate": [r["detection_rate"] for r in rows],
+         "1st Shot Miss [m]": [r["first_shot_miss"] for r in rows],
          "Loc Error [m]": [r["mean_loc_error"] for r in rows]},
         output_path=os.path.join(output_dir, "comparison.png"),
         title="Array Geometry Comparison",
@@ -136,6 +144,7 @@ def study_min_sensors(
     plot_study_comparison(
         [r["label"] for r in rows],
         {"Detection Rate": [r["detection_rate"] for r in rows],
+         "1st Shot Miss [m]": [r["first_shot_miss"] for r in rows],
          "Loc Error [m]": [r["mean_loc_error"] for r in rows]},
         output_path=os.path.join(output_dir, "comparison.png"),
         title="Sensor Count vs Performance",
@@ -177,6 +186,7 @@ def study_sensor_faults(
     plot_study_comparison(
         [r["label"] for r in rows],
         {"Detection Rate": [r["detection_rate"] for r in rows],
+         "1st Shot Miss [m]": [r["first_shot_miss"] for r in rows],
          "Loc Error [m]": [r["mean_loc_error"] for r in rows]},
         output_path=os.path.join(output_dir, "comparison.png"),
         title="Sensor Faults: Raw vs Mitigated",
@@ -228,6 +238,7 @@ def study_multi_drone(
     plot_study_comparison(
         [r["label"] for r in rows],
         {"Detection Rate": [r["detection_rate"] for r in rows],
+         "1st Shot Miss [m]": [r["first_shot_miss"] for r in rows],
          "Loc Error [m]": [r["mean_loc_error"] for r in rows]},
         output_path=os.path.join(output_dir, "comparison.png"),
         title="Multi-Drone Performance",
@@ -273,6 +284,7 @@ def study_transient_robustness(
     plot_study_comparison(
         [r["label"] for r in rows],
         {"Detection Rate": [r["detection_rate"] for r in rows],
+         "1st Shot Miss [m]": [r["first_shot_miss"] for r in rows],
          "Loc Error [m]": [r["mean_loc_error"] for r in rows]},
         output_path=os.path.join(output_dir, "comparison.png"),
         title="Transient Robustness: Raw vs Blanked",
@@ -320,6 +332,7 @@ def study_haphazard_array(
     plot_study_comparison(
         [r["label"] for r in rows],
         {"Detection Rate": [r["detection_rate"] for r in rows],
+         "1st Shot Miss [m]": [r["first_shot_miss"] for r in rows],
          "Loc Error [m]": [r["mean_loc_error"] for r in rows]},
         output_path=os.path.join(output_dir, "comparison.png"),
         title="Haphazard Array: Circular vs Random",
@@ -355,6 +368,7 @@ def study_echo_domains(
     plot_study_comparison(
         [r["label"] for r in rows],
         {"Detection Rate": [r["detection_rate"] for r in rows],
+         "1st Shot Miss [m]": [r["first_shot_miss"] for r in rows],
          "Loc Error [m]": [r["mean_loc_error"] for r in rows]},
         output_path=os.path.join(output_dir, "comparison.png"),
         title="Echo Domain Comparison",
@@ -399,6 +413,7 @@ def study_position_errors(
     plot_study_comparison(
         [r["label"] for r in rows],
         {"Detection Rate": [r["detection_rate"] for r in rows],
+         "1st Shot Miss [m]": [r["first_shot_miss"] for r in rows],
          "Loc Error [m]": [r["mean_loc_error"] for r in rows]},
         output_path=os.path.join(output_dir, "comparison.png"),
         title="Position Error: Raw vs Calibrated",
@@ -475,6 +490,7 @@ def study_mixed_failures(
     plot_study_comparison(
         [r["label"] for r in rows],
         {"Detection Rate": [r["detection_rate"] for r in rows],
+         "1st Shot Miss [m]": [r["first_shot_miss"] for r in rows],
          "Loc Error [m]": [r["mean_loc_error"] for r in rows]},
         output_path=os.path.join(output_dir, "comparison.png"),
         title="Mixed Failure Modes: Progressive Stress Test",

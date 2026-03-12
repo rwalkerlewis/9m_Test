@@ -102,6 +102,7 @@ from acoustic_sim.tracker import (
 from acoustic_sim.fire_control import (
     compute_engagement,
     compute_lead,
+    compute_miss_distance,
     pattern_diameter,
     pellet_velocity_at_range,
     prioritize_threats,
@@ -237,6 +238,7 @@ __all__ = [
     # ── Fire control ──
     "compute_engagement",
     "compute_lead",
+    "compute_miss_distance",
     "pattern_diameter",
     "pellet_velocity_at_range",
     "prioritize_threats",

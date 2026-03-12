@@ -322,6 +322,111 @@ def run_fire_control(
 
 
 # -----------------------------------------------------------------------
+# Miss distance (the real success metric)
+# -----------------------------------------------------------------------
+
+def compute_miss_distance(
+    fire_control: dict,
+    true_positions: np.ndarray,
+    true_times: np.ndarray,
+    weapon_position: tuple[float, float] | np.ndarray = (0.0, 0.0),
+    pattern_spread_rate: float = 0.025,
+) -> dict:
+    """Compute how far each shot would miss the actual target.
+
+    For each fire-control time step, this determines where the pellet
+    pattern centre would arrive (the predicted intercept from the
+    tracker's estimate) versus where the drone *actually* is at the
+    time of impact (true position at ``t_fire + tof``).
+
+    Parameters
+    ----------
+    fire_control : dict
+        Output of :func:`run_fire_control`.
+    true_positions : (n_true_steps, 2)
+        True drone positions at each FDTD step.
+    true_times : (n_true_steps,)
+        Times corresponding to *true_positions*.
+
+    Returns
+    -------
+    dict with:
+        miss_distances   (N,)  — miss distance at each FC time step [m]
+        pattern_diameters (N,) — pattern diameter at each intercept [m]
+        would_hit        (N,)  — bool, miss < pattern_radius
+        first_shot_idx   int   — index of the first eligible shot
+        first_shot_time  float — time of first eligible shot [s]
+        first_shot_miss  float — miss distance of first shot [m]
+        first_shot_pattern float — pattern diameter of first shot [m]
+        first_shot_hit   bool  — whether first shot would hit
+    """
+    fc_times = fire_control["times"]
+    tofs = fire_control["tofs"]
+    intercepts = fire_control["intercept_positions"]
+    can_fire = fire_control["can_fire"]
+    ranges = fire_control["ranges"]
+    N = len(fc_times)
+
+    miss_distances = np.full(N, np.nan)
+    pat_diams = np.full(N, np.nan)
+    would_hit = np.zeros(N, dtype=bool)
+
+    for i in range(N):
+        if np.isnan(tofs[i]) or np.any(np.isnan(intercepts[i])):
+            continue
+
+        # Time of impact.
+        t_impact = fc_times[i] + tofs[i]
+
+        # True position at impact time (interpolate).
+        if t_impact < true_times[0] or t_impact > true_times[-1]:
+            continue
+        true_x = float(np.interp(t_impact, true_times, true_positions[:, 0]))
+        true_y = float(np.interp(t_impact, true_times, true_positions[:, 1]))
+
+        # Miss distance = ||predicted_intercept - true_position_at_impact||.
+        miss = math.hypot(intercepts[i, 0] - true_x,
+                          intercepts[i, 1] - true_y)
+        miss_distances[i] = miss
+
+        # Pattern diameter at intercept range.
+        wp = np.asarray(weapon_position, dtype=np.float64)
+        int_range = float(np.linalg.norm(intercepts[i] - wp))
+        pd = pattern_diameter(int_range, pattern_spread_rate)
+        pat_diams[i] = pd
+
+        # Would the shot hit? (miss < pattern radius)
+        would_hit[i] = miss < pd / 2.0
+
+    # First eligible shot: earliest timestep where can_fire is True
+    # (or if can_fire is never True, earliest timestep with a valid track).
+    first_idx = -1
+    if np.any(can_fire):
+        first_idx = int(np.argmax(can_fire))
+    else:
+        # Fall back: first timestep with a valid miss distance.
+        valid = ~np.isnan(miss_distances)
+        if np.any(valid):
+            first_idx = int(np.argmax(valid))
+
+    first_time = float(fc_times[first_idx]) if first_idx >= 0 else float("nan")
+    first_miss = float(miss_distances[first_idx]) if first_idx >= 0 else float("nan")
+    first_pat = float(pat_diams[first_idx]) if first_idx >= 0 else float("nan")
+    first_hit = bool(would_hit[first_idx]) if first_idx >= 0 else False
+
+    return {
+        "miss_distances": miss_distances,
+        "pattern_diameters": pat_diams,
+        "would_hit": would_hit,
+        "first_shot_idx": first_idx,
+        "first_shot_time": first_time,
+        "first_shot_miss": first_miss,
+        "first_shot_pattern": first_pat,
+        "first_shot_hit": first_hit,
+    }
+
+
+# -----------------------------------------------------------------------
 # Threat prioritisation (multi-target)
 # -----------------------------------------------------------------------
 

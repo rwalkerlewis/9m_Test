@@ -38,7 +38,11 @@ if str(_root) not in sys.path:
 from acoustic_sim.config import DetectionConfig
 from acoustic_sim.domains import DomainMeta
 from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
-from acoustic_sim.fire_control import run_fire_control, run_multi_fire_control
+from acoustic_sim.fire_control import (
+    compute_miss_distance,
+    run_fire_control,
+    run_multi_fire_control,
+)
 from acoustic_sim.noise import (
     add_all_noise,
     inject_sensor_faults,
@@ -404,6 +408,34 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
     n_fire = int(np.sum(fc["can_fire"]))
     print(f"   Primary track engagement windows: {n_fire}/{len(fc['can_fire'])}")
 
+    # ── Miss distance (the real success metric) ─────────────────────────
+    miss_result = compute_miss_distance(
+        fc, true_positions, true_times,
+        weapon_position=config.weapon_position,
+        pattern_spread_rate=config.pattern_spread_rate,
+    )
+    first_miss = miss_result["first_shot_miss"]
+    first_pat = miss_result["first_shot_pattern"]
+    first_hit = miss_result["first_shot_hit"]
+    first_time = miss_result["first_shot_time"]
+
+    if not np.isnan(first_miss):
+        print(f"\n   ** FIRST SHOT ANALYSIS **")
+        print(f"   Time of first shot:   {first_time:.3f} s")
+        print(f"   Miss distance:        {first_miss:.2f} m")
+        print(f"   Pattern diameter:     {first_pat:.2f} m")
+        print(f"   WOULD HIT:            {'YES' if first_hit else 'NO'}")
+        valid_miss = ~np.isnan(miss_result["miss_distances"])
+        if np.any(valid_miss):
+            print(f"   Mean miss (all shots): {np.nanmean(miss_result['miss_distances']):.2f} m")
+            print(f"   Min miss:             {np.nanmin(miss_result['miss_distances']):.2f} m")
+            n_hits = int(np.sum(miss_result["would_hit"]))
+            n_valid = int(np.sum(valid_miss))
+            print(f"   Hit rate (all shots): {n_hits}/{n_valid} "
+                  f"({100*n_hits/max(n_valid,1):.0f}%)")
+    else:
+        print("\n   ** No valid fire-control solution — cannot compute miss **")
+
     # ── Visualisations ──────────────────────────────────────────────────
     print("\nGenerating plots…")
 
@@ -453,6 +485,9 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
     if not np.isnan(mean_err):
         print(f"  Mean loc error: {mean_err:.1f} m")
     print(f"  Fire windows:   {n_fire}/{len(fc['can_fire'])}")
+    if not np.isnan(first_miss):
+        print(f"  1st shot miss:  {first_miss:.2f} m  "
+              f"(pattern {first_pat:.2f} m → {'HIT' if first_hit else 'MISS'})")
     print(f"  Wall time:      {elapsed:.1f} s")
     print(f"  Output:         {out}")
     print("=" * 60)
@@ -478,6 +513,12 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         "detection_rate": n_detected / max(n_windows, 1),
         "mean_loc_error": mean_err,
         "faulted_sensors": faulted_sensors,
+        "miss_result": miss_result,
+        "first_shot_miss": first_miss,
+        "first_shot_hit": first_hit,
+        "first_shot_pattern": first_pat,
+        "mean_miss": float(np.nanmean(miss_result["miss_distances"]))
+                     if np.any(~np.isnan(miss_result["miss_distances"])) else float("nan"),
     }
 
 
