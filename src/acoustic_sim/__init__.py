@@ -103,7 +103,7 @@ from acoustic_sim.processor import (
     select_harmonic_bins,
 )
 from acoustic_sim.tracker import (
-    KalmanTracker,
+    EKFTracker,
     MultiTargetTracker,
     run_multi_tracker,
     run_tracker,
@@ -254,7 +254,7 @@ __all__ = [
     "polar_to_cartesian",
     "select_harmonic_bins",
     # ── Tracker ──
-    "KalmanTracker",
+    "EKFTracker",
     "MultiTargetTracker",
     "run_multi_tracker",
     "run_tracker",
