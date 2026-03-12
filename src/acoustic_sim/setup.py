@@ -28,7 +28,10 @@ from acoustic_sim.receivers import (
     create_receiver_custom,
     create_receiver_l_shaped,
     create_receiver_line,
+    create_receiver_log_spiral,
+    create_receiver_nested_circular,
     create_receiver_random,
+    create_receiver_random_disk,
 )
 from acoustic_sim.sources import (
     CircularOrbitSource,
@@ -141,6 +144,14 @@ def build_receivers(
         return create_receiver_l_shaped(n1, n2, spacing, center_x, center_y)
     if array == "random":
         return create_receiver_random(count, x0, x1, y0, y1, seed=seed)
+    if array == "nested_circular":
+        return create_receiver_nested_circular(center_x, center_y,
+                                                inner_radius=0.15,
+                                                outer_radius=radius)
+    if array == "log_spiral":
+        return create_receiver_log_spiral(count, radius, center_x, center_y)
+    if array == "random_disk":
+        return create_receiver_random_disk(count, radius, center_x, center_y, seed)
     if array == "custom":
         if positions is None:
             raise ValueError("array='custom' requires 'positions' argument")

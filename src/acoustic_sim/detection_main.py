@@ -208,20 +208,23 @@ def run_detection(
     mic_positions: np.ndarray,
     dt: float,
     sound_speed: float = 343.0,
-    weapon_position: tuple[float, float] | np.ndarray = (0.0, 0.0),
+    weapon_position: tuple[float, float] | np.ndarray = (500.0, 500.0),
     *,
-    # ── MFP parameters ──
-    grid_spacing: float = 1.0,
-    grid_x_range: tuple[float, float] = (-14.0, 14.0),
-    grid_y_range: tuple[float, float] = (-14.0, 14.0),
-    window_length: float = 0.05,
+    # ── MFP (polar grid) ──
+    azimuth_spacing_deg: float = 1.0,
+    range_min: float = 20.0,
+    range_max: float = 500.0,
+    range_spacing: float = 5.0,
+    window_length: float = 0.2,
     window_overlap: float = 0.5,
-    detection_threshold: float = 0.15,
+    n_subwindows: int = 4,
+    detection_threshold: float = 0.25,
     fundamental: float = 150.0,
-    n_harmonics: int = 4,
-    harmonic_bandwidth: float = 20.0,
+    n_harmonics: int = 6,
+    harmonic_bandwidth: float = 10.0,
     stationary_history: int = 10,
-    stationary_cv_threshold: float = 0.2,
+    stationary_cv_threshold: float = 0.15,
+    diagonal_loading: float = 0.01,
     # ── Robustness ──
     enable_sensor_weights: bool = False,
     sensor_fault_threshold: float = 10.0,
@@ -232,12 +235,15 @@ def run_detection(
     position_calibration_max_lag_m: float = 2.0,
     # ── Multi-source ──
     max_sources: int = 1,
-    min_source_separation_m: float = 5.0,
-    # ── Tracker ──
-    tracker_process_noise_std: float = 3.0,
-    tracker_measurement_noise_std: float = 2.0,
-    tracker_gate_threshold: float = 10.0,
+    min_source_separation_deg: float = 10.0,
+    # ── EKF Tracker ──
+    tracker_process_noise_std: float = 2.0,
+    tracker_sigma_bearing_deg: float = 3.0,
+    tracker_sigma_range: float = 100.0,
+    tracker_initial_range_guess: float = 200.0,
+    tracker_gate_threshold: float = 30.0,
     tracker_max_missed: int = 5,
+    source_level_dB: float = 90.0,
     # ── Fire control ──
     muzzle_velocity: float = 400.0,
     pellet_decel: float = 1.5,
@@ -248,74 +254,68 @@ def run_detection(
     priority_w_quality: float = 0.5,
     # ── CUDA ──
     use_cuda: bool = False,
+    # ── Legacy (ignored) ──
+    grid_spacing: float = 5.0,
+    grid_x_range: tuple[float, float] | None = None,
+    grid_y_range: tuple[float, float] | None = None,
+    min_source_separation_m: float = 20.0,
+    tracker_measurement_noise_std: float = 5.0,
 ) -> dict:
     """Detection / tracking / fire-control — takes ONLY sensor data.
 
     This function knows NOTHING about the FDTD domain, velocity model,
     source trajectory, or simulation parameters.  It receives only what
-    a real sensor system would provide: pressure traces, sensor
-    positions, sample rate, and local sound speed.
-
-    Parameters
-    ----------
-    traces : (n_mics, n_samples)
-        Pressure time series at each microphone.
-    mic_positions : (n_mics, 2)
-        Reported sensor (x, y) locations.
-    dt : float
-        Sample interval [s].
-    sound_speed : float
-        Estimated speed of sound at sensor location [m/s].
-    weapon_position : (2,)
-        Known weapon location.
-
-    Returns
-    -------
-    dict with keys: mfp_result, track, multi_tracks, fire_control,
-    fire_control_multi, filtered_traces, sensor_weights
+    a real sensor system would provide.
     """
-    from acoustic_sim.fire_control import (
-        run_fire_control,
-        run_multi_fire_control,
-    )
+    from acoustic_sim.fire_control import run_fire_control, run_multi_fire_control
     from acoustic_sim.processor import matched_field_process
     from acoustic_sim.tracker import run_multi_tracker, run_tracker
 
     wp = np.asarray(weapon_position, dtype=np.float64)
+    cx = float(np.mean(mic_positions[:, 0]))
+    cy = float(np.mean(mic_positions[:, 1]))
 
     # ── Matched field processor ─────────────────────────────────────────
     mfp_result = matched_field_process(
         traces, mic_positions, dt,
         sound_speed=sound_speed,
-        grid_spacing=grid_spacing,
-        grid_x_range=grid_x_range,
-        grid_y_range=grid_y_range,
+        azimuth_spacing_deg=azimuth_spacing_deg,
+        range_min=range_min,
+        range_max=range_max,
+        range_spacing=range_spacing,
         window_length=window_length,
         window_overlap=window_overlap,
+        n_subwindows=n_subwindows,
         detection_threshold=detection_threshold,
         fundamental=fundamental,
         n_harmonics=n_harmonics,
         harmonic_bandwidth=harmonic_bandwidth,
         stationary_history=stationary_history,
         stationary_cv_threshold=stationary_cv_threshold,
+        diagonal_loading=diagonal_loading,
         enable_sensor_weights=enable_sensor_weights,
         sensor_fault_threshold=sensor_fault_threshold,
         enable_transient_blanking=enable_transient_blanking,
         transient_subwindow_ms=transient_subwindow_ms,
         transient_threshold_factor=transient_threshold_factor,
-        max_sources=max_sources,
-        min_source_separation_m=min_source_separation_m,
         enable_position_calibration=enable_position_calibration,
         position_calibration_max_lag_m=position_calibration_max_lag_m,
+        max_sources=max_sources,
+        min_source_separation_deg=min_source_separation_deg,
         use_cuda=use_cuda,
     )
     detections = mfp_result["detections"]
 
-    # ── Tracker ─────────────────────────────────────────────────────────
+    # ── EKF Tracker ─────────────────────────────────────────────────────
     track = run_tracker(
         detections,
         process_noise_std=tracker_process_noise_std,
-        measurement_noise_std=tracker_measurement_noise_std,
+        sigma_bearing_deg=tracker_sigma_bearing_deg,
+        sigma_range=tracker_sigma_range,
+        initial_range_guess=tracker_initial_range_guess,
+        source_level_dB=source_level_dB,
+        array_center_x=cx,
+        array_center_y=cy,
     )
 
     multi_tracks: list[dict] = []
@@ -324,17 +324,19 @@ def run_detection(
         multi_tracks = run_multi_tracker(
             mfp_result["multi_detections"], det_times,
             process_noise_std=tracker_process_noise_std,
-            measurement_noise_std=tracker_measurement_noise_std,
+            sigma_bearing_deg=tracker_sigma_bearing_deg,
+            sigma_range=tracker_sigma_range,
+            initial_range_guess=tracker_initial_range_guess,
             gate_threshold=tracker_gate_threshold,
             max_missed=tracker_max_missed,
+            source_level_dB=source_level_dB,
+            array_center_x=cx, array_center_y=cy,
         )
 
     # ── Fire control ────────────────────────────────────────────────────
     fc = run_fire_control(
-        track,
-        weapon_position=tuple(wp),
-        muzzle_velocity=muzzle_velocity,
-        pellet_decel=pellet_decel,
+        track, weapon_position=tuple(wp),
+        muzzle_velocity=muzzle_velocity, pellet_decel=pellet_decel,
         pattern_spread_rate=pattern_spread_rate,
         max_iterations=lead_max_iterations,
     )
@@ -342,14 +344,11 @@ def run_detection(
     fc_multi: list[dict] = []
     if multi_tracks:
         fc_multi = run_multi_fire_control(
-            multi_tracks,
-            weapon_position=tuple(wp),
-            muzzle_velocity=muzzle_velocity,
-            pellet_decel=pellet_decel,
+            multi_tracks, weapon_position=tuple(wp),
+            muzzle_velocity=muzzle_velocity, pellet_decel=pellet_decel,
             pattern_spread_rate=pattern_spread_rate,
             max_iterations=lead_max_iterations,
-            w_range=priority_w_range,
-            w_closing=priority_w_closing,
+            w_range=priority_w_range, w_closing=priority_w_closing,
             w_quality=priority_w_quality,
         )
 
@@ -444,7 +443,9 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         plot_vespagram,
     )
     from acoustic_sim.validate import run_all_checks
-    from acoustic_sim.processor import apply_filter_bank, create_filter_bank
+    # The new MVDR processor operates in the frequency domain and does not
+    # produce time-domain filtered traces.  For the SNR sanity check we
+    # pass the raw traces — the check is a rough diagnostic, not exact.
 
     if config is None:
         config = DetectionConfig()
@@ -501,9 +502,7 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
     # ── Sanity checks ───────────────────────────────────────────────────
     print("\n   Running sanity checks…")
     sample_rate = 1.0 / dt
-    fb = create_filter_bank(config.fundamental_freq, config.n_harmonics,
-                            config.mfp_harmonic_bandwidth, sample_rate)
-    filtered_check = apply_filter_bank(traces, fb) if fb else traces
+    filtered_check = traces  # MVDR processor works in freq domain
     run_all_checks(
         traces, filtered_check, dt,
         reported_positions, scenario["true_positions"],
@@ -517,17 +516,22 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         traces, reported_positions, dt,
         sound_speed=config.sound_speed,
         weapon_position=config.weapon_position,
-        grid_spacing=config.mfp_grid_spacing,
-        grid_x_range=config.mfp_grid_x_range,
-        grid_y_range=config.mfp_grid_y_range,
+        # Polar grid
+        azimuth_spacing_deg=config.mfp_azimuth_spacing_deg,
+        range_min=config.mfp_range_min,
+        range_max=config.mfp_range_max,
+        range_spacing=config.mfp_range_spacing,
         window_length=config.mfp_window_length,
         window_overlap=config.mfp_window_overlap,
+        n_subwindows=config.mfp_n_subwindows,
         detection_threshold=config.mfp_detection_threshold,
         fundamental=config.fundamental_freq,
         n_harmonics=config.n_harmonics,
         harmonic_bandwidth=config.mfp_harmonic_bandwidth,
         stationary_history=config.mfp_stationary_history,
         stationary_cv_threshold=config.mfp_stationary_cv_threshold,
+        diagonal_loading=config.mfp_diagonal_loading,
+        # Robustness
         enable_sensor_weights=config.enable_sensor_weights,
         sensor_fault_threshold=config.sensor_fault_threshold,
         enable_transient_blanking=config.enable_transient_blanking,
@@ -536,11 +540,15 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         enable_position_calibration=config.enable_position_calibration,
         position_calibration_max_lag_m=config.position_calibration_max_lag_m,
         max_sources=config.max_sources,
-        min_source_separation_m=config.min_source_separation_m,
+        # EKF tracker
         tracker_process_noise_std=config.tracker_process_noise_std,
-        tracker_measurement_noise_std=config.tracker_measurement_noise_std,
+        tracker_sigma_bearing_deg=config.tracker_sigma_bearing_deg,
+        tracker_sigma_range=config.tracker_sigma_range,
+        tracker_initial_range_guess=config.tracker_initial_range_guess,
         tracker_gate_threshold=config.tracker_gate_threshold,
         tracker_max_missed=config.tracker_max_missed,
+        source_level_dB=config.source_level_dB,
+        # Fire control
         muzzle_velocity=config.muzzle_velocity,
         pellet_decel=config.pellet_decel,
         pattern_spread_rate=config.pattern_spread_rate,

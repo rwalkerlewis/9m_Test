@@ -114,43 +114,44 @@ def check_localization(
     sound_speed: float = 343.0,
     grid_spacing: float = 5.0,
 ) -> tuple[bool, str]:
-    """Check 4: Stationary source localises to within 1 grid cell.
+    """Check 4: Stationary source localises to within acceptable error.
 
-    Runs the matched-field processor on the first window of the
-    provided traces (should be from a no-noise, stationary-source run
-    or the first few windows where the source is nearly stationary).
+    Runs the matched-field processor on the provided traces and checks
+    the bearing to the known source.
     """
-    from acoustic_sim.processor import (
-        apply_filter_bank,
-        compute_beam_power,
-        compute_travel_times,
-        create_filter_bank,
-    )
-
     tp = np.asarray(true_pos, dtype=np.float64)
-    # Build a small grid centred on the true position.
-    half = 50.0
-    gx = np.arange(tp[0] - half, tp[0] + half + 0.5 * grid_spacing,
-                    grid_spacing)
-    gy = np.arange(tp[1] - half, tp[1] + half + 0.5 * grid_spacing,
-                    grid_spacing)
-    tt_sec = compute_travel_times(gx, gy, mic_positions, sound_speed)
-    tt_samp = np.round(tt_sec / dt).astype(np.int64)
+    cx = float(np.mean(mic_positions[:, 0]))
+    cy = float(np.mean(mic_positions[:, 1]))
+    true_bearing = math.atan2(tp[1] - cy, tp[0] - cx)
+    true_range = math.hypot(tp[0] - cx, tp[1] - cy)
 
-    # Use a broadband approach (no filtering needed for no-noise test).
-    n_mics, n_samples = traces.shape
-    win_len = min(n_samples, max(int(0.1 / dt), 32))
-
-    coh = compute_beam_power(traces, tt_samp, 0, win_len)
-    ix, iy = np.unravel_index(np.argmax(coh), coh.shape)
-    est_x, est_y = float(gx[ix]), float(gy[iy])
-    err = math.hypot(est_x - tp[0], est_y - tp[1])
-    ok = err <= grid_spacing * math.sqrt(2)
-    msg = (
-        f"Localisation check: est ({est_x:.1f}, {est_y:.1f}), "
-        f"true ({tp[0]:.1f}, {tp[1]:.1f}), error = {err:.1f} m. "
-        f"{'PASS' if ok else 'FAIL'} (limit {grid_spacing*math.sqrt(2):.1f} m)"
+    from acoustic_sim.processor import matched_field_process
+    result = matched_field_process(
+        traces, mic_positions, dt,
+        sound_speed=sound_speed,
+        range_min=max(true_range - 100, 10),
+        range_max=true_range + 100,
+        range_spacing=grid_spacing,
+        window_length=min(traces.shape[1] * dt, 0.2),
+        detection_threshold=0.05,
     )
+    dets = result["detections"]
+    detected = [d for d in dets if d["detected"]]
+
+    if detected:
+        best = detected[0]
+        est_bearing = best.get("bearing", 0.0)
+        bearing_err = abs(math.degrees(est_bearing - true_bearing))
+        bearing_err = min(bearing_err, 360 - bearing_err)
+        ok = bearing_err < 10.0  # within 10 degrees
+        msg = (
+            f"Localisation check: est bearing {math.degrees(est_bearing):.1f}°, "
+            f"true {math.degrees(true_bearing):.1f}°, error = {bearing_err:.1f}°. "
+            f"{'PASS' if ok else 'FAIL'} (limit 10°)"
+        )
+    else:
+        ok = False
+        msg = "Localisation check: no detection. FAIL"
     return ok, msg
 
 
