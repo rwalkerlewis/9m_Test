@@ -15,8 +15,10 @@ import numpy as np
 
 from acoustic_sim.domains import (
     DomainMeta,
+    create_echo_canyon_domain,
     create_hills_vegetation_domain,
     create_isotropic_domain,
+    create_urban_echo_domain,
     create_wind_domain,
 )
 from acoustic_sim.model import VelocityModel
@@ -89,6 +91,12 @@ def build_domain(
             dirt_velocity=dirt_velocity,
             seed=seed,
             **grid_kw,
+        )
+    if domain == "echo_canyon":
+        return create_echo_canyon_domain(air_velocity=velocity, **grid_kw)
+    if domain == "urban_echo":
+        return create_urban_echo_domain(
+            air_velocity=velocity, seed=seed, **grid_kw,
         )
     raise ValueError(f"Unknown domain: {domain!r}")
 

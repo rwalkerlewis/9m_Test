@@ -124,5 +124,47 @@ class DetectionConfig:
     pattern_spread_rate: float = 0.025    # 1 m diameter per 40 m range
     lead_max_iterations: int = 5
 
+    # ── Robustness / mitigation ─────────────────────────────────────────
+    enable_sensor_weights: bool = False
+    sensor_fault_threshold: float = 10.0
+    enable_transient_blanking: bool = False
+    transient_subwindow_ms: float = 5.0
+    transient_threshold_factor: float = 10.0
+    enable_position_calibration: bool = False
+    position_calibration_max_lag_m: float = 10.0
+
+    # ── Multi-source ────────────────────────────────────────────────────
+    max_sources: int = 1
+    min_source_separation_m: float = 20.0
+    tracker_gate_threshold: float = 30.0
+    tracker_max_missed: int = 5
+
+    # ── Threat priority weights ─────────────────────────────────────────
+    priority_w_range: float = 1.0
+    priority_w_closing: float = 2.0
+    priority_w_quality: float = 0.5
+
+    # ── Multi-drone ─────────────────────────────────────────────────────
+    n_drones: int = 1
+    drone_configs: list[dict] | None = None
+
+    # ── Sensor faults (injection) ───────────────────────────────────────
+    inject_faults: bool = False
+    fault_type: str = "elevated_noise"
+    fault_fraction: float = 0.2
+    fault_level_dB: float = 100.0
+    fault_sensors: list[int] | None = None
+
+    # ── Transient injection ─────────────────────────────────────────────
+    inject_transient: bool = False
+    transient_time: float = 0.5
+    transient_pos: tuple[float, float] = (30.0, 30.0)
+    transient_level_dB: float = 130.0
+    transient_duration_ms: float = 10.0
+
+    # ── Position errors ─────────────────────────────────────────────────
+    inject_position_error: bool = False
+    position_error_std: float = 2.0
+
     # ── Output ──────────────────────────────────────────────────────────
     output_dir: str = "output/detection"

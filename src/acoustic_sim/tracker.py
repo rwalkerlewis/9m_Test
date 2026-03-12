@@ -218,3 +218,200 @@ def run_tracker(
         "speeds": np.array(speeds),
         "headings": np.array(headings),
     }
+
+
+# -----------------------------------------------------------------------
+# Multi-target tracker
+# -----------------------------------------------------------------------
+
+class _Track:
+    """Internal bookkeeping for one target track."""
+
+    _next_id = 0
+
+    def __init__(self, kf: KalmanTracker, t0: float, x: float, y: float):
+        self.id = _Track._next_id
+        _Track._next_id += 1
+        self.kf = kf
+        self.kf.initialise(x, y)
+        self.times: list[float] = [t0]
+        self.positions: list[list[float]] = [[x, y]]
+        self.velocities: list[list[float]] = [[0.0, 0.0]]
+        self.covariances: list[np.ndarray] = [kf.get_covariance()]
+        self.missed = 0
+        self.confirmed = False  # becomes True after init_count updates
+
+    def predict(self, dt: float) -> None:
+        self.kf.predict(dt)
+
+    def update(self, z: np.ndarray, t: float) -> None:
+        self.kf.update(z)
+        s = self.kf.get_state()
+        self.times.append(t)
+        self.positions.append([s[0], s[1]])
+        self.velocities.append([s[2], s[3]])
+        self.covariances.append(self.kf.get_covariance())
+        self.missed = 0
+
+    def mark_missed(self, t: float) -> None:
+        s = self.kf.get_state()
+        self.times.append(t)
+        self.positions.append([s[0], s[1]])
+        self.velocities.append([s[2], s[3]])
+        self.covariances.append(self.kf.get_covariance())
+        self.missed += 1
+
+    def to_dict(self) -> dict:
+        return {
+            "track_id": self.id,
+            "times": np.array(self.times),
+            "positions": np.array(self.positions),
+            "velocities": np.array(self.velocities),
+            "covariances": np.array(self.covariances),
+            "speeds": np.array([math.hypot(v[0], v[1])
+                                for v in self.velocities]),
+            "headings": np.array([math.atan2(v[1], v[0])
+                                  for v in self.velocities]),
+        }
+
+
+class MultiTargetTracker:
+    """Multi-target tracker with nearest-neighbour data association.
+
+    Parameters
+    ----------
+    process_noise_std, measurement_noise_std : float
+        Kalman filter tuning (applied to every track).
+    gate_threshold : float
+        Euclidean distance gate [m] for associating a detection to an
+        existing track.
+    max_missed : int
+        Drop a track after this many consecutive missed updates.
+    init_count : int
+        Number of associated updates before a track is confirmed.
+    """
+
+    def __init__(
+        self,
+        process_noise_std: float = 3.0,
+        measurement_noise_std: float = 5.0,
+        gate_threshold: float = 30.0,
+        max_missed: int = 5,
+        init_count: int = 2,
+    ) -> None:
+        self.q = process_noise_std
+        self.r = measurement_noise_std
+        self.gate = gate_threshold
+        self.max_missed = max_missed
+        self.init_count = init_count
+        self.tracks: list[_Track] = []
+        self._prev_t: float | None = None
+
+    def update(self, detections: list[dict], t: float) -> None:
+        """Process one window's detections.
+
+        Parameters
+        ----------
+        detections : list of {x, y, coherence, ...} dicts.
+        t : float — window centre time.
+        """
+        dt = 0.0
+        if self._prev_t is not None:
+            dt = t - self._prev_t
+        self._prev_t = t
+
+        # Predict all existing tracks.
+        if dt > 0:
+            for tr in self.tracks:
+                tr.predict(dt)
+
+        # Build cost matrix (Euclidean distance).
+        used_dets = set()
+        used_tracks = set()
+
+        if self.tracks and detections:
+            n_t = len(self.tracks)
+            n_d = len(detections)
+            cost = np.full((n_t, n_d), np.inf)
+            for ti, tr in enumerate(self.tracks):
+                px, py = tr.kf.get_position()
+                for di, det in enumerate(detections):
+                    dx = det["x"] - px
+                    dy = det["y"] - py
+                    d = math.hypot(dx, dy)
+                    if d < self.gate:
+                        cost[ti, di] = d
+
+            # Greedy nearest-neighbour assignment.
+            for _ in range(min(n_t, n_d)):
+                if np.all(np.isinf(cost)):
+                    break
+                ti, di = np.unravel_index(np.argmin(cost), cost.shape)
+                if np.isinf(cost[ti, di]):
+                    break
+                det = detections[di]
+                self.tracks[ti].update(np.array([det["x"], det["y"]]), t)
+                used_dets.add(di)
+                used_tracks.add(ti)
+                cost[ti, :] = np.inf
+                cost[:, di] = np.inf
+
+        # Mark unassociated tracks as missed.
+        for ti, tr in enumerate(self.tracks):
+            if ti not in used_tracks:
+                tr.mark_missed(t)
+
+        # Initiate new tracks from unassociated detections.
+        for di, det in enumerate(detections):
+            if di not in used_dets:
+                kf = KalmanTracker(self.q, self.r)
+                tr = _Track(kf, t, det["x"], det["y"])
+                self.tracks.append(tr)
+
+        # Prune dead tracks.
+        self.tracks = [tr for tr in self.tracks if tr.missed <= self.max_missed]
+
+        # Confirm tracks.
+        for tr in self.tracks:
+            if len(tr.times) >= self.init_count:
+                tr.confirmed = True
+
+    def get_tracks(self) -> list[dict]:
+        """Return confirmed tracks as dicts."""
+        return [tr.to_dict() for tr in self.tracks if tr.confirmed]
+
+    def get_all_tracks(self) -> list[dict]:
+        """Return all tracks (including unconfirmed)."""
+        return [tr.to_dict() for tr in self.tracks]
+
+
+def run_multi_tracker(
+    multi_detections: list[list[dict]],
+    times: np.ndarray,
+    *,
+    process_noise_std: float = 3.0,
+    measurement_noise_std: float = 5.0,
+    gate_threshold: float = 30.0,
+    max_missed: int = 5,
+) -> list[dict]:
+    """Run multi-target tracker on multi-peak detection output.
+
+    Parameters
+    ----------
+    multi_detections : list of lists
+        One inner list per time window, each containing 0..N detection dicts.
+    times : (n_windows,) array of window centre times.
+
+    Returns
+    -------
+    list of track dicts, each with times/positions/velocities/covariances.
+    """
+    mtt = MultiTargetTracker(
+        process_noise_std, measurement_noise_std,
+        gate_threshold=gate_threshold, max_missed=max_missed,
+    )
+    for i, dets in enumerate(multi_detections):
+        t = float(times[i]) if i < len(times) else float(i)
+        mtt.update(dets, t)
+
+    return mtt.get_tracks()

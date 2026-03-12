@@ -319,3 +319,117 @@ def run_fire_control(
         "intercept_positions": intercepts,
         "reasons": reasons,
     }
+
+
+# -----------------------------------------------------------------------
+# Threat prioritisation (multi-target)
+# -----------------------------------------------------------------------
+
+def prioritize_threats(
+    tracks: list[dict],
+    weapon_pos: np.ndarray | tuple[float, float],
+    time_idx: int = -1,
+    w_range: float = 1.0,
+    w_closing: float = 2.0,
+    w_quality: float = 0.5,
+) -> list[dict]:
+    """Score and rank tracked targets by threat priority.
+
+    ``priority = w_range/range + w_closing * max(closing_speed, 0)
+                 + w_quality / position_uncertainty``
+
+    Parameters
+    ----------
+    tracks : list of track dicts (from MultiTargetTracker).
+    weapon_pos : (2,)
+    time_idx : int
+        Which time step to evaluate (-1 = latest).
+    w_range, w_closing, w_quality : float
+        Weighting coefficients.
+
+    Returns
+    -------
+    list of track dicts augmented with ``priority_score``, ``range``,
+    ``closing_speed``, ``position_uncertainty``, sorted by priority
+    (highest first).
+    """
+    wp = np.asarray(weapon_pos, dtype=np.float64)
+    scored = []
+
+    for tr in tracks:
+        pos = tr["positions"][time_idx]
+        vel = tr["velocities"][time_idx]
+        cov = tr["covariances"][time_idx]
+
+        if np.any(np.isnan(pos)):
+            continue
+
+        rng = float(np.linalg.norm(pos - wp))
+        if rng < 1.0:
+            rng = 1.0
+
+        # Closing speed (positive = approaching).
+        los = wp - pos
+        los_norm = los / max(np.linalg.norm(los), 1e-6)
+        closing = float(np.dot(vel, los_norm))
+
+        # Position uncertainty.
+        pos_cov = cov[:2, :2]
+        eigvals = np.linalg.eigvalsh(pos_cov)
+        sigma = math.sqrt(max(eigvals.max(), 0.0))
+        pos_unc = max(2.0 * sigma, 0.1)
+
+        score = (w_range / rng
+                 + w_closing * max(closing, 0.0)
+                 + w_quality / pos_unc)
+
+        entry = dict(tr)  # shallow copy
+        entry["priority_score"] = score
+        entry["range"] = rng
+        entry["closing_speed"] = closing
+        entry["position_uncertainty"] = pos_unc
+        scored.append(entry)
+
+    scored.sort(key=lambda t: t["priority_score"], reverse=True)
+    return scored
+
+
+def run_multi_fire_control(
+    tracks: list[dict],
+    *,
+    weapon_position: tuple[float, float] = (0.0, 0.0),
+    muzzle_velocity: float = 400.0,
+    pellet_decel: float = 1.5,
+    pattern_spread_rate: float = 0.025,
+    max_iterations: int = 5,
+    w_range: float = 1.0,
+    w_closing: float = 2.0,
+    w_quality: float = 0.5,
+) -> list[dict]:
+    """Fire-control solution for multiple targets, sorted by threat priority.
+
+    Returns list of dicts, one per track, each containing the track dict
+    augmented with ``fire_control`` and priority fields.
+    """
+    wp = np.asarray(weapon_position, dtype=np.float64)
+
+    prioritized = prioritize_threats(
+        tracks, wp, time_idx=-1,
+        w_range=w_range, w_closing=w_closing, w_quality=w_quality,
+    )
+
+    results = []
+    for tr in prioritized:
+        fc = run_fire_control(
+            tr,
+            weapon_position=weapon_position,
+            muzzle_velocity=muzzle_velocity,
+            pellet_decel=pellet_decel,
+            pattern_spread_rate=pattern_spread_rate,
+            max_iterations=max_iterations,
+        )
+        entry = dict(tr)
+        entry["fire_control"] = fc
+        results.append(entry)
+
+    return results

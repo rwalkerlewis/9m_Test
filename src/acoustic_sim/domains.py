@@ -165,3 +165,99 @@ def create_hills_vegetation_domain(
         description="Hills + vegetation (2-D valley slice)",
     )
     return model, meta
+
+
+# ---------------------------------------------------------------------------
+# Echo-prone domains
+# ---------------------------------------------------------------------------
+
+def create_echo_canyon_domain(
+    x_min: float = -100.0,
+    x_max: float = 100.0,
+    y_min: float = -100.0,
+    y_max: float = 100.0,
+    dx: float = 0.2,
+    air_velocity: float = 343.0,
+    wall_velocity: float = 2000.0,
+    canyon_y_south: float = -60.0,
+    canyon_y_north: float = 60.0,
+    canyon_wall_thickness: float = 5.0,
+) -> tuple["VelocityModel", DomainMeta]:
+    """Domain with two parallel walls forming a canyon.
+
+    The strong impedance contrast between air (343 m/s) and wall
+    material (2000 m/s) produces clear reflections — ideal for testing
+    echo discrimination.
+
+    Parameters
+    ----------
+    canyon_y_south, canyon_y_north : float
+        y-coordinates of the inner edge of each wall.
+    canyon_wall_thickness : float
+        Thickness of each wall [m].
+    """
+    x = np.arange(x_min, x_max + dx / 2, dx)
+    y = np.arange(y_min, y_max + dx / 2, dx)
+    nx, ny = len(x), len(y)
+    values = np.full((ny, nx), air_velocity, dtype=np.float64)
+
+    # South wall: from canyon_y_south - thickness to canyon_y_south.
+    for iy, yv in enumerate(y):
+        if canyon_y_south - canyon_wall_thickness <= yv <= canyon_y_south:
+            values[iy, :] = wall_velocity
+        if canyon_y_north <= yv <= canyon_y_north + canyon_wall_thickness:
+            values[iy, :] = wall_velocity
+
+    model = VelocityModel(x=x, y=y, values=values, dx=dx, dy=dx)
+    meta = DomainMeta(description="Echo canyon (parallel walls)")
+    return model, meta
+
+
+def create_urban_echo_domain(
+    x_min: float = -100.0,
+    x_max: float = 100.0,
+    y_min: float = -100.0,
+    y_max: float = 100.0,
+    dx: float = 0.2,
+    air_velocity: float = 343.0,
+    building_velocity: float = 2500.0,
+    n_buildings: int = 4,
+    building_size: float = 15.0,
+    seed: int = 42,
+) -> tuple["VelocityModel", DomainMeta]:
+    """Domain with rectangular buildings that produce complex multipath.
+
+    Buildings are high-impedance blocks placed semi-randomly in the
+    domain, away from the centre (where the mic array typically sits).
+
+    Parameters
+    ----------
+    n_buildings : int
+        Number of buildings.
+    building_size : float
+        Side length of each square building [m].
+    """
+    rng = np.random.default_rng(seed)
+    x = np.arange(x_min, x_max + dx / 2, dx)
+    y = np.arange(y_min, y_max + dx / 2, dx)
+    nx, ny = len(x), len(y)
+    values = np.full((ny, nx), air_velocity, dtype=np.float64)
+
+    xx, yy = np.meshgrid(x, y)
+
+    for _ in range(n_buildings):
+        # Place building away from centre (at least 30 m from origin).
+        while True:
+            bx = rng.uniform(x_min + building_size, x_max - building_size)
+            by = rng.uniform(y_min + building_size, y_max - building_size)
+            if np.hypot(bx, by) > 30.0:
+                break
+        mask = (
+            (xx >= bx - building_size / 2) & (xx <= bx + building_size / 2) &
+            (yy >= by - building_size / 2) & (yy <= by + building_size / 2)
+        )
+        values[mask] = building_velocity
+
+    model = VelocityModel(x=x, y=y, values=values, dx=dx, dy=dx)
+    meta = DomainMeta(description=f"Urban echo ({n_buildings} buildings)")
+    return model, meta
