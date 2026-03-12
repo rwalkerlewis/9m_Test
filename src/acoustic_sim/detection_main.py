@@ -320,6 +320,7 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         min_source_separation_m=config.min_source_separation_m,
         enable_position_calibration=config.enable_position_calibration,
         position_calibration_max_lag_m=config.position_calibration_max_lag_m,
+        use_cuda=config.use_cuda,
     )
     detections = mfp_result["detections"]
     n_detected = sum(1 for d in detections if d["detected"])

@@ -84,10 +84,10 @@ def generate_wind_noise(
     shape[above] = (corner_freq / f_safe[above]) ** 2
     shape[0] = 0.0  # remove DC
 
-    for i in range(n_mics):
-        spec = np.fft.rfft(correlated[i])
-        spec *= shape
-        correlated[i] = np.fft.irfft(spec, n=n_samples)
+    # Vectorised FFT along axis=1 (all mics at once).
+    spectra = np.fft.rfft(correlated, axis=1)     # (n_mics, n_freq)
+    spectra *= shape[np.newaxis, :]                # broadcast shape
+    correlated = np.fft.irfft(spectra, n=n_samples, axis=1)
 
     # ── Scale to target RMS level ───────────────────────────────────────
     p_target = _P_REF * 10.0 ** (level_dB / 20.0)
@@ -307,16 +307,23 @@ def inject_transient(
     pulse /= max(np.max(np.abs(pulse)), 1e-30)
 
     ep = np.asarray(event_pos)
+    # Vectorised: compute distances and arrival samples for all mics.
+    dists = np.linalg.norm(mic_positions - ep[np.newaxis, :], axis=1)  # (n_mics,)
+    radii = np.maximum(dists, 1.0)
+    amps = p_source / radii                                             # (n_mics,)
+    arrivals = np.round((event_time + dists / sound_speed) / dt).astype(int)  # (n_mics,)
+
+    # Place pulse at each mic's arrival time.
+    k_idx = np.arange(dur_samples)
     for m in range(n_mics):
-        dist = float(np.linalg.norm(mic_positions[m] - ep))
-        r = max(dist, 1.0)
-        amp = p_source / r
-        delay_s = dist / sound_speed
-        arrival_sample = int(round((event_time + delay_s) / dt))
-        for k in range(dur_samples):
-            idx = arrival_sample + k
-            if 0 <= idx < n_samples:
-                out[m, idx] += amp * pulse[k]
+        s = arrivals[m]
+        e = s + dur_samples
+        # Clip to valid range.
+        k_lo = max(0, -s)
+        k_hi = min(dur_samples, n_samples - s)
+        if k_lo >= k_hi:
+            continue
+        out[m, s + k_lo:s + k_hi] += amps[m] * pulse[k_lo:k_hi]
 
     return out
 

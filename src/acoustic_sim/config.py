@@ -176,5 +176,8 @@ class DetectionConfig:
     inject_position_error: bool = False
     position_error_std: float = 0.1       # metres — small at array scale
 
+    # ── CUDA acceleration ──────────────────────────────────────────────
+    use_cuda: bool = False
+
     # ── Output ──────────────────────────────────────────────────────────
     output_dir: str = "output/detection"

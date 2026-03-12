@@ -583,21 +583,27 @@ class EvasiveSource:
     _dt_cache: float = 0.0
 
     def _build_path(self, n_steps: int, dt: float) -> None:
-        """Pre-compute the random-walk trajectory."""
+        """Pre-compute the random-walk trajectory (vectorised)."""
         rng = np.random.default_rng(self.seed)
-        xs = np.empty(n_steps, dtype=np.float64)
-        ys = np.empty(n_steps, dtype=np.float64)
-        x, y = self.x0, self.y0
-        h = self.heading
-        for i in range(n_steps):
-            xs[i] = x
-            ys[i] = y
-            h += rng.normal(0.0, self.heading_var * dt)
-            spd = max(self.mean_speed + rng.normal(0.0, self.speed_var), 0.0)
-            x += spd * math.cos(h) * dt
-            y += spd * math.sin(h) * dt
-        self._xs = xs
-        self._ys = ys
+
+        # Generate all random increments at once.
+        heading_increments = rng.normal(0.0, self.heading_var * dt, n_steps)
+        speed_perturbations = rng.normal(0.0, self.speed_var, n_steps)
+
+        # Cumulative heading.
+        headings = self.heading + np.cumsum(heading_increments)
+        speeds = np.maximum(self.mean_speed + speed_perturbations, 0.0)
+
+        # Velocity components.
+        vx = speeds * np.cos(headings) * dt
+        vy = speeds * np.sin(headings) * dt
+
+        # Cumulative position from start.
+        self._xs = self.x0 + np.cumsum(vx)
+        self._ys = self.y0 + np.cumsum(vy)
+        # Shift so index 0 is the start position.
+        self._xs = np.concatenate([[self.x0], self._xs[:-1]])
+        self._ys = np.concatenate([[self.y0], self._ys[:-1]])
         self._dt_cache = dt
 
     def position_at(self, step: int, dt: float) -> tuple[float, float]:

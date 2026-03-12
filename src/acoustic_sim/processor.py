@@ -1,32 +1,36 @@
 """Matched field processor (MFP) for passive acoustic source detection.
 
 Implements the seismological back-projection technique applied to
-acoustics: for each candidate source position on a search grid, predict
-the travel times to all microphones, time-shift and stack the recorded
-traces, and measure the coherent beam power.  The grid point with the
-highest coherence is the estimated source location.
-
-The processor operates in sliding time windows with configurable length
-and overlap.  A bandpass filter bank isolates the expected drone
-harmonic frequencies before beamforming (critical — wind noise dominates
-if you beamform unfiltered broadband data).
+acoustics.  Fully vectorised with NumPy; optional CUDA acceleration
+via CuPy for the compute-intensive beam-power grid search.
 
 Robustness features
 ===================
-* **Multi-peak detection** — iterative peak-finding with exclusion
-  zones to detect multiple simultaneous sources.
-* **Sensor fault detection** — compare per-sensor power to the median;
-  outlier sensors are down-weighted in the beamformer.
-* **Transient blanking** — short-time energy thresholding zeros out
-  impulsive events (explosions) before they corrupt the MFP.
-* **Stationary source rejection** — coefficient-of-variation filter
-  on rolling beam-power history.
+* **Multi-peak detection** — iterative peak-finding with exclusion zones.
+* **Sensor fault detection** — median-power outlier down-weighting.
+* **Transient blanking** — short-time energy thresholding.
+* **Stationary source rejection** — CV filter on rolling beam-power history.
+* **Position self-calibration** — cross-correlation TDOA least-squares.
 """
 
 from __future__ import annotations
 
+from types import ModuleType
+
 import numpy as np
 from scipy import signal as sp_signal
+
+
+def _get_xp(use_cuda: bool) -> tuple[ModuleType, bool]:
+    """Return ``(array_module, is_cuda)`` — NumPy or CuPy."""
+    if use_cuda:
+        try:
+            import cupy  # type: ignore[import-untyped]
+            cupy.cuda.Device(0).compute_capability
+            return cupy, True
+        except Exception:
+            pass
+    return np, False
 
 
 # -----------------------------------------------------------------------
@@ -38,17 +42,17 @@ def compute_travel_times(
     grid_y: np.ndarray,
     mic_positions: np.ndarray,
     sound_speed: float = 343.0,
+    use_cuda: bool = False,
 ) -> np.ndarray:
-    """Pre-compute travel times from every grid point to every microphone.
-
-    Returns shape ``(n_gx, n_gy, n_mics)`` in seconds.
-    """
-    gx = grid_x[:, np.newaxis, np.newaxis]
-    gy = grid_y[np.newaxis, :, np.newaxis]
-    mx = mic_positions[:, 0][np.newaxis, np.newaxis, :]
-    my = mic_positions[:, 1][np.newaxis, np.newaxis, :]
-    dist = np.sqrt((gx - mx) ** 2 + (gy - my) ** 2)
-    return dist / sound_speed
+    """Pre-compute travel times.  Returns ``(n_gx, n_gy, n_mics)``."""
+    xp, _ = _get_xp(use_cuda)
+    gx = xp.asarray(grid_x)[:, None, None]
+    gy = xp.asarray(grid_y)[None, :, None]
+    mx = xp.asarray(mic_positions[:, 0])[None, None, :]
+    my = xp.asarray(mic_positions[:, 1])[None, None, :]
+    dist = xp.sqrt((gx - mx) ** 2 + (gy - my) ** 2)
+    result = dist / sound_speed
+    return result.get() if use_cuda and hasattr(result, "get") else np.asarray(result)
 
 
 # -----------------------------------------------------------------------
@@ -61,7 +65,7 @@ def create_filter_bank(
     bandwidth: float,
     sample_rate: float,
 ) -> list[np.ndarray]:
-    """Narrow bandpass filters centred on each harmonic below Nyquist."""
+    """Narrow bandpass SOS filters for each harmonic below Nyquist."""
     nyq = sample_rate / 2.0
     filters: list[np.ndarray] = []
     for k in range(1, n_harmonics + 1):
@@ -80,11 +84,11 @@ def apply_filter_bank(
     traces: np.ndarray,
     filters: list[np.ndarray],
 ) -> np.ndarray:
-    """Apply each bandpass filter and sum the outputs."""
+    """Apply each bandpass filter and sum the outputs (vectorised)."""
     out = np.zeros_like(traces)
     for sos in filters:
-        for i in range(traces.shape[0]):
-            out[i] += sp_signal.sosfilt(sos, traces[i])
+        # sosfilt along axis=1 processes all mics in one call.
+        out += sp_signal.sosfilt(sos, traces, axis=1)
     return out
 
 
@@ -97,29 +101,13 @@ def compute_sensor_weights(
     method: str = "median_power",
     fault_threshold: float = 10.0,
 ) -> np.ndarray:
-    """Compute per-sensor reliability weights.
-
-    Parameters
-    ----------
-    traces : (n_mics, n_samples)
-    method : str
-        ``"median_power"`` — sensors whose total power deviates from
-        the median by more than *fault_threshold*× are zeroed.
-    fault_threshold : float
-        Ratio above/below median that flags a faulty sensor.
-
-    Returns
-    -------
-    np.ndarray, shape ``(n_mics,)``
-        Weights in {0, 1}.
-    """
-    n_mics = traces.shape[0]
-    power = np.array([np.sum(traces[m] ** 2) for m in range(n_mics)])
-    median_p = np.median(power)
+    """Per-sensor reliability weights (vectorised)."""
+    power = np.sum(traces ** 2, axis=1)          # (n_mics,)
+    median_p = float(np.median(power))
     if median_p < 1e-30:
-        return np.ones(n_mics)
+        return np.ones(traces.shape[0])
     ratio = power / median_p
-    weights = np.ones(n_mics)
+    weights = np.ones(traces.shape[0])
     weights[ratio > fault_threshold] = 0.0
     weights[ratio < 1.0 / fault_threshold] = 0.0
     return weights
@@ -135,39 +123,27 @@ def blank_transients(
     subwindow_ms: float = 5.0,
     threshold_factor: float = 10.0,
 ) -> np.ndarray:
-    """Zero out sub-windows where short-time energy exceeds threshold.
-
-    A running median of sub-window energies is used as the reference.
-    Sub-windows with energy > *threshold_factor* × median are zeroed.
-
-    Returns a copy with transients blanked.
-    """
-    out = traces.copy()
+    """Zero out impulsive sub-windows (vectorised)."""
     n_mics, n_samples = traces.shape
     sub_len = max(int(subwindow_ms * 1e-3 / dt), 1)
     n_subs = n_samples // sub_len
-
     if n_subs < 3:
-        return out
+        return traces.copy()
 
-    # Compute per-sub-window energy (summed across all mics).
-    energies = np.zeros(n_subs)
-    for s in range(n_subs):
-        start = s * sub_len
-        end = start + sub_len
-        energies[s] = np.sum(traces[:, start:end] ** 2)
+    usable = n_subs * sub_len
+    # Reshape to (n_mics, n_subs, sub_len), sum energy per sub-window.
+    reshaped = traces[:, :usable].reshape(n_mics, n_subs, sub_len)
+    energies = np.sum(reshaped ** 2, axis=(0, 2))   # (n_subs,)
 
-    # Running median (use full-array median as a simple robust estimator).
-    med = np.median(energies)
+    med = float(np.median(energies))
     if med < 1e-30:
-        return out
+        return traces.copy()
 
-    for s in range(n_subs):
-        if energies[s] > threshold_factor * med:
-            start = s * sub_len
-            end = start + sub_len
-            out[:, start:end] = 0.0
-
+    bad = energies > threshold_factor * med          # (n_subs,) bool
+    out = traces.copy()
+    # Blank bad sub-windows.
+    bad_mask = np.repeat(bad, sub_len)               # (usable,) bool
+    out[:, :usable][:, bad_mask] = 0.0
     return out
 
 
@@ -181,24 +157,15 @@ def compute_beam_power(
     window_start: int,
     window_length: int,
     sensor_weights: np.ndarray | None = None,
+    use_cuda: bool = False,
 ) -> np.ndarray:
     """Compute normalised coherence map for one time window.
 
-    Vectorised: processes one microphone at a time, accumulating the
-    delay-and-sum stack across the full grid simultaneously.
-
-    Parameters
-    ----------
-    filtered_traces : (n_mics, n_samples)
-    travel_time_samples : (n_gx, n_gy, n_mics)  integer sample offsets
-    window_start, window_length : int
-    sensor_weights : (n_mics,) or None
-        Per-sensor weights (0 = exclude, 1 = include).
-
-    Returns
-    -------
-    np.ndarray, shape ``(n_gx, n_gy)``
+    Vectorised over mics; optional CUDA acceleration for the large
+    stack accumulation and beam-power reduction.
     """
+    xp, is_cuda = _get_xp(use_cuda)
+
     n_mics, n_samples = filtered_traces.shape
     n_gx, n_gy, _ = travel_time_samples.shape
 
@@ -206,46 +173,45 @@ def compute_beam_power(
         sensor_weights = np.ones(n_mics)
 
     active = sensor_weights >= 0.5
-    n_active = int(np.sum(active))
+    active_idx = np.where(active)[0]
+    n_active = len(active_idx)
     if n_active == 0:
         return np.zeros((n_gx, n_gy))
 
-    # Per-sensor power in the unshifted window (for normalisation).
-    total_indiv = 0.0
-    for m in range(n_mics):
-        if not active[m]:
-            continue
-        seg = filtered_traces[m, window_start:window_start + window_length]
-        total_indiv += float(np.sum(seg ** 2))
+    # Normalisation: sum of individual trace powers in the window.
+    window_data = filtered_traces[active, window_start:window_start + window_length]
+    total_indiv = float(np.sum(window_data ** 2))
     if total_indiv < 1e-30:
         return np.zeros((n_gx, n_gy))
-
     norm = n_active * total_indiv
 
-    # Accumulate the delay-and-sum stack one mic at a time.
-    # stack shape: (n_gx, n_gy, window_length) — accumulated across mics.
-    stack = np.zeros((n_gx, n_gy, window_length))
+    # Move to device if CUDA.
+    ft = xp.asarray(filtered_traces) if is_cuda else filtered_traces
+    tt = xp.asarray(travel_time_samples) if is_cuda else travel_time_samples
+    sw = xp.asarray(sensor_weights) if is_cuda else sensor_weights
 
-    for m in range(n_mics):
-        if not active[m]:
-            continue
-        w = sensor_weights[m]
-        shifts = travel_time_samples[:, :, m]  # (n_gx, n_gy) int
+    stack = xp.zeros((n_gx, n_gy, window_length), dtype=np.float64)
 
-        # For each unique shift value, batch-process all grid points
-        # that share that shift.
-        unique_shifts = np.unique(shifts)
+    for m_idx in active_idx:
+        w = float(sensor_weights[m_idx])
+        shifts = tt[:, :, int(m_idx)]  # (n_gx, n_gy)
+
+        unique_shifts = np.unique(travel_time_samples[:, :, int(m_idx)])
         for sh in unique_shifts:
             s = window_start + int(sh)
             e = s + window_length
             if s < 0 or e > n_samples:
                 continue
-            mask = shifts == sh
-            seg = filtered_traces[m, s:e]  # (window_length,)
-            stack[mask] += w * seg  # broadcast (n_matching, window_length) += (window_length,)
+            mask = shifts == int(sh)
+            seg = ft[int(m_idx), s:e]
+            stack[mask] += w * seg
 
-    beam = np.sum(stack ** 2, axis=2)  # (n_gx, n_gy)
-    return beam / norm
+    beam = xp.sum(stack ** 2, axis=2)
+
+    result = beam / norm
+    if is_cuda and hasattr(result, "get"):
+        return result.get()
+    return np.asarray(result)
 
 
 # -----------------------------------------------------------------------
@@ -260,14 +226,7 @@ def find_multiple_peaks(
     min_separation_m: float = 20.0,
     max_sources: int = 5,
 ) -> list[dict]:
-    """Find up to *max_sources* peaks in the coherence map.
-
-    Uses iterative peak-finding with exclusion zones: find the strongest
-    peak, mask a circle of ``min_separation_m`` around it, repeat.
-
-    Returns list of ``{x, y, coherence}`` dicts sorted by coherence
-    (descending).
-    """
+    """Find up to *max_sources* peaks with exclusion zones."""
     coh = coherence_map.copy()
     dx = grid_x[1] - grid_x[0] if len(grid_x) > 1 else 1.0
     dy = grid_y[1] - grid_y[0] if len(grid_y) > 1 else 1.0
@@ -279,18 +238,14 @@ def find_multiple_peaks(
         peak_val = float(np.max(coh))
         if peak_val < threshold:
             break
-        ix, iy = np.unravel_index(np.argmax(coh), coh.shape)
+        ix, iy = np.unravel_index(int(np.argmax(coh)), coh.shape)
         peaks.append({
             "x": float(grid_x[ix]),
             "y": float(grid_y[iy]),
             "coherence": peak_val,
         })
-        # Mask exclusion zone.
-        ix_lo = max(ix - excl_ix, 0)
-        ix_hi = min(ix + excl_ix + 1, coh.shape[0])
-        iy_lo = max(iy - excl_iy, 0)
-        iy_hi = min(iy + excl_iy + 1, coh.shape[1])
-        coh[ix_lo:ix_hi, iy_lo:iy_hi] = 0.0
+        coh[max(ix - excl_ix, 0):min(ix + excl_ix + 1, coh.shape[0]),
+            max(iy - excl_iy, 0):min(iy + excl_iy + 1, coh.shape[1])] = 0.0
 
     return peaks
 
@@ -306,7 +261,6 @@ def detect_stationary(
     """Identify grid points with persistently high, stable beam power."""
     if len(beam_power_history) < 2:
         return np.zeros(beam_power_history[0].shape, dtype=bool)
-
     stack = np.stack(beam_power_history, axis=0)
     mean = np.mean(stack, axis=0)
     std = np.std(stack, axis=0)
@@ -326,104 +280,66 @@ def calibrate_positions(
     sound_speed: float = 343.0,
     max_lag_m: float = 10.0,
 ) -> np.ndarray:
-    """Estimate corrected microphone positions via cross-correlation.
-
-    For each microphone pair, cross-correlate to find the observed
-    inter-sensor travel-time difference (TDOA).  Then solve a
-    least-squares problem to find position corrections that minimise
-    the residual between observed and predicted TDOAs.
-
-    Parameters
-    ----------
-    traces : (n_mics, n_samples)
-    reported_positions : (n_mics, 2)
-    dt : float
-    sound_speed : float
-    max_lag_m : float
-        Maximum expected position error [m] — limits the cross-correlation
-        search window.
-
-    Returns
-    -------
-    np.ndarray, shape ``(n_mics, 2)``
-        Corrected positions.
-    """
+    """Estimate corrected microphone positions via cross-correlation TDOA."""
     n_mics = traces.shape[0]
     max_lag_samples = int(np.ceil(max_lag_m / sound_speed / dt))
 
-    # ── Measure TDOAs via cross-correlation ─────────────────────────────
     pairs = []
     observed_tdoa = []
     predicted_tdoa = []
+    centre = np.mean(reported_positions, axis=0)
+
     for i in range(n_mics):
         for j in range(i + 1, n_mics):
-            cc = np.correlate(
-                traces[i, max_lag_samples:-max_lag_samples] if max_lag_samples > 0
-                else traces[i],
-                traces[j],
-                mode="full" if max_lag_samples == 0 else "valid",
-            )
+            if max_lag_samples > 0 and max_lag_samples < traces.shape[1] // 2:
+                cc = np.correlate(
+                    traces[i, max_lag_samples:-max_lag_samples],
+                    traces[j], mode="valid",
+                )
+            else:
+                cc = np.correlate(traces[i], traces[j], mode="full")
+                max_lag_samples = 0
             if len(cc) == 0:
                 continue
-            # For "valid" mode the lag axis is [-max_lag_samples, +max_lag_samples]
-            peak_idx = np.argmax(np.abs(cc))
-            if max_lag_samples > 0:
-                lag_samples = peak_idx - max_lag_samples
-            else:
-                lag_samples = peak_idx - (len(cc) // 2)
-            obs_tdoa = lag_samples * dt
+            peak_idx = int(np.argmax(np.abs(cc)))
+            lag = peak_idx - max_lag_samples if max_lag_samples > 0 else peak_idx - len(cc) // 2
+            obs = lag * dt
 
-            # Predicted TDOA from reported positions (relative to array centre).
-            d_i = np.linalg.norm(reported_positions[i] - np.mean(reported_positions, axis=0))
-            d_j = np.linalg.norm(reported_positions[j] - np.mean(reported_positions, axis=0))
-            pred_tdoa = (d_i - d_j) / sound_speed
+            d_i = float(np.linalg.norm(reported_positions[i] - centre))
+            d_j = float(np.linalg.norm(reported_positions[j] - centre))
+            pred = (d_i - d_j) / sound_speed
 
             pairs.append((i, j))
-            observed_tdoa.append(obs_tdoa)
-            predicted_tdoa.append(pred_tdoa)
+            observed_tdoa.append(obs)
+            predicted_tdoa.append(pred)
 
     if len(pairs) < n_mics:
-        # Not enough pairs — return reported positions unchanged.
         return reported_positions.copy()
-
-    # ── Least-squares position correction ───────────────────────────────
-    # Small correction model: δ_pos for each mic.
-    # For each pair (i,j), the TDOA residual ≈ (n̂_ij · δ_i - n̂_ij · δ_j) / c
-    # where n̂_ij is the unit vector from mic i to mic j.
-    # We solve for δ = [δx_0, δy_0, δx_1, δy_1, ...] (2*n_mics unknowns)
-    # with a zero-mean constraint to remove the translational ambiguity.
 
     n_pairs = len(pairs)
     A = np.zeros((n_pairs + 2, 2 * n_mics))
     b = np.zeros(n_pairs + 2)
 
-    for p, (i, j) in enumerate(pairs):
-        diff = reported_positions[j] - reported_positions[i]
-        dist = np.linalg.norm(diff)
-        if dist < 1e-6:
-            continue
-        n_hat = diff / dist
-        # ∂(TDOA)/∂(pos_i) ≈ -n_hat / c,  ∂(TDOA)/∂(pos_j) ≈ +n_hat / c
-        A[p, 2 * i] = -n_hat[0] / sound_speed
-        A[p, 2 * i + 1] = -n_hat[1] / sound_speed
-        A[p, 2 * j] = n_hat[0] / sound_speed
-        A[p, 2 * j + 1] = n_hat[1] / sound_speed
+    pairs_arr = np.array(pairs)                # (n_pairs, 2)
+    diffs = reported_positions[pairs_arr[:, 1]] - reported_positions[pairs_arr[:, 0]]  # (n_pairs, 2)
+    dists = np.linalg.norm(diffs, axis=1, keepdims=True)
+    dists = np.maximum(dists, 1e-6)
+    n_hats = diffs / dists                     # (n_pairs, 2)
+
+    for p in range(n_pairs):
+        i, j = pairs[p]
+        A[p, 2 * i]     = -n_hats[p, 0] / sound_speed
+        A[p, 2 * i + 1] = -n_hats[p, 1] / sound_speed
+        A[p, 2 * j]     =  n_hats[p, 0] / sound_speed
+        A[p, 2 * j + 1] =  n_hats[p, 1] / sound_speed
         b[p] = observed_tdoa[p] - predicted_tdoa[p]
 
-    # Zero-mean constraint (remove bulk translation).
-    for m in range(n_mics):
-        A[n_pairs, 2 * m] = 1.0 / n_mics
-        A[n_pairs + 1, 2 * m + 1] = 1.0 / n_mics
+    # Zero-mean constraint.
+    A[n_pairs, 0::2] = 1.0 / n_mics
+    A[n_pairs + 1, 1::2] = 1.0 / n_mics
 
-    # Solve via least-squares.
-    result = np.linalg.lstsq(A, b, rcond=None)
-    delta = result[0]
-
-    corrected = reported_positions.copy()
-    for m in range(n_mics):
-        corrected[m, 0] += delta[2 * m]
-        corrected[m, 1] += delta[2 * m + 1]
-
+    delta, *_ = np.linalg.lstsq(A, b, rcond=None)
+    corrected = reported_positions + delta.reshape(n_mics, 2)
     return corrected
 
 
@@ -448,7 +364,6 @@ def matched_field_process(
     harmonic_bandwidth: float = 20.0,
     stationary_history: int = 10,
     stationary_cv_threshold: float = 0.2,
-    # ── Robustness options ──
     enable_sensor_weights: bool = False,
     sensor_fault_threshold: float = 10.0,
     enable_transient_blanking: bool = False,
@@ -458,16 +373,12 @@ def matched_field_process(
     min_source_separation_m: float = 20.0,
     enable_position_calibration: bool = False,
     position_calibration_max_lag_m: float = 10.0,
+    use_cuda: bool = False,
 ) -> dict:
     """Run matched field processing on microphone traces.
 
-    Returns dict with keys:
-        ``detections``       — list of single-best-peak dicts per window
-        ``multi_detections`` — list of lists (multi-peak) per window
-        ``grid_x``, ``grid_y`` — 1-D grid coordinate arrays
-        ``filtered_traces``  — the bandpass-filtered traces
-        ``sensor_weights``   — per-sensor weights used
-        ``calibrated_positions`` — mic positions used (may differ from input)
+    Fully vectorised; optional ``use_cuda=True`` for GPU acceleration
+    of the beam-power grid search.
     """
     n_mics, n_samples = traces.shape
     fs = 1.0 / dt
@@ -498,10 +409,10 @@ def matched_field_process(
 
     # ── Build search grid ───────────────────────────────────────────────
     if grid_x_range is None:
-        cx = np.mean(used_positions[:, 0])
+        cx = float(np.mean(used_positions[:, 0]))
         grid_x_range = (cx - 100.0, cx + 100.0)
     if grid_y_range is None:
-        cy = np.mean(used_positions[:, 1])
+        cy = float(np.mean(used_positions[:, 1]))
         grid_y_range = (cy - 100.0, cy + 100.0)
 
     grid_x = np.arange(grid_x_range[0], grid_x_range[1] + 0.5 * grid_spacing,
@@ -510,16 +421,14 @@ def matched_field_process(
                         grid_spacing)
 
     # ── Travel-time table ───────────────────────────────────────────────
-    tt_sec = compute_travel_times(grid_x, grid_y, used_positions, sound_speed)
+    tt_sec = compute_travel_times(grid_x, grid_y, used_positions, sound_speed,
+                                  use_cuda=use_cuda)
     tt_samples = np.round(tt_sec / dt).astype(np.int64)
 
     # ── Bandpass filter bank ────────────────────────────────────────────
     filters = create_filter_bank(fundamental, n_harmonics,
                                  harmonic_bandwidth, fs)
-    if len(filters) == 0:
-        filtered = working_traces.copy()
-    else:
-        filtered = apply_filter_bank(working_traces, filters)
+    filtered = apply_filter_bank(working_traces, filters) if filters else working_traces.copy()
 
     # ── Sliding windows ─────────────────────────────────────────────────
     win_len = max(int(round(window_length * fs)), 1)
@@ -532,9 +441,8 @@ def matched_field_process(
     pos = 0
     while pos + win_len <= n_samples:
         coh = compute_beam_power(filtered, tt_samples, pos, win_len,
-                                 sensor_weights=weights)
+                                 sensor_weights=weights, use_cuda=use_cuda)
 
-        # Stationary rejection.
         history.append(coh.copy())
         if len(history) > stationary_history:
             history.pop(0)
@@ -544,7 +452,6 @@ def matched_field_process(
 
         t_center = (pos + win_len / 2.0) * dt
 
-        # ── Multi-peak detection ────────────────────────────────────────
         peaks = find_multiple_peaks(
             coh_masked, grid_x, grid_y,
             threshold=detection_threshold,
@@ -556,25 +463,20 @@ def matched_field_process(
             pk["detected"] = True
         multi_detections.append(peaks)
 
-        # ── Single-best detection (backward compatible) ─────────────────
         if peaks:
             best = peaks[0]
             detections.append({
                 "time": t_center,
-                "x": best["x"],
-                "y": best["y"],
+                "x": best["x"], "y": best["y"],
                 "coherence": best["coherence"],
-                "detected": True,
-                "beam_power_map": coh,
+                "detected": True, "beam_power_map": coh,
             })
         else:
             detections.append({
                 "time": t_center,
-                "x": float("nan"),
-                "y": float("nan"),
+                "x": float("nan"), "y": float("nan"),
                 "coherence": float(np.max(coh_masked)) if coh_masked.size else 0.0,
-                "detected": False,
-                "beam_power_map": coh,
+                "detected": False, "beam_power_map": coh,
             })
 
         pos += hop
@@ -582,8 +484,7 @@ def matched_field_process(
     return {
         "detections": detections,
         "multi_detections": multi_detections,
-        "grid_x": grid_x,
-        "grid_y": grid_y,
+        "grid_x": grid_x, "grid_y": grid_y,
         "filtered_traces": filtered,
         "sensor_weights": weights,
         "calibrated_positions": used_positions,
