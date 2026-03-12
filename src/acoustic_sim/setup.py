@@ -15,23 +15,38 @@ import numpy as np
 
 from acoustic_sim.domains import (
     DomainMeta,
+    create_echo_canyon_domain,
     create_hills_vegetation_domain,
     create_isotropic_domain,
+    create_urban_echo_domain,
     create_wind_domain,
 )
 from acoustic_sim.model import VelocityModel
 from acoustic_sim.receivers import (
     create_receiver_circle,
     create_receiver_concentric,
+    create_receiver_custom,
+    create_receiver_l_shaped,
     create_receiver_line,
+    create_receiver_log_spiral,
+    create_receiver_nested_circular,
+    create_receiver_random,
+    create_receiver_random_disk,
 )
 from acoustic_sim.sources import (
+    CircularOrbitSource,
+    CustomTrajectorySource,
+    EvasiveSource,
+    FigureEightSource,
+    LoiterApproachSource,
     MovingSource,
     StaticSource,
+    make_drone_harmonics,
     make_source_from_file,
     make_source_noise,
     make_source_propeller,
     make_source_tone,
+    make_stationary_tonal,
     make_wavelet_ricker,
 )
 
@@ -80,6 +95,12 @@ def build_domain(
             seed=seed,
             **grid_kw,
         )
+    if domain == "echo_canyon":
+        return create_echo_canyon_domain(air_velocity=velocity, **grid_kw)
+    if domain == "urban_echo":
+        return create_urban_echo_domain(
+            air_velocity=velocity, seed=seed, **grid_kw,
+        )
     raise ValueError(f"Unknown domain: {domain!r}")
 
 
@@ -99,14 +120,42 @@ def build_receivers(
     y1: float = 0.0,
     center_x: float = 0.0,
     center_y: float = 0.0,
+    spacing: float = 3.0,
+    n1: int = 8,
+    n2: int = 8,
+    positions: list[tuple[float, float]] | None = None,
+    seed: int = 42,
 ) -> np.ndarray:
-    """Build a receiver array.  Returns shape ``(n_recv, 2)``."""
+    """Build a receiver array.  Returns shape ``(n_recv, 2)``.
+
+    Parameters
+    ----------
+    array : str
+        One of ``"circular"``, ``"concentric"``, ``"linear"``,
+        ``"l_shaped"``, ``"random"``, ``"custom"``.
+    """
     if array == "circular":
         return create_receiver_circle(center_x, center_y, radius, count)
     if array == "concentric":
         return create_receiver_concentric(center_x, center_y, list(radii), count)
     if array == "linear":
         return create_receiver_line(x0, y0, x1, y1, count)
+    if array == "l_shaped":
+        return create_receiver_l_shaped(n1, n2, spacing, center_x, center_y)
+    if array == "random":
+        return create_receiver_random(count, x0, x1, y0, y1, seed=seed)
+    if array == "nested_circular":
+        return create_receiver_nested_circular(center_x, center_y,
+                                                inner_radius=0.15,
+                                                outer_radius=radius)
+    if array == "log_spiral":
+        return create_receiver_log_spiral(count, radius, center_x, center_y)
+    if array == "random_disk":
+        return create_receiver_random_disk(count, radius, center_x, center_y, seed)
+    if array == "custom":
+        if positions is None:
+            raise ValueError("array='custom' requires 'positions' argument")
+        return create_receiver_custom(positions)
     raise ValueError(f"Unknown array type: {array!r}")
 
 
@@ -161,15 +210,53 @@ def build_source(
     seed: int = 42,
     wav_path: str = "audio/input.wav",
     max_seconds: float | None = None,
-) -> StaticSource | MovingSource:
+    # ── Drone-detection specific ──
+    source_level_dB: float = 90.0,
+    harmonic_amplitudes: list[float] | None = None,
+    n_harmonics: int = 4,
+    fundamental_freq: float = 150.0,
+    # Circular orbit
+    orbit_cx: float = 0.0,
+    orbit_cy: float = 50.0,
+    orbit_radius: float = 40.0,
+    orbit_start_angle: float = 0.0,
+    # Figure-eight
+    fig8_cx: float = 0.0,
+    fig8_cy: float = 50.0,
+    fig8_x_amp: float = 40.0,
+    fig8_y_amp: float = 20.0,
+    fig8_x_freq: float = 0.1,
+    fig8_y_freq: float = 0.2,
+    fig8_phase_offset: float = 1.5708,
+    # Loiter-approach
+    loiter_orbit_cx: float = 0.0,
+    loiter_orbit_cy: float = 80.0,
+    loiter_orbit_radius: float = 30.0,
+    loiter_orbit_duration: float = 3.0,
+    loiter_approach_x: float = 0.0,
+    loiter_approach_y: float = 0.0,
+    # Evasive
+    evasive_heading: float = 0.0,
+    evasive_speed_var: float = 2.0,
+    evasive_heading_var: float = 0.3,
+    # Custom trajectory
+    trajectory_times: np.ndarray | None = None,
+    trajectory_positions: np.ndarray | None = None,
+    # Stationary tonal
+    stationary_n_harmonics: int = 4,
+    stationary_broadband: float = 0.1,
+) -> StaticSource | MovingSource | CircularOrbitSource | FigureEightSource | LoiterApproachSource | EvasiveSource | CustomTrajectorySource:
     """Build a source object with its signal.
 
     Parameters
     ----------
     source_type : str
-        ``"static"`` or ``"moving"``.
+        ``"static"``, ``"moving"``, ``"circular_orbit"``,
+        ``"figure_eight"``, ``"loiter_approach"``, ``"evasive"``, or
+        ``"custom_trajectory"``.
     signal_type : str
-        ``"ricker"``, ``"tone"``, ``"noise"``, ``"propeller"``, or ``"file"``.
+        ``"ricker"``, ``"tone"``, ``"noise"``, ``"propeller"``,
+        ``"file"``, ``"drone_harmonics"``, or ``"stationary_tonal"``.
     n_steps, dt, f_max
         Simulation timing — needed to generate the signal at the correct
         sample rate and length.
@@ -179,12 +266,56 @@ def build_source(
         freq=freq, blade_count=blade_count, rpm=rpm,
         harmonics=harmonics, seed=seed,
         wav_path=wav_path, max_seconds=max_seconds,
+        source_level_dB=source_level_dB,
+        harmonic_amplitudes=harmonic_amplitudes,
+        n_harmonics=n_harmonics,
+        fundamental_freq=fundamental_freq,
+        stationary_n_harmonics=stationary_n_harmonics,
+        stationary_broadband=stationary_broadband,
     )
+
     if source_type == "static":
         return StaticSource(x=x, y=y, signal=sig)
     if source_type == "moving":
         return MovingSource(x0=x, y0=y, x1=x1, y1=y1, speed=speed,
                             signal=sig, arc_height=arc_height)
+    if source_type == "circular_orbit":
+        omega = speed / max(orbit_radius, 1e-6)
+        return CircularOrbitSource(
+            cx=orbit_cx, cy=orbit_cy, radius=orbit_radius,
+            angular_velocity=omega, start_angle=orbit_start_angle, signal=sig,
+        )
+    if source_type == "figure_eight":
+        return FigureEightSource(
+            cx=fig8_cx, cy=fig8_cy,
+            x_amp=fig8_x_amp, y_amp=fig8_y_amp,
+            x_freq=fig8_x_freq, y_freq=fig8_y_freq,
+            phase_offset=fig8_phase_offset, signal=sig,
+        )
+    if source_type == "loiter_approach":
+        return LoiterApproachSource(
+            orbit_cx=loiter_orbit_cx, orbit_cy=loiter_orbit_cy,
+            orbit_radius=loiter_orbit_radius,
+            orbit_duration=loiter_orbit_duration,
+            approach_target_x=loiter_approach_x,
+            approach_target_y=loiter_approach_y,
+            approach_speed=speed, signal=sig,
+        )
+    if source_type == "evasive":
+        return EvasiveSource(
+            x0=x, y0=y, heading=evasive_heading,
+            mean_speed=speed, speed_var=evasive_speed_var,
+            heading_var=evasive_heading_var, signal=sig, seed=seed,
+        )
+    if source_type == "custom_trajectory":
+        if trajectory_times is None or trajectory_positions is None:
+            raise ValueError(
+                "source_type='custom_trajectory' requires "
+                "trajectory_times and trajectory_positions"
+            )
+        return CustomTrajectorySource(
+            times=trajectory_times, positions=trajectory_positions, signal=sig,
+        )
     raise ValueError(f"Unknown source type: {source_type!r}")
 
 
@@ -201,6 +332,12 @@ def _build_signal(
     seed: int,
     wav_path: str,
     max_seconds: float | None,
+    source_level_dB: float = 90.0,
+    harmonic_amplitudes: list[float] | None = None,
+    n_harmonics: int = 4,
+    fundamental_freq: float = 150.0,
+    stationary_n_harmonics: int = 4,
+    stationary_broadband: float = 0.1,
 ) -> np.ndarray:
     if kind == "ricker":
         return make_wavelet_ricker(n_steps, dt, freq)
@@ -217,4 +354,23 @@ def _build_signal(
     if kind == "file":
         return make_source_from_file(wav_path, n_steps, dt, f_max,
                                      max_seconds=max_seconds)
+    if kind == "drone_harmonics":
+        return make_drone_harmonics(
+            n_steps, dt,
+            fundamental=fundamental_freq,
+            n_harmonics=n_harmonics,
+            harmonic_amplitudes=harmonic_amplitudes,
+            source_level_dB=source_level_dB,
+            f_max=f_max,
+        )
+    if kind == "stationary_tonal":
+        return make_stationary_tonal(
+            n_steps, dt,
+            base_freq=freq,
+            n_harmonics=stationary_n_harmonics,
+            source_level_dB=source_level_dB,
+            broadband_level=stationary_broadband,
+            f_max=f_max,
+            seed=seed,
+        )
     raise ValueError(f"Unknown signal type: {kind!r}")
