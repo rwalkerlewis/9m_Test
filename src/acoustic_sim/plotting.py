@@ -697,3 +697,84 @@ def plot_vespagram(
     fig.savefig(output_path, dpi=170)
     plt.close(fig)
     print(f"Wrote vespagram to {output_path}")
+
+
+# =====================================================================
+#  Study comparison and multi-track plots
+# =====================================================================
+
+def plot_study_comparison(
+    labels: list[str],
+    metrics: dict[str, list[float]],
+    output_path: str = "study_comparison.png",
+    title: str = "Study Comparison",
+) -> None:
+    """Bar-chart comparison of metrics across study cases.
+
+    Parameters
+    ----------
+    labels : list of case names (x-axis categories).
+    metrics : dict mapping metric name → list of values (one per case).
+    """
+    n_metrics = len(metrics)
+    n_cases = len(labels)
+    if n_metrics == 0 or n_cases == 0:
+        return
+
+    fig, axes = plt.subplots(1, n_metrics, figsize=(5 * n_metrics, 5))
+    if n_metrics == 1:
+        axes = [axes]
+
+    x = np.arange(n_cases)
+    for ax, (name, values) in zip(axes, metrics.items()):
+        vals = [v if np.isfinite(v) else 0.0 for v in values]
+        ax.bar(x, vals, color="steelblue", edgecolor="black", linewidth=0.5)
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=7)
+        ax.set_ylabel(name)
+        ax.set_title(name, fontsize=9)
+
+    fig.suptitle(title, fontsize=11)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+    print(f"Wrote study comparison to {output_path}")
+
+
+def plot_multi_track(
+    tracks: list[dict],
+    true_positions_list: list[np.ndarray] | None = None,
+    output_path: str = "multi_track.png",
+    title: str = "Multi-Target Tracking",
+) -> None:
+    """Spatial plot of multiple tracks + optional true trajectories.
+
+    Parameters
+    ----------
+    tracks : list of track dicts from MultiTargetTracker.
+    true_positions_list : list of (n_steps, 2) arrays, one per true source.
+    """
+    fig, ax = plt.subplots(figsize=(8, 8))
+    colours = plt.cm.tab10.colors  # type: ignore[attr-defined]
+
+    if true_positions_list:
+        for i, tp in enumerate(true_positions_list):
+            c = colours[i % len(colours)]
+            ax.plot(tp[:, 0], tp[:, 1], "--", color=c, lw=1, alpha=0.5,
+                    label=f"True {i}")
+
+    for i, tr in enumerate(tracks):
+        c = colours[i % len(colours)]
+        pos = tr["positions"]
+        ax.plot(pos[:, 0], pos[:, 1], ".-", color=c, lw=1.5, ms=4,
+                label=f"Track {tr.get('track_id', i)}")
+
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
+    ax.set_title(title)
+    ax.legend(fontsize=7)
+    ax.set_aspect("equal")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+    print(f"Wrote multi-track plot to {output_path}")

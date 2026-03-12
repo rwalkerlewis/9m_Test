@@ -1,7 +1,8 @@
 """acoustic_sim — 2D acoustic simulation on user-defined velocity models.
 
 Extended with passive acoustic drone detection, tracking, and fire
-control capabilities using matched field processing.
+control capabilities using matched field processing.  Includes a
+comprehensive study framework for robustness analysis.
 """
 
 from acoustic_sim.model import (
@@ -32,6 +33,8 @@ from acoustic_sim.plotting import (
     plot_detection_gather,
     plot_domain,
     plot_gather,
+    plot_multi_track,
+    plot_study_comparison,
     plot_tracking,
     plot_velocity_model,
     plot_vespagram,
@@ -61,29 +64,49 @@ from acoustic_sim.sources import (
 )
 from acoustic_sim.domains import (
     DomainMeta,
+    create_echo_canyon_domain,
     create_hills_vegetation_domain,
     create_isotropic_domain,
+    create_urban_echo_domain,
     create_wind_domain,
 )
 from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
 from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
 from acoustic_sim.config import DetectionConfig
-from acoustic_sim.noise import add_all_noise, generate_sensor_noise, generate_wind_noise
+from acoustic_sim.noise import (
+    add_all_noise,
+    generate_sensor_noise,
+    generate_wind_noise,
+    inject_sensor_faults,
+    inject_transient,
+    perturb_mic_positions,
+)
 from acoustic_sim.processor import (
     apply_filter_bank,
+    blank_transients,
+    calibrate_positions,
     compute_beam_power,
+    compute_sensor_weights,
     compute_travel_times,
     create_filter_bank,
     detect_stationary,
+    find_multiple_peaks,
     matched_field_process,
 )
-from acoustic_sim.tracker import KalmanTracker, run_tracker
+from acoustic_sim.tracker import (
+    KalmanTracker,
+    MultiTargetTracker,
+    run_multi_tracker,
+    run_tracker,
+)
 from acoustic_sim.fire_control import (
     compute_engagement,
     compute_lead,
     pattern_diameter,
     pellet_velocity_at_range,
+    prioritize_threats,
     run_fire_control,
+    run_multi_fire_control,
     time_of_flight,
 )
 from acoustic_sim.validate import (
@@ -95,6 +118,18 @@ from acoustic_sim.validate import (
     run_all_checks,
 )
 from acoustic_sim.detection_main import run_detection_pipeline
+from acoustic_sim.studies import (
+    run_all_studies,
+    study_array_geometry,
+    study_echo_domains,
+    study_haphazard_array,
+    study_min_sensors,
+    study_mixed_failures,
+    study_multi_drone,
+    study_position_errors,
+    study_sensor_faults,
+    study_transient_robustness,
+)
 
 __all__ = [
     # ── Model ──
@@ -131,6 +166,8 @@ __all__ = [
     "plot_detection_gather",
     "plot_domain",
     "plot_gather",
+    "plot_multi_track",
+    "plot_study_comparison",
     "plot_tracking",
     "plot_velocity_model",
     "plot_vespagram",
@@ -159,8 +196,10 @@ __all__ = [
     "source_velocity_at",
     # ── Domains ──
     "DomainMeta",
+    "create_echo_canyon_domain",
     "create_hills_vegetation_domain",
     "create_isotropic_domain",
+    "create_urban_echo_domain",
     "create_wind_domain",
     # ── FDTD ──
     "FDTDConfig",
@@ -176,22 +215,33 @@ __all__ = [
     "add_all_noise",
     "generate_sensor_noise",
     "generate_wind_noise",
+    "inject_sensor_faults",
+    "inject_transient",
+    "perturb_mic_positions",
     # ── Processor ──
     "apply_filter_bank",
+    "blank_transients",
+    "calibrate_positions",
     "compute_beam_power",
+    "compute_sensor_weights",
     "compute_travel_times",
     "create_filter_bank",
     "detect_stationary",
+    "find_multiple_peaks",
     "matched_field_process",
     # ── Tracker ──
     "KalmanTracker",
+    "MultiTargetTracker",
+    "run_multi_tracker",
     "run_tracker",
     # ── Fire control ──
     "compute_engagement",
     "compute_lead",
     "pattern_diameter",
     "pellet_velocity_at_range",
+    "prioritize_threats",
     "run_fire_control",
+    "run_multi_fire_control",
     "time_of_flight",
     # ── Validate ──
     "check_amplitude",
@@ -202,4 +252,15 @@ __all__ = [
     "run_all_checks",
     # ── Pipeline ──
     "run_detection_pipeline",
+    # ── Studies ──
+    "run_all_studies",
+    "study_array_geometry",
+    "study_echo_domains",
+    "study_haphazard_array",
+    "study_min_sensors",
+    "study_mixed_failures",
+    "study_multi_drone",
+    "study_position_errors",
+    "study_sensor_faults",
+    "study_transient_robustness",
 ]
