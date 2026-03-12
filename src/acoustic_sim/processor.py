@@ -165,17 +165,27 @@ def compute_beam_power(
 
     coherence = np.zeros((n_gx, n_gy))
 
-    # Vectorised over grid — for each grid point, shift and stack.
+    # For each candidate grid point, undo the propagation delay for
+    # each microphone by reading from a *later* position in the trace
+    # (shifting the trace backward in time by the predicted travel
+    # time).  This aligns all arrivals as if the source were at the
+    # grid point.
     for ix in range(n_gx):
         for iy in range(n_gy):
             stack = np.zeros(window_length)
+            n_valid = 0
             for m in range(n_mics):
                 shift = int(travel_time_samples[ix, iy, m])
-                s = window_start - shift
+                # Read starting at (window_start + shift) to compensate
+                # for the propagation delay.
+                s = window_start + shift
                 e = s + window_length
                 if s < 0 or e > n_samples:
                     continue
                 stack += filtered_traces[m, s:e]
+                n_valid += 1
+            if n_valid == 0:
+                continue
             beam = np.sum(stack ** 2)
             coherence[ix, iy] = beam / total_indiv
 
