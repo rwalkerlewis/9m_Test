@@ -184,6 +184,9 @@ def compute_beam_power(
 ) -> np.ndarray:
     """Compute normalised coherence map for one time window.
 
+    Vectorised over the microphone axis for performance — the inner
+    loop runs over grid points only, not mics × samples.
+
     Parameters
     ----------
     filtered_traces : (n_mics, n_samples)
@@ -198,48 +201,48 @@ def compute_beam_power(
     """
     n_mics, n_samples = filtered_traces.shape
     n_gx, n_gy, _ = travel_time_samples.shape
-    wend = window_start + window_length
 
     if sensor_weights is None:
         sensor_weights = np.ones(n_mics)
 
-    # Count active sensors and compute per-sensor power for normalisation.
-    n_active = 0
-    total_indiv = 0.0
-    for m in range(n_mics):
-        if sensor_weights[m] < 0.5:
-            continue
-        seg = filtered_traces[m, window_start:wend]
-        total_indiv += np.sum(seg ** 2)
-        n_active += 1
-    if total_indiv < 1e-30 or n_active == 0:
+    active = sensor_weights >= 0.5
+    n_active = int(np.sum(active))
+    if n_active == 0:
         return np.zeros((n_gx, n_gy))
 
-    # Normalisation factor: for perfect coherence among N sensors,
-    # beam_power = N² × per-sensor-power, so dividing by N × total_indiv
-    # gives a coherence in [0, 1].
+    # Per-sensor power in the unshifted window (for normalisation).
+    total_indiv = 0.0
+    for m in range(n_mics):
+        if not active[m]:
+            continue
+        seg = filtered_traces[m, window_start:window_start + window_length]
+        total_indiv += float(np.sum(seg ** 2))
+    if total_indiv < 1e-30:
+        return np.zeros((n_gx, n_gy))
+
     norm = n_active * total_indiv
 
-    coherence = np.zeros((n_gx, n_gy))
+    # Pre-extract shifted windows for every (grid_point, mic) into a
+    # 4-D array: (n_gx, n_gy, n_active, window_length).
+    # Where the shifted window falls out of bounds, fill with zeros.
+    active_idx = np.where(active)[0]
+    n_act = len(active_idx)
+    shifted = np.zeros((n_gx, n_gy, n_act, window_length))
 
-    for ix in range(n_gx):
-        for iy in range(n_gy):
-            stack = np.zeros(window_length)
-            n_valid = 0
-            for m in range(n_mics):
-                if sensor_weights[m] < 0.5:
-                    continue
-                shift = int(travel_time_samples[ix, iy, m])
-                s = window_start + shift
+    for ai, m in enumerate(active_idx):
+        w = sensor_weights[m]
+        shifts = travel_time_samples[:, :, m]  # (n_gx, n_gy)
+        for ix in range(n_gx):
+            for iy in range(n_gy):
+                s = window_start + int(shifts[ix, iy])
                 e = s + window_length
-                if s < 0 or e > n_samples:
-                    continue
-                stack += sensor_weights[m] * filtered_traces[m, s:e]
-                n_valid += 1
-            if n_valid == 0:
-                continue
-            beam = np.sum(stack ** 2)
-            coherence[ix, iy] = beam / norm
+                if 0 <= s and e <= n_samples:
+                    shifted[ix, iy, ai, :] = w * filtered_traces[m, s:e]
+
+    # Stack across mics and compute beam power.
+    stacked = np.sum(shifted, axis=2)       # (n_gx, n_gy, window_length)
+    beam = np.sum(stacked ** 2, axis=2)     # (n_gx, n_gy)
+    coherence = beam / norm
 
     return coherence
 
