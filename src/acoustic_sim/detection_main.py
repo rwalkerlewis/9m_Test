@@ -38,8 +38,13 @@ if str(_root) not in sys.path:
 from acoustic_sim.config import DetectionConfig
 from acoustic_sim.domains import DomainMeta
 from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
-from acoustic_sim.fire_control import run_fire_control
-from acoustic_sim.noise import add_all_noise
+from acoustic_sim.fire_control import run_fire_control, run_multi_fire_control
+from acoustic_sim.noise import (
+    add_all_noise,
+    inject_sensor_faults,
+    inject_transient,
+    perturb_mic_positions,
+)
 from acoustic_sim.plotting import (
     plot_beam_power,
     plot_detection_domain,
@@ -50,7 +55,7 @@ from acoustic_sim.plotting import (
 from acoustic_sim.processor import matched_field_process
 from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
 from acoustic_sim.sources import source_velocity_at
-from acoustic_sim.tracker import run_tracker
+from acoustic_sim.tracker import run_tracker, run_multi_tracker
 from acoustic_sim.validate import run_all_checks
 
 
@@ -229,6 +234,44 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         sensor_level_dB=config.sensor_noise_level_dB,
         seed=config.seed,
     )
+    # Sensor fault injection.
+    faulted_sensors: list[int] = []
+    if config.inject_faults:
+        noisy_traces, faulted_sensors = inject_sensor_faults(
+            noisy_traces,
+            fault_type=config.fault_type,
+            fault_sensors=config.fault_sensors,
+            fault_fraction=config.fault_fraction,
+            fault_level_dB=config.fault_level_dB,
+            seed=config.seed + 10,
+        )
+        print(f"   Sensor faults injected: {config.fault_type} on sensors {faulted_sensors}")
+
+    # Transient (explosion) injection.
+    if config.inject_transient:
+        noisy_traces = inject_transient(
+            noisy_traces, dt,
+            event_time=config.transient_time,
+            event_pos=config.transient_pos,
+            mic_positions=receivers,
+            level_dB=config.transient_level_dB,
+            duration_ms=config.transient_duration_ms,
+            sound_speed=config.sound_speed,
+            seed=config.seed + 20,
+        )
+        print(f"   Transient injected: {config.transient_level_dB} dB at t={config.transient_time}s")
+
+    # Position error injection.
+    reported_positions = receivers
+    if config.inject_position_error:
+        reported_positions = perturb_mic_positions(
+            receivers,
+            error_std=config.position_error_std,
+            seed=config.seed + 30,
+        )
+        pos_errs = np.sqrt(np.sum((reported_positions - receivers) ** 2, axis=1))
+        print(f"   Position errors injected: mean={pos_errs.mean():.2f} m, max={pos_errs.max():.2f} m")
+
     print(f"   Noisy traces RMS: "
           f"{np.sqrt(np.mean(noisy_traces**2)):.2e} Pa")
 
@@ -249,9 +292,12 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
     )
 
     # ── 8. Matched field processor ──────────────────────────────────────
+    # Use reported (possibly perturbed) positions for the MFP.
+    mic_pos_for_mfp = reported_positions if config.inject_position_error else receivers
+
     print("[8/10] Running matched field processor")
     mfp_result = matched_field_process(
-        noisy_traces, receivers, dt,
+        noisy_traces, mic_pos_for_mfp, dt,
         sound_speed=config.sound_speed,
         grid_spacing=config.mfp_grid_spacing,
         grid_x_range=config.mfp_grid_x_range,
@@ -264,6 +310,16 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         harmonic_bandwidth=config.mfp_harmonic_bandwidth,
         stationary_history=config.mfp_stationary_history,
         stationary_cv_threshold=config.mfp_stationary_cv_threshold,
+        # Robustness options
+        enable_sensor_weights=config.enable_sensor_weights,
+        sensor_fault_threshold=config.sensor_fault_threshold,
+        enable_transient_blanking=config.enable_transient_blanking,
+        transient_subwindow_ms=config.transient_subwindow_ms,
+        transient_threshold_factor=config.transient_threshold_factor,
+        max_sources=config.max_sources,
+        min_source_separation_m=config.min_source_separation_m,
+        enable_position_calibration=config.enable_position_calibration,
+        position_calibration_max_lag_m=config.position_calibration_max_lag_m,
     )
     detections = mfp_result["detections"]
     n_detected = sum(1 for d in detections if d["detected"])
@@ -272,7 +328,21 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
           f"({100*n_detected/max(n_windows,1):.0f}%)")
 
     # ── 9. Tracker ──────────────────────────────────────────────────────
-    print("\n[9/10] Running Kalman tracker")
+    print("\n[9/10] Running tracker")
+    multi_tracks: list[dict] = []
+    if config.max_sources > 1 and "multi_detections" in mfp_result:
+        # Multi-target tracker.
+        det_times_arr = np.array([d["time"] for d in detections])
+        multi_tracks = run_multi_tracker(
+            mfp_result["multi_detections"], det_times_arr,
+            process_noise_std=config.tracker_process_noise_std,
+            measurement_noise_std=config.tracker_measurement_noise_std,
+            gate_threshold=config.tracker_gate_threshold,
+            max_missed=config.tracker_max_missed,
+        )
+        print(f"   Multi-target: {len(multi_tracks)} tracks")
+
+    # Always run single-target tracker for backward compatibility / metrics.
     track = run_tracker(
         detections,
         process_noise_std=config.tracker_process_noise_std,
@@ -281,10 +351,9 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
 
     # Compute localization error where we have both true and estimated.
     valid_track = ~np.isnan(track["positions"][:, 0])
+    mean_err = float("nan")
     if np.any(valid_track):
-        # Map detection times to true positions.
         det_times = track["times"][valid_track]
-        # Interpolate true positions at detection times.
         true_x_interp = np.interp(det_times, true_times, true_positions[:, 0])
         true_y_interp = np.interp(det_times, true_times, true_positions[:, 1])
         est_pos = track["positions"][valid_track]
@@ -293,7 +362,6 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         mean_err = float(np.mean(errors))
         print(f"   Mean localisation error: {mean_err:.1f} m")
 
-        # Velocity error.
         true_vx_interp = np.interp(det_times, true_times, true_velocities[:, 0])
         true_vy_interp = np.interp(det_times, true_times, true_velocities[:, 1])
         est_vel = track["velocities"][valid_track]
@@ -301,11 +369,29 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
                           (est_vel[:, 1] - true_vy_interp) ** 2)
         print(f"   Mean velocity error: {np.mean(vel_err):.1f} m/s")
     else:
-        mean_err = float("nan")
         print("   No valid track positions")
 
     # ── 10. Fire control ────────────────────────────────────────────────
     print("\n[10/10] Computing fire-control solution")
+    if multi_tracks:
+        fc_multi = run_multi_fire_control(
+            multi_tracks,
+            weapon_position=config.weapon_position,
+            muzzle_velocity=config.muzzle_velocity,
+            pellet_decel=config.pellet_decel,
+            pattern_spread_rate=config.pattern_spread_rate,
+            max_iterations=config.lead_max_iterations,
+            w_range=config.priority_w_range,
+            w_closing=config.priority_w_closing,
+            w_quality=config.priority_w_quality,
+        )
+        for i, t in enumerate(fc_multi):
+            n_f = int(np.sum(t["fire_control"]["can_fire"]))
+            print(f"   Track {t['track_id']}: priority={t['priority_score']:.2f}, "
+                  f"range={t['range']:.0f}m, fire_windows={n_f}")
+    else:
+        fc_multi = []
+
     fc = run_fire_control(
         track,
         weapon_position=config.weapon_position,
@@ -315,7 +401,7 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         max_iterations=config.lead_max_iterations,
     )
     n_fire = int(np.sum(fc["can_fire"]))
-    print(f"   Engagement windows: {n_fire}/{len(fc['can_fire'])}")
+    print(f"   Primary track engagement windows: {n_fire}/{len(fc['can_fire'])}")
 
     # ── Visualisations ──────────────────────────────────────────────────
     print("\nGenerating plots…")
@@ -374,6 +460,7 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         "config": config,
         "model": model,
         "receivers": receivers,
+        "reported_positions": reported_positions if config.inject_position_error else receivers,
         "drone_traces": drone_traces,
         "stationary_traces": stationary_traces,
         "noisy_traces": noisy_traces,
@@ -382,9 +469,14 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         "true_times": true_times,
         "mfp_result": mfp_result,
         "track": track,
+        "multi_tracks": multi_tracks,
         "fire_control": fc,
+        "fire_control_multi": fc_multi,
         "dt": dt,
         "n_steps": n_steps,
+        "detection_rate": n_detected / max(n_windows, 1),
+        "mean_loc_error": mean_err,
+        "faulted_sensors": faulted_sensors,
     }
 
 
@@ -404,7 +496,8 @@ def parse_args(argv: list[str] | None = None) -> DetectionConfig:
                             "loiter_approach", "evasive"],
                    help="Drone trajectory type")
     p.add_argument("--domain", default="isotropic",
-                   choices=["isotropic", "wind", "hills_vegetation"])
+                   choices=["isotropic", "wind", "hills_vegetation",
+                            "echo_canyon", "urban_echo"])
     p.add_argument("--total-time", type=float, default=2.0)
     p.add_argument("--dx", type=float, default=0.2)
     p.add_argument("--x-min", type=float, default=-100.0)
