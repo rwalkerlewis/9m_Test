@@ -491,6 +491,7 @@ def matched_field_process(
     n_subwindows: int = 4,
     # Detection
     detection_threshold: float = 0.25,
+    min_signal_rms: float = 0.0,  # Minimum RMS to consider window valid
     # Harmonics
     fundamental: float = 150.0,
     n_harmonics: int = 6,
@@ -528,10 +529,13 @@ def matched_field_process(
     fs = 1.0 / dt
 
     # ── Robustness pre-processing ───────────────────────────────────────
-    used_positions = mic_positions
+    # Use mic positions directly - they define where time series were sampled.
+    # No coordinate transformation needed.
+    used_positions = mic_positions.copy()
+    
     if enable_position_calibration:
         used_positions = calibrate_positions(
-            traces, mic_positions, dt, sound_speed,
+            traces, used_positions, dt, sound_speed,
             max_lag_m=position_calibration_max_lag_m,
         )
     working = traces
@@ -586,6 +590,29 @@ def matched_field_process(
 
     pos = 0
     while pos + win_len <= n_samples:
+        # Check signal level before processing.
+        window_data = working[:, pos:pos+win_len]
+        window_rms = float(np.sqrt(np.mean(window_data**2)))
+        
+        t_center = (pos + win_len / 2.0) * dt
+        
+        # Skip if signal too weak (no source present).
+        if window_rms < min_signal_rms:
+            detections.append({
+                "time": t_center,
+                "bearing": float("nan"),
+                "bearing_deg": float("nan"),
+                "range": float("nan"),
+                "x": float("nan"), "y": float("nan"),
+                "coherence": 0.0,
+                "detected": False,
+                "beam_power_map": np.zeros((len(azimuths), len(ranges))),
+                "window_rms": window_rms,
+            })
+            multi_detections.append([])
+            pos += hop
+            continue
+        
         # CSDM.
         csdm = compute_csdm(working, dt, pos, win_len,
                             freq_bins, n_subwindows)
@@ -606,8 +633,6 @@ def matched_field_process(
         stat_mask = detect_stationary(history, stationary_cv_threshold)
         bpm_masked = bpm.copy()
         bpm_masked[stat_mask] = 0.0
-
-        t_center = (pos + win_len / 2.0) * dt
 
         # Peak finding.
         peaks = find_peaks_polar(
@@ -635,6 +660,7 @@ def matched_field_process(
                 "coherence": best["coherence"],
                 "detected": True,
                 "beam_power_map": bpm,
+                "window_rms": window_rms,
             })
         else:
             detections.append({
@@ -646,6 +672,7 @@ def matched_field_process(
                 "coherence": 0.0,
                 "detected": False,
                 "beam_power_map": bpm,
+                "window_rms": window_rms,
             })
 
         pos += hop

@@ -169,12 +169,23 @@ def compute_engagement(
     decel: float = 1.5,
     spread_rate: float = 0.025,
     max_iter: int = 5,
+    max_position_uncertainty: float = 0.0,
+    max_engagement_range: float = 0.0,
 ) -> dict:
     """Determine whether engagement is feasible.
 
     The engagement envelope is the set of conditions where the shotgun
     pattern at the predicted intercept point is larger than the 2-σ
     position uncertainty from the tracker.
+
+    Parameters
+    ----------
+    max_position_uncertainty : float
+        Maximum allowed 2-sigma position uncertainty to engage (m).
+        If 0, only requires pattern > uncertainty.
+        If > 0, also requires pos_unc < max_position_uncertainty.
+    max_engagement_range : float
+        Maximum range (m) at which to engage. 0 = no limit.
 
     Returns
     -------
@@ -223,6 +234,12 @@ def compute_engagement(
     if tof == float("inf") or v_pellet <= 0:
         can_fire = False
         reason = "OUT_OF_RANGE"
+    elif max_engagement_range > 0 and current_range > max_engagement_range:
+        can_fire = False
+        reason = "TOO_FAR"
+    elif max_position_uncertainty > 0 and pos_unc > max_position_uncertainty:
+        can_fire = False
+        reason = "UNCERTAINTY_TOO_HIGH"
     elif pat_diam < pos_unc:
         can_fire = False
         reason = "UNCERTAINTY_TOO_HIGH"
@@ -252,6 +269,11 @@ def run_fire_control(
     pellet_decel: float = 1.5,
     pattern_spread_rate: float = 0.025,
     max_iterations: int = 5,
+    max_hits: int = 0,
+    hit_threshold: float = 3.0,
+    ground_truth_fn: callable | None = None,
+    max_position_uncertainty: float = 0.0,
+    max_engagement_range: float = 0.0,
 ) -> dict:
     """Compute fire-control solution at every tracked time step.
 
@@ -262,6 +284,19 @@ def run_fire_control(
     weapon_position : (x, y)
     muzzle_velocity, pellet_decel, pattern_spread_rate : float
     max_iterations : int
+    max_hits : int
+        Stop firing after this many confirmed hits. 0 = unlimited.
+        Requires *ground_truth_fn* to evaluate hits.
+    hit_threshold : float
+        Miss distance (m) below which a shot counts as a hit.
+    ground_truth_fn : callable or None
+        ``ground_truth_fn(t) -> (x, y)`` returns true target position.
+        Required when *max_hits* > 0.
+    max_position_uncertainty : float
+        Maximum allowed 2-sigma position uncertainty to engage (m).
+        If 0, only requires pattern > uncertainty.
+    max_engagement_range : float
+        Maximum range (m) at which to engage. 0 = no limit.
 
     Returns
     -------
@@ -279,6 +314,8 @@ def run_fire_control(
     ranges = np.zeros(N)
     intercepts = np.zeros((N, 2))
     reasons: list[str] = []
+    
+    hits = 0  # Track confirmed hits for max_hits
 
     for i in range(N):
         pos = track["positions"][i]
@@ -299,15 +336,29 @@ def run_fire_control(
                             max_iterations)
         eng = compute_engagement(pos, vel, cov, wp, muzzle_velocity,
                                  pellet_decel, pattern_spread_rate,
-                                 max_iterations)
+                                 max_iterations, max_position_uncertainty,
+                                 max_engagement_range)
 
         aim_bearings[i] = lead["aim_bearing"]
         lead_angles[i] = lead["lead_angle"]
         tofs[i] = lead["tof"]
-        can_fire[i] = eng["can_fire"]
         ranges[i] = eng["range"]
         intercepts[i] = lead["intercept_pos"]
-        reasons.append(eng["reason"])
+        
+        # Check if we've reached max hits for this target
+        if max_hits > 0 and hits >= max_hits:
+            can_fire[i] = False
+            reasons.append("TARGET_ENGAGED")
+        else:
+            can_fire[i] = eng["can_fire"]
+            reasons.append(eng["reason"])
+            if eng["can_fire"] and ground_truth_fn is not None:
+                t = track["times"][i]
+                gt_x, gt_y = ground_truth_fn(t)
+                ix, iy = lead["intercept_pos"]
+                miss = math.sqrt((ix - gt_x)**2 + (iy - gt_y)**2)
+                if miss < hit_threshold:
+                    hits += 1
 
     return {
         "times": track["times"].copy(),

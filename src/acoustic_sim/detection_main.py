@@ -219,6 +219,7 @@ def run_detection(
     window_overlap: float = 0.5,
     n_subwindows: int = 4,
     detection_threshold: float = 0.25,
+    min_signal_rms: float = 0.01,  # Minimum signal RMS to detect
     fundamental: float = 150.0,
     n_harmonics: int = 6,
     harmonic_bandwidth: float = 10.0,
@@ -287,6 +288,7 @@ def run_detection(
         window_overlap=window_overlap,
         n_subwindows=n_subwindows,
         detection_threshold=detection_threshold,
+        min_signal_rms=min_signal_rms,
         fundamental=fundamental,
         n_harmonics=n_harmonics,
         harmonic_bandwidth=harmonic_bandwidth,
@@ -526,6 +528,7 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         window_overlap=config.mfp_window_overlap,
         n_subwindows=config.mfp_n_subwindows,
         detection_threshold=config.mfp_detection_threshold,
+        min_signal_rms=config.mfp_min_signal_rms,
         fundamental=config.fundamental_freq,
         n_harmonics=config.n_harmonics,
         harmonic_bandwidth=config.mfp_harmonic_bandwidth,

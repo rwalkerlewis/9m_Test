@@ -88,3 +88,11 @@ if [ "$MPI_RANKS" -gt 1 ] 2>/dev/null; then
 else
     eval "$CMD"
 fi
+
+# Run detection evaluation if requested
+RUN_DETECTION=${RUN_DETECTION:-true}
+if [ "$RUN_DETECTION" = true ]; then
+    echo ""
+    echo "Running detection pipeline evaluation..."
+    python examples/run_full_pipeline.py "$OUTPUT_DIR" --source-speed "$SOURCE_SPEED"
+fi

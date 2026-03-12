@@ -132,6 +132,7 @@ class DetectionConfig:
     mfp_window_overlap: float = 0.5
     mfp_n_subwindows: int = 4
     mfp_detection_threshold: float = 0.25
+    mfp_min_signal_rms: float = 0.01  # Minimum RMS to consider detection valid
     mfp_harmonic_bandwidth: float = 10.0  # Hz half-width
     mfp_stationary_history: int = 10
     mfp_stationary_cv_threshold: float = 0.15
