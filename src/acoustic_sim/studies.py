@@ -585,23 +585,19 @@ def run_all_studies(
     base_config: DetectionConfig | None = None,
     output_dir: str = "output/studies",
 ) -> dict:
-    """Execute all nine studies and return combined results."""
+    """Execute all single-FDTD studies and return combined results.
+
+    Only studies that reuse one FDTD run (injecting faults, transients,
+    or position errors post-hoc) are included.  Studies that require
+    separate FDTD runs per case (array geometry, domain type, sensor
+    count) are available individually but not in the batch runner.
+    """
     results = {}
 
-    results["array_geometry"] = study_array_geometry(
-        base_config, os.path.join(output_dir, "array_geometry"))
-    results["min_sensors"] = study_min_sensors(
-        base_config, output_dir=os.path.join(output_dir, "min_sensors"))
     results["sensor_faults"] = study_sensor_faults(
         base_config, output_dir=os.path.join(output_dir, "sensor_faults"))
-    results["multi_drone"] = study_multi_drone(
-        base_config, output_dir=os.path.join(output_dir, "multi_drone"))
     results["transient"] = study_transient_robustness(
         base_config, output_dir=os.path.join(output_dir, "transient"))
-    results["haphazard"] = study_haphazard_array(
-        base_config, output_dir=os.path.join(output_dir, "haphazard"))
-    results["echo"] = study_echo_domains(
-        base_config, output_dir=os.path.join(output_dir, "echo"))
     results["position_error"] = study_position_errors(
         base_config, output_dir=os.path.join(output_dir, "position_error"))
     results["mixed"] = study_mixed_failures(

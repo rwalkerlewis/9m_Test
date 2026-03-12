@@ -439,6 +439,7 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         plot_beam_power,
         plot_detection_domain,
         plot_detection_gather,
+        plot_polar_beam_power,
         plot_tracking,
         plot_vespagram,
     )
@@ -614,6 +615,14 @@ def run_detection_pipeline(config: DetectionConfig | None = None) -> dict:
         output_path=str(out / "vespagram.png"),
         sound_speed=config.sound_speed,
     )
+
+    if "azimuths" in mfp and "ranges" in mfp:
+        plot_polar_beam_power(
+            mfp["detections"], mfp["azimuths"], mfp["ranges"],
+            tp,
+            array_center=(config.array_center_x, config.array_center_y),
+            output_path=str(out / "polar_beam_power.png"),
+        )
 
     # ── Summary ─────────────────────────────────────────────────────────
     elapsed = _time.time() - t_wall_start

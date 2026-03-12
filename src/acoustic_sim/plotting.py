@@ -778,3 +778,82 @@ def plot_multi_track(
     fig.savefig(output_path, dpi=150)
     plt.close(fig)
     print(f"Wrote multi-track plot to {output_path}")
+
+
+# =====================================================================
+#  Polar beam power plot
+# =====================================================================
+
+def plot_polar_beam_power(
+    results: list[dict],
+    azimuths: np.ndarray,
+    ranges: np.ndarray,
+    true_positions: np.ndarray,
+    array_center: tuple[float, float] = (500.0, 500.0),
+    output_path: str = "polar_beam_power.png",
+    n_panels: int = 6,
+) -> None:
+    """Multi-panel polar beam-power maps.
+
+    Each panel shows the beam power map for one time window in
+    polar coordinates (azimuth vs range), with the true and
+    estimated source positions.
+    """
+    n = len(results)
+    if n == 0:
+        return
+    n_panels = min(n_panels, n)
+    indices = np.linspace(0, n - 1, n_panels, dtype=int)
+
+    ncols = min(3, n_panels)
+    nrows = int(np.ceil(n_panels / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows))
+    if n_panels == 1:
+        axes = np.array([[axes]])
+    axes = np.atleast_2d(axes)
+
+    cx, cy = array_center
+    az_deg = np.degrees(azimuths)
+
+    for panel, idx in enumerate(indices):
+        r = results[idx]
+        row, col = divmod(panel, ncols)
+        ax = axes[row, col]
+
+        bpm = r.get("beam_power_map", None)
+        if bpm is None:
+            continue
+
+        ax.imshow(
+            bpm.T, origin="lower", aspect="auto",
+            extent=[az_deg[0], az_deg[-1], ranges[0], ranges[-1]],
+            cmap="hot", interpolation="bicubic",
+        )
+
+        # True position → polar.
+        n_true = true_positions.shape[0]
+        true_idx = min(int(idx * n_true / max(n, 1)), n_true - 1)
+        tp = true_positions[true_idx]
+        true_az = np.degrees(np.arctan2(tp[1] - cy, tp[0] - cx)) % 360
+        true_rng = np.hypot(tp[0] - cx, tp[1] - cy)
+        ax.plot(true_az, true_rng, "ro", ms=5)
+
+        # Estimated.
+        if r["detected"]:
+            ax.plot(r.get("bearing_deg", 0), r.get("range", 0), "cx", ms=6, mew=2)
+
+        ax.set_title(f"t={r['time']:.2f}s", fontsize=8)
+        ax.set_xlabel("Azimuth [°]")
+        if col == 0:
+            ax.set_ylabel("Range [m]")
+        ax.tick_params(labelsize=6)
+
+    for panel in range(n_panels, nrows * ncols):
+        row, col = divmod(panel, ncols)
+        axes[row, col].set_visible(False)
+
+    fig.suptitle("Polar Beam Power (MVDR)")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+    print(f"Wrote polar beam power plot to {output_path}")
