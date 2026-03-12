@@ -184,8 +184,8 @@ def compute_beam_power(
 ) -> np.ndarray:
     """Compute normalised coherence map for one time window.
 
-    Vectorised over the microphone axis for performance — the inner
-    loop runs over grid points only, not mics × samples.
+    Vectorised: processes one microphone at a time, accumulating the
+    delay-and-sum stack across the full grid simultaneously.
 
     Parameters
     ----------
@@ -222,29 +222,30 @@ def compute_beam_power(
 
     norm = n_active * total_indiv
 
-    # Pre-extract shifted windows for every (grid_point, mic) into a
-    # 4-D array: (n_gx, n_gy, n_active, window_length).
-    # Where the shifted window falls out of bounds, fill with zeros.
-    active_idx = np.where(active)[0]
-    n_act = len(active_idx)
-    shifted = np.zeros((n_gx, n_gy, n_act, window_length))
+    # Accumulate the delay-and-sum stack one mic at a time.
+    # stack shape: (n_gx, n_gy, window_length) — accumulated across mics.
+    stack = np.zeros((n_gx, n_gy, window_length))
 
-    for ai, m in enumerate(active_idx):
+    for m in range(n_mics):
+        if not active[m]:
+            continue
         w = sensor_weights[m]
-        shifts = travel_time_samples[:, :, m]  # (n_gx, n_gy)
-        for ix in range(n_gx):
-            for iy in range(n_gy):
-                s = window_start + int(shifts[ix, iy])
-                e = s + window_length
-                if 0 <= s and e <= n_samples:
-                    shifted[ix, iy, ai, :] = w * filtered_traces[m, s:e]
+        shifts = travel_time_samples[:, :, m]  # (n_gx, n_gy) int
 
-    # Stack across mics and compute beam power.
-    stacked = np.sum(shifted, axis=2)       # (n_gx, n_gy, window_length)
-    beam = np.sum(stacked ** 2, axis=2)     # (n_gx, n_gy)
-    coherence = beam / norm
+        # For each unique shift value, batch-process all grid points
+        # that share that shift.
+        unique_shifts = np.unique(shifts)
+        for sh in unique_shifts:
+            s = window_start + int(sh)
+            e = s + window_length
+            if s < 0 or e > n_samples:
+                continue
+            mask = shifts == sh
+            seg = filtered_traces[m, s:e]  # (window_length,)
+            stack[mask] += w * seg  # broadcast (n_matching, window_length) += (window_length,)
 
-    return coherence
+    beam = np.sum(stack ** 2, axis=2)  # (n_gx, n_gy)
+    return beam / norm
 
 
 # -----------------------------------------------------------------------
