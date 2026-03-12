@@ -1,18 +1,39 @@
 """Source signal generators and source-position helpers for FDTD.
 
 Supports audio-file sources (WAV), synthetic propeller / tone / noise
-generators, and the classic Ricker wavelet.  Each source produces a 1-D
-time-series that the FDTD solver injects at the source grid location.
+generators, drone harmonic signals, and the classic Ricker wavelet.
+Each source produces a 1-D time-series that the FDTD solver injects at
+the source grid location.
+
+Trajectory helpers
+==================
+Every source class exposes ``position_at(step, dt) -> (x, y)``.
+The standalone helper ``source_velocity_at`` computes instantaneous
+velocity via finite differences for *any* source that implements
+``position_at``.
+
+Available trajectory types:
+
+* ``StaticSource`` — fixed position
+* ``MovingSource`` — linear A→B with optional parabolic arc
+* ``CircularOrbitSource`` — circular orbit
+* ``FigureEightSource`` — Lissajous figure-eight
+* ``LoiterApproachSource`` — orbit then linear approach
+* ``EvasiveSource`` — random-walk heading overlaid on mean course
+* ``CustomTrajectorySource`` — user-supplied (t, x, y) arrays
 """
 
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dc_field
 
 import numpy as np
 from scipy import signal as sp_signal
 from scipy.io import wavfile
+
+# Reference pressure in air (20 µPa, threshold of hearing).
+_P_REF = 20e-6  # Pa
 
 
 # ---------------------------------------------------------------------------
@@ -228,6 +249,119 @@ def make_source_from_file(
     return sig
 
 
+def make_drone_harmonics(
+    n_steps: int,
+    dt: float,
+    fundamental: float = 150.0,
+    n_harmonics: int = 4,
+    harmonic_amplitudes: list[float] | None = None,
+    source_level_dB: float = 90.0,
+    f_max: float | None = None,
+) -> np.ndarray:
+    """Synthetic drone rotor signal as a sum of harmonics.
+
+    Parameters
+    ----------
+    n_steps : int
+        Number of simulation time-steps.
+    dt : float
+        Time-step size [s].
+    fundamental : float
+        Fundamental rotor frequency [Hz], default 150 Hz.
+    n_harmonics : int
+        Number of harmonics (1 = fundamental only).
+    harmonic_amplitudes : list[float] or None
+        Relative amplitude weights for each harmonic.
+        Default ``[1.0, 0.6, 0.3, 0.15]``.
+    source_level_dB : float
+        Source level in dB re 20 µPa at 1 m, default 90 dB.
+    f_max : float or None
+        Maximum resolvable frequency — harmonics above this are skipped.
+
+    Returns
+    -------
+    np.ndarray
+        Signal of length *n_steps* with peak amplitude equal to the
+        physical source pressure in Pascals.  Use with
+        ``FDTDConfig(source_amplitude=1.0)`` so the FDTD injects the
+        signal directly in Pascals.
+
+    Notes
+    -----
+    At 90 dB re 20 µPa the source pressure is::
+
+        p_source = 20e-6 * 10^(90/20) ≈ 0.632 Pa
+
+    At 100 m (1/r decay) the received level is ≈ 50 dB.
+    """
+    if harmonic_amplitudes is None:
+        harmonic_amplitudes = [1.0, 0.6, 0.3, 0.15]
+    # Extend or truncate amplitude list to n_harmonics.
+    amps = list(harmonic_amplitudes)
+    while len(amps) < n_harmonics:
+        amps.append(amps[-1] * 0.5)
+    amps = amps[:n_harmonics]
+
+    t = np.arange(n_steps) * dt
+    sig = np.zeros(n_steps, dtype=np.float64)
+    for k in range(n_harmonics):
+        freq_k = fundamental * (k + 1)
+        if f_max is not None and freq_k > f_max:
+            break
+        sig += amps[k] * np.sin(2.0 * np.pi * freq_k * t)
+
+    # Scale so peak equals physical source pressure.
+    p_source = _P_REF * 10.0 ** (source_level_dB / 20.0)
+    mx = np.max(np.abs(sig))
+    if mx > 1e-30:
+        sig *= p_source / mx
+
+    return sig
+
+
+def make_stationary_tonal(
+    n_steps: int,
+    dt: float,
+    base_freq: float = 60.0,
+    n_harmonics: int = 4,
+    source_level_dB: float = 70.0,
+    broadband_level: float = 0.1,
+    f_max: float | None = None,
+    seed: int = 99,
+) -> np.ndarray:
+    """Tonal signal for a stationary coherent noise source.
+
+    Generates harmonics at *base_freq*, 2·base_freq, … plus broadband
+    noise, scaled to physical Pascals.
+    """
+    t = np.arange(n_steps) * dt
+    sig = np.zeros(n_steps, dtype=np.float64)
+    for k in range(1, n_harmonics + 1):
+        freq_k = base_freq * k
+        if f_max is not None and freq_k > f_max:
+            break
+        amp = 1.0 / k
+        sig += amp * np.sin(2.0 * np.pi * freq_k * t)
+
+    # Broadband component.
+    rng = np.random.default_rng(seed)
+    fs_sim = 1.0 / dt
+    bb = rng.standard_normal(n_steps)
+    nyq = fs_sim / 2.0
+    hi = min(base_freq * (n_harmonics + 2), nyq * 0.95)
+    lo = max(base_freq * 0.5, 1.0)
+    if hi > lo:
+        sos = sp_signal.butter(2, [lo, hi], btype="bandpass", fs=fs_sim, output="sos")
+        bb = sp_signal.sosfilt(sos, bb)
+    sig += broadband_level * bb / max(np.max(np.abs(bb)), 1e-30)
+
+    p_source = _P_REF * 10.0 ** (source_level_dB / 20.0)
+    mx = np.max(np.abs(sig))
+    if mx > 1e-30:
+        sig *= p_source / mx
+    return sig
+
+
 # ---------------------------------------------------------------------------
 # Source position helpers
 # ---------------------------------------------------------------------------
@@ -272,6 +406,260 @@ class MovingSource:
         # Parabolic arc: peaks at frac=0.5
         y += self.arc_height * 4.0 * frac * (1.0 - frac)
         return (x, y)
+
+
+@dataclass
+class CircularOrbitSource:
+    """Drone orbiting a centre point at constant angular velocity.
+
+    Parameters
+    ----------
+    cx, cy : float
+        Orbit centre.
+    radius : float
+        Orbit radius [m].
+    angular_velocity : float
+        Angular speed [rad/s].  Alternatively set *speed* and compute
+        ``angular_velocity = speed / radius``.
+    start_angle : float
+        Starting angle in radians (0 = +x axis).
+    signal : np.ndarray
+        Source waveform (length = n_steps).
+    """
+
+    cx: float
+    cy: float
+    radius: float
+    angular_velocity: float
+    start_angle: float
+    signal: np.ndarray
+
+    def position_at(self, step: int, dt: float) -> tuple[float, float]:
+        t = step * dt
+        theta = self.start_angle + self.angular_velocity * t
+        x = self.cx + self.radius * math.cos(theta)
+        y = self.cy + self.radius * math.sin(theta)
+        return (x, y)
+
+
+@dataclass
+class FigureEightSource:
+    """Lissajous figure-eight trajectory.
+
+    Parameters
+    ----------
+    cx, cy : float
+        Trajectory centre.
+    x_amp, y_amp : float
+        Amplitude along each axis [m].
+    x_freq, y_freq : float
+        Angular frequencies (in cycles/s) for each axis.
+    phase_offset : float
+        Phase offset for the y-axis [rad].
+    signal : np.ndarray
+        Source waveform.
+    """
+
+    cx: float
+    cy: float
+    x_amp: float
+    y_amp: float
+    x_freq: float
+    y_freq: float
+    phase_offset: float
+    signal: np.ndarray
+
+    def position_at(self, step: int, dt: float) -> tuple[float, float]:
+        t = step * dt
+        x = self.cx + self.x_amp * math.sin(2.0 * math.pi * self.x_freq * t)
+        y = self.cy + self.y_amp * math.sin(
+            2.0 * math.pi * self.y_freq * t + self.phase_offset
+        )
+        return (x, y)
+
+
+@dataclass
+class LoiterApproachSource:
+    """Drone orbits at standoff, then transitions to linear approach.
+
+    During ``t < orbit_duration`` the drone circles at
+    ``(orbit_cx, orbit_cy)`` with the given radius and speed.
+    After the orbit phase it flies a straight line toward the approach
+    target at ``approach_speed``.
+
+    Parameters
+    ----------
+    orbit_cx, orbit_cy : float
+        Orbit centre.
+    orbit_radius : float
+        Orbit radius [m].
+    orbit_duration : float
+        Time spent orbiting [s].
+    approach_target_x, approach_target_y : float
+        Point the drone flies toward after the orbit phase.
+    approach_speed : float
+        Linear approach speed [m/s].
+    signal : np.ndarray
+        Source waveform.
+    """
+
+    orbit_cx: float
+    orbit_cy: float
+    orbit_radius: float
+    orbit_duration: float
+    approach_target_x: float
+    approach_target_y: float
+    approach_speed: float
+    signal: np.ndarray
+
+    def position_at(self, step: int, dt: float) -> tuple[float, float]:
+        t = step * dt
+        omega = self.approach_speed / max(self.orbit_radius, 1e-6)
+
+        if t <= self.orbit_duration:
+            # Orbiting phase.
+            theta = omega * t
+            x = self.orbit_cx + self.orbit_radius * math.cos(theta)
+            y = self.orbit_cy + self.orbit_radius * math.sin(theta)
+            return (x, y)
+
+        # Transition point (position at end of orbit).
+        theta_end = omega * self.orbit_duration
+        x_start = self.orbit_cx + self.orbit_radius * math.cos(theta_end)
+        y_start = self.orbit_cy + self.orbit_radius * math.sin(theta_end)
+
+        # Approach phase: linear toward target.
+        dx = self.approach_target_x - x_start
+        dy = self.approach_target_y - y_start
+        dist = math.hypot(dx, dy)
+        if dist < 1e-6:
+            return (x_start, y_start)
+
+        dt_approach = t - self.orbit_duration
+        frac = min((self.approach_speed * dt_approach) / dist, 1.0)
+        x = x_start + frac * dx
+        y = y_start + frac * dy
+        return (x, y)
+
+
+@dataclass
+class EvasiveSource:
+    """Random-walk heading overlaid on a general course.
+
+    The trajectory is pre-computed on construction via ``__post_init__``
+    to ensure reproducibility when many FDTD steps query the same path.
+
+    Parameters
+    ----------
+    x0, y0 : float
+        Start position.
+    heading : float
+        General heading [rad].
+    mean_speed : float
+        Mean forward speed [m/s].
+    speed_var : float
+        Standard deviation of speed perturbation [m/s].
+    heading_var : float
+        Standard deviation of heading perturbation per second [rad/s].
+    signal : np.ndarray
+        Source waveform.
+    seed : int
+        RNG seed.
+    _dt_cache : float
+        Internal — timestep used to pre-compute the path (set automatically).
+    """
+
+    x0: float
+    y0: float
+    heading: float
+    mean_speed: float
+    speed_var: float
+    heading_var: float
+    signal: np.ndarray
+    seed: int = 42
+    # Cached trajectory (filled by __post_init__).
+    _xs: np.ndarray = dc_field(default_factory=lambda: np.empty(0), repr=False)
+    _ys: np.ndarray = dc_field(default_factory=lambda: np.empty(0), repr=False)
+    _dt_cache: float = 0.0
+
+    def _build_path(self, n_steps: int, dt: float) -> None:
+        """Pre-compute the random-walk trajectory."""
+        rng = np.random.default_rng(self.seed)
+        xs = np.empty(n_steps, dtype=np.float64)
+        ys = np.empty(n_steps, dtype=np.float64)
+        x, y = self.x0, self.y0
+        h = self.heading
+        for i in range(n_steps):
+            xs[i] = x
+            ys[i] = y
+            h += rng.normal(0.0, self.heading_var * dt)
+            spd = max(self.mean_speed + rng.normal(0.0, self.speed_var), 0.0)
+            x += spd * math.cos(h) * dt
+            y += spd * math.sin(h) * dt
+        self._xs = xs
+        self._ys = ys
+        self._dt_cache = dt
+
+    def position_at(self, step: int, dt: float) -> tuple[float, float]:
+        # Lazy build on first call (or if dt changed).
+        if len(self._xs) == 0 or abs(self._dt_cache - dt) > 1e-15:
+            self._build_path(len(self.signal), dt)
+        idx = min(step, len(self._xs) - 1)
+        return (float(self._xs[idx]), float(self._ys[idx]))
+
+
+@dataclass
+class CustomTrajectorySource:
+    """User-supplied trajectory as (t, x, y) arrays.
+
+    Positions are linearly interpolated between the supplied waypoints.
+
+    Parameters
+    ----------
+    times : np.ndarray
+        1-D array of time values [s].
+    positions : np.ndarray
+        2-D array shape ``(N, 2)`` of (x, y) positions.
+    signal : np.ndarray
+        Source waveform.
+    """
+
+    times: np.ndarray
+    positions: np.ndarray
+    signal: np.ndarray
+
+    def position_at(self, step: int, dt: float) -> tuple[float, float]:
+        t = step * dt
+        x = float(np.interp(t, self.times, self.positions[:, 0]))
+        y = float(np.interp(t, self.times, self.positions[:, 1]))
+        return (x, y)
+
+
+# ---------------------------------------------------------------------------
+# Velocity helper (works with any source that has position_at)
+# ---------------------------------------------------------------------------
+
+def source_velocity_at(
+    source: object,
+    step: int,
+    dt: float,
+    eps_steps: int = 1,
+) -> tuple[float, float]:
+    """Compute instantaneous velocity via central finite differences.
+
+    Works with *any* source object that exposes
+    ``position_at(step, dt) -> (x, y)``.
+
+    Returns ``(vx, vy)`` in m/s.
+    """
+    s0 = max(step - eps_steps, 0)
+    s1 = step + eps_steps
+    x0, y0 = source.position_at(s0, dt)  # type: ignore[union-attr]
+    x1, y1 = source.position_at(s1, dt)  # type: ignore[union-attr]
+    delta_t = (s1 - s0) * dt
+    if delta_t < 1e-30:
+        return (0.0, 0.0)
+    return ((x1 - x0) / delta_t, (y1 - y0) / delta_t)
 
 
 # ---------------------------------------------------------------------------
