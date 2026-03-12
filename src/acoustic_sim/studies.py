@@ -26,7 +26,12 @@ from pathlib import Path
 import numpy as np
 
 from acoustic_sim.config import DetectionConfig
-from acoustic_sim.detection_main import run_detection_pipeline
+from acoustic_sim.detection_main import (
+    evaluate_results,
+    run_detection,
+    run_detection_pipeline,
+    simulate_scenario,
+)
 from acoustic_sim.plotting import plot_study_comparison
 
 
@@ -161,22 +166,48 @@ def study_sensor_faults(
     fault_fractions: tuple[float, ...] = (0.0, 0.1, 0.2, 0.3, 0.5),
     output_dir: str = "output/studies/sensor_faults",
 ) -> dict:
-    """Sweep fault fraction with and without robust sensor weighting."""
-    rows: list[dict] = []
+    """Sweep fault fraction with and without robust sensor weighting.
 
+    Runs FDTD **once**, then injects faults post-hoc and re-runs
+    detection on the same base traces for each (fraction, mitigate)
+    combination.
+    """
+    from acoustic_sim.noise import inject_sensor_faults
+
+    # Single FDTD run for clean traces.
+    cfg = _base_cfg(base_config)
+    print("\n>>> Sensor fault study: generating base traces (single FDTD)…")
+    scenario = simulate_scenario(cfg)
+    clean_traces = scenario["traces"].copy()
+
+    rows: list[dict] = []
     for frac in fault_fractions:
         for mitigate in [False, True]:
             label = f"f={frac:.0%}" + (" +mitig" if mitigate else " raw")
-            cfg = _base_cfg(base_config)
-            cfg.inject_faults = frac > 0
-            cfg.fault_fraction = frac
-            cfg.fault_type = "elevated_noise"
-            cfg.enable_sensor_weights = mitigate
-            cfg.output_dir = os.path.join(output_dir, label.replace(" ", "_"))
+            print(f"\n>>> Sensor fault study: {label} (detection only)")
 
-            print(f"\n>>> Sensor fault study: {label}")
-            result = run_detection_pipeline(cfg)
-            m = _collect(result)
+            # Inject faults on a copy of the clean traces.
+            if frac > 0:
+                traces, _ = inject_sensor_faults(
+                    clean_traces, fault_type="elevated_noise",
+                    fault_fraction=frac, seed=cfg.seed + 10,
+                )
+            else:
+                traces = clean_traces.copy()
+
+            det = run_detection(
+                traces, scenario["mic_positions"], scenario["dt"],
+                sound_speed=cfg.sound_speed,
+                weapon_position=cfg.weapon_position,
+                enable_sensor_weights=mitigate,
+                grid_x_range=cfg.mfp_grid_x_range,
+                grid_y_range=cfg.mfp_grid_y_range,
+            )
+            m = _collect(evaluate_results(
+                det, scenario["true_positions"],
+                scenario["true_velocities"], scenario["true_times"],
+                weapon_position=cfg.weapon_position,
+            ))
             m["label"] = label
             rows.append(m)
 
@@ -255,9 +286,18 @@ def study_transient_robustness(
     transient_levels: tuple[float, ...] = (0, 110, 120, 130),
     output_dir: str = "output/studies/transient",
 ) -> dict:
-    """Inject transients, compare with/without blanking."""
-    rows: list[dict] = []
+    """Inject transients, compare with/without blanking.
 
+    Runs FDTD **once**, then injects transients post-hoc.
+    """
+    from acoustic_sim.noise import inject_transient
+
+    cfg = _base_cfg(base_config)
+    print("\n>>> Transient study: generating base traces (single FDTD)…")
+    scenario = simulate_scenario(cfg)
+    clean_traces = scenario["traces"].copy()
+
+    rows: list[dict] = []
     for level in transient_levels:
         for blank in [False, True]:
             if level == 0 and blank:
@@ -265,16 +305,34 @@ def study_transient_robustness(
             label = f"{level}dB" + (" +blank" if blank else " raw")
             if level == 0:
                 label = "clean"
-            cfg = _base_cfg(base_config)
-            cfg.inject_transient = level > 0
-            cfg.transient_level_dB = float(level)
-            cfg.transient_time = 0.25
-            cfg.enable_transient_blanking = blank
-            cfg.output_dir = os.path.join(output_dir, label.replace(" ", "_"))
+            print(f"\n>>> Transient study: {label} (detection only)")
 
-            print(f"\n>>> Transient study: {label}")
-            result = run_detection_pipeline(cfg)
-            m = _collect(result)
+            if level > 0:
+                traces = inject_transient(
+                    clean_traces, scenario["dt"],
+                    event_time=0.25,
+                    event_pos=(5.0, 5.0),
+                    mic_positions=scenario["mic_positions"],
+                    level_dB=float(level),
+                    sound_speed=cfg.sound_speed,
+                    seed=cfg.seed + 20,
+                )
+            else:
+                traces = clean_traces.copy()
+
+            det = run_detection(
+                traces, scenario["mic_positions"], scenario["dt"],
+                sound_speed=cfg.sound_speed,
+                weapon_position=cfg.weapon_position,
+                enable_transient_blanking=blank,
+                grid_x_range=cfg.mfp_grid_x_range,
+                grid_y_range=cfg.mfp_grid_y_range,
+            )
+            m = _collect(evaluate_results(
+                det, scenario["true_positions"],
+                scenario["true_velocities"], scenario["true_times"],
+                weapon_position=cfg.weapon_position,
+            ))
             m["label"] = label
             rows.append(m)
 
@@ -385,9 +443,17 @@ def study_position_errors(
     error_stds: tuple[float, ...] = (0.0, 1.0, 2.0, 5.0),
     output_dir: str = "output/studies/position_error",
 ) -> dict:
-    """Sweep position error magnitude with/without self-calibration."""
-    rows: list[dict] = []
+    """Sweep position error magnitude with/without self-calibration.
 
+    Runs FDTD **once**, then perturbs positions post-hoc.
+    """
+    from acoustic_sim.noise import perturb_mic_positions
+
+    cfg = _base_cfg(base_config)
+    print("\n>>> Position error study: generating base traces (single FDTD)…")
+    scenario = simulate_scenario(cfg)
+
+    rows: list[dict] = []
     for err in error_stds:
         for calib in [False, True]:
             if err == 0 and calib:
@@ -395,15 +461,28 @@ def study_position_errors(
             label = f"err={err:.0f}m" + (" +calib" if calib else " raw")
             if err == 0:
                 label = "perfect"
-            cfg = _base_cfg(base_config)
-            cfg.inject_position_error = err > 0
-            cfg.position_error_std = err
-            cfg.enable_position_calibration = calib
-            cfg.output_dir = os.path.join(output_dir, label.replace(" ", "_").replace("=", ""))
+            print(f"\n>>> Position error study: {label} (detection only)")
 
-            print(f"\n>>> Position error study: {label}")
-            result = run_detection_pipeline(cfg)
-            m = _collect(result)
+            mic_pos = scenario["mic_positions"]
+            if err > 0:
+                mic_pos = perturb_mic_positions(
+                    scenario["mic_positions"], error_std=err,
+                    seed=cfg.seed + 30,
+                )
+
+            det = run_detection(
+                scenario["traces"], mic_pos, scenario["dt"],
+                sound_speed=cfg.sound_speed,
+                weapon_position=cfg.weapon_position,
+                enable_position_calibration=calib,
+                grid_x_range=cfg.mfp_grid_x_range,
+                grid_y_range=cfg.mfp_grid_y_range,
+            )
+            m = _collect(evaluate_results(
+                det, scenario["true_positions"],
+                scenario["true_velocities"], scenario["true_times"],
+                weapon_position=cfg.weapon_position,
+            ))
             m["label"] = label
             rows.append(m)
 

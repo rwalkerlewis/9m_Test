@@ -118,7 +118,12 @@ from acoustic_sim.validate import (
     check_travel_times,
     run_all_checks,
 )
-from acoustic_sim.detection_main import run_detection_pipeline
+from acoustic_sim.detection_main import (
+    evaluate_results,
+    run_detection,
+    run_detection_pipeline,
+    simulate_scenario,
+)
 from acoustic_sim.studies import (
     run_all_studies,
     study_array_geometry,
@@ -253,7 +258,10 @@ __all__ = [
     "check_travel_times",
     "run_all_checks",
     # ── Pipeline ──
+    "evaluate_results",
+    "run_detection",
     "run_detection_pipeline",
+    "simulate_scenario",
     # ── Studies ──
     "run_all_studies",
     "study_array_geometry",
