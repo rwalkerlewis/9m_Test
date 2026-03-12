@@ -1,0 +1,419 @@
+"""2-D FDTD acoustic wave-equation solver (stub).
+
+This module defines the configuration and solver interface for a 2-D
+finite-difference time-domain simulation on a scalar pressure field.
+
+Physics overview
+================
+The 2-D scalar wave equation in a medium with sound speed *c(x, y)*::
+
+    d²p/dt² = c² * (d²p/dx² + d²p/dy²)
+
+is discretised on a uniform (dx = dy) Cartesian grid with second-order
+central differences in both space and time.
+
+Discrete update (interior cells, 1 <= j <= ny-2, 1 <= i <= nx-2)::
+
+    Lap = p[j+1,i] + p[j-1,i] + p[j,i+1] + p[j,i-1] - 4*p[j,i]
+    p_next[j,i] = 2*p[j,i] - p_prev[j,i] + C2[j,i] * Lap
+
+where ``C2 = (c * dt / dx)**2`` is the squared Courant number.
+
+CFL stability condition::
+
+    dt <= dx / (c_max * sqrt(2))        [2-D, second-order]
+
+Boundary handling
+-----------------
+Boundary rows/columns (j=0, j=ny-1, i=0, i=nx-1) are held at zero
+(Dirichlet).  A *sponge layer* of configurable width ramps a damping
+coefficient quadratically from 0 (interior) to ``damping_max`` (edge).
+The damping term ``-sigma * (p - p_prev)`` is added to the update so
+outgoing waves are absorbed rather than reflecting off the hard wall.
+
+Source injection
+----------------
+Each timestep, the source signal scaled by ``source_amplitude`` [Pa] is
+deposited at the source position via bilinear interpolation over the
+four surrounding grid cells.
+
+Receiver recording
+------------------
+Pressure is sampled at each receiver location each timestep, again via
+bilinear interpolation, and stored in ``self.traces``.
+
+Key references
+--------------
+* Taflove & Hagness, *Computational Electrodynamics* (the FDTD bible).
+* Botteldooren, "Finite-difference time-domain simulation of low-frequency
+  room acoustic problems," JASA 98(6), 1995.
+
+How to implement
+================
+1. ``_build_damping`` — create (ny, nx) array: ``air_absorption``
+   everywhere, ramping to ``damping_max`` in the sponge zone near edges.
+
+2. ``_inject`` — deposit ``source_amplitude * signal[n]`` at the source
+   (x, y) using bilinear weights across the four surrounding grid cells.
+
+3. ``_sample_receivers`` — bilinear-interpolate ``p_now`` at each receiver
+   and store into ``self.traces[:, n]``.
+
+4. ``_step`` — five-point Laplacian via NumPy slicing, time update,
+   damping, source injection, receiver recording.  No Python for-loops
+   on the grid.
+
+5. ``run`` — loop over timesteps calling ``_step``, optionally saving
+   snapshot images.
+"""
+
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from acoustic_sim.domains import DomainMeta
+from acoustic_sim.model import VelocityModel
+from acoustic_sim.sources import MovingSource, StaticSource
+
+
+# -----------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------
+
+@dataclass
+class FDTDConfig:
+    """User-tunable simulation parameters.
+
+    Attributes
+    ----------
+    total_time : float
+        Simulation duration [s].
+    dt : float | None
+        Timestep [s].  *None* -> auto-compute from CFL.
+    cfl_safety : float
+        Fraction of the CFL limit to use for dt (0 < cfl_safety < 1).
+    damping_width : int
+        Sponge-layer thickness in grid cells.
+    damping_max : float
+        Peak damping coefficient at the domain edge.
+    air_absorption : float
+        Small background damping applied everywhere (prevents 2-D
+        wavefield tail from accumulating energy).
+    snapshot_interval : int
+        Save a wavefield snapshot every N steps.  0 = disabled.
+    source_amplitude : float
+        Peak source pressure [Pa].
+    """
+
+    total_time: float = 0.3
+    dt: float | None = None
+    cfl_safety: float = 0.9
+    damping_width: int = 40
+    damping_max: float = 0.15
+    air_absorption: float = 0.005
+    snapshot_interval: int = 50
+    source_amplitude: float = 1.0
+
+
+# -----------------------------------------------------------------------
+# Solver
+# -----------------------------------------------------------------------
+
+class FDTDSolver:
+    """2-D FDTD acoustic solver.
+
+    All heavy array work should use vectorised NumPy (no Python loops
+    over grid cells).
+
+    Parameters
+    ----------
+    model : VelocityModel
+        Sound-speed field.  Provides ``model.values`` shape (ny, nx),
+        ``model.x``, ``model.y``, ``model.dx``, ``model.dy``.
+    config : FDTDConfig
+        Simulation parameters.
+    source : StaticSource | MovingSource
+        Provides ``.position_at(step, dt) -> (x, y)`` and ``.signal``
+        (1-D ndarray, peak-normalised to 1.0).
+    receivers : ndarray, shape (n_recv, 2)
+        Positions ``[[x0, y0], [x1, y1], ...]``.
+    domain_meta : DomainMeta | None
+        Optional wind / attenuation.  Fields: ``wind_vx``, ``wind_vy``,
+        ``attenuation`` (ndarray or None).
+    """
+
+    def __init__(
+        self,
+        model: VelocityModel,
+        config: FDTDConfig,
+        source: StaticSource | MovingSource,
+        receivers: np.ndarray,
+        domain_meta: DomainMeta | None = None,
+        **_kw: Any,
+    ) -> None:
+        self.model = model
+        self.cfg = config
+        self.source = source
+        self.receivers = receivers
+        self.meta = domain_meta or DomainMeta()
+
+        ny, nx = model.ny, model.nx
+        dx = model.dx
+        c = model.values  # shape (ny, nx)
+
+        # -- Timestep via CFL -----------------------------------------------
+        c_max = float(np.max(c))
+        v_wind = math.sqrt(self.meta.wind_vx ** 2 + self.meta.wind_vy ** 2)
+        cfl_limit = dx / ((c_max + v_wind) * math.sqrt(2.0))
+
+        if config.dt is not None:
+            self.dt = config.dt
+            if self.dt > cfl_limit:
+                raise ValueError(
+                    f"dt={self.dt:.2e} exceeds CFL limit {cfl_limit:.2e}"
+                )
+        else:
+            self.dt = config.cfl_safety * cfl_limit
+
+        self.n_steps = int(math.ceil(config.total_time / self.dt))
+
+        # -- Squared Courant number: C2 = (c * dt / dx)^2 -------------------
+        self.C2 = (c * self.dt / dx) ** 2  # shape (ny, nx)
+
+        # -- Damping array (ny, nx) ------------------------------------------
+        self.sigma = self._build_damping(ny, nx)
+
+        # -- Pressure fields -------------------------------------------------
+        self.p_now = np.zeros((ny, nx))
+        self.p_prev = np.zeros((ny, nx))
+
+        # -- Receiver trace storage ------------------------------------------
+        self.traces = np.zeros((receivers.shape[0], self.n_steps))
+
+        # -- Pre-compute receiver bilinear indices & weights -------------------
+        rx = (receivers[:, 0] - model.x[0]) / dx
+        ry = (receivers[:, 1] - model.y[0]) / dx
+        self._r_ix = np.clip(np.floor(rx).astype(int), 0, nx - 2)
+        self._r_iy = np.clip(np.floor(ry).astype(int), 0, ny - 2)
+        self._r_wx = np.clip(rx - self._r_ix, 0.0, 1.0)
+        self._r_wy = np.clip(ry - self._r_iy, 0.0, 1.0)
+
+    # -------------------------------------------------------------------
+    # Methods to implement
+    # -------------------------------------------------------------------
+
+    def _build_damping(self, ny: int, nx: int) -> np.ndarray:
+        """Return an (ny, nx) damping-coefficient array.
+
+        Interior value: ``self.cfg.air_absorption``.
+        Sponge zone (``self.cfg.damping_width`` cells from each edge):
+        ramp quadratically from ``air_absorption`` up to ``damping_max``.
+
+        Useful identity — distance to nearest edge for each column::
+
+            dx_edge = np.minimum(np.arange(nx), nx - 1 - np.arange(nx))
+
+        And for rows::
+
+            dy_edge = np.minimum(np.arange(ny), ny - 1 - np.arange(ny))
+
+        Combine with ``np.minimum`` to get the min-edge-distance per cell,
+        then apply a quadratic ramp where distance < damping_width.
+        """
+        # Distance to nearest edge for each column and row
+        dx_edge = np.minimum(np.arange(nx), nx - 1 - np.arange(nx))
+        dy_edge = np.minimum(np.arange(ny), ny - 1 - np.arange(ny))
+
+        # Per-cell minimum distance to any edge
+        dist = np.minimum(dy_edge[:, np.newaxis], dx_edge[np.newaxis, :])
+
+        # Start with uniform background absorption
+        sigma = np.full((ny, nx), self.cfg.air_absorption)
+
+        # Quadratic ramp inside the sponge zone
+        w = self.cfg.damping_width
+        mask = dist < w
+        ramp = ((w - dist[mask]) / w) ** 2
+        sigma[mask] = self.cfg.air_absorption + (self.cfg.damping_max - self.cfg.air_absorption) * ramp
+
+        return sigma
+
+    def _inject(self, p: np.ndarray, n: int) -> None:
+        """Inject source pressure into field *p* (in-place) at timestep *n*.
+
+        Steps:
+        1. ``sx, sy = self.source.position_at(n, self.dt)``
+        2. Convert (sx, sy) to fractional grid indices.
+        3. Bilinear-deposit ``self.cfg.source_amplitude * signal[n]``
+           onto the four surrounding cells.
+
+        signal access::
+
+            sig_val = self.source.signal[min(n, len(self.source.signal) - 1)]
+        """
+        sx, sy = self.source.position_at(n, self.dt)
+
+        # Fractional grid indices
+        fx = (sx - self.model.x[0]) / self.model.dx
+        fy = (sy - self.model.y[0]) / self.model.dx  # dx == dy
+
+        ix = int(np.floor(fx))
+        iy = int(np.floor(fy))
+
+        # Bounds check — all four cells must be inside the grid
+        ny, nx = p.shape
+        if ix < 0 or iy < 0 or ix + 1 >= nx or iy + 1 >= ny:
+            return
+
+        # Bilinear weights
+        wx = fx - ix
+        wy = fy - iy
+
+        sig_val = self.source.signal[min(n, len(self.source.signal) - 1)]
+        amp = self.cfg.source_amplitude * sig_val
+
+        p[iy,     ix    ] += (1 - wx) * (1 - wy) * amp
+        p[iy,     ix + 1] +=      wx  * (1 - wy) * amp
+        p[iy + 1, ix    ] += (1 - wx) *      wy  * amp
+        p[iy + 1, ix + 1] +=      wx  *      wy  * amp
+
+    def _sample_receivers(self, n: int) -> None:
+        """Record pressure at each receiver into ``self.traces[:, n]``.
+
+        Bilinear-interpolate ``self.p_now`` at each receiver's grid
+        position.  Pre-computing integer indices and fractional weights
+        in ``__init__`` is recommended for efficiency.
+        """
+        p = self.p_now
+        ix = self._r_ix
+        iy = self._r_iy
+        wx = self._r_wx
+        wy = self._r_wy
+
+        self.traces[:, n] = (
+            p[iy,     ix    ] * (1 - wx) * (1 - wy)
+          + p[iy,     ix + 1] *      wx  * (1 - wy)
+          + p[iy + 1, ix    ] * (1 - wx) *      wy
+          + p[iy + 1, ix + 1] *      wx  *      wy
+        )
+
+    def _step(self, n: int) -> None:
+        """Advance the simulation by one timestep.
+
+        Suggested order:
+        1. Five-point Laplacian of ``self.p_now`` on the interior
+           (rows 1..-2, cols 1..-2) using NumPy slicing::
+
+               lap = (p[2:,1:-1] + p[:-2,1:-1]
+                      + p[1:-1,2:] + p[1:-1,:-2]
+                      - 4.0 * p[1:-1,1:-1])
+
+        2. Time update::
+
+               p_next = 2*p - p_prev + C2 * lap
+
+        3. Damping::
+
+               p_next -= sigma * (p - p_prev)
+
+        4. Write p_next into a fresh zero array (boundaries stay 0).
+        5. ``self._inject(p_new, n)``
+        6. Rotate fields: ``p_prev <- p_now``, ``p_now <- p_new``
+        7. ``self._sample_receivers(n)``
+        """
+        
+        p = self.p_now
+        pp = self.p_prev
+        
+        # Interior Slice: Skip boundaries (0 and -1) which are held at zero.
+        s = (slice(1, -1), slice(1, -1))  # shorthand for interior grid cells
+        
+        # 5-point Laplacian
+        lap = (p[2:, 1:-1] 
+               + p[:-2, 1:-1] 
+               + p[1:-1, 2:] 
+               + p[1:-1, :-2] 
+               - 4.0 * p[s])
+        
+        # Time update with damping
+        p_next = (
+            2.0 * p[s] - pp[s] + self.C2[s] * lap
+            - self.sigma[s] * (p[s] - pp[s])
+        )
+        
+        # Fresh zero array — boundary rows/cols stay at 0 (Dirichlet)
+        p_new = np.zeros_like(p)
+        p_new[s] = p_next
+
+        # Source injection
+        self._inject(p_new, n)
+
+        # Rotate fields
+        self.p_prev = p
+        self.p_now = p_new
+
+        # Record receivers
+        self._sample_receivers(n)
+
+    def run(
+        self,
+        snapshot_dir: str | None = None,
+        verbose: bool = True,
+    ) -> dict[str, Any]:
+        """Run the full simulation.
+
+        Loop ``self.n_steps`` times calling ``self._step(n)``.
+        Optionally save snapshots every ``self.cfg.snapshot_interval``
+        steps using::
+
+            from acoustic_sim.plotting import save_snapshot
+            save_snapshot(self.model, self.p_now, n, snapshot_dir,
+                          receivers=self.receivers,
+                          source_xy=np.array([sx, sy]))
+
+        Returns
+        -------
+        dict
+            traces      : ndarray (n_recv, n_steps) — pressure [Pa]
+            dt          : float — timestep [s]
+            n_steps     : int
+            path_slices : list — can be empty; diagnostic y=0 slices
+        """
+        from acoustic_sim.plotting import save_snapshot
+
+        if snapshot_dir is not None:
+            Path(snapshot_dir).mkdir(parents=True, exist_ok=True)
+
+        for n in range(self.n_steps):
+            self._step(n)
+
+            # Optional snapshot
+            if (
+                snapshot_dir is not None
+                and self.cfg.snapshot_interval > 0
+                and n % self.cfg.snapshot_interval == 0
+            ):
+                sx, sy = self.source.position_at(n, self.dt)
+                save_snapshot(
+                    self.model, self.p_now, n, snapshot_dir,
+                    receivers=self.receivers,
+                    source_xy=np.array([sx, sy]),
+                )
+
+            if verbose and n % 500 == 0:
+                print(f"  step {n:>6d} / {self.n_steps}")
+
+        if verbose:
+            print(f"  step {self.n_steps:>6d} / {self.n_steps}  (done)")
+
+        return {
+            "traces": self.traces,
+            "dt": self.dt,
+            "n_steps": self.n_steps,
+            "path_slices": [],
+        }

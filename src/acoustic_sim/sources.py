@@ -246,10 +246,11 @@ class StaticSource:
 
 @dataclass
 class MovingSource:
-    """Linearly-moving point source.
+    """Moving point source with optional parabolic arc.
 
-    Travels from ``(x0, y0)`` to ``(x1, y1)`` at *speed* m/s.  After
-    reaching the end point the source stays there.
+    Travels from ``(x0, y0)`` to ``(x1, y1)`` at *speed* m/s.  When
+    ``arc_height != 0`` a parabolic y-offset is added, peaking at the
+    path midpoint.  After reaching the end point the source stays there.
     """
 
     x0: float
@@ -258,6 +259,7 @@ class MovingSource:
     y1: float
     speed: float  # m/s
     signal: np.ndarray
+    arc_height: float = 0.0
 
     def position_at(self, step: int, dt: float) -> tuple[float, float]:
         dist_total = math.hypot(self.x1 - self.x0, self.y1 - self.y0)
@@ -267,6 +269,8 @@ class MovingSource:
         frac = min((self.speed * t) / dist_total, 1.0)
         x = self.x0 + frac * (self.x1 - self.x0)
         y = self.y0 + frac * (self.y1 - self.y0)
+        # Parabolic arc: peaks at frac=0.5
+        y += self.arc_height * 4.0 * frac * (1.0 - frac)
         return (x, y)
 
 

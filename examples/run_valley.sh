@@ -1,25 +1,27 @@
 #!/usr/bin/env bash
-# Wind domain — moving propeller source, circular receiver array
+# Valley domain — moving propeller source, circular receiver array
 set -euo pipefail
 
 # Domain ----------------------------------------------------------------
-DOMAIN=wind
+DOMAIN=hills_vegetation
 DX=0.18                # resolves BPF=180 Hz at 343 m/s (10 ppw)
 X_MIN=-50.0
 X_MAX=50.0
 Y_MIN=-50.0
 Y_MAX=50.0
-WIND_SPEED=5.0
-WIND_DIR=45.0          # degrees
+WIND_SPEED=0.0
+WIND_DIR=0.0           # degrees
+DIRT_VELOCITY=1500.0
 
-# Source ----------------------------------------------------------------
+# Source — arc path through the valley, peaking above the array --------
 SOURCE_TYPE=moving
 SOURCE_SIGNAL=propeller
-SOURCE_X=-45.0
+SOURCE_X=-40.0
 SOURCE_Y=0.0
-SOURCE_X1=45.0
+SOURCE_X1=40.0
 SOURCE_Y1=0.0
 SOURCE_SPEED=50.0
+SOURCE_ARC_HEIGHT=15.0  # parabolic arc peaking at y=15 m (above array)
 BLADE_COUNT=3
 RPM=3600
 HARMONICS=14
@@ -27,7 +29,9 @@ HARMONICS=14
 # Receiver array --------------------------------------------------------
 ARRAY=circular
 RECEIVER_COUNT=16
-RECEIVER_RADIUS=2.0    # tightened from 15 m
+RECEIVER_RADIUS=2.0
+RECEIVER_CX=0.0
+RECEIVER_CY=10.0        # shifted +10 m in y (toward north ridge)
 
 # Simulation ------------------------------------------------------------
 TOTAL_TIME=3.0
@@ -43,7 +47,7 @@ MPI_RANKS=0             # 0 = no MPI; >1 = mpirun -n $MPI_RANKS
 FD_ORDER=2              # spatial FD accuracy order (2, 4, 6, …)
 
 # Output ----------------------------------------------------------------
-OUTPUT_DIR=output/my_test
+OUTPUT_DIR=output/valley_test
 
 # -----------------------------------------------------------------------
 CUDA_FLAG=""
@@ -57,15 +61,18 @@ CMD="python examples/run_fdtd.py \
     --x-min \"$X_MIN\" --x-max \"$X_MAX\" \
     --y-min \"$Y_MIN\" --y-max \"$Y_MAX\" \
     --wind-speed \"$WIND_SPEED\" --wind-dir \"$WIND_DIR\" \
+    --dirt-velocity \"$DIRT_VELOCITY\" \
     --source-type \"$SOURCE_TYPE\" \
     --source-signal \"$SOURCE_SIGNAL\" \
     --source-x \"$SOURCE_X\" --source-y \"$SOURCE_Y\" \
     --source-x1 \"$SOURCE_X1\" --source-y1 \"$SOURCE_Y1\" \
     --source-speed \"$SOURCE_SPEED\" \
+    --source-arc-height \"$SOURCE_ARC_HEIGHT\" \
     --blade-count \"$BLADE_COUNT\" --rpm \"$RPM\" --harmonics \"$HARMONICS\" \
     --array \"$ARRAY\" \
     --receiver-count \"$RECEIVER_COUNT\" \
     --receiver-radius \"$RECEIVER_RADIUS\" \
+    --receiver-cx \"$RECEIVER_CX\" --receiver-cy \"$RECEIVER_CY\" \
     --total-time \"$TOTAL_TIME\" \
     --snapshot-interval \"$SNAPSHOT_INTERVAL\" \
     --damping-width \"$DAMPING_WIDTH\" \

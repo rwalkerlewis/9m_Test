@@ -1,7 +1,0 @@
-numpy
-scipy
-matplotlib
-mpi4py
-
-[cuda]
-cupy-cuda12x

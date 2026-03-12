@@ -1,19 +1,47 @@
-"""2-D FDTD acoustic wave-equation solver with MPI domain decomposition.
+"""2-D FDTD acoustic wave-equation solver with MPI + CUDA support.
 
-Supports:
-* optional CUDA acceleration (via CuPy, see :mod:`acoustic_sim.backend`)
-* wind advection (linearised convected wave equation)
-* per-cell attenuation (vegetation / absorbing zones)
-* sponge absorbing boundaries
-* moving and static sources with audio-based signals
-* receiver trace recording with bilinear interpolation
+Supports three execution modes, all from the same code path:
+
+1. **Single-process CPU** — ``python run_fdtd.py``
+2. **Single-process GPU** — ``python run_fdtd.py --use-cuda``
+3. **Multi-process (MPI) CPU/GPU** — ``mpirun -n 4 python run_fdtd.py [--use-cuda]``
+
+Physics
+=======
+2-D scalar wave equation on a uniform Cartesian grid::
+
+    d²p/dt² = c² (d²p/dx² + d²p/dy²)
+
+discretised with central differences of user-defined order in space
+and second-order leapfrog in time.
+
+Spatial FD order
+----------------
+The ``fd_order`` parameter (2, 4, 6, 8, …) controls the accuracy of
+the spatial Laplacian.  The stencil half-width is ``M = fd_order // 2``.
+
+* Order 2 (M=1): classic 5-point stencil ``[-1, 2, -1] / dx²``
+* Order 4 (M=2): 9-point stencil ``[1/12, -4/3, 5/2, -4/3, 1/12] / dx²``
+* Order 8 (M=4): 17-point stencil, etc.
+
+The CFL limit is adjusted for the spectral radius of the chosen stencil.
+
+MPI decomposition
+=================
+The global grid of *ny* rows is split across ranks along the **y-axis**.
+Each rank owns a contiguous strip of rows plus **M ghost rows** on each
+internal boundary for the stencil.
+
+CUDA / CuPy
+============
+When ``use_cuda=True``, all large arrays live on device memory via CuPy.
+Halo exchange pulls ghost rows to host for MPI, then pushes back.
 """
 
 from __future__ import annotations
 
 import math
-import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -22,160 +50,162 @@ import numpy as np
 from acoustic_sim.backend import get_backend
 from acoustic_sim.domains import DomainMeta
 from acoustic_sim.model import VelocityModel
-from acoustic_sim.sources import StaticSource, MovingSource, inject_source
+from acoustic_sim.sources import MovingSource, StaticSource
 
 
-# ---------------------------------------------------------------------------
+# Try to import mpi4py; if unavailable, we run single-process.
+try:
+    from mpi4py import MPI as _MPI
+
+    _COMM = _MPI.COMM_WORLD
+    _HAS_MPI = _COMM.Get_size() > 1  # only activate if launched with mpirun
+except ImportError:
+    _MPI = None  # type: ignore[assignment]
+    _COMM = None  # type: ignore[assignment]
+    _HAS_MPI = False
+
+
+def _get_comm() -> tuple[Any, int, int]:
+    """Return (comm, rank, size).  Falls back to (None, 0, 1)."""
+    if _HAS_MPI:
+        return _COMM, _COMM.Get_rank(), _COMM.Get_size()
+    return None, 0, 1
+
+
+# -----------------------------------------------------------------------
+# Finite-difference coefficients
+# -----------------------------------------------------------------------
+
+def fd2_coefficients(order: int) -> np.ndarray:
+    """Central FD coefficients for d²f/dx² at accuracy *order* (2, 4, 6, …).
+
+    Returns an array of length ``M + 1`` where ``M = order // 2``.
+    ``coeffs[0]`` is the centre weight; ``coeffs[k]`` (k ≥ 1) is the
+    weight for offsets ±k.  Multiplying by ``1/dx²`` gives d²f/dx².
+
+    Derived by solving the Vandermonde system that enforces exactness
+    for polynomials up to degree ``2M``.
+    """
+    M = order // 2
+    if M < 1:
+        raise ValueError(f"fd_order must be >= 2, got {order}")
+
+    # System: sum_{k=1}^M c_k * k^(2j) = delta_{j,1}  for j = 1..M
+    A = np.zeros((M, M))
+    b = np.zeros(M)
+    for j in range(M):
+        for i in range(M):
+            A[j, i] = (i + 1) ** (2 * (j + 1))
+    b[0] = 1.0
+
+    c = np.linalg.solve(A, b)
+    c0 = -2.0 * np.sum(c)
+    return np.concatenate([[c0], c])
+
+
+def fd2_cfl_factor(coeffs: np.ndarray) -> float:
+    """Return the 1-D spectral radius of the stencil at Nyquist.
+
+    CFL for the 2-D wave equation::
+
+        dt <= 2 * dx / (c_eff * sqrt(2 * spec_radius))
+
+    where ``spec_radius = |c0 + 2 * sum(c_k * (-1)^k)|``.
+    """
+    val = coeffs[0]
+    for k in range(1, len(coeffs)):
+        val += 2.0 * coeffs[k] * ((-1) ** k)
+    return abs(val)
+
+
+# -----------------------------------------------------------------------
 # Configuration
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 @dataclass
 class FDTDConfig:
-    """Parameters that control the FDTD simulation."""
+    """User-tunable simulation parameters.
 
-    total_time: float = 0.3       # [s]
-    dt: float | None = None       # auto from CFL when None
+    Attributes
+    ----------
+    total_time : float
+        Simulation duration [s].
+    dt : float | None
+        Timestep [s].  *None* → auto-compute from CFL.
+    cfl_safety : float
+        Fraction of the CFL limit to use for dt (0 < cfl_safety < 1).
+    damping_width : int
+        Sponge-layer thickness in grid cells.
+    damping_max : float
+        Peak damping coefficient at the domain edge.
+    air_absorption : float
+        Small background damping applied everywhere.
+    snapshot_interval : int
+        Save a wavefield snapshot every N steps.  0 = disabled.
+    source_amplitude : float
+        Peak source pressure [Pa].
+    use_cuda : bool
+        Use CuPy for GPU acceleration.
+    fd_order : int
+        Spatial finite-difference order (2, 4, 6, 8, …).  Higher orders
+        have wider stencils and tighter CFL limits but less numerical
+        dispersion.
+    """
+
+    total_time: float = 0.3
+    dt: float | None = None
     cfl_safety: float = 0.9
-    damping_width: int = 20       # sponge layer thickness [cells]
-    damping_max: float = 0.05     # peak sponge damping coefficient
-    snapshot_interval: int = 50   # save snapshot every N steps (0 = off)
+    damping_width: int = 40
+    damping_max: float = 0.15
+    air_absorption: float = 0.005
+    snapshot_interval: int = 50
+    source_amplitude: float = 1.0
     use_cuda: bool = False
+    fd_order: int = 2
 
 
-# ---------------------------------------------------------------------------
-# MPI domain decomposition
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# MPI domain decomposition helpers
+# -----------------------------------------------------------------------
 
-class MPIDomain:
-    """2-D Cartesian MPI domain decomposition with ghost (halo) cells."""
-
-    def __init__(
-        self,
-        model: VelocityModel,
-        comm: Any,
-    ) -> None:
-        self.comm = comm
-        self.rank: int = comm.Get_rank()
-        self.size: int = comm.Get_size()
-
-        # Full global grid sizes.
-        self.gny, self.gnx = model.ny, model.nx
-
-        # 2-D process topology.
-        from mpi4py import MPI
-
-        dims = MPI.Compute_dims(self.size, 2)
-        self.cart = comm.Create_cart(dims, periods=[False, False], reorder=True)
-        self.cart_rank = self.cart.Get_rank()
-        self.coords = self.cart.Get_coords(self.cart_rank)
-        self.dims = dims  # (rows, cols) of process grid
-
-        # Neighbour ranks (MPI_PROC_NULL if at edge).
-        self.nbr_up, self.nbr_down = self.cart.Shift(0, 1)
-        self.nbr_left, self.nbr_right = self.cart.Shift(1, 1)
-
-        # Compute local slice of the global grid (interior, no ghosts).
-        def _split(n: int, nprocs: int, rank: int) -> tuple[int, int]:
-            base = n // nprocs
-            rem = n % nprocs
-            start = rank * base + min(rank, rem)
-            size = base + (1 if rank < rem else 0)
-            return start, size
-
-        self.iy_start, self.local_ny = _split(self.gny, dims[0], self.coords[0])
-        self.ix_start, self.local_nx = _split(self.gnx, dims[1], self.coords[1])
-
-        # Ghost-padded dimensions (1 ghost cell on each side).
-        self.ghost = 1
-        self.padded_ny = self.local_ny + 2 * self.ghost
-        self.padded_nx = self.local_nx + 2 * self.ghost
-
-    # -- halo exchange -------------------------------------------------------
-
-    def exchange_halos(self, field: np.ndarray) -> None:
-        """Exchange ghost layers with four Cartesian neighbours."""
-        from mpi4py import MPI
-
-        g = self.ghost
-        tag = 0
-        reqs: list[Any] = []
-
-        # Up / down (along y / axis-0 of the array).
-        send_up = np.ascontiguousarray(field[g, :])
-        send_dn = np.ascontiguousarray(field[-g - 1, :])
-        recv_up = np.empty_like(send_up)
-        recv_dn = np.empty_like(send_dn)
-        reqs.append(self.cart.Isend(send_up, dest=self.nbr_up, tag=tag))
-        reqs.append(self.cart.Irecv(recv_dn, source=self.nbr_down, tag=tag))
-        reqs.append(self.cart.Isend(send_dn, dest=self.nbr_down, tag=tag + 1))
-        reqs.append(self.cart.Irecv(recv_up, source=self.nbr_up, tag=tag + 1))
-
-        # Left / right (along x / axis-1).
-        send_left = np.ascontiguousarray(field[:, g])
-        send_right = np.ascontiguousarray(field[:, -g - 1])
-        recv_left = np.empty_like(send_left)
-        recv_right = np.empty_like(send_right)
-        reqs.append(self.cart.Isend(send_left, dest=self.nbr_left, tag=tag + 2))
-        reqs.append(self.cart.Irecv(recv_right, source=self.nbr_right, tag=tag + 2))
-        reqs.append(self.cart.Isend(send_right, dest=self.nbr_right, tag=tag + 3))
-        reqs.append(self.cart.Irecv(recv_left, source=self.nbr_left, tag=tag + 3))
-
-        MPI.Request.Waitall(reqs)
-
-        if self.nbr_down != MPI.PROC_NULL:
-            field[-1, :] = recv_dn
-        if self.nbr_up != MPI.PROC_NULL:
-            field[0, :] = recv_up
-        if self.nbr_right != MPI.PROC_NULL:
-            field[:, -1] = recv_right
-        if self.nbr_left != MPI.PROC_NULL:
-            field[:, 0] = recv_left
-
-    # -- gather full field to rank 0 -----------------------------------------
-
-    def gather_field(self, local_interior: np.ndarray) -> np.ndarray | None:
-        """Gather local interior arrays to a full global field on rank 0."""
-        from mpi4py import MPI
-
-        # Send local_interior to rank 0.
-        local_flat = np.ascontiguousarray(local_interior).ravel()
-        sizes = self.comm.gather(local_flat.size, root=0)
-        if self.rank == 0:
-            recv_buf = np.empty(sum(sizes), dtype=local_flat.dtype)
-            displs = [0] + list(np.cumsum(sizes[:-1]))
-        else:
-            recv_buf = None
-            displs = None
-
-        # Use Gatherv.
-        self.comm.Gatherv(local_flat, (recv_buf, sizes, displs, MPI.DOUBLE), root=0)
-
-        if self.rank == 0:
-            global_field = np.zeros((self.gny, self.gnx), dtype=np.float64)
-            offset = 0
-            for r in range(self.size):
-                coords_r = self.cart.Get_coords(r)
-                def _split(n, nprocs, rk):
-                    base = n // nprocs
-                    rem = n % nprocs
-                    start = rk * base + min(rk, rem)
-                    size = base + (1 if rk < rem else 0)
-                    return start, size
-                iy_s, lny = _split(self.gny, self.dims[0], coords_r[0])
-                ix_s, lnx = _split(self.gnx, self.dims[1], coords_r[1])
-                chunk = recv_buf[offset : offset + lny * lnx].reshape(lny, lnx)
-                global_field[iy_s : iy_s + lny, ix_s : ix_s + lnx] = chunk
-                offset += lny * lnx
-            return global_field
-        return None
+def _split_rows(ny: int, size: int) -> list[tuple[int, int]]:
+    """Return [(row_start, row_end), ...] for each rank (exclusive end)."""
+    base = ny // size
+    remainder = ny % size
+    splits: list[tuple[int, int]] = []
+    start = 0
+    for r in range(size):
+        count = base + (1 if r < remainder else 0)
+        splits.append((start, start + count))
+        start += count
+    return splits
 
 
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
 # Solver
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 class FDTDSolver:
-    """2-D FDTD acoustic solver with MPI + optional CUDA."""
+    """2-D FDTD acoustic solver with MPI domain decomposition and
+    optional CUDA acceleration.
+
+    Parameters
+    ----------
+    model : VelocityModel
+        *Global* sound-speed field (ny, nx).
+    config : FDTDConfig
+        Simulation parameters (including ``use_cuda``).
+    source : StaticSource | MovingSource
+        Source position + signal.
+    receivers : ndarray (n_recv, 2)
+        Receiver positions [[x0,y0], ...].
+    domain_meta : DomainMeta | None
+        Wind / attenuation metadata.
+    """
+
+    # ------------------------------------------------------------------
+    # Initialisation
+    # ------------------------------------------------------------------
 
     def __init__(
         self,
@@ -183,302 +213,386 @@ class FDTDSolver:
         config: FDTDConfig,
         source: StaticSource | MovingSource,
         receivers: np.ndarray,
-        comm: Any,
         domain_meta: DomainMeta | None = None,
+        **_kw: Any,
     ) -> None:
-        from mpi4py import MPI
-
         self.model = model
-        self.config = config
+        self.cfg = config
         self.source = source
-        self.receivers = receivers  # (n_recv, 2)
-        self.comm = comm
+        self.receivers = receivers
         self.meta = domain_meta or DomainMeta()
 
+        # -- MPI setup ------------------------------------------------------
+        self.comm, self.rank, self.size = _get_comm()
+        self.use_mpi = self.size > 1
+
+        # -- Array backend (numpy or cupy) ----------------------------------
         self.xp, self.is_cuda = get_backend(config.use_cuda)
         xp = self.xp
 
-        # MPI domain.
-        self.mpi = MPIDomain(model, comm)
-        m = self.mpi
-        g = m.ghost
-
-        # Local velocity slice (with ghost padding).
-        full_c = model.values  # (gny, gnx)
-        local_c = full_c[
-            max(m.iy_start - g, 0) : m.iy_start + m.local_ny + g,
-            max(m.ix_start - g, 0) : m.ix_start + m.local_nx + g,
-        ]
-        # Pad if at edge (ghost outside domain → replicate boundary).
-        pad_top = g - (m.iy_start - max(m.iy_start - g, 0))
-        pad_bot = (m.padded_ny) - local_c.shape[0] - pad_top
-        pad_left = g - (m.ix_start - max(m.ix_start - g, 0))
-        pad_right = (m.padded_nx) - local_c.shape[1] - pad_left
-        local_c = np.pad(local_c, ((pad_top, pad_bot), (pad_left, pad_right)), mode="edge")
-        self.local_c = xp.asarray(local_c.astype(np.float64))
-
-        # Timestep from CFL.
-        c_max = float(np.max(model.values))
+        ny, nx = model.ny, model.nx
         dx = model.dx
-        cfl_dt = dx / (c_max * math.sqrt(2.0))
-        self.dt = config.dt if config.dt is not None else config.cfl_safety * cfl_dt
-        if self.dt > cfl_dt:
-            raise ValueError(
-                f"dt={self.dt:.2e} exceeds CFL limit {cfl_dt:.2e}. "
-                f"Reduce dt or increase dx."
-            )
+        c_global = model.values  # (ny, nx) NumPy
+
+        # -- FD stencil coefficients ----------------------------------------
+        self._fd_coeffs = fd2_coefficients(config.fd_order)
+        self._M = config.fd_order // 2  # stencil half-width
+        spec_radius = fd2_cfl_factor(self._fd_coeffs)
+
+        # -- Timestep via CFL (computed on full domain, all ranks agree) ----
+        c_max = float(np.max(c_global))
+        v_wind = math.sqrt(self.meta.wind_vx ** 2 + self.meta.wind_vy ** 2)
+        cfl_limit = 2.0 * dx / ((c_max + v_wind) * math.sqrt(2.0 * spec_radius))
+
+        if config.dt is not None:
+            self.dt = config.dt
+            if self.dt > cfl_limit:
+                raise ValueError(
+                    f"dt={self.dt:.2e} exceeds CFL limit {cfl_limit:.2e}"
+                )
+        else:
+            self.dt = config.cfl_safety * cfl_limit
 
         self.n_steps = int(math.ceil(config.total_time / self.dt))
 
-        # Coefficient array: (c * dt / dx)².
-        self.coeff = (self.local_c * self.dt / dx) ** 2
+        # -- Domain decomposition -------------------------------------------
+        self.global_ny = ny
+        self.global_nx = nx
+        self.splits = _split_rows(ny, self.size)
+        self.row_start, self.row_end = self.splits[self.rank]
+        self.local_ny = self.row_end - self.row_start
+        M = self._M
+        self._ghost_top = M if self.rank > 0 else 0
+        self._ghost_bot = M if self.rank < self.size - 1 else 0
+        self._pad_ny = self.local_ny + self._ghost_top + self._ghost_bot
 
-        # Sponge absorbing boundary.
-        self._build_sponge()
+        # -- Local slice of global arrays -----------------------------------
+        g_top = self.row_start - self._ghost_top
+        g_bot = self.row_end + self._ghost_bot
+        c_local = c_global[g_top:g_bot, :]
 
-        # Merge vegetation / external attenuation.
-        if self.meta.attenuation is not None:
-            ext_a = self.meta.attenuation[
-                max(m.iy_start - g, 0) : m.iy_start + m.local_ny + g,
-                max(m.ix_start - g, 0) : m.ix_start + m.local_nx + g,
-            ]
-            ext_a = np.pad(ext_a, ((pad_top, pad_bot), (pad_left, pad_right)), mode="constant")
-            self.sponge = self.sponge + xp.asarray(ext_a)
+        # -- Squared Courant number -----------------------------------------
+        self.C2 = xp.asarray((c_local * self.dt / dx) ** 2)
 
-        # Wind.
-        self.wind_vx = self.meta.wind_vx
-        self.wind_vy = self.meta.wind_vy
-        self.has_wind = abs(self.wind_vx) > 1e-8 or abs(self.wind_vy) > 1e-8
-        if self.has_wind:
-            wind_mag = math.hypot(self.wind_vx, self.wind_vy)
-            if wind_mag >= c_max:
-                raise ValueError(
-                    f"Wind speed ({wind_mag:.1f} m/s) must be subsonic "
-                    f"(< c_max = {c_max:.1f} m/s)."
+        # -- Damping (built on full grid, then sliced) ----------------------
+        sigma_global = self._build_damping_global(ny, nx)
+        self.sigma = xp.asarray(sigma_global[g_top:g_bot, :])
+
+        # -- Pressure fields (local, on device if CUDA) --------------------
+        self.p_now = xp.zeros((self._pad_ny, nx), dtype=np.float64)
+        self.p_prev = xp.zeros((self._pad_ny, nx), dtype=np.float64)
+
+        # -- Receiver pre-computation (global indices → local) -------------
+        self._precompute_receivers(model, dx)
+
+        # -- Trace storage (rank 0 stores all) ------------------------------
+        if self.rank == 0:
+            self.traces = np.zeros((receivers.shape[0], self.n_steps))
+        else:
+            self.traces = None
+
+    # ------------------------------------------------------------------
+    # Damping
+    # ------------------------------------------------------------------
+
+    def _build_damping_global(self, ny: int, nx: int) -> np.ndarray:
+        """Build the full (ny, nx) damping array on host."""
+        dx_edge = np.minimum(np.arange(nx), nx - 1 - np.arange(nx))
+        dy_edge = np.minimum(np.arange(ny), ny - 1 - np.arange(ny))
+        dist = np.minimum(dy_edge[:, np.newaxis], dx_edge[np.newaxis, :])
+
+        sigma = np.full((ny, nx), self.cfg.air_absorption)
+        w = self.cfg.damping_width
+        mask = dist < w
+        ramp = ((w - dist[mask]) / w) ** 2
+        sigma[mask] = self.cfg.air_absorption + (
+            self.cfg.damping_max - self.cfg.air_absorption
+        ) * ramp
+        return sigma
+
+    # ------------------------------------------------------------------
+    # Receiver pre-computation
+    # ------------------------------------------------------------------
+
+    def _precompute_receivers(self, model: VelocityModel, dx: float) -> None:
+        """Compute bilinear indices/weights; figure out which receivers
+        fall into this rank's local row strip."""
+        rx_frac = (self.receivers[:, 0] - model.x[0]) / dx
+        ry_frac = (self.receivers[:, 1] - model.y[0]) / dx
+
+        gix = np.clip(np.floor(rx_frac).astype(int), 0, self.global_nx - 2)
+        giy = np.clip(np.floor(ry_frac).astype(int), 0, self.global_ny - 2)
+        wx = np.clip(rx_frac - gix, 0.0, 1.0)
+        wy = np.clip(ry_frac - giy, 0.0, 1.0)
+
+        # Receiver at giy needs rows giy and giy+1 — both must be owned.
+        in_local = (giy >= self.row_start) & (giy + 1 < self.row_end)
+
+        self._recv_global_idx = np.where(in_local)[0]
+        local_iy = giy[in_local] - self.row_start + self._ghost_top
+        self._recv_iy = local_iy
+        self._recv_ix = gix[in_local]
+        self._recv_wx = wx[in_local]
+        self._recv_wy = wy[in_local]
+
+    # ------------------------------------------------------------------
+    # Source injection
+    # ------------------------------------------------------------------
+
+    def _inject(self, p: Any, n: int) -> None:
+        """Inject source into local pressure field (in-place).
+
+        Only the rank owning the source cell performs the injection.
+        """
+        sx, sy = self.source.position_at(n, self.dt)
+
+        fx = (sx - self.model.x[0]) / self.model.dx
+        fy = (sy - self.model.y[0]) / self.model.dx
+
+        gix = int(math.floor(fx))
+        giy = int(math.floor(fy))
+
+        if gix < 0 or gix + 1 >= self.global_nx:
+            return
+        if giy < self.row_start or giy + 1 >= self.row_end:
+            return
+
+        liy = giy - self.row_start + self._ghost_top
+        wx = fx - gix
+        wy = fy - giy
+
+        sig_val = self.source.signal[min(n, len(self.source.signal) - 1)]
+        amp = self.cfg.source_amplitude * sig_val
+
+        p[liy,     gix    ] += (1 - wx) * (1 - wy) * amp
+        p[liy,     gix + 1] +=      wx  * (1 - wy) * amp
+        p[liy + 1, gix    ] += (1 - wx) *      wy  * amp
+        p[liy + 1, gix + 1] +=      wx  *      wy  * amp
+
+    # ------------------------------------------------------------------
+    # Receiver sampling
+    # ------------------------------------------------------------------
+
+    def _sample_receivers(self, n: int) -> None:
+        """Sample pressure at local receivers, then gather to rank 0."""
+        xp = self.xp
+        n_local = len(self._recv_global_idx)
+        local_vals = np.zeros(n_local)
+
+        if n_local > 0:
+            p_host = xp.asnumpy(self.p_now) if self.is_cuda else self.p_now
+            iy = self._recv_iy
+            ix = self._recv_ix
+            wx = self._recv_wx
+            wy = self._recv_wy
+            local_vals = (
+                p_host[iy,     ix    ] * (1 - wx) * (1 - wy)
+              + p_host[iy,     ix + 1] *      wx  * (1 - wy)
+              + p_host[iy + 1, ix    ] * (1 - wx) *      wy
+              + p_host[iy + 1, ix + 1] *      wx  *      wy
+            )
+
+        if not self.use_mpi:
+            self.traces[:, n] = local_vals
+            return
+
+        # MPI gather (global_idx, value) pairs to rank 0
+        local_data = np.column_stack([
+            self._recv_global_idx.astype(np.float64),
+            local_vals,
+        ]) if n_local > 0 else np.empty((0, 2))
+
+        gathered = self.comm.gather(local_data, root=0)
+
+        if self.rank == 0:
+            for chunk in gathered:
+                if chunk.size == 0:
+                    continue
+                idxs = chunk[:, 0].astype(int)
+                vals = chunk[:, 1]
+                self.traces[idxs, n] = vals
+
+    # ------------------------------------------------------------------
+    # Halo exchange
+    # ------------------------------------------------------------------
+
+    def _halo_exchange(self) -> None:
+        """Exchange M ghost rows with MPI neighbours for each field."""
+        if not self.use_mpi:
+            return
+
+        xp = self.xp
+        comm = self.comm
+        rank = self.rank
+        nx = self.global_nx
+        M = self._M
+
+        def _rows_to_host(arr, start, count):
+            block = arr[start:start + count, :]
+            return xp.asnumpy(block) if self.is_cuda else np.array(block)
+
+        def _rows_from_host(arr, start, buf):
+            if self.is_cuda:
+                arr[start:start + buf.shape[0], :] = xp.asarray(buf)
+            else:
+                arr[start:start + buf.shape[0], :] = buf
+
+        gt = self._ghost_top
+
+        for field_idx, field in enumerate([self.p_now, self.p_prev]):
+            tag_base = field_idx * 2
+            TAG_DOWN = tag_base
+            TAG_UP = tag_base + 1
+
+            # Send top M owned rows UP, receive into top ghost
+            if rank > 0:
+                send = _rows_to_host(field, gt, M)
+                recv = np.empty((M, nx))
+                comm.Sendrecv(
+                    sendbuf=send, dest=rank - 1, sendtag=TAG_UP,
+                    recvbuf=recv, source=rank - 1, recvtag=TAG_DOWN,
                 )
-            self.w_cx = self.wind_vx * self.dt / dx
-            self.w_cy = self.wind_vy * self.dt / dx
+                _rows_from_host(field, 0, recv)
 
-        # Pressure fields (ghost-padded).
-        self.p_now = xp.zeros((m.padded_ny, m.padded_nx), dtype=np.float64)
-        self.p_prev = xp.zeros_like(self.p_now)
+            # Send bottom M owned rows DOWN, receive into bottom ghost
+            if rank < self.size - 1:
+                bot_start = gt + self.local_ny - M
+                send = _rows_to_host(field, bot_start, M)
+                recv = np.empty((M, nx))
+                comm.Sendrecv(
+                    sendbuf=send, dest=rank + 1, sendtag=TAG_DOWN,
+                    recvbuf=recv, source=rank + 1, recvtag=TAG_UP,
+                )
+                _rows_from_host(field, self._pad_ny - M, recv)
 
-        # Receiver bookkeeping — which receivers are in this rank's subdomain?
-        self.n_recv = receivers.shape[0]
-        self._setup_receivers()
+    # ------------------------------------------------------------------
+    # Time step
+    # ------------------------------------------------------------------
 
-    # -- internal helpers ----------------------------------------------------
-
-    def _build_sponge(self) -> None:
-        """Quadratic sponge damping array on the *global* boundary cells."""
-        m = self.mpi
-        g = m.ghost
-        cfg = self.config
+    def _step(self, n: int) -> None:
+        """Advance one timestep on the local subdomain."""
         xp = self.xp
+        M = self._M
+        coeffs = self._fd_coeffs
 
-        sponge = np.zeros((m.padded_ny, m.padded_nx), dtype=np.float64)
-        w = cfg.damping_width
-        a_max = cfg.damping_max
+        self._halo_exchange()
 
-        for lj in range(m.padded_ny):
-            gj = m.iy_start + lj - g
-            for li in range(m.padded_nx):
-                gi = m.ix_start + li - g
-                d_edge = min(gi, m.gnx - 1 - gi, gj, m.gny - 1 - gj)
-                if d_edge < w:
-                    sponge[lj, li] = a_max * ((w - d_edge) / w) ** 2
-
-        self.sponge = xp.asarray(sponge)
-
-    def _setup_receivers(self) -> None:
-        """Determine which receivers are in this rank and their local indices."""
-        m = self.mpi
-        g = m.ghost
-        model = self.model
-        self.local_recv_ids: list[int] = []
-        self.local_recv_gx: list[float] = []
-        self.local_recv_gy: list[float] = []
-        for i, (rx, ry) in enumerate(self.receivers):
-            gx = (rx - float(model.x[0])) / model.dx
-            gy = (ry - float(model.y[0])) / model.dy
-            ix = int(round(gx))
-            iy = int(round(gy))
-            if (
-                m.ix_start <= ix < m.ix_start + m.local_nx
-                and m.iy_start <= iy < m.iy_start + m.local_ny
-            ):
-                self.local_recv_ids.append(i)
-                self.local_recv_gx.append(gx)
-                self.local_recv_gy.append(gy)
-
-        # Traces array: full size, this rank fills its own columns.
-        self.traces = np.zeros((self.n_recv, self.n_steps), dtype=np.float64)
-
-    def _record_traces(self, step: int) -> None:
-        """Sample pressure at each local receiver via bilinear interpolation."""
-        m = self.mpi
-        g = m.ghost
-        xp = self.xp
         p = self.p_now
-        if self.is_cuda:
-            p = xp.asnumpy(p)  # type: ignore[union-attr]
+        pp = self.p_prev
+        ny_loc = self._pad_ny
+        nx_loc = self.global_nx
 
-        for rid, gx, gy in zip(
-            self.local_recv_ids, self.local_recv_gx, self.local_recv_gy
-        ):
-            ix0 = int(math.floor(gx))
-            iy0 = int(math.floor(gy))
-            fx = gx - ix0
-            fy = gy - iy0
-            # Local padded indices.
-            li = ix0 - m.ix_start + g
-            lj = iy0 - m.iy_start + g
-            val = 0.0
-            for dj, wy in ((0, 1.0 - fy), (1, fy)):
-                for di, wx in ((0, 1.0 - fx), (1, fx)):
-                    jj = lj + dj
-                    ii = li + di
-                    if 0 <= jj < p.shape[0] and 0 <= ii < p.shape[1]:
-                        val += float(p[jj, ii]) * wx * wy
-            self.traces[rid, step] = val
+        # Interior region: M rows/cols from each edge
+        rs, re = M, ny_loc - M
+        cs, ce = M, nx_loc - M
+        s = (slice(rs, re), slice(cs, ce))
 
-    # -- main loop -----------------------------------------------------------
+        # Laplacian: centre weight (×2 for x + y contributions)
+        lap = coeffs[0] * 2.0 * p[s]
+
+        # Off-centre weights (±k in both dimensions)
+        for k in range(1, M + 1):
+            ck = coeffs[k]
+            lap += ck * (
+                p[rs + k : re + k, cs : ce]    # down
+              + p[rs - k : re - k, cs : ce]    # up
+              + p[rs : re, cs + k : ce + k]    # right
+              + p[rs : re, cs - k : ce - k]    # left
+            )
+
+        p_next = (
+            2.0 * p[s] - pp[s]
+            + self.C2[s] * lap
+            - self.sigma[s] * (p[s] - pp[s])
+        )
+
+        p_new = xp.zeros_like(p)
+        p_new[s] = p_next
+
+        # Dirichlet on global boundaries this rank owns
+        if self.rank == 0:
+            gt = self._ghost_top
+            p_new[gt:gt + M, :] = 0.0
+        if self.rank == self.size - 1:
+            gt = self._ghost_top
+            p_new[gt + self.local_ny - M:gt + self.local_ny, :] = 0.0
+        p_new[:, :M] = 0.0
+        p_new[:, -M:] = 0.0
+
+        self._inject(p_new, n)
+
+        self.p_prev = p
+        self.p_now = p_new
+
+        self._sample_receivers(n)
+
+    # ------------------------------------------------------------------
+    # Gather full field (for snapshots)
+    # ------------------------------------------------------------------
+
+    def _gather_field(self) -> np.ndarray | None:
+        """Gather the full pressure field to rank 0."""
+        xp = self.xp
+        gt = self._ghost_top
+
+        owned = self.p_now[gt: gt + self.local_ny, :]
+        owned_host = xp.asnumpy(owned) if self.is_cuda else np.array(owned)
+
+        if not self.use_mpi:
+            return owned_host
+
+        gathered = self.comm.gather(owned_host, root=0)
+        if self.rank == 0:
+            return np.concatenate(gathered, axis=0)
+        return None
+
+    # ------------------------------------------------------------------
+    # Run
+    # ------------------------------------------------------------------
 
     def run(
         self,
         snapshot_dir: str | None = None,
         verbose: bool = True,
     ) -> dict[str, Any]:
-        """Run the full FDTD simulation.
+        """Run the full simulation.
 
-        Returns
-        -------
-        dict
-            ``{"traces": np.ndarray, "dt": float, "n_steps": int}``
-            *traces* has shape ``(n_receivers, n_steps)`` and is only
-            valid on rank 0.
+        Returns (on rank 0) a dict with traces, dt, n_steps, path_slices.
+        Other ranks return a dict with empty traces.
         """
-        from mpi4py import MPI
+        from acoustic_sim.plotting import save_snapshot
 
-        xp = self.xp
-        m = self.mpi
-        g = m.ghost
-        dt = self.dt
-        dx = self.model.dx
-        cfg = self.config
+        is_root = self.rank == 0
 
-        if snapshot_dir is not None and self.comm.Get_rank() == 0:
+        if snapshot_dir is not None and is_root:
             Path(snapshot_dir).mkdir(parents=True, exist_ok=True)
 
-        # Fixed pressure colour-scale (symmetric about zero).
-        snap_db_range = 60.0
-
         for n in range(self.n_steps):
-            # 1. Halo exchange (on numpy arrays — transfer from GPU if needed).
-            if self.is_cuda:
-                p_np = xp.asnumpy(self.p_now)  # type: ignore[union-attr]
-                m.exchange_halos(p_np)
-                self.p_now = xp.asarray(p_np)
-            else:
-                m.exchange_halos(self.p_now)
+            self._step(n)
 
-            # 2. Laplacian (interior of padded array).
-            p = self.p_now
-            lap = (
-                p[2:, 1:-1]
-                + p[:-2, 1:-1]
-                + p[1:-1, 2:]
-                + p[1:-1, :-2]
-                - 4.0 * p[1:-1, 1:-1]
-            )
-
-            # 3. Update.
-            interior = slice(g, -g), slice(g, -g)
-            p_next = (
-                2.0 * p[interior]
-                - self.p_prev[interior]
-                + self.coeff[interior] * lap
-                - self.sponge[interior] * (p[interior] - self.p_prev[interior])
-            )
-
-            # 4. Wind advection cross-term.
-            if self.has_wind:
-                dp_dt = (p[interior] - self.p_prev[interior]) / dt
-                # Spatial gradient of dp_dt (central differences on dp_dt).
-                # dp_dt lives on the interior; we need its spatial neighbours,
-                # so we use the slightly larger stencil from the padded p arrays.
-                dp_dt_full = (p - self.p_prev) / dt
-                adv_x = self.w_cx * (
-                    dp_dt_full[1:-1, 2:] - dp_dt_full[1:-1, :-2]
-                ) / 2.0
-                adv_y = self.w_cy * (
-                    dp_dt_full[2:, 1:-1] - dp_dt_full[:-2, 1:-1]
-                ) / 2.0
-                p_next -= 2.0 * dt * (adv_x + adv_y)
-
-            # 5. Write back into a new padded array.
-            p_new = xp.zeros_like(self.p_now)
-            p_new[interior] = p_next
-
-            # 6. Inject source.
-            src_x, src_y = self.source.position_at(n, dt)
-            amp = float(self.source.signal[min(n, len(self.source.signal) - 1)])
-            if self.is_cuda:
-                p_new_np = xp.asnumpy(p_new)  # type: ignore[union-attr]
-            else:
-                p_new_np = p_new
-            inject_source(
-                p_new_np,
-                src_x,
-                src_y,
-                amp * dt * dt,
-                self.model.x,
-                self.model.y,
-                dx,
-                self.model.dy,
-                ix_offset=m.ix_start - g,
-                iy_offset=m.iy_start - g,
-            )
-            if self.is_cuda:
-                p_new = xp.asarray(p_new_np)
-
-            # 7. Rotate fields.
-            self.p_prev = self.p_now
-            self.p_now = p_new
-
-            # 8. Record traces.
-            self._record_traces(n)
-
-            # 9. Snapshots.
             if (
                 snapshot_dir is not None
-                and cfg.snapshot_interval > 0
-                and n % cfg.snapshot_interval == 0
+                and self.cfg.snapshot_interval > 0
+                and n % self.cfg.snapshot_interval == 0
             ):
-                if self.is_cuda:
-                    loc_int = xp.asnumpy(self.p_now[g:-g, g:-g])  # type: ignore[union-attr]
-                else:
-                    loc_int = self.p_now[g:-g, g:-g]
-                global_field = m.gather_field(np.ascontiguousarray(loc_int))
-                if self.comm.Get_rank() == 0 and global_field is not None:
-                    from acoustic_sim.plotting import save_snapshot
-
+                full_field = self._gather_field()
+                if is_root:
+                    sx, sy = self.source.position_at(n, self.dt)
                     save_snapshot(
-                        self.model,
-                        global_field,
-                        n,
-                        snapshot_dir,
+                        self.model, full_field, n, snapshot_dir,
                         receivers=self.receivers,
-                        source_xy=np.array([src_x, src_y]),
-                        db_range=snap_db_range,
+                        source_xy=np.array([sx, sy]),
                     )
 
-            if verbose and self.comm.Get_rank() == 0 and n % max(self.n_steps // 10, 1) == 0:
-                pct = 100.0 * n / self.n_steps
-                print(f"  FDTD step {n}/{self.n_steps}  ({pct:.0f}%)")
+            if verbose and is_root and n % 500 == 0:
+                print(f"  step {n:>6d} / {self.n_steps}")
 
-        # 10. Reduce traces to rank 0.
-        all_traces = np.zeros_like(self.traces)
-        self.comm.Reduce(self.traces, all_traces, op=MPI.SUM, root=0)
+        if verbose and is_root:
+            print(f"  step {self.n_steps:>6d} / {self.n_steps}  (done)")
 
-        return {"traces": all_traces, "dt": self.dt, "n_steps": self.n_steps}
+        return {
+            "traces": self.traces if is_root else np.empty((0, 0)),
+            "dt": self.dt,
+            "n_steps": self.n_steps,
+            "path_slices": [],
+        }

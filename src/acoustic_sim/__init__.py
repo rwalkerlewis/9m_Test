@@ -45,20 +45,24 @@ from acoustic_sim.domains import (
     create_isotropic_domain,
     create_wind_domain,
 )
-from acoustic_sim.fdtd import FDTDConfig, FDTDSolver, MPIDomain
+from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
+from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
 
 __all__ = [
     "DomainMeta",
     "FDTDConfig",
     "FDTDSolver",
-    "MPIDomain",
     "MovingSource",
     "StaticSource",
     "VelocityModel",
     "add_circle_anomaly",
     "add_rectangle_anomaly",
+    "build_domain",
+    "build_receivers",
+    "build_source",
     "check_cfl",
     "check_spatial_sampling",
+    "compute_dt",
     "create_checkerboard_model",
     "create_gradient_model",
     "create_hills_vegetation_domain",
