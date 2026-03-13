@@ -142,10 +142,18 @@ def run_detection_3d(
     classification_history: list[dict] = []
 
     if acoustic_model is not None or fusion_model is not None:
+        # Track how many detections we've seen to decide acoustic vs fusion.
+        n_detections_so_far = sum(1 for d in detections if d["detected"])
+        use_fusion = (fusion_model is not None
+                      and n_detections_so_far >= kinematic_buffer_size)
+        active_model = fusion_model if use_fusion else acoustic_model
+        if active_model is None:
+            active_model = acoustic_model  # fallback
+
         class_label, class_confidence, classification_history = (
             _classify_detections(
                 detections, mfp_result["filtered_traces"], dt,
-                sample_rate, acoustic_model, fusion_model,
+                sample_rate, acoustic_model, fusion_model if use_fusion else None,
                 confidence_threshold,
             )
         )
