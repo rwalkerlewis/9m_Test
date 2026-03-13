@@ -108,10 +108,13 @@ def plot_tracking_3d(
     fire_control: dict,
     weapon_pos: tuple | np.ndarray,
     output_path: str = "tracking_3d.png",
+    maneuver_labels: list[str] | None = None,
+    class_label: str | None = None,
+    class_confidence: float | None = None,
 ) -> None:
-    """Five-panel tracking and fire-control display with altitude.
+    """Six-panel tracking and fire-control display with altitude and maneuver.
 
-    Panels: bearing, range, altitude, lead angle, engagement.
+    Panels: bearing, range, altitude, lead angle, engagement, maneuver/class.
     """
     wp = np.asarray(weapon_pos, dtype=np.float64)
     if len(wp) == 2:
@@ -137,7 +140,8 @@ def plot_tracking_3d(
 
     valid = ~np.isnan(pos_track[:, 0])
 
-    fig, axes = plt.subplots(5, 1, figsize=(10, 15), sharex=True)
+    n_panels = 6 if maneuver_labels or class_label else 5
+    fig, axes = plt.subplots(n_panels, 1, figsize=(10, 3 * n_panels), sharex=True)
 
     # Panel 1: Bearing.
     ax = axes[0]
@@ -192,6 +196,36 @@ def plot_tracking_3d(
     ax.set_xlabel("Time [s]")
     ax.legend(fontsize=7)
     ax.set_title("Engagement Envelope")
+
+    # Panel 6: Maneuver classification + source class (optional).
+    if n_panels == 6:
+        ax = axes[5]
+        if maneuver_labels:
+            # Map maneuver labels to numeric codes for step plot.
+            maneuver_names = sorted(set(maneuver_labels))
+            maneuver_map = {n: i for i, n in enumerate(maneuver_names)}
+            maneuver_codes = [maneuver_map[m] for m in maneuver_labels]
+            # Use track times or generate equally spaced times.
+            if len(maneuver_codes) == len(t_track):
+                ax.step(t_track, maneuver_codes, where="mid", lw=1.5,
+                        color="purple", label="Maneuver")
+            else:
+                t_man = np.linspace(t_track[0], t_track[-1], len(maneuver_codes))
+                ax.step(t_man, maneuver_codes, where="mid", lw=1.5,
+                        color="purple", label="Maneuver")
+            ax.set_yticks(range(len(maneuver_names)))
+            ax.set_yticklabels(maneuver_names, fontsize=7)
+        if class_label:
+            conf_str = f" ({class_confidence:.2f})" if class_confidence else ""
+            ax.axhline(0, color="gray", ls="--", lw=0.5)
+            ax.text(0.02, 0.95, f"Class: {class_label}{conf_str}",
+                    transform=ax.transAxes, fontsize=9,
+                    verticalalignment="top",
+                    bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.7))
+        ax.set_xlabel("Time [s]")
+        ax.set_ylabel("Maneuver / Class")
+        ax.set_title("Maneuver Detection & Source Classification")
+        ax.legend(fontsize=7)
 
     fig.suptitle("3D Tracking & Fire Control")
     fig.tight_layout()
