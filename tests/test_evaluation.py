@@ -76,8 +76,8 @@ def run_full_evaluation():
     # Generate shared dataset.
     print("\n  Generating classification dataset...")
     dataset = generate_classification_dataset(
-        n_samples_per_class=200, dt=1.0 / 4000,
-        window_duration=0.5, seed=42,
+        n_samples_per_class=250, dt=1.0 / 4000,
+        window_duration=1.0, seed=42,
     )
     sample_rate = 1.0 / dataset["dt"]
 
