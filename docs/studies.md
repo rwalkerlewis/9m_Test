@@ -19,6 +19,7 @@ For the physics underlying these studies, see [Physics Background](physics.md). 
 9. [Study 8: Sensor Position Errors](#9-study-8-sensor-position-errors)
 10. [Study 9: Mixed Failure Modes](#10-study-9-mixed-failure-modes)
 11. [Evidence Summary](#11-evidence-summary)
+12. [Extending Studies to 3D](#12-extending-studies-to-3d)
 
 ---
 
@@ -522,6 +523,69 @@ python -c "from acoustic_sim.studies import study_array_geometry; study_array_ge
 python -c "from acoustic_sim.studies import study_sensor_faults; study_sensor_faults()"
 python -c "from acoustic_sim.studies import study_echo_domains; study_echo_domains()"
 python -c "from acoustic_sim.studies import study_mixed_failures; study_mixed_failures()"
+```
+
+---
+
+## 12. Extending Studies to 3D
+
+### 12.1 Architecture Support
+
+The study framework's design principle — separate FDTD simulation from detection processing — applies equally to the 3D pipeline. A single 3D forward-model run can serve as the base for many 3D detection experiments:
+
+```python
+from acoustic_sim.forward_3d import simulate_scenario_3d
+from acoustic_sim.detection_main_3d import run_detection_3d, evaluate_results_3d
+
+# Generate 3D base traces (once)
+scenario = simulate_scenario_3d(sources, mics, dt, n_steps, ...)
+
+# Sweep parameters (many times, fast)
+for z_spacing in [5, 10, 20, 50]:
+    result = run_detection_3d(
+        scenario["traces"], scenario["mic_positions"], scenario["dt"],
+        z_min=0, z_max=100, z_spacing=z_spacing,
+    )
+    metrics = evaluate_results_3d(result, scenario["true_positions"][0],
+                                   scenario["true_velocities"][0],
+                                   scenario["true_times"])
+    print(f"z_spacing={z_spacing}m → loc_error={metrics['mean_loc_error']:.1f}m")
+```
+
+### 12.2 Potential 3D Study Dimensions
+
+The following study dimensions are architecturally supported but not yet implemented as standalone study functions:
+
+| Study | What It Would Vary | Expected Findings |
+|---|---|---|
+| **Z-grid resolution** | z_spacing: 2, 5, 10, 20, 50 m | Finer z-spacing improves altitude estimation but increases computation |
+| **Altitude sensitivity** | Source altitude: 10, 30, 50, 100, 200 m | Higher sources have weaker signals; range estimation improves (more elevation separation) |
+| **Ground reflection** | With/without ground reflection | Ground reflection creates interference patterns that may help or hurt localisation |
+| **3D array geometry** | Planar vs. non-planar mic arrays | Non-planar arrays (sensors at different heights) provide better elevation resolution |
+| **ML classification accuracy** | Acoustic-only vs. fusion vs. kinematic-only | Fusion expected to outperform single-modality classifiers |
+| **Maneuver-adaptive tracking** | With/without maneuver detection | Maneuver detection should improve tracking during evasive flight |
+| **Class-based engagement** | With/without classification | Classification should reduce false engagements on non-threats |
+
+### 12.3 Implementation Pattern
+
+Any 3D study can follow the existing study pattern:
+
+```python
+def study_3d_altitude(
+    altitudes=(10, 30, 50, 100, 200),
+    output_dir="output/studies/3d_altitude",
+):
+    """Example: altitude sensitivity study."""
+    results = {}
+    for alt in altitudes:
+        # Create source at specified altitude
+        source = CircularOrbitSource3D(..., altitude=alt, signal=signal)
+        scenario = simulate_scenario_3d([source], mics, dt, n_steps)
+        detection = run_detection_3d(scenario["traces"], ...)
+        metrics = evaluate_results_3d(detection, ...)
+        results[f"{alt}m"] = metrics
+    # Print comparison table, generate comparison plot
+    return results
 ```
 
 ---
