@@ -66,6 +66,16 @@ pip install cupy-cuda12x
 
 If CuPy is unavailable or no GPU is detected, the code falls back to NumPy with a warning.
 
+### 1.4 Optional ML Classification (PyTorch)
+
+The ML classification subsystem (acoustic source classification, fusion classification, maneuver detection) requires PyTorch:
+
+```bash
+pip install torch
+```
+
+If PyTorch is not installed, the 3D detection pipeline runs in baseline mode (no classification). All non-ML functionality works without PyTorch.
+
 ### 1.4 Docker
 
 A Docker image with all dependencies (including MPI and CUDA) is provided:
@@ -767,4 +777,286 @@ The cyan dashed line marks `1/c` (reference slowness). A bright track at this sl
 
 ---
 
-*Next: [Configuration Reference](configuration.md) — Complete parameter reference.*
+## 11. 3D Pipeline Usage
+
+### 11.1 Creating 3D Sources
+
+```python
+from acoustic_sim.sources_3d import (
+    StaticSource3D, MovingSource3D, CircularOrbitSource3D,
+    LoiterApproachSource3D, EvasiveSource3D, CustomTrajectorySource3D,
+)
+from acoustic_sim.sources import make_drone_harmonics
+
+# Create a drone signal
+n_steps = 40000
+dt = 0.00025  # 4 kHz sample rate
+signal = make_drone_harmonics(n_steps, dt, fundamental=150.0, n_harmonics=6)
+
+# Static source at 50 m altitude
+src = StaticSource3D(x=100, y=200, z=50, signal=signal)
+
+# Circular orbit at 50 m altitude
+src = CircularOrbitSource3D(
+    cx=0, cy=0, radius=100, angular_velocity=0.1,
+    start_angle=0, signal=signal, altitude=50.0,
+)
+
+# Loiter then descend
+src = LoiterApproachSource3D(
+    orbit_cx=200, orbit_cy=200, orbit_radius=80,
+    orbit_duration=30.0, approach_target_x=0, approach_target_y=0,
+    approach_speed=15.0, signal=signal,
+    orbit_altitude=80.0, approach_target_z=0.0, descent_rate=3.0,
+)
+```
+
+### 11.2 Creating 3D Receivers
+
+```python
+from acoustic_sim.receivers_3d import (
+    create_receiver_circle_3d,
+    create_receiver_nested_circular_3d,
+    create_receiver_custom_3d,
+)
+
+# Circular array on the ground
+mics = create_receiver_circle_3d(cx=0, cy=0, radius=0.5, count=16, z=0.0)
+
+# Custom 3D positions (e.g., sensors on a building)
+mics = create_receiver_custom_3d([
+    (0.0, 0.0, 0.0),
+    (0.5, 0.0, 0.0),
+    (0.0, 0.5, 0.0),
+    (0.0, 0.0, 2.0),  # elevated sensor
+])
+```
+
+### 11.3 Running the 3D Analytical Forward Model
+
+```python
+from acoustic_sim.forward_3d import simulate_scenario_3d
+
+scenario = simulate_scenario_3d(
+    sources=[src],
+    mic_positions=mics,
+    dt=dt,
+    n_steps=n_steps,
+    sound_speed=343.0,
+    enable_ground_reflection=True,
+    ground_reflection_coeff=-0.9,
+    ground_z=0.0,
+    wind_noise_enabled=True,
+    sensor_noise_enabled=True,
+)
+
+traces = scenario["traces"]           # (n_mics, n_steps)
+true_positions = scenario["true_positions"]  # list of (n_steps, 3) per source
+```
+
+### 11.4 Running the 3D FDTD Forward Model
+
+```python
+from acoustic_sim.forward_3d import simulate_scenario_3d_fdtd
+
+scenario = simulate_scenario_3d_fdtd(
+    sources=[src],
+    mic_positions=mics,
+    total_time=2.0,
+    sound_speed=343.0,
+    dx=1.0,         # coarser grid for 3D (memory!)
+    z_min=-5.0,
+    z_max=120.0,
+    damping_width=10,
+)
+```
+
+### 11.5 Running the 3D Detection Pipeline
+
+```python
+from acoustic_sim.detection_main_3d import run_detection_3d, evaluate_results_3d
+
+# Stage 2: Detection (sensor data only)
+result = run_detection_3d(
+    scenario["traces"],
+    scenario["mic_positions"],
+    scenario["dt"],
+    sound_speed=343.0,
+    weapon_position=(0.0, 0.0, 0.0),
+    # Z-grid parameters
+    z_min=0.0,
+    z_max=100.0,
+    z_spacing=10.0,
+    # Detection parameters (same as 2D)
+    fundamental=150.0,
+    n_harmonics=6,
+    detection_threshold=0.25,
+)
+
+# Stage 3: Evaluation
+metrics = evaluate_results_3d(
+    result,
+    true_positions=scenario["true_positions"][0],
+    true_velocities=scenario["true_velocities"][0],
+    true_times=scenario["true_times"],
+)
+
+print(f"Detection rate: {metrics['detection_rate']*100:.0f}%")
+print(f"3D loc error: {metrics['mean_loc_error']:.1f} m")
+print(f"First shot miss: {metrics['first_shot_miss']:.2f} m")
+```
+
+### 11.6 3D Plotting
+
+```python
+from acoustic_sim.plotting_3d import (
+    plot_3d_trajectory, plot_altitude_vs_time, plot_tracking_3d,
+)
+
+plot_3d_trajectory(
+    true_positions=scenario["true_positions"][0],
+    estimated_positions=result["track"]["positions"],
+    mic_positions=scenario["mic_positions"],
+    weapon_pos=(0, 0, 0),
+    output_path="output/trajectory_3d.png",
+)
+
+plot_altitude_vs_time(
+    times=scenario["true_times"],
+    true_z=scenario["true_positions"][0][:, 2],
+    estimated_z=result["track"]["positions"][:, 2],
+    estimated_times=result["track"]["times"],
+    output_path="output/altitude.png",
+)
+```
+
+---
+
+## 12. ML Classification
+
+### 12.1 Generating Training Data
+
+```python
+from acoustic_sim.ml.data_generation import (
+    generate_classification_dataset,
+    generate_maneuver_dataset,
+)
+
+# Source classification dataset (6 classes × 200 samples)
+cls_data = generate_classification_dataset(
+    n_samples_per_class=200,
+    dt=1.0/4000,
+    window_duration=0.5,
+    seed=42,
+)
+print(f"Generated {len(cls_data['signals'])} classification samples")
+print(f"Classes: {cls_data['class_names']}")
+
+# Maneuver detection dataset (6 classes × 400 samples)
+man_data = generate_maneuver_dataset(
+    n_samples_per_class=400,
+    window_size=20,
+    seed=42,
+)
+print(f"Generated {len(man_data['labels'])} maneuver samples")
+```
+
+### 12.2 Training the Acoustic Classifier
+
+```python
+import torch
+from acoustic_sim.ml.acoustic_classifier import AcousticClassifier
+from acoustic_sim.ml.training import prepare_acoustic_data, train_classifier
+
+# Prepare mel-spectrogram tensors
+X, y = prepare_acoustic_data(
+    cls_data["signals"], cls_data["labels"],
+    sample_rate=4000.0,
+)
+
+# Train/val split
+n_train = int(0.8 * len(y))
+X_train, X_val = X[:n_train], X[n_train:]
+y_train, y_val = y[:n_train], y[n_train:]
+
+# Train
+model = AcousticClassifier(n_classes=6)
+history = train_classifier(model, X_train, y_train, X_val, y_val,
+                           n_epochs=50, lr=1e-3)
+print(f"Final val accuracy: {history['val_acc'][-1]:.3f}")
+
+# Save model
+torch.save(model.state_dict(), "acoustic_classifier.pt")
+```
+
+### 12.3 Training the Fusion Classifier
+
+```python
+from acoustic_sim.ml.fusion_classifier import FusionClassifier
+from acoustic_sim.ml.training import train_fusion_classifier
+
+# Assume kinematic features have been extracted
+# X_kinematic: (N, 14) tensor of kinematic features
+X_kin = torch.randn(len(y), 14)  # placeholder
+
+fusion_model = FusionClassifier(n_classes=6)
+fusion_model.load_acoustic_weights(model)  # warm start from acoustic model
+
+history = train_fusion_classifier(
+    fusion_model,
+    X_train, X_kin[:n_train], y_train,
+    X_val, X_kin[n_train:], y_val,
+    n_epochs=50, lr=5e-4,
+)
+```
+
+### 12.4 Training the Maneuver Classifier
+
+```python
+from acoustic_sim.ml.maneuver_classifier import ManeuverClassifier
+
+# Prepare data: (N, window_size, 6) → (N, 6, window_size) for Conv1d
+features = torch.tensor(man_data["features"], dtype=torch.float32)
+features = features.permute(0, 2, 1)  # (N, 6, window_size)
+labels = torch.tensor(man_data["labels"], dtype=torch.long)
+
+n_train = int(0.8 * len(labels))
+man_model = ManeuverClassifier(n_classes=6)
+history = train_classifier(
+    man_model,
+    features[:n_train], labels[:n_train],
+    features[n_train:], labels[n_train:],
+    n_epochs=50,
+)
+```
+
+### 12.5 Using Classifiers in the Detection Pipeline
+
+```python
+from acoustic_sim.detection_main_3d import run_detection_3d
+
+# Load pre-trained models
+acoustic_model = AcousticClassifier(n_classes=6)
+acoustic_model.load_state_dict(torch.load("acoustic_classifier.pt"))
+acoustic_model.eval()
+
+# Run 3D detection with ML classification
+result = run_detection_3d(
+    scenario["traces"],
+    scenario["mic_positions"],
+    scenario["dt"],
+    # ML models
+    acoustic_model=acoustic_model,
+    fusion_model=None,          # or provide a trained FusionClassifier
+    maneuver_model=man_model,   # trained ManeuverClassifier
+    confidence_threshold=0.7,
+)
+
+print(f"Source class: {result['class_label']} "
+      f"(confidence: {result['class_confidence']:.2f})")
+print(f"Maneuver: {result['maneuver_class']}")
+```
+
+---
+
+*Next: [Configuration Reference](configuration.md) — Complete parameter reference, including 3D and ML parameters.*
