@@ -15,6 +15,15 @@ For the underlying physics, see [Physics Background](physics.md).
 5. [Fire Control](#5-fire-control)
 6. [Noise Generation](#6-noise-generation)
 7. [Validation Checks](#7-validation-checks)
+8. [3D FDTD Solver](#8-3d-fdtd-solver)
+9. [Analytical 3D Forward Model](#9-analytical-3d-forward-model)
+10. [3D Matched Field Processor](#10-3d-matched-field-processor)
+11. [3D Extended Kalman Filter Tracker](#11-3d-extended-kalman-filter-tracker)
+12. [3D Fire Control](#12-3d-fire-control)
+13. [Acoustic Source Classifier](#13-acoustic-source-classifier)
+14. [Fusion Classifier](#14-fusion-classifier)
+15. [Maneuver Classifier](#15-maneuver-classifier)
+16. [Training Data Generation](#16-training-data-generation)
 
 ---
 
@@ -679,4 +688,556 @@ The received energy should be within two orders of magnitude of the geometric sp
 
 ---
 
-*Next: [Code Architecture & Module Reference](architecture.md) — How these algorithms are organised into code modules.*
+## 8. 3D FDTD Solver
+
+**Source:** `src/acoustic_sim/fdtd_3d.py` → `FDTD3DSolver`
+
+### 8.1 Time-Stepping Scheme
+
+The 3D FDTD extends the 2D leapfrog scheme ([Section 2](#2-fdtd-solver)) with a third spatial dimension:
+
+```
+p^{n+1}[i,j,k] = 2·p^n[i,j,k] - p^{n-1}[i,j,k]
+                  + C²[i,j,k]·∇²_h p^n[i,j,k]
+                  - σ[i,j,k]·(p^n[i,j,k] - p^{n-1}[i,j,k])
+```
+
+where indices `(i, j, k)` correspond to `(z, y, x)` in the 3D array. The discrete Laplacian is:
+
+```
+∇²_h p[i,j,k] = 3·c₀·p[i,j,k]
+    + Σ_{m=1}^{M} c_m · (p[i+m,j,k] + p[i-m,j,k]     (z-direction)
+                        + p[i,j+m,k] + p[i,j-m,k]       (y-direction)
+                        + p[i,j,k+m] + p[i,j,k-m])      (x-direction)
+```
+
+The factor of 3 on the centre weight accounts for three spatial dimensions (instead of 2 for 2D).
+
+### 8.2 CFL Condition
+
+The 3D CFL stability limit uses `√3` instead of `√2`:
+
+```
+dt ≤ 2·dx / ((c_max + |v⃗_wind|) · √(3·ρ_stencil))
+```
+
+The auto-dt computation applies the same `cfl_safety` factor (default 0.9).
+
+### 8.3 6-Face Sponge Damping
+
+The damping array `σ[i,j,k]` applies sponge layers on all six faces of the 3D domain:
+
+```
+d_edge = min(i, nz-1-i, j, ny-1-j, k, nx-1-k)
+
+σ[i,j,k] = air_absorption                                    if d_edge ≥ w
+          = air_absorption + (damping_max - air_absorption) × ((w - d_edge) / w)²   otherwise
+```
+
+This is the same quadratic ramp as 2D but applied in all three directions simultaneously.
+
+### 8.4 MPI z-Slab Decomposition
+
+The global grid of `nz` z-slabs is split across MPI ranks:
+
+```
+For rank r of size P:
+    base = nz // P
+    remainder = nz % P
+    slab_start = Σ_{i=0}^{r-1} (base + (1 if i < remainder else 0))
+    slab_end = slab_start + base + (1 if r < remainder else 0)
+    ghost_lo = M  if r > 0      else 0
+    ghost_hi = M  if r < P-1    else 0
+    pad_nz = local_nz + ghost_lo + ghost_hi
+```
+
+**Halo exchange** transfers M z-slabs between adjacent ranks using `MPI.Sendrecv`:
+
+```
+For each pressure field (p_now, p_prev):
+    If rank > 0:
+        Send top M owned slabs to rank-1
+        Receive M slabs from rank-1 into top ghost zone
+    If rank < P-1:
+        Send bottom M owned slabs to rank+1
+        Receive M slabs from rank+1 into bottom ghost zone
+```
+
+For CUDA, slabs are transferred via `cupy.asnumpy()` → MPI → `cupy.asarray()`.
+
+### 8.5 Trilinear Source Injection
+
+The 3D source position `(sx, sy, sz)` is distributed to the 8 surrounding cells using trilinear interpolation:
+
+```
+For (diz, diy, dix) in {0,1}³:
+    weight = |diz - wz| × |diy - wy| × |dix - wx|
+    p[liz + diz, giy + diy, gix + dix] += amplitude × signal[n] × weight
+```
+
+where `(wx, wy, wz)` are the fractional offsets within the cell.
+
+### 8.6 Trilinear Receiver Sampling
+
+Receiver pressure is sampled using the same 8-cell trilinear interpolation:
+
+```
+p_recv = Σ_{diz,diy,dix ∈ {0,1}} p[iz+diz, iy+diy, ix+dix] × w_z × w_y × w_x
+```
+
+Receiver weights are pre-computed during initialisation. Only receivers whose interpolation stencil falls within the local rank's owned slabs are sampled locally; values are gathered to rank 0 via `MPI.gather`.
+
+### 8.7 Snapshots
+
+Snapshots save a single z-slice (default: middle slab) as a NumPy `.npy` file at regular intervals, enabling 2D visualisation of the evolving wavefield.
+
+---
+
+## 9. Analytical 3D Forward Model
+
+**Source:** `src/acoustic_sim/forward_3d.py`
+
+### 9.1 Overview
+
+The analytical model generates synthetic microphone traces without solving the wave equation. It uses point-source spherical spreading with optional ground reflection and air absorption. This is orders of magnitude faster than the 3D FDTD but assumes a homogeneous medium (no refraction, no scattering).
+
+### 9.2 Direct-Path Computation
+
+For each microphone `m` and each time step `i`:
+
+```
+1. Source position at step i: (sx, sy, sz) = source.position_at(i, dt)
+2. Distance: d[i] = √((sx - mx)² + (sy - my)² + (sz - mz)²), clamped to ≥ 1 m
+3. Amplitude: A[i] = (1/d[i]) × exp(-α × d[i])
+4. Delay in samples: τ[i] = d[i] / (c × dt)
+5. Emission index: e[i] = i - τ[i]
+6. If 0 ≤ e[i] < n_steps:
+     Interpolated signal: s_interp = (1-frac) × sig[⌊e⌋] + frac × sig[⌈e⌉]
+     traces[m, i] += A[i] × s_interp
+```
+
+The key insight is the **emission-time calculation**: the signal received at step `i` was emitted at step `e[i] = i - τ[i]`. For a moving source, the delay `τ[i]` changes every timestep, naturally producing Doppler shift.
+
+### 9.3 Ground Reflection
+
+When `enable_ground_reflection=True`, a second contribution is added using the image source at `(sx, sy, 2·z_ground - sz)`:
+
+```
+1. Image distance: d_img[i] = √((sx - mx)² + (sy - my)² + ((2·z_ground - sz) - mz)²)
+2. Image amplitude: A_img[i] = (R / d_img[i]) × exp(-α × d_img[i])
+3. Image delay: τ_img[i] = d_img[i] / (c × dt)
+4. Same emission-time interpolation, scaled by A_img
+```
+
+### 9.4 Multi-Source Scenario Assembly
+
+`simulate_scenario_3d()` combines traces from multiple sources with noise:
+
+```
+1. For each source: compute traces via simulate_3d_traces()
+2. Sum all source traces
+3. Add wind noise (spatial correlation uses 2D x,y positions)
+4. Add sensor self-noise
+5. Return: combined traces, per-source clean traces, ground truth
+```
+
+### 9.5 FDTD-Based 3D Alternative
+
+`simulate_3d_traces_fdtd()` provides a wave-equation-based alternative:
+
+```
+1. Determine domain bounds from source trajectory + receiver positions + margin
+2. Create isotropic 3D velocity model
+3. Construct FDTD3DSolver and run
+4. Return traces and actual dt
+```
+
+This is slower but captures diffraction, multipath, and heterogeneous-medium effects.
+
+---
+
+## 10. 3D Matched Field Processor
+
+**Source:** `src/acoustic_sim/processor_3d.py` → `matched_field_process_3d()`
+
+### 10.1 Overview
+
+The 3D MFP extends the 2D polar-grid processor ([Section 3](#3-matched-field-processor)) with an elevation dimension. The search grid becomes `(azimuth × range × z)`, and the beam-power map has three spatial dimensions.
+
+### 10.2 Grid Construction
+
+```
+azimuths = 0° to 360° in azimuth_spacing_deg steps  → (n_az,)
+ranges = range_min to range_max in range_spacing steps  → (n_range,)
+z_values = z_min to z_max in z_spacing steps  → (n_gz,)
+```
+
+Horizontal positions: `gx[i,j] = cx + ranges[j]·cos(azimuths[i])`, `gy[i,j] = cy + ranges[j]·sin(azimuths[i])`.
+
+### 10.3 4D Travel Times
+
+Travel times are computed for every grid-point–microphone combination:
+
+```
+tt[i, j, k, m] = √((gx[i,j] - mx[m])² + (gy[i,j] - my[m])² + (gz[k] - mz[m])²) / c
+```
+
+Shape: `(n_az, n_range, n_gz, n_mics)`.
+
+### 10.4 5D Steering Vectors
+
+```
+sv[f, i, j, k, m] = exp(-j·2π·freqs[f]·tt[i,j,k,m])
+```
+
+Shape: `(n_freq, n_az, n_range, n_gz, n_mics)`.
+
+### 10.5 3D MVDR Beam Power
+
+For each frequency bin, the MVDR beam power is computed over the full 3D grid:
+
+```
+P[f, i, j, k] = 1 / Re(a^H · C⁻¹ · a)
+```
+
+with diagonal loading and fallback to conventional beamforming if the CSDM is ill-conditioned (same logic as 2D).
+
+### 10.6 Broadband Sum and Peak Finding
+
+Broadband weighted sum: `BPM[i, j, k] = Σ_f w(f)·P[f, i, j, k]` with `w(f) = (f/f_max)²`.
+
+**Stationary rejection** operates on a 2D projection: `BPM_2d[i,j] = max_k BPM[i,j,k]`, then the standard CV-based stationary mask is applied to all z-slices.
+
+**3D peak finding** locates maxima in the full 3D beam-power volume with exclusion zones in azimuth, range, and z. When `n_gz = 1` (single z-slice), it delegates to the 2D `find_peaks_polar`.
+
+### 10.7 Single-Z-Slice Identity
+
+When `z_min = z_max = 0`, the grid has a single z-slice and all outputs are identical to the 2D processor. This ensures backward compatibility.
+
+---
+
+## 11. 3D Extended Kalman Filter Tracker
+
+**Source:** `src/acoustic_sim/tracker_3d.py` → `EKFTracker3D`
+
+### 11.1 6-State Model
+
+The 3D tracker uses the state vector:
+
+```
+x = [x, y, z, vx, vy, vz]^T
+```
+
+### 11.2 3D Motion Model
+
+Constant-velocity prediction with 6×6 transition matrix:
+
+```
+F = | I₃  Δt·I₃ |
+    | 0₃  I₃    |
+```
+
+Process noise covariance (continuous-time white-noise acceleration):
+
+```
+Q = q × | Δt⁴/4·I₃    Δt³/2·I₃ |
+        | Δt³/2·I₃    Δt²·I₃   |
+```
+
+where `q = σ_a² × q_multiplier` and `q_multiplier` is set by the maneuver classifier (default 1.0).
+
+### 11.3 3D Measurement Model
+
+Three observables:
+
+```
+h(x) = | atan2(y - cy, x - cx)              |  ← bearing (horizontal only)
+       | √((x-cx)² + (y-cy)² + (z)²)       |  ← 3D range
+       | A_source / max(range_3d, 1)         |  ← amplitude
+```
+
+The bearing is computed from the horizontal (x, y) projection — it does not depend on z. This is physically appropriate: a horizontal microphone array has negligible elevation resolution.
+
+### 11.4 3D Jacobian
+
+The Jacobian `H = ∂h/∂x` is a 3×6 matrix:
+
+```
+H = | -dy/r²_h   dx/r²_h   0         0  0  0 |
+    |  dx/r₃d    dy/r₃d    dz/r₃d    0  0  0 |
+    | -A·dx/r³   -A·dy/r³  -A·dz/r³  0  0  0 |
+```
+
+where `r_h = √(dx² + dy²)` (horizontal range) and `r₃d = √(dx² + dy² + dz²)` (3D range).
+
+### 11.5 3D Initialisation
+
+On first detection with bearing `θ₀`, range `r₀`, and z estimate `z₀`:
+
+```
+x₀ = [cx + r₀·cos(θ₀), cy + r₀·sin(θ₀), z₀, 0, 0, 0]
+
+P_pos(x,y) = R_rot · diag(σ_r², σ_cross²) · R_rot^T   (same as 2D)
+P_z = max(|z₀| × 0.5, 10)²
+P_vel = σ_v² · I₃
+
+P = blkdiag(P_pos_xy, P_z, P_vel)
+```
+
+### 11.6 Multi-Target 3D Tracker
+
+`MultiTargetTracker3D` extends the 2D multi-target tracker with 3D Euclidean distance for gating:
+
+```
+cost[t, d] = √((x_track - x_det)² + (y_track - y_det)² + (z_track - z_det)²)
+```
+
+Otherwise, the nearest-neighbour association, birth, death, and confirmation logic is identical to the 2D version.
+
+### 11.7 Adaptive Process Noise
+
+The `set_process_noise_multiplier(m)` method allows the maneuver classifier to adjust the EKF's process noise at runtime:
+
+| Maneuver | Multiplier | Effect |
+|---|---|---|
+| steady | 1.0 | Normal tracking |
+| turning | 5.0 | Wider prediction uncertainty |
+| accelerating | 3.0 | Moderate uncertainty increase |
+| diving | 5.0 | Wider uncertainty for altitude changes |
+| evasive | 10.0 | Very wide uncertainty; engagement envelope contracts |
+| hovering | 0.5 | Tighter tracking; engagement envelope widens |
+
+---
+
+## 12. 3D Fire Control
+
+**Source:** `src/acoustic_sim/fire_control_3d.py`
+
+### 12.1 3D Lead Angle
+
+The 3D lead-angle solver (`compute_lead_3d`) decomposes the aim direction into azimuth and elevation:
+
+```
+aim_bearing = atan2(aim_y, aim_x)
+aim_elevation = atan2(aim_z, √(aim_x² + aim_y²))
+
+lead_angle_az = aim_bearing - direct_bearing
+lead_angle_el = aim_elevation - direct_elevation
+```
+
+The iterative convergence logic is identical to the 2D version:
+
+```
+tof = time_of_flight(||target - weapon||)
+for i in 1..max_iterations:
+    intercept = target_pos + target_vel × tof
+    new_range = ||intercept - weapon||
+    new_tof = time_of_flight(new_range)
+    if |new_tof - tof| < 1e-6: break
+    tof = new_tof
+```
+
+### 12.2 3D Engagement Envelope
+
+`compute_engagement_3d` extends the 2D engagement check with:
+
+1. **3D position uncertainty**: Uses the 3×3 position-covariance block (`P[:3, :3]`), computes `σ_max = √(max eigenvalue)`, and `pos_unc = 2·σ_max`.
+
+2. **3D crossing speed**: Decomposes target velocity into line-of-sight and perpendicular components in 3D:
+   ```
+   v_along = v⃗ · n̂_LOS
+   v_cross = ||v⃗ - v_along · n̂_LOS||
+   ```
+
+3. **Class-based rules**:
+   - Threat classes: `quadcopter`, `hexacopter`, `fixed_wing` → eligible for engagement
+   - Non-threat classes: `bird`, `ground_vehicle`, `unknown` → `can_fire = False`, reason = `NON_THREAT`
+   - Low confidence: `can_fire = False` if `class_confidence < confidence_threshold` (default 0.7)
+
+4. **Maneuver-based rules**: During `evasive` maneuvers, the uncertainty threshold is tightened to `3 × pattern_diameter` (instead of the standard `pattern_diameter > pos_unc` check).
+
+### 12.3 3D Miss Distance
+
+```
+For each fire-control timestep:
+    t_impact = t_fire + tof
+    true_pos = interp(t_impact, true_times, true_positions)  (3D interpolation)
+    miss = ||intercept_predicted - true_pos||₃D
+    hit = (miss < pattern_diameter / 2)
+```
+
+### 12.4 3D Threat Prioritisation
+
+Identical formula to 2D but using 3D range and 3D closing speed:
+
+```
+score = w_range/r₃d + w_closing · max(v_closing_3d, 0) + w_quality / pos_unc_3d
+```
+
+---
+
+## 13. Acoustic Source Classifier
+
+**Source:** `src/acoustic_sim/ml/acoustic_classifier.py` → `AcousticClassifier`
+
+### 13.1 Architecture
+
+```
+Input: (batch, 1, n_mels, n_time)
+
+Conv2d(1 → 16, 3×3, pad=1) → BatchNorm2d(16) → ReLU
+Conv2d(16 → 32, 3×3, pad=1) → BatchNorm2d(32) → ReLU
+MaxPool2d(2×2)
+Conv2d(32 → 64, 3×3, pad=1) → BatchNorm2d(64) → ReLU
+Global Average Pooling → (batch, 64)
+Linear(64 → n_classes)
+
+Output: (batch, n_classes) logits
+```
+
+Total parameters (for n_classes=6): ~26,000. This is deliberately small — the spectrogram features are low-dimensional and the classification task is well-structured.
+
+### 13.2 Embedding Extraction
+
+`get_embedding(x)` returns the 64-dimensional feature vector before the final FC layer. This embedding is used by the `FusionClassifier` as the acoustic branch output.
+
+### 13.3 Training
+
+Standard cross-entropy loss with Adam optimiser. Default hyperparameters:
+
+| Parameter | Default | Notes |
+|---|---|---|
+| Learning rate | 1e-3 | |
+| Batch size | 32 | |
+| Epochs | 50 | Validation accuracy plateaus by epoch 30–40 |
+
+---
+
+## 14. Fusion Classifier
+
+**Source:** `src/acoustic_sim/ml/fusion_classifier.py` → `FusionClassifier`
+
+### 14.1 Architecture
+
+```
+Branch A (Acoustic):
+    Conv2d(1→16, 3×3) → BN → ReLU
+    Conv2d(16→32, 3×3) → BN → ReLU
+    MaxPool2d(2)
+    Conv2d(32→64, 3×3) → BN → ReLU
+    GAP → (batch, 64)
+
+Branch B (Kinematic):
+    Linear(14 → 32) → ReLU
+    Linear(32 → 32) → ReLU
+    Output: (batch, 32)
+
+Fusion:
+    Concatenate → (batch, 96)
+    Linear(96 → 64) → ReLU
+    Linear(64 → n_classes)
+```
+
+### 14.2 Weight Transfer
+
+`load_acoustic_weights(acoustic_model)` copies the conv/BN parameters from a pre-trained `AcousticClassifier` into the fusion model's acoustic branch. This warm-starts training and avoids catastrophic forgetting of spectral features.
+
+### 14.3 Kinematic-Only Baseline
+
+`KinematicOnlyClassifier` is a simple 3-layer MLP (14 → 32 → 32 → n_classes) that provides a baseline for measuring the added value of acoustic features.
+
+### 14.4 Training
+
+Two-input training loop (`train_fusion_classifier`): each batch provides both mel-spectrogram tensors and kinematic feature vectors. Default learning rate: 5e-4 (lower than acoustic-only to avoid destabilising the pre-trained acoustic branch).
+
+---
+
+## 15. Maneuver Classifier
+
+**Source:** `src/acoustic_sim/ml/maneuver_classifier.py` → `ManeuverClassifier`
+
+### 15.1 Architecture
+
+```
+Input: (batch, 6, N)  — 6 state features × N time steps
+
+Conv1d(6 → 32, kernel=5, pad=2) → ReLU
+Conv1d(32 → 64, kernel=5, pad=2) → ReLU
+Global Average Pooling → (batch, 64)
+Linear(64 → n_classes)
+
+Output: (batch, n_maneuver_classes) logits
+```
+
+### 15.2 Input Preparation
+
+The input is a sliding window of the tracker's state history: `(x, y, z, vx, vy, vz)` over `N` time steps (default 20). Positions are mean-subtracted to remove absolute location dependence. The features are transposed to `(6, N)` for the 1D convolution.
+
+### 15.3 Six Maneuver Classes
+
+| Class | Label | Physical Definition |
+|---|---|---|
+| 0 | `steady` | Constant velocity, constant heading |
+| 1 | `turning` | Circular arc at constant speed |
+| 2 | `accelerating` | Linear trajectory with changing speed |
+| 3 | `diving` | Significant negative z-rate |
+| 4 | `evasive` | Rapidly varying heading and speed |
+| 5 | `hovering` | Near-zero velocity |
+
+---
+
+## 16. Training Data Generation
+
+**Source:** `src/acoustic_sim/ml/data_generation.py`
+
+### 16.1 Source Classification Dataset
+
+`generate_classification_dataset()` creates labeled mel-spectrogram samples:
+
+```
+For each of 6 source classes × n_samples_per_class (default 200):
+    1. Generate class-specific signal (see §16.2)
+    2. Place source at random position (range 50–400 m, random bearing, class-appropriate altitude)
+    3. Create MovingSource3D with random speed and heading
+    4. Run analytical 3D forward model → traces at 9-element L-shaped array
+    5. Add Gaussian noise at random SNR (-5 to 30 dB)
+    6. Beamform (average all channels)
+    7. Store (beamformed_signal, class_label)
+```
+
+### 16.2 Class-Specific Signal Synthesis
+
+| Class | Signal Generator | Key Parameters |
+|---|---|---|
+| `quadcopter` | Multi-rotor harmonics | 4 rotors, fundamental 100–250 Hz, 6 harmonics, 2% freq spread between rotors |
+| `hexacopter` | Multi-rotor harmonics | 6 rotors, fundamental 80–200 Hz, 6 harmonics, 1.5% freq spread |
+| `fixed_wing` | Single-propeller harmonics | 1 rotor, fundamental 50–150 Hz, 8 harmonics, steeper decay (power 0.7) |
+| `bird` | Wing-beat pulses + vocalisations | Beat freq 3–12 Hz, Gaussian-windowed broadband pulses, occasional narrowband 1–8 kHz chirps |
+| `ground_vehicle` | Engine harmonics + tire noise + rumble | Engine fundamental 25–60 Hz, 4 harmonics, bandpass tire noise 200–1000 Hz, pink noise |
+| `unknown` | Weak random noise + faint tonal | Low-level Gaussian + random weak harmonic 50–300 Hz |
+
+The multi-rotor signal generator includes **beat modulation**: each rotor has a slightly different fundamental frequency (randomised within the `freq_spread` range), producing amplitude beats at the difference frequency. This is a physically realistic effect that distinguishes multi-rotor drones from single-propeller aircraft.
+
+### 16.3 Maneuver Dataset
+
+`generate_maneuver_dataset()` creates labeled tracker-state segments:
+
+```
+For each of 6 maneuver classes × n_samples_per_class (default 400):
+    1. Generate physics-based trajectory segment (window_size steps)
+    2. Add tracker noise (position std 1–5 m, velocity std 0.5–2 m/s)
+    3. Mean-subtract positions
+    4. Store ((window_size, 6) features, class_label)
+```
+
+Maneuver segments are generated from kinematic models:
+- **Steady**: Constant velocity, straight line
+- **Turning**: Circular arc with random radius 30–100 m
+- **Accelerating**: Linear path with acceleration 2–8 m/s²
+- **Diving**: Negative z-rate 2–10 m/s, reduced horizontal speed
+- **Evasive**: Random-walk heading + speed perturbations
+- **Hovering**: Near-zero velocity with small positional noise (σ = 0.3 m)
+
+---
+
+*Next: [Code Architecture & Module Reference](architecture.md) — How these algorithms are organised into code modules, including 3D extensions and ML classifiers.*
