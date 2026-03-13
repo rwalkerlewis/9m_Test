@@ -218,8 +218,13 @@ def generate_source_signal(
         params = {"engine_fundamental": engine_fund,
                   "altitude_range": (0, 0), "min_speed": 2}
 
-    else:  # unknown — random noise
-        sig = rng.standard_normal(n_steps) * _P_REF * 10
+    else:  # unknown — very low SNR mixture
+        # Random mix of weak signals to simulate ambiguous detections.
+        sig = rng.standard_normal(n_steps) * _P_REF * 100
+        # Add weak harmonic at random frequency.
+        t = np.arange(n_steps) * dt
+        f0 = rng.uniform(50, 300)
+        sig += _P_REF * 50 * np.sin(2 * math.pi * f0 * t + rng.uniform(0, 2 * math.pi))
         params = {"altitude_range": (0, 200), "min_speed": 0}
 
     return sig, params
