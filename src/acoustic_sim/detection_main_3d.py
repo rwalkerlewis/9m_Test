@@ -76,8 +76,22 @@ def run_detection_3d(
     pellet_decel: float = 1.5,
     pattern_spread_rate: float = 0.025,
     lead_max_iterations: int = 5,
+    # ── ML classifiers (optional) ──
+    acoustic_model=None,
+    fusion_model=None,
+    maneuver_model=None,
+    confidence_threshold: float = 0.7,
+    kinematic_buffer_size: int = 50,
+    maneuver_buffer_size: int = 20,
 ) -> dict:
-    """3D detection / tracking / fire-control — takes ONLY sensor data."""
+    """3D detection / tracking / fire-control — takes ONLY sensor data.
+
+    Optional ML classifiers can be passed in to enable:
+    - Source classification (acoustic_model or fusion_model)
+    - Maneuver-adaptive process noise (maneuver_model)
+
+    When models are None, the pipeline runs without ML (baseline mode).
+    """
     mic_pos = np.asarray(mic_positions, dtype=np.float64)
     if mic_pos.shape[1] == 2:
         mic_pos = np.column_stack([mic_pos, np.zeros(mic_pos.shape[0])])
@@ -88,6 +102,7 @@ def run_detection_3d(
 
     cx = float(np.mean(mic_pos[:, 0]))
     cy = float(np.mean(mic_pos[:, 1]))
+    sample_rate = 1.0 / dt
 
     # ── 3D Matched field processor ──────────────────────────────────────
     mfp_result = matched_field_process_3d(
@@ -121,6 +136,20 @@ def run_detection_3d(
     )
     detections = mfp_result["detections"]
 
+    # ── Source classification (if model provided) ───────────────────────
+    class_label = "unknown"
+    class_confidence = 0.0
+    classification_history: list[dict] = []
+
+    if acoustic_model is not None or fusion_model is not None:
+        class_label, class_confidence, classification_history = (
+            _classify_detections(
+                detections, mfp_result["filtered_traces"], dt,
+                sample_rate, acoustic_model, fusion_model,
+                confidence_threshold,
+            )
+        )
+
     # ── 3D EKF Tracker ──────────────────────────────────────────────────
     track = run_tracker_3d(
         detections,
@@ -132,6 +161,14 @@ def run_detection_3d(
         array_center_x=cx,
         array_center_y=cy,
     )
+
+    # ── Maneuver detection (if model provided) ──────────────────────────
+    maneuver_class = "steady"
+    maneuver_history: list[str] = []
+    if maneuver_model is not None and len(track["positions"]) >= maneuver_buffer_size:
+        maneuver_class, maneuver_history = _detect_maneuvers(
+            track, maneuver_model, maneuver_buffer_size,
+        )
 
     multi_tracks: list[dict] = []
     if max_sources > 1 and "multi_detections" in mfp_result:
@@ -146,7 +183,7 @@ def run_detection_3d(
             array_center_x=cx, array_center_y=cy,
         )
 
-    # ── 3D Fire control ─────────────────────────────────────────────────
+    # ── 3D Fire control (with class label + maneuver info) ──────────────
     fc = run_fire_control_3d(
         track,
         weapon_position=tuple(wp),
@@ -154,6 +191,10 @@ def run_detection_3d(
         pellet_decel=pellet_decel,
         pattern_spread_rate=pattern_spread_rate,
         max_iterations=lead_max_iterations,
+        class_label=class_label,
+        class_confidence=class_confidence,
+        confidence_threshold=confidence_threshold,
+        maneuver_class=maneuver_class,
     )
 
     return {
@@ -161,7 +202,145 @@ def run_detection_3d(
         "track": track,
         "multi_tracks": multi_tracks,
         "fire_control": fc,
+        "class_label": class_label,
+        "class_confidence": class_confidence,
+        "classification_history": classification_history,
+        "maneuver_class": maneuver_class,
+        "maneuver_history": maneuver_history,
     }
+
+
+def _classify_detections(
+    detections: list[dict],
+    filtered_traces: np.ndarray,
+    dt: float,
+    sample_rate: float,
+    acoustic_model,
+    fusion_model,
+    confidence_threshold: float,
+) -> tuple[str, float, list[dict]]:
+    """Run source classification on detected windows.
+
+    Uses the beamformed trace (mean of all channels) for each detected
+    window and runs the acoustic or fusion classifier.
+
+    Returns (final_label, final_confidence, per_window_history).
+    """
+    import torch
+    from acoustic_sim.ml.features import compute_mel_spectrogram
+    from acoustic_sim.ml.data_generation import SOURCE_CLASSES
+
+    history = []
+    class_votes = {c: 0.0 for c in SOURCE_CLASSES}
+
+    model = fusion_model if fusion_model is not None else acoustic_model
+    if model is None:
+        return "unknown", 0.0, history
+
+    model.eval()
+    device = next(model.parameters()).device
+
+    for det in detections:
+        if not det["detected"]:
+            history.append({"label": "unknown", "confidence": 0.0})
+            continue
+
+        # Beamformed trace from filtered traces for this window.
+        beamformed = np.mean(filtered_traces, axis=0)
+
+        # Compute mel spectrogram.
+        mel = compute_mel_spectrogram(beamformed, sample_rate)
+        mel_tensor = torch.tensor(
+            mel[np.newaxis, np.newaxis, :, :], dtype=torch.float32
+        ).to(device)
+
+        with torch.no_grad():
+            logits = model(mel_tensor) if acoustic_model is model else None
+            if logits is None:
+                # Fusion model needs kinematic input — use zeros as fallback.
+                kin = torch.zeros(1, 14, device=device)
+                logits = model(mel_tensor, kin)
+            probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
+
+        pred_idx = int(np.argmax(probs))
+        pred_conf = float(probs[pred_idx])
+        pred_label = SOURCE_CLASSES[pred_idx]
+
+        if pred_conf < confidence_threshold:
+            pred_label = "unknown"
+
+        history.append({"label": pred_label, "confidence": pred_conf})
+        class_votes[pred_label] += pred_conf
+
+    # Final label: weighted majority vote over all windows.
+    if class_votes:
+        final_label = max(class_votes, key=class_votes.get)
+        total = sum(class_votes.values())
+        final_confidence = class_votes[final_label] / max(total, 1e-12)
+    else:
+        final_label = "unknown"
+        final_confidence = 0.0
+
+    return final_label, final_confidence, history
+
+
+def _detect_maneuvers(
+    track: dict,
+    maneuver_model,
+    buffer_size: int = 20,
+) -> tuple[str, list[str]]:
+    """Run maneuver detection on tracker history.
+
+    Returns (current_maneuver_class, per_window_maneuver_history).
+    """
+    import torch
+    from acoustic_sim.ml.data_generation import MANEUVER_CLASSES
+
+    MULTIPLIERS = {
+        "steady": 1.0,
+        "turning": 5.0,
+        "accelerating": 3.0,
+        "diving": 5.0,
+        "evasive": 10.0,
+        "hovering": 0.5,
+    }
+
+    positions = track["positions"]
+    velocities = track["velocities"]
+    n = len(positions)
+    history = []
+
+    maneuver_model.eval()
+    device = next(maneuver_model.parameters()).device
+
+    current_class = "steady"
+
+    for i in range(buffer_size, n + 1):
+        window_pos = positions[i - buffer_size:i]
+        window_vel = velocities[i - buffer_size:i]
+
+        if np.any(np.isnan(window_pos)) or np.any(np.isnan(window_vel)):
+            history.append("steady")
+            continue
+
+        # Normalize positions.
+        mean_pos = np.mean(window_pos, axis=0)
+        norm_pos = window_pos - mean_pos
+
+        # Build feature: (buffer_size, 6) → (1, 6, buffer_size) for Conv1d.
+        features = np.hstack([norm_pos, window_vel])  # (buffer_size, 6)
+        x = torch.tensor(
+            features.T[np.newaxis, :, :], dtype=torch.float32
+        ).to(device)
+
+        with torch.no_grad():
+            logits = maneuver_model(x)
+            pred_idx = int(logits.argmax(dim=1).item())
+
+        current_class = MANEUVER_CLASSES[pred_idx]
+        history.append(current_class)
+
+    return current_class, history
 
 
 # =====================================================================
