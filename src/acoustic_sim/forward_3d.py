@@ -338,3 +338,228 @@ def simulate_scenario_3d(
         "true_velocities": true_velocities_list,
         "true_times": true_times,
     }
+
+
+# =====================================================================
+#  FDTD-based 3D trace generation
+# =====================================================================
+
+def simulate_3d_traces_fdtd(
+    source,
+    mic_positions: np.ndarray,
+    dt: float | None,
+    n_steps: int | None = None,
+    total_time: float = 1.0,
+    sound_speed: float = 343.0,
+    dx: float = 1.0,
+    domain_margin: float = 20.0,
+    z_min: float = -5.0,
+    z_max: float = 120.0,
+    damping_width: int = 10,
+    fd_order: int = 2,
+    air_absorption: float = 0.005,
+    source_amplitude: float = 1.0,
+    verbose: bool = True,
+) -> tuple[np.ndarray, float]:
+    """Generate microphone traces using the 3D FDTD solver.
+
+    Automatically constructs a uniform 3D velocity model around the source
+    and receiver positions.
+
+    Parameters
+    ----------
+    source : 3D source object
+        Must have ``position_at(step, dt) -> (x,y,z)`` and ``signal``.
+    mic_positions : (n_mics, 3) or (n_mics, 2)
+    dt : float or None
+        Time step.  None → auto-compute from CFL.
+    n_steps : int or None
+        Number of steps.  None → compute from ``total_time``.
+    total_time : float
+        Simulation duration [s], used when ``n_steps`` is None.
+    sound_speed : float
+    dx : float
+        Grid spacing [m].
+    domain_margin : float
+        Extra margin beyond source/receiver extent [m].
+    z_min, z_max : float
+        Z-range for the domain.
+    damping_width : int
+        Sponge-layer width in grid cells.
+    fd_order : int
+    air_absorption : float
+    source_amplitude : float
+    verbose : bool
+
+    Returns
+    -------
+    (traces, dt_actual)
+        traces : (n_mics, n_steps) pressure at receivers
+        dt_actual : float, the actual timestep used
+    """
+    from acoustic_sim.domains_3d import DomainMeta3D, create_isotropic_domain_3d
+    from acoustic_sim.fdtd_3d import FDTD3DConfig, FDTD3DSolver
+
+    mic_pos = np.asarray(mic_positions, dtype=np.float64)
+    if mic_pos.shape[1] == 2:
+        mic_pos = np.column_stack([mic_pos, np.zeros(mic_pos.shape[0])])
+
+    # Determine domain extent from source trajectory + receiver positions.
+    all_x = list(mic_pos[:, 0])
+    all_y = list(mic_pos[:, 1])
+
+    # Sample a few source positions to determine extent.
+    test_dt = dt if dt is not None else 1e-4
+    sig_len = len(source.signal) if hasattr(source, 'signal') else 10000
+    for step in range(0, sig_len, max(sig_len // 20, 1)):
+        sx, sy, sz = source.position_at(step, test_dt)
+        all_x.append(sx)
+        all_y.append(sy)
+
+    x_min = min(all_x) - domain_margin
+    x_max = max(all_x) + domain_margin
+    y_min = min(all_y) - domain_margin
+    y_max = max(all_y) + domain_margin
+
+    # Create domain.
+    model, meta = create_isotropic_domain_3d(
+        x_min=x_min, x_max=x_max,
+        y_min=y_min, y_max=y_max,
+        z_min=z_min, z_max=z_max,
+        dx=dx, velocity=sound_speed,
+    )
+
+    if verbose:
+        print(f"  FDTD3D domain: {model.shape} "
+              f"({model.nx}×{model.ny}×{model.nz} cells, dx={dx}m)")
+        ncells = model.nx * model.ny * model.nz
+        mem_mb = ncells * 8 * 2 / 1e6
+        print(f"  Memory estimate: {mem_mb:.1f} MB for pressure fields")
+
+    cfg = FDTD3DConfig(
+        total_time=total_time,
+        dt=dt,
+        damping_width=damping_width,
+        damping_max=0.15,
+        air_absorption=air_absorption,
+        snapshot_interval=0,
+        source_amplitude=source_amplitude,
+        fd_order=fd_order,
+    )
+
+    solver = FDTD3DSolver(model, cfg, source, mic_pos, meta)
+
+    if n_steps is not None:
+        solver.n_steps = n_steps
+
+    result = solver.run(verbose=verbose)
+    return result["traces"], solver.dt
+
+
+def simulate_scenario_3d_fdtd(
+    sources: list,
+    mic_positions: np.ndarray,
+    total_time: float = 1.0,
+    sound_speed: float = 343.0,
+    dx: float = 1.0,
+    domain_margin: float = 20.0,
+    z_min: float = -5.0,
+    z_max: float = 120.0,
+    damping_width: int = 10,
+    fd_order: int = 2,
+    air_absorption: float = 0.005,
+    wind_noise_enabled: bool = True,
+    wind_noise_level_dB: float = 55.0,
+    wind_corner_freq: float = 15.0,
+    wind_correlation_length: float = 3.0,
+    sensor_noise_enabled: bool = True,
+    sensor_noise_level_dB: float = 40.0,
+    seed: int = 42,
+    verbose: bool = True,
+) -> dict:
+    """Run full 3D scenario using the FDTD forward model + noise.
+
+    Like ``simulate_scenario_3d`` but uses the wave-equation solver
+    instead of the analytical 1/r model.
+
+    Returns dict with same structure as ``simulate_scenario_3d``.
+    """
+    from acoustic_sim.noise import generate_sensor_noise, generate_wind_noise
+
+    mic_pos = np.asarray(mic_positions, dtype=np.float64)
+    if mic_pos.shape[1] == 2:
+        mic_pos = np.column_stack([mic_pos, np.zeros(mic_pos.shape[0])])
+    n_mics = mic_pos.shape[0]
+
+    clean_traces_list = []
+    dt_actual = None
+
+    for i, src in enumerate(sources):
+        if verbose:
+            print(f"  Running FDTD3D for source {i + 1}/{len(sources)}...")
+        tr, dt_actual = simulate_3d_traces_fdtd(
+            src, mic_pos, dt=None, total_time=total_time,
+            sound_speed=sound_speed, dx=dx,
+            domain_margin=domain_margin,
+            z_min=z_min, z_max=z_max,
+            damping_width=damping_width,
+            fd_order=fd_order,
+            air_absorption=air_absorption,
+            verbose=verbose,
+        )
+        clean_traces_list.append(tr)
+
+    dt = dt_actual
+    n_steps = clean_traces_list[0].shape[1]
+
+    # Align trace lengths.
+    min_len = min(tr.shape[1] for tr in clean_traces_list)
+    clean_traces_list = [tr[:, :min_len] for tr in clean_traces_list]
+    n_steps = min_len
+
+    combined = np.zeros((n_mics, n_steps), dtype=np.float64)
+    for tr in clean_traces_list:
+        combined += tr
+
+    # Add noise.
+    mic_pos_2d = mic_pos[:, :2]
+    if wind_noise_enabled:
+        combined += generate_wind_noise(
+            mic_pos_2d, n_steps, dt,
+            level_dB=wind_noise_level_dB,
+            corner_freq=wind_corner_freq,
+            correlation_length=wind_correlation_length,
+            seed=seed,
+        )
+    if sensor_noise_enabled:
+        combined += generate_sensor_noise(
+            n_mics, n_steps, dt,
+            level_dB=sensor_noise_level_dB,
+            seed=seed + 1,
+        )
+
+    # Ground truth.
+    true_positions_list = []
+    true_velocities_list = []
+    for src in sources:
+        pos = np.zeros((n_steps, 3))
+        vel = np.zeros((n_steps, 3))
+        for i in range(n_steps):
+            pos[i] = src.position_at(i, dt)
+            vel[i] = source_velocity_at_3d(src, i, dt)
+        true_positions_list.append(pos)
+        true_velocities_list.append(vel)
+
+    true_times = np.arange(n_steps) * dt
+
+    return {
+        "traces": combined,
+        "clean_traces": clean_traces_list,
+        "mic_positions": mic_pos,
+        "dt": dt,
+        "sound_speed": sound_speed,
+        "n_steps": n_steps,
+        "true_positions": true_positions_list,
+        "true_velocities": true_velocities_list,
+        "true_times": true_times,
+    }
