@@ -59,6 +59,8 @@ def compute_lead_3d(
     converged = False
 
     for _ in range(max_iter):
+        if tof == float("inf") or np.isnan(tof):
+            break
         intercept = tp + tv * tof
         new_range = float(np.linalg.norm(intercept - wp))
         new_tof = time_of_flight(new_range, muzzle_velocity, decel)
