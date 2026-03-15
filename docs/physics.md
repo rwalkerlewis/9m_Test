@@ -19,6 +19,11 @@ This document presents the physical principles underlying every algorithm in `ac
 11. [Matched Field Processing on a Polar Grid](#11-matched-field-processing-on-a-polar-grid)
 12. [Extended Kalman Filter Theory](#12-extended-kalman-filter-theory)
 13. [Shotgun Ballistics and Fire Control](#13-shotgun-ballistics-and-fire-control)
+14. [3D Wave Equation and CFL Condition](#14-3d-wave-equation-and-cfl-condition)
+15. [Ground Reflection and the Image-Source Method](#15-ground-reflection-and-the-image-source-method)
+16. [Acoustic Feature Extraction — Mel Spectrograms](#16-acoustic-feature-extraction--mel-spectrograms)
+17. [Kinematic Feature Physics](#17-kinematic-feature-physics)
+18. [Classification Theory](#18-classification-theory)
 
 ---
 
@@ -837,6 +842,307 @@ Closing speed is weighted highest (×2) because an approaching target is the mos
 
 ---
 
+## 14. 3D Wave Equation and CFL Condition
+
+### 14.1 Extension to Three Dimensions
+
+The 3D scalar wave equation extends the 2D form ([Section 1](#1-the-scalar-wave-equation-in-two-dimensions)) with an additional spatial derivative:
+
+```
+∂²p/∂t² = c²(x, y, z) · (∂²p/∂x² + ∂²p/∂y² + ∂²p/∂z²) + S(x, y, z, t)
+```
+
+All assumptions from the 2D case carry over: small perturbations, inviscid fluid, irrotational flow. The key physical difference is that the simulation now captures the full three-dimensional propagation geometry, including vertical wavefront curvature, elevation-dependent travel times, and correct spherical spreading.
+
+### 14.2 Spherical Spreading in 3D
+
+In 3D, a point source produces spherical wavefronts. Pressure decays as:
+
+```
+p(r) = p₀ / r
+```
+
+This is the physically correct spreading law for a point source in free space. The 2D simulation ([Section 3](#3-geometric-spreading-and-attenuation)) approximates this with cylindrical spreading (`1/√r`) and compensates by calibrating source amplitudes. The 3D simulation produces correct `1/r` decay naturally.
+
+### 14.3 3D CFL Stability Condition
+
+For the explicit leapfrog FDTD scheme on a 3D uniform cubic grid with spacing `dx`, the CFL condition becomes:
+
+```
+dt ≤ 2·dx / ((c_max + |v⃗_wind|) · √(3·ρ_stencil))
+```
+
+The factor `√3` (instead of `√2` for 2D) arises because a plane wave travelling along the body diagonal of a cube sees all three spatial derivatives simultaneously. For the standard second-order stencil (`ρ_stencil = 4`):
+
+```
+dt ≤ 2·dx / (c_eff · √12) = dx / (c_eff · √3) ≈ 0.577·dx / c_eff
+```
+
+Compare to the 2D limit of `dx / (c_eff · √2) ≈ 0.707·dx / c_eff`. The 3D stability constraint is tighter — a 3D simulation requires smaller timesteps (or coarser grids) than an equivalent 2D simulation.
+
+### 14.4 3D Velocity Models
+
+The 3D velocity model `c(x, y, z)` is stored as a 3D array `[nz, ny, nx]` on a uniform Cartesian grid. The `VelocityModel3D` dataclass mirrors the 2D `VelocityModel` with the addition of `z`, `dz`, and `nz`. Available model types:
+
+| Model | Velocity Structure | Physical Analogue |
+|---|---|---|
+| **Uniform** | Constant `c` everywhere | Open air, isotropic 3D propagation |
+| **Layered-z** | Horizontal layers defined by z-boundaries | Temperature or humidity stratification |
+| **Ground-layer** | Air above `z_ground`, high-velocity material below | Air–ground impedance interface |
+
+The ground-layer model assigns `c_air = 343 m/s` above the ground plane and `c_ground = 1500 m/s` below, creating a strong impedance contrast that naturally produces ground reflections in the FDTD simulation.
+
+### 14.5 Memory Considerations
+
+A 3D FDTD simulation requires two full pressure fields (current and previous), each of size `nz × ny × nx`. For a domain of 100 × 100 × 100 cells at 8 bytes per cell (float64), the memory is `2 × 10⁶ × 8 = 16 MB`. For a realistic domain (e.g., 200 × 200 × 125 cells with `dx = 1 m`), memory is `2 × 5 × 10⁶ × 8 = 80 MB` — manageable on modern hardware. MPI decomposition along the z-axis distributes this across ranks.
+
+---
+
+## 15. Ground Reflection and the Image-Source Method
+
+### 15.1 Physical Motivation
+
+In real outdoor environments, acoustic waves propagate not only directly from source to receiver but also via reflections off the ground surface. The ground reflection arrives later and (typically) with a phase flip, creating an interference pattern that can enhance or diminish the received signal depending on geometry and frequency.
+
+### 15.2 The Image-Source Principle
+
+The image-source method is a classical technique for computing ground reflections without explicitly modelling the ground as a boundary condition. The reflected wave from a source at `(x_s, y_s, z_s)` above a ground plane at `z = z_ground` is equivalent to the direct wave from an **image source** located at:
+
+```
+(x_img, y_img, z_img) = (x_s, y_s, 2·z_ground - z_s)
+```
+
+The image source is the mirror reflection of the true source across the ground plane. The total received pressure is the sum of the direct and reflected contributions:
+
+```
+p_total(t) = p_direct(t) + R · p_reflected(t)
+```
+
+where `R` is the ground reflection coefficient.
+
+### 15.3 Reflection Coefficient
+
+For a planar interface between air and ground, the reflection coefficient depends on the acoustic impedances of the two media:
+
+```
+R = (Z_ground - Z_air) / (Z_ground + Z_air)
+```
+
+For air (`Z ≈ 412 Pa·s/m`) and ground (`Z ≈ 3.75 × 10⁶ Pa·s/m`), `R ≈ +1.0` (nearly total reflection). However, real ground surfaces absorb some energy and produce a phase shift. The code uses a default coefficient of `R = -0.9`:
+
+- **Magnitude** (0.9): 90% of incident pressure is reflected, 10% absorbed.
+- **Sign** (negative): The reflection includes a 180° phase flip, consistent with a soft-boundary approximation for grassy/earthy surfaces at low frequencies.
+
+### 15.4 Interference Pattern
+
+The direct and reflected waves create a standing-wave pattern in the vertical direction. At a receiver height `z_r` above the ground, the path-length difference is:
+
+```
+Δr = √((x_s - x_r)² + (y_s - y_r)² + (z_s + z_r - 2·z_ground)²) 
+   - √((x_s - x_r)² + (y_s - y_r)² + (z_s - z_r)²)
+```
+
+Constructive interference occurs when `Δr = n·λ` and destructive when `Δr = (n + ½)·λ`. With `R = -0.9` (phase flip), these conditions are swapped.
+
+### 15.5 Implementation
+
+The analytical 3D forward model (`forward_3d.py`) implements the image-source method by computing two contributions per source-microphone pair:
+
+1. **Direct path**: Distance `r_direct`, amplitude `1/r_direct`, delay `r_direct/c`.
+2. **Reflected path**: Distance `r_image`, amplitude `R/r_image`, delay `r_image/c`.
+
+Both paths include exponential air absorption `exp(-α·r)`. The contribution of each path is applied via emission-time interpolation at the receiver's sample times.
+
+For the 3D FDTD solver, ground reflection is produced naturally by the impedance contrast in the ground-layer velocity model — no explicit image-source computation is needed.
+
+---
+
+## 16. Acoustic Feature Extraction — Mel Spectrograms
+
+### 16.1 Motivation
+
+Source classification requires transforming raw pressure time-series into a compact representation that captures the spectro-temporal signature of the source. The **mel spectrogram** is the standard representation for audio classification tasks. It provides:
+
+- **Time-frequency decomposition** via the Short-Time Fourier Transform (STFT)
+- **Perceptually motivated frequency resolution** via the mel scale
+- **Dynamic range compression** via logarithmic scaling
+
+### 16.2 The Mel Scale
+
+The mel scale maps physical frequency (Hz) to a perceptual pitch scale that is approximately linear below 1 kHz and logarithmic above:
+
+```
+mel(f) = 2595 · log₁₀(1 + f/700)
+```
+
+The inverse mapping is:
+
+```
+f(mel) = 700 · (10^(mel/2595) - 1)
+```
+
+This warping compresses the high-frequency axis, allocating more resolution to the low-frequency region where drone harmonics (100–900 Hz) reside. For the default parameters (`f_min = 20 Hz`, `f_max = Nyquist`), the mel filterbank provides approximately 3× finer resolution in the 100–500 Hz range compared to a linear frequency axis.
+
+### 16.3 STFT Computation
+
+The Short-Time Fourier Transform segments the signal into overlapping frames of length `n_fft` (default 512 samples), each windowed by a Hann function `w(n)`:
+
+```
+X(m, k) = Σ_{n=0}^{N-1} x(n + m·H) · w(n) · exp(-j·2π·k·n/N)
+```
+
+where `m` is the frame index, `k` is the frequency bin, `H` is the hop length (default 128 samples), and `N = n_fft`. The power spectrum is `|X(m, k)|²`.
+
+### 16.4 Mel Filterbank
+
+A bank of `n_mels` (default 64) triangular filters is applied to the power spectrum. The `m`-th filter is centred at mel frequency `f_m` and spans from `f_{m-1}` to `f_{m+1}` (the centres of the adjacent filters):
+
+```
+H_m(k) = 0                                 if f(k) < f_{m-1}
+        = (f(k) - f_{m-1}) / (f_m - f_{m-1})  if f_{m-1} ≤ f(k) < f_m
+        = (f_{m+1} - f(k)) / (f_{m+1} - f_m)  if f_m ≤ f(k) ≤ f_{m+1}
+        = 0                                 if f(k) > f_{m+1}
+```
+
+Applying the filterbank to the power spectrum produces the mel spectrum:
+
+```
+S_mel(m, j) = Σ_k H_j(k) · |X(m, k)|²
+```
+
+### 16.5 Log Compression
+
+The human auditory system responds approximately logarithmically to intensity. Log compression brings the dynamic range of the mel spectrum to a scale where both quiet and loud features are visible:
+
+```
+S_log(m, j) = log(max(S_mel(m, j), ε))
+```
+
+where `ε = 10⁻¹⁰` prevents `log(0)`.
+
+The output is a 2D array of shape `(n_mels, n_time_frames)` — the **log-mel spectrogram**. This serves as the input to the acoustic classifier CNN.
+
+### 16.6 Spectral Signatures by Source Class
+
+Different source classes produce distinctive mel-spectrogram patterns:
+
+| Source Class | Spectral Signature |
+|---|---|
+| **Quadcopter** | Strong harmonics at BPF × k with beat modulation from 4 rotors; broadband between harmonics |
+| **Hexacopter** | Similar to quadcopter but richer beat pattern from 6 rotors; slightly different harmonic decay |
+| **Fixed-wing** | Fewer, more widely spaced harmonics from a single propeller; steeper harmonic rolloff |
+| **Bird** | Broadband wing-beat pulses at 3–12 Hz; occasional narrowband vocalisations at 1–8 kHz |
+| **Ground vehicle** | Low-frequency engine harmonics (25–60 Hz fundamental); broadband tire noise at 200–1000 Hz |
+| **Unknown** | Weak, unstructured broadband noise with occasional weak tones |
+
+---
+
+## 17. Kinematic Feature Physics
+
+### 17.1 Motivation
+
+Source classification based solely on acoustic features is limited by range, SNR, and propagation effects. Kinematic features — extracted from the tracker's estimated position and velocity history — provide a complementary information channel. Different source classes have physically distinct motion patterns:
+
+- **Quadcopters and hexacopters** can hover, orbit, and maneuver agilely at low to moderate speeds.
+- **Fixed-wing aircraft** must maintain a minimum airspeed and have limited turning rates.
+- **Birds** fly with characteristic wingbeat patterns and have high agility but lower top speeds.
+- **Ground vehicles** are constrained to `z ≈ 0` with moderate speeds and smooth trajectories.
+
+### 17.2 Feature Vector
+
+The kinematic feature extractor computes a 14-dimensional vector from tracker output:
+
+| Index | Feature | Formula | Physical Meaning |
+|---|---|---|---|
+| 0 | Speed mean | `mean(||v||)` | Average translational speed |
+| 1 | Speed std | `std(||v||)` | Speed variability (maneuverability) |
+| 2 | Speed min | `min(||v||)` | Ability to hover (min ≈ 0 for rotorcraft) |
+| 3 | Heading rate mean | `mean(|dθ/dt|)` | Average turn rate |
+| 4 | Heading rate std | `std(dθ/dt)` | Turn rate variability |
+| 5 | Curvature mean | `mean(|dθ/dt| / ||v||)` | Mean path curvature (tight turns → high) |
+| 6 | Curvature std | `std(curvature)` | Curvature variability |
+| 7 | Altitude mean | `mean(z)` | Typical operating height |
+| 8 | Altitude std | `std(z)` | Altitude variability |
+| 9 | Altitude rate std | `std(dz/dt)` | Vertical maneuver intensity |
+| 10 | Zero-altitude fraction | `mean(|z| < 1 m)` | Fraction of time near ground (→ 1 for vehicles) |
+| 11 | Hover fraction | `mean(||v|| < 1 m/s)` | Fraction of time near-stationary |
+| 12 | Heading rate autocorrelation | `acf(dθ/dt, lag=1)` | Periodicity of turns (high for orbits) |
+| 13 | Reserved | `0.0` | Placeholder for future features |
+
+Heading rate is computed from unwrapped heading `θ = atan2(vy, vx)` via finite differences with timestep `dt`.
+
+### 17.3 Discriminating Power
+
+Key discriminating features by source class:
+
+| Feature | Quadcopter | Fixed-wing | Bird | Ground vehicle |
+|---|---|---|---|---|
+| Speed min | ≈ 0 (hover) | > 10 m/s | > 5 m/s | > 2 m/s |
+| Altitude mean | 20–100 m | 30–150 m | 5–200 m | ≈ 0 m |
+| Zero-altitude fraction | 0.0 | 0.0 | 0.0 | 1.0 |
+| Hover fraction | 0.0–0.5 | 0.0 | 0.0 | 0.0 |
+| Curvature mean | variable | low | moderate | low |
+| Heading rate autocorrelation | high (orbits) | low | variable | low |
+
+The **zero-altitude fraction** is a strong discriminator for ground vehicles. **Hover fraction** uniquely identifies rotorcraft. **Speed minimum** separates fixed-wing (cannot hover) from rotorcraft (can hover). These are physics-based features that reflect fundamental flight-mechanics constraints.
+
+---
+
+## 18. Classification Theory
+
+### 18.1 CNN for Spectro-Temporal Pattern Recognition
+
+Convolutional Neural Networks (CNNs) are well-suited for mel-spectrogram classification because:
+
+1. **Local patterns**: Drone harmonics appear as horizontal ridges in the spectrogram. Convolutional kernels detect these local spectral features regardless of position.
+2. **Translation invariance**: The same harmonic pattern at different time offsets should produce the same classification. Pooling layers provide this invariance.
+3. **Hierarchical features**: Lower layers detect spectral edges and harmonics; higher layers combine these into class-specific patterns.
+
+The `AcousticClassifier` uses three convolutional layers with increasing channel depth (16 → 32 → 64), interspersed with batch normalisation and ReLU activations. Global average pooling collapses the spatial dimensions to a fixed-length 64-dimensional embedding, which is mapped to class logits by a single fully connected layer.
+
+### 18.2 Two-Branch Fusion
+
+The `FusionClassifier` combines acoustic and kinematic information:
+
+- **Branch A (Acoustic)**: Identical architecture to `AcousticClassifier` up to the penultimate layer, producing a 64-dimensional acoustic embedding.
+- **Branch B (Kinematic)**: A two-layer MLP (14 → 32 → 32) producing a 32-dimensional kinematic embedding.
+- **Fusion**: The embeddings are concatenated (96 dimensions) and processed by two FC layers (96 → 64 → n_classes).
+
+Fusion improves classification because the two modalities provide complementary information: acoustic features are strong when SNR is high (short range, low noise), while kinematic features are informative at any range (they come from the tracker, not the raw signal). When one modality is degraded, the other can compensate.
+
+The acoustic branch can be initialised from a pre-trained `AcousticClassifier`, providing a warm start for fusion training.
+
+### 18.3 Maneuver Detection as Temporal Classification
+
+Maneuver detection classifies short segments of the tracker's state history into maneuver categories. The input is a `(6, N)` tensor: 6 state features (x, y, z, vx, vy, vz) over `N` time steps (default 20). Positions are mean-subtracted to remove absolute location dependence.
+
+The `ManeuverClassifier` uses 1D convolutions along the time axis:
+
+1. `Conv1d(6 → 32, kernel_size=5)`: Detects short-term velocity patterns.
+2. `Conv1d(32 → 64, kernel_size=5)`: Detects higher-level motion patterns.
+3. Global average pooling → FC(64 → n_classes).
+
+Six maneuver classes capture the physically distinct motion regimes:
+
+| Maneuver | Physical Signature |
+|---|---|
+| **Steady** | Constant speed, constant heading, constant altitude |
+| **Turning** | Constant speed, changing heading (circular arc) |
+| **Accelerating** | Changing speed, constant heading |
+| **Diving** | Significant negative altitude rate, reduced horizontal speed |
+| **Evasive** | Rapidly changing heading and speed (random-walk-like) |
+| **Hovering** | Near-zero velocity in all directions |
+
+### 18.4 Integration with Fire Control
+
+The classification results feed into the 3D fire-control module:
+
+1. **Class-based engagement rules**: The engagement decision (`can_fire`) considers the target classification. Threat classes (`quadcopter`, `hexacopter`, `fixed_wing`) are eligible for engagement; non-threat classes (`bird`, `ground_vehicle`, `unknown`) are not. A confidence threshold (default 0.7) must be exceeded for the classification to override the default engagement behaviour.
+
+2. **Maneuver-adaptive process noise**: When the maneuver classifier detects an `evasive` maneuver, the EKF's process noise is multiplied by a large factor (default 10×), widening the predicted uncertainty. This causes the engagement envelope to contract (higher uncertainty → pattern diameter insufficient), preventing ill-advised shots during unpredictable motion. Conversely, `hovering` reduces the multiplier (0.5×), tightening the estimate and enabling more confident engagement.
+
+---
+
 ## Summary of Physical Constants
 
 | Symbol | Value | Description |
@@ -854,7 +1160,11 @@ Closing speed is weighted highest (×2) because an approaching target is the mos
 | `v_muzzle` | 400 m/s | Shotgun pellet muzzle velocity |
 | `α` | 1.5 m/s/m | Pellet deceleration |
 | `β` | 0.025 m/m | Pattern spread rate |
+| `R_ground` | −0.9 | Default ground reflection coefficient |
+| `f_mel_ref` | 700 Hz | Mel scale reference frequency |
+| `n_mels` | 64 | Default mel filterbank bands |
+| `n_fft` | 512 | Default FFT size for mel spectrogram |
 
 ---
 
-*Next: [Algorithm Descriptions](algorithms.md) — How these physics are translated into computational procedures.*
+*Next: [Algorithm Descriptions](algorithms.md) — How these physics are translated into computational procedures, including the 3D solvers and ML classifiers.*

@@ -558,4 +558,183 @@ python src/acoustic_sim/detection_main.py [OPTIONS]
 
 ---
 
-*Next: [Study Methodology & Results](studies.md) — Detailed study documentation.*
+## 5. 3D Detection Pipeline Parameters
+
+**Source:** `src/acoustic_sim/detection_main_3d.py` → `run_detection_3d()`
+
+The 3D detection pipeline accepts all the same parameters as the 2D pipeline (MFP, tracker, fire control) plus additional parameters for the z-dimension search grid and ML integration. These are keyword arguments to `run_detection_3d()`.
+
+### 5.1 Z-Grid Parameters
+
+| Parameter | Type | Default | Units | Description |
+|---|---|---|---|---|
+| `z_min` | `float` | `0.0` | m | Minimum z-value in the search grid |
+| `z_max` | `float` | `200.0` | m | Maximum z-value in the search grid |
+| `z_spacing` | `float` | `10.0` | m | Z-grid resolution. Smaller values give finer altitude estimation at higher computational cost |
+
+When `z_min == z_max == 0`, the 3D MFP degenerates to a single z-slice and produces results identical to the 2D processor.
+
+### 5.2 ML Classifier Parameters
+
+| Parameter | Type | Default | Units | Description |
+|---|---|---|---|---|
+| `acoustic_model` | `nn.Module \| None` | `None` | — | Pre-trained `AcousticClassifier` for source classification. `None` = disabled |
+| `fusion_model` | `nn.Module \| None` | `None` | — | Pre-trained `FusionClassifier` for acoustic+kinematic classification. `None` = disabled |
+| `maneuver_model` | `nn.Module \| None` | `None` | — | Pre-trained `ManeuverClassifier` for maneuver detection. `None` = disabled |
+| `confidence_threshold` | `float` | `0.7` | — | Minimum classification confidence to accept a label. Below this, the label is overridden to `"unknown"` |
+| `kinematic_buffer_size` | `int` | `50` | detections | Number of detections accumulated before switching from acoustic-only to fusion classification |
+| `maneuver_buffer_size` | `int` | `20` | tracker steps | Minimum tracker history length before maneuver classification is attempted |
+
+**Classifier precedence:** If both `acoustic_model` and `fusion_model` are provided, the pipeline uses acoustic-only classification until `kinematic_buffer_size` detections have been accumulated (providing enough tracker history for kinematic features), then switches to fusion classification.
+
+### 5.3 3D Fire Control Class-Based Parameters
+
+These parameters control class-based engagement rules in `compute_engagement_3d()`:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `class_label` | `str` | `"unknown"` | Source classification from the ML classifier |
+| `class_confidence` | `float` | `0.0` | Classification confidence score |
+| `confidence_threshold` | `float` | `0.7` | Minimum confidence for class-based engagement rules to apply |
+| `maneuver_class` | `str` | `"steady"` | Current maneuver state from the maneuver classifier |
+
+**Threat classification rules:**
+- Threat classes: `quadcopter`, `hexacopter`, `fixed_wing` → engagement permitted
+- Non-threat classes: `bird`, `ground_vehicle`, `unknown` → engagement suppressed (`can_fire = False`)
+- Low confidence: Engagement suppressed if `class_confidence < confidence_threshold` and `class_label ≠ "unknown"`
+
+---
+
+## 6. 3D Forward Model Parameters
+
+**Source:** `src/acoustic_sim/forward_3d.py`
+
+### 6.1 Analytical Forward Model (`simulate_3d_traces`)
+
+| Parameter | Type | Default | Units | Description |
+|---|---|---|---|---|
+| `source` | object | — | — | 3D source with `position_at(step, dt) → (x, y, z)` and `signal` |
+| `mic_positions` | `ndarray` | — | m | `(n_mics, 3)` or `(n_mics, 2)` (z=0 assumed) |
+| `dt` | `float` | — | s | Timestep |
+| `n_steps` | `int` | — | — | Number of simulation steps |
+| `sound_speed` | `float` | `343.0` | m/s | Propagation velocity |
+| `air_absorption` | `float` | `0.005` | 1/m | Exponential absorption coefficient |
+| `enable_ground_reflection` | `bool` | `False` | — | Add ground-reflected image source |
+| `ground_reflection_coeff` | `float` | `-0.9` | — | Reflection coefficient (negative = phase flip) |
+| `ground_z` | `float` | `0.0` | m | Ground plane z-coordinate |
+
+### 6.2 FDTD-Based 3D Forward Model (`simulate_3d_traces_fdtd`)
+
+| Parameter | Type | Default | Units | Description |
+|---|---|---|---|---|
+| `source` | object | — | — | 3D source object |
+| `mic_positions` | `ndarray` | — | m | Microphone positions |
+| `dt` | `float \| None` | `None` | s | Timestep. `None` = auto from CFL |
+| `total_time` | `float` | `1.0` | s | Simulation duration |
+| `sound_speed` | `float` | `343.0` | m/s | Uniform velocity |
+| `dx` | `float` | `1.0` | m | Grid spacing |
+| `domain_margin` | `float` | `20.0` | m | Extra padding beyond source/receiver extent |
+| `z_min` | `float` | `-5.0` | m | Domain z-minimum |
+| `z_max` | `float` | `120.0` | m | Domain z-maximum |
+| `damping_width` | `int` | `10` | cells | Sponge-layer width |
+| `fd_order` | `int` | `2` | — | Spatial FD order |
+| `air_absorption` | `float` | `0.005` | — | Background damping |
+| `source_amplitude` | `float` | `1.0` | Pa | Peak source amplitude |
+| `verbose` | `bool` | `True` | — | Print progress |
+
+### 6.3 Full 3D Scenario (`simulate_scenario_3d`)
+
+In addition to the forward-model parameters, `simulate_scenario_3d()` accepts noise parameters:
+
+| Parameter | Type | Default | Units | Description |
+|---|---|---|---|---|
+| `sources` | `list` | — | — | List of 3D source objects |
+| `wind_noise_enabled` | `bool` | `True` | — | Enable spatially correlated wind noise |
+| `wind_noise_level_dB` | `float` | `55.0` | dB SPL | Wind noise RMS level |
+| `wind_corner_freq` | `float` | `15.0` | Hz | Wind noise spectral corner |
+| `wind_correlation_length` | `float` | `3.0` | m | Spatial coherence decay length |
+| `sensor_noise_enabled` | `bool` | `True` | — | Enable sensor self-noise |
+| `sensor_noise_level_dB` | `float` | `40.0` | dB SPL | Sensor noise floor |
+| `seed` | `int` | `42` | — | Random seed |
+
+---
+
+## 7. ML Training Parameters
+
+**Source:** `src/acoustic_sim/ml/training.py`, `src/acoustic_sim/ml/data_generation.py`
+
+### 7.1 Data Generation Parameters
+
+#### Classification Dataset (`generate_classification_dataset`)
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `n_samples_per_class` | `int` | `200` | Samples generated per source class (total = 6 × 200 = 1200) |
+| `dt` | `float` | `1/4000` | Sample timestep (4 kHz effective sample rate) |
+| `window_duration` | `float` | `0.5` | Duration of each sample in seconds |
+| `sound_speed` | `float` | `343.0` | Propagation velocity for forward model |
+| `seed` | `int` | `42` | Random seed for reproducibility |
+
+#### Maneuver Dataset (`generate_maneuver_dataset`)
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `n_samples_per_class` | `int` | `400` | Samples generated per maneuver class (total = 6 × 400 = 2400) |
+| `window_size` | `int` | `20` | Number of tracker time steps per segment |
+| `dt_tracker` | `float` | `0.1` | Time between consecutive tracker updates [s] |
+| `seed` | `int` | `42` | Random seed |
+
+### 7.2 Mel Spectrogram Parameters (`compute_mel_spectrogram`)
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `n_fft` | `int` | `512` | FFT window size (frequency resolution = fs / n_fft) |
+| `hop_length` | `int` | `128` | Hop between consecutive frames (time resolution = hop / fs) |
+| `n_mels` | `int` | `64` | Number of mel filterbank bands |
+| `f_min` | `float` | `20.0` | Lowest mel filter frequency [Hz] |
+| `f_max` | `float \| None` | `None` | Highest mel filter frequency (None = Nyquist) |
+
+### 7.3 Training Hyperparameters
+
+#### Single-Input Classifier (`train_classifier`)
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `n_epochs` | `int` | `50` | Number of training epochs |
+| `lr` | `float` | `1e-3` | Adam learning rate |
+| `batch_size` | `int` | `32` | Mini-batch size |
+| `verbose` | `bool` | `True` | Print progress every 10 epochs |
+
+#### Fusion Classifier (`train_fusion_classifier`)
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `n_epochs` | `int` | `50` | Number of training epochs |
+| `lr` | `float` | `5e-4` | Lower learning rate to protect pre-trained acoustic branch |
+| `batch_size` | `int` | `32` | Mini-batch size |
+
+### 7.4 Source Classes
+
+| Index | Class Name | Description |
+|---|---|---|
+| 0 | `quadcopter` | 4-rotor multi-rotor drone |
+| 1 | `hexacopter` | 6-rotor multi-rotor drone |
+| 2 | `fixed_wing` | Fixed-wing aircraft with single propeller |
+| 3 | `bird` | Avian target |
+| 4 | `ground_vehicle` | Ground-based motorised vehicle |
+| 5 | `unknown` | Ambiguous or unclassifiable target |
+
+### 7.5 Maneuver Classes
+
+| Index | Class Name | Description |
+|---|---|---|
+| 0 | `steady` | Constant velocity straight-line flight |
+| 1 | `turning` | Circular arc at constant speed |
+| 2 | `accelerating` | Linear trajectory with changing speed |
+| 3 | `diving` | Steep descent |
+| 4 | `evasive` | Rapidly varying heading and speed |
+| 5 | `hovering` | Near-zero velocity station-keeping |
+
+---
+
+*Next: [Study Methodology & Results](studies.md) — Detailed study documentation, including notes on 3D extension.*
