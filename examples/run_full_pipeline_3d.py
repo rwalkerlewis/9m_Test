@@ -1002,6 +1002,265 @@ def plot_full_evaluation(
 
 
 # ============================================================================
+# SRP-PHAT Beamformer (phase-based bearing)
+# ============================================================================
+
+def srp_phat_bearing(
+    seg: np.ndarray,
+    mic_positions: np.ndarray,
+    fs: float,
+    c: float = 343.0,
+    n_bearings: int = 360,
+    freq_lo: float = 100.0,
+    freq_hi: float = 2000.0,
+) -> tuple[float, np.ndarray, np.ndarray]:
+    """Steered Response Power with Phase Transform for far-field bearing.
+
+    Fully vectorised — no Python loops over bearings or mics.
+
+    Parameters
+    ----------
+    seg : (n_mics, n_samples) time-domain signal segment.
+    mic_positions : (n_mics, 2+) mic XY coordinates.
+    fs : sample rate.
+    c : speed of sound.
+    n_bearings : angular resolution of scan.
+    freq_lo, freq_hi : bandpass for PHAT weighting.
+
+    Returns
+    -------
+    best_bearing_rad : bearing in radians (0 = +x, pi/2 = +y).
+    bearings : (n_bearings,) scan angles in radians.
+    power : (n_bearings,) steered response power at each angle.
+    """
+    n_mics, n_samp = seg.shape
+    mic_xy = mic_positions[:, :2]
+    center = mic_xy.mean(axis=0)
+    mic_rel = mic_xy - center  # (n_mics, 2)
+
+    nfft = int(2 ** np.ceil(np.log2(n_samp)))
+    freqs = np.fft.rfftfreq(nfft, d=1.0 / fs)
+    X = np.fft.rfft(seg, n=nfft, axis=1)  # (n_mics, nfft//2+1)
+
+    # Bandpass
+    fmask = (freqs >= freq_lo) & (freqs <= freq_hi)
+    X_bp = X[:, fmask]                      # (n_mics, n_freq)
+    omega = 2.0 * np.pi * freqs[fmask]      # (n_freq,)
+
+    # PHAT normalisation
+    mag = np.abs(X_bp)
+    mag[mag < 1e-30] = 1e-30
+    X_phat = X_bp / mag                     # (n_mics, n_freq)
+
+    # Scan bearings — fully vectorised
+    bearings = np.linspace(0, 2 * np.pi, n_bearings, endpoint=False)
+    look = np.column_stack([np.cos(bearings), np.sin(bearings)])  # (n_bearings, 2)
+
+    # Delays: source at bearing theta → plane wave propagates in direction
+    # (-cos θ, -sin θ).  Mic delay: tau_m = -(mic_rel · look) / c
+    taus = -(mic_rel @ look.T) / c           # (n_mics, n_bearings)
+
+    # Phase steering: exp(+j * omega * tau)
+    # taus: (n_mics, n_bearings), omega: (n_freq,)
+    phase = np.exp(1j * taus[:, :, np.newaxis] * omega[np.newaxis, np.newaxis, :])
+    # → (n_mics, n_bearings, n_freq)
+
+    # Steered sum over mics, then power over freq
+    steered = np.sum(X_phat[:, np.newaxis, :] * phase, axis=0)  # (n_bearings, n_freq)
+    power = np.sum(np.abs(steered) ** 2, axis=1)  # (n_bearings,)
+
+    best_idx = int(np.argmax(power))
+    best_bearing = float(bearings[best_idx])
+
+    return best_bearing, bearings, power
+
+
+def plot_matched_filter_diagnostic(
+    traces: np.ndarray,
+    mic_positions: np.ndarray,
+    dt: float,
+    ground_truth_fn,
+    source_duration: float,
+    array_center: tuple[float, float, float],
+    window_length: float = 0.1,
+    window_overlap: float = 0.75,
+    min_signal_rms: float = 5e-5,
+    output_path: Path | None = None,
+) -> plt.Figure:
+    """Diagnostic plot comparing RMS-weighted and SRP-PHAT bearing estimators.
+
+    Produces a 4-panel figure:
+      1. Bearing vs time: true, RMS-weighted, SRP-PHAT
+      2. Bearing error vs time for both methods
+      3. SRP-PHAT power map (bearing × time heatmap)
+      4. Example SRP-PHAT power spectrum at CPA window
+    """
+    n_mics, n_samples = traces.shape
+    fs = 1.0 / dt
+    cx, cy, cz = array_center
+
+    mic_angles = np.array([
+        math.atan2(mic_positions[i, 1] - cy, mic_positions[i, 0] - cx)
+        for i in range(n_mics)
+    ])
+
+    win_len = max(int(round(window_length * fs)), 1)
+    hop = max(int(round(win_len * (1.0 - window_overlap))), 1)
+
+    times = []
+    true_bearings = []
+    rms_bearings = []
+    srp_bearings = []
+    rms_errors = []
+    srp_errors = []
+    srp_power_maps = []
+    rms_values = []
+
+    pos = 0
+    while pos + win_len <= n_samples:
+        t_center = (pos + win_len / 2.0) * dt
+        seg = traces[:, pos:pos + win_len]
+        window_rms = float(np.sqrt(np.mean(seg ** 2)))
+
+        detected = window_rms >= min_signal_rms
+        if not detected:
+            pos += hop
+            continue
+
+        gt_x, gt_y, gt_z = ground_truth_fn(t_center)
+        true_brg = math.atan2(gt_y - cy, gt_x - cx)
+        if true_brg < 0:
+            true_brg += 2 * math.pi
+
+        # RMS² bearing
+        per_mic_rms = np.sqrt(np.mean(seg ** 2, axis=1))
+        weights = per_mic_rms ** 2
+        sin_s = float(np.sum(weights * np.sin(mic_angles)))
+        cos_s = float(np.sum(weights * np.cos(mic_angles)))
+        rms_brg = math.atan2(sin_s, cos_s)
+        if rms_brg < 0:
+            rms_brg += 2 * math.pi
+
+        # SRP-PHAT bearing
+        srp_brg, scan_angles, srp_pow = srp_phat_bearing(
+            seg, mic_positions, fs,
+        )
+
+        # Wrap-safe angular error
+        def angle_err_deg(est, true):
+            d = math.degrees(est - true)
+            return ((d + 180) % 360) - 180
+
+        times.append(t_center)
+        true_bearings.append(math.degrees(true_brg))
+        rms_bearings.append(math.degrees(rms_brg))
+        srp_bearings.append(math.degrees(srp_brg))
+        rms_errors.append(angle_err_deg(rms_brg, true_brg))
+        srp_errors.append(angle_err_deg(srp_brg, true_brg))
+        srp_power_maps.append(srp_pow)
+        rms_values.append(window_rms)
+
+        pos += hop
+
+    times = np.array(times)
+    true_bearings = np.array(true_bearings)
+    rms_bearings = np.array(rms_bearings)
+    srp_bearings = np.array(srp_bearings)
+    rms_errors = np.array(rms_errors)
+    srp_errors = np.array(srp_errors)
+    rms_values = np.array(rms_values)
+
+    mean_rms_err = float(np.mean(np.abs(rms_errors)))
+    mean_srp_err = float(np.mean(np.abs(srp_errors)))
+    print(f"\n  [DIAGNOSTIC] Mean |bearing error|:")
+    print(f"    RMS²-weighted: {mean_rms_err:.1f}°")
+    print(f"    SRP-PHAT:      {mean_srp_err:.1f}°")
+
+    # ── Build the figure ────────────────────────────────────────────────
+    fig, axes = plt.subplots(2, 2, figsize=(18, 12))
+
+    # Panel 1: Bearing vs time
+    ax = axes[0, 0]
+    ax.plot(times, true_bearings, "k-", lw=2, label="True bearing")
+    ax.plot(times, rms_bearings, "r.", ms=4, alpha=0.6,
+            label=f"RMS² ({mean_rms_err:.1f}° mean err)")
+    ax.plot(times, srp_bearings, "b.", ms=4, alpha=0.6,
+            label=f"SRP-PHAT ({mean_srp_err:.1f}° mean err)")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Bearing (°)")
+    ax.set_title("Bearing Estimates vs Time")
+    ax.legend(fontsize=10)
+    ax.grid(True, alpha=0.3)
+
+    # Panel 2: Bearing error vs time
+    ax = axes[0, 1]
+    ax.plot(times, rms_errors, "r-", lw=1.5, alpha=0.7,
+            label=f"RMS² (|mean|={mean_rms_err:.1f}°)")
+    ax.plot(times, srp_errors, "b-", lw=1.5, alpha=0.7,
+            label=f"SRP-PHAT (|mean|={mean_srp_err:.1f}°)")
+    ax.axhline(0, color="k", ls="--", lw=0.5)
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Bearing Error (°)")
+    ax.set_title("Bearing Error vs Time")
+    ax.legend(fontsize=10)
+    ax.grid(True, alpha=0.3)
+
+    # Panel 3: SRP-PHAT power map (bearing-time heatmap)
+    ax = axes[1, 0]
+    if srp_power_maps:
+        power_map = np.array(srp_power_maps)  # (n_windows, n_bearings)
+        scan_deg = np.degrees(scan_angles)
+        extent = [scan_deg[0], scan_deg[-1], times[-1], times[0]]
+        # Normalise per row for visibility
+        row_max = power_map.max(axis=1, keepdims=True)
+        row_max[row_max < 1e-12] = 1.0
+        power_norm = power_map / row_max
+        im = ax.imshow(power_norm, aspect="auto", extent=extent,
+                       cmap="hot", origin="upper")
+        ax.plot(true_bearings, times, "c-", lw=2, label="True bearing")
+        ax.set_xlabel("Bearing (°)")
+        ax.set_ylabel("Time (s)")
+        ax.set_title("SRP-PHAT Power Map (normalised per window)")
+        ax.legend(fontsize=10)
+        plt.colorbar(im, ax=ax, label="Normalised power")
+    else:
+        ax.text(0.5, 0.5, "No detections", ha="center", va="center",
+                transform=ax.transAxes)
+
+    # Panel 4: SRP-PHAT power at CPA (peak RMS window)
+    ax = axes[1, 1]
+    if srp_power_maps:
+        cpa_idx = int(np.argmax(rms_values))
+        cpa_power = srp_power_maps[cpa_idx]
+        ax.plot(scan_deg, cpa_power / cpa_power.max(), "b-", lw=2)
+        true_brg_cpa = true_bearings[cpa_idx]
+        ax.axvline(true_brg_cpa, color="k", ls="--", lw=2, label="True bearing")
+        srp_brg_cpa = srp_bearings[cpa_idx]
+        ax.axvline(srp_brg_cpa, color="b", ls=":", lw=2, label="SRP-PHAT peak")
+        ax.set_xlabel("Bearing (°)")
+        ax.set_ylabel("Normalised Power")
+        ax.set_title(f"SRP-PHAT @ CPA (t = {times[cpa_idx]:.3f} s)")
+        ax.legend(fontsize=10)
+        ax.grid(True, alpha=0.3)
+    else:
+        ax.text(0.5, 0.5, "No detections", ha="center", va="center",
+                transform=ax.transAxes)
+
+    fig.suptitle(
+        f"MATCHED FILTER DIAGNOSTIC  |  RMS²: {mean_rms_err:.1f}° "
+        f"vs SRP-PHAT: {mean_srp_err:.1f}°  |  {len(times)} windows",
+        fontsize=14, fontweight="bold",
+    )
+    plt.tight_layout()
+
+    if output_path:
+        plt.savefig(output_path, dpi=150, bbox_inches="tight")
+        plt.close()
+
+    return fig
+
+
+# ============================================================================
 # Causal Real-Time Pipeline
 # ============================================================================
 
@@ -1060,7 +1319,8 @@ def run_realtime_pipeline(
     sim_dir: Path,
     output_dir: Path,
     source_speed: float = 50.0,
-    hit_threshold: float = 3.0,
+    hit_threshold: float = 2.0,
+    max_hits: int = 3,
     min_track_detections: int = 5,
     window_length: float = 0.1,
     window_overlap: float = 0.75,
@@ -1123,7 +1383,6 @@ def run_realtime_pipeline(
     muzzle_velocity = 400.0
     pellet_decel = 1.5
     pattern_spread_rate = 0.3
-    max_hits = 5
 
     # ── Causal streaming loop ───────────────────────────────────────────
     print(f"\n[RUN]  Streaming {n_windows} windows (causal mode)")
@@ -1198,13 +1457,11 @@ def run_realtime_pipeline(
         }
 
         if detected:
-            # RMS²-weighted circular mean bearing
-            weights = per_mic_rms ** 2
-            sin_sum = float(np.sum(weights * np.sin(mic_angles)))
-            cos_sum = float(np.sum(weights * np.cos(mic_angles)))
-            raw_bearing = math.atan2(sin_sum, cos_sum)
-            if raw_bearing < 0:
-                raw_bearing += 2 * math.pi
+            # SRP-PHAT phase-based bearing
+            raw_bearing, _, _ = srp_phat_bearing(
+                seg, mic_positions, fs,
+                c=float(metadata.get('velocity', 343.0)),
+            )
 
             # EMA smooth on unit circle
             if not bearing_initialized:
@@ -1337,6 +1594,11 @@ def run_realtime_pipeline(
         t1_wall = time.perf_counter()
         wall_times.append(t1_wall - t0_wall)
 
+        # Stop processing once we've scored enough hits
+        if max_hits > 0 and hits >= max_hits:
+            print(f"       >>> {hits} hits achieved at t={t_center:.4f}s — target neutralised.")
+            break
+
         pos += hop
         win_idx += 1
 
@@ -1347,7 +1609,6 @@ def run_realtime_pipeline(
     n_shots = sum(1 for f in all_fire_decisions if f["can_fire"])
     miss_dists = [f["miss"] for f in all_fire_decisions if f.get("miss") is not None]
     n_hits = sum(1 for m in miss_dists if m < hit_threshold)
-    n_hits_5m = sum(1 for m in miss_dists if m < 5.0)
     mean_miss = float(np.mean(miss_dists)) if miss_dists else float("nan")
 
     # Bearing errors
@@ -1389,8 +1650,6 @@ def run_realtime_pipeline(
     print(f"\n  Shots:      {n_shots}")
     print(f"  Hits <{hit_threshold}m:  {n_hits} "
           f"({100*n_hits/max(n_shots,1):.1f}%)")
-    print(f"  Hits <5m:   {n_hits_5m} "
-          f"({100*n_hits_5m/max(n_shots,1):.1f}%)")
     print(f"  Mean miss:  {mean_miss:.1f} m")
     if miss_dists:
         print(f"  Min miss:   {min(miss_dists):.1f} m")
@@ -1507,8 +1766,6 @@ def run_realtime_pipeline(
         f"Shots:         {n_shots}\n"
         f"Hits <{hit_threshold}m:     {n_hits} "
         f"({100*n_hits/max(n_shots,1):.1f}%)\n"
-        f"Hits <5m:      {n_hits_5m} "
-        f"({100*n_hits_5m/max(n_shots,1):.1f}%)\n"
         f"Mean miss:     {mean_miss:.1f} m\n"
         f"\n"
         f"REAL-TIME TIMING\n"
@@ -1572,6 +1829,20 @@ def run_realtime_pipeline(
     )
     print(f"Saved: {radial_path}")
 
+    # ── Matched filter diagnostic ───────────────────────────────────────
+    diag_path = output_dir / "matched_filter_diagnostic_3d.png"
+    print(f"\n[DIAGNOSTIC] Running matched filter comparison ...")
+    plot_matched_filter_diagnostic(
+        traces, mic_positions, dt,
+        ground_truth_fn, src_duration,
+        array_center=(array_center_x, array_center_y, array_center_z),
+        window_length=window_length,
+        window_overlap=window_overlap,
+        min_signal_rms=min_signal_rms,
+        output_path=diag_path,
+    )
+    print(f"Saved: {diag_path}")
+
     # ── Save results JSON ───────────────────────────────────────────────
     results = {
         "mode": "realtime_causal",
@@ -1583,7 +1854,6 @@ def run_realtime_pipeline(
         "mean_track_error_m": float(np.mean(track_errors)) if track_errors else None,
         "shots_fired": n_shots,
         "hits": n_hits,
-        "hits_5m": n_hits_5m,
         "hit_threshold_m": hit_threshold,
         "mean_miss_m": mean_miss if not math.isnan(mean_miss) else None,
         "min_miss_m": min(miss_dists) if miss_dists else None,
@@ -1819,8 +2089,14 @@ def main():
     parser.add_argument(
         "--hit-threshold",
         type=float,
-        default=3.0,
-        help="Hit radius threshold in metres (default: 3.0)",
+        default=2.0,
+        help="Hit radius threshold in metres (default: 2.0)",
+    )
+    parser.add_argument(
+        "--max-hits",
+        type=int,
+        default=3,
+        help="Stop engagement after this many hits (default: 3)",
     )
     parser.add_argument(
         "--realtime",
@@ -1837,6 +2113,7 @@ def main():
             output_dir,
             source_speed=args.source_speed,
             hit_threshold=args.hit_threshold,
+            max_hits=args.max_hits,
         )
     else:
         run_pipeline(
