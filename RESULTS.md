@@ -243,3 +243,183 @@ python -c "from acoustic_sim.studies import study_sensor_faults; study_sensor_fa
 # Run the basic detection pipeline
 python src/acoustic_sim/detection_main.py --output-dir output/demo
 ```
+
+---
+
+## Study 10: 3-D FDTD Valley Domain — Full Pipeline
+
+High-resolution 3-D FDTD simulation of a propeller source traversing a valley
+between two ridges, with a 16-element circular array (radius 2 m, 4 m aperture).
+The domain includes terrain-induced multipath and velocity contrasts (air at
+343 m/s, ground at 1500 m/s).
+
+### Simulation Parameters
+
+| Parameter | Value |
+|-----------|-------|
+| Grid spacing (dx) | 0.25 m |
+| FD order | 8 |
+| Grid shape | 221 × 401 × 401 (35.5 M cells) |
+| f_max (5 PPW) | 274 Hz |
+| Source | propeller (3 blades, 3600 RPM, f₀ = 180 Hz, 14 harmonics) |
+| Source speed | 50 m/s (180 km/h) |
+| Source trajectory | (-40, 0, 15) → (40, 0, 15) with 10 m parabolic y-arc |
+| Array position | (0, 10, 10) — 1 m above terrain surface |
+| Simulation time | 1.0 s (14722 steps) |
+| Backend | CuPy (CUDA) |
+
+### Key Challenges Encountered
+
+1. **Receivers underground** — Initial RECEIVER_CZ=0 placed array 9 m below
+   terrain surface (terrain height ≈ 9 m at array position). Fixed to CZ=10.
+   RMS increased 20× after fix.
+
+2. **MFP bearing failure** — All phase-based beamforming methods (MVDR, CBF,
+   far-field MVDR, GCC-PHAT) failed in the valley terrain due to multipath
+   destroying phase coherence. Replaced with energy-based power-pattern
+   bearing estimator.
+
+3. **EKF tracker divergence** — EKF initialized 72 m off at far range (where
+   a 4 m array provides no angular resolution at 180 Hz, λ/D ≈ 27°) and
+   never recovered. Replaced with weighted least-squares constant-velocity
+   track fit that pools all detection windows simultaneously.
+
+4. **Ground truth arc mismatch** — The FDTD source (sources_3d.py) applies the
+   parabolic arc to the y-axis (`y += 4·h·f·(1-f)`), but the pipeline ground
+   truth originally applied it to z with sin(π·f). Fixing this reduced mean
+   miss from 10.9 m to 5.2 m.
+
+### Detection Results (Power-Pattern Estimator)
+
+| Metric | Value |
+|--------|-------|
+| Detection rate | 32/37 windows (86.5%) |
+| Mean bearing error | 29.3° |
+| Mean range error | 15.0 m |
+| Physical bearing limit (λ/D) | ~27° at 180 Hz with 4 m aperture |
+
+### Tracking Results (Weighted LS Fit)
+
+| Metric | Value |
+|--------|-------|
+| Fitted position at t_ref | (-17.8, 7.5, 15.0) |
+| True position at t_ref | (-15.0, 8.6, 15.0) |
+| Position error at t_ref | 3.0 m |
+| Fitted velocity | (52.9, -5.6, 0.0) m/s |
+| True velocity | (50.0, ~9.4, 0.0) m/s |
+
+### Fire Control Results
+
+| Metric | Value |
+|--------|-------|
+| Shots fired | 16 |
+| Hits < 3 m | 5 (31.2%) |
+| Hits < 5 m | 10 (62.5%) |
+| Mean miss | 4.7 m |
+| Min miss | 2.7 m |
+| Max miss | 8.6 m |
+
+**Finding:** The 3-D valley terrain is a severely multipath-rich environment
+that destroys phase-based localization. The energy-based (power-pattern)
+bearing estimator operates near the physical angular resolution limit of
+the 4 m array at 180 Hz (~27° diffraction limit). Despite 29° mean bearing
+error, the LS track fit achieves 3 m position accuracy at closest approach
+by pooling 32 detection windows.  Fire control achieves 62.5% hit rate
+within 5 m and 31.2% within 3 m—a functional engagement capability from
+a system operating at its physical limits.
+
+**Plots:** `output/valley_3d_test/pipeline_evaluation_3d.png`,
+`output/valley_3d_test/radial_engagement_3d.png`,
+148 wavefield snapshot PNGs in `output/valley_3d_test/snapshots/`
+
+### Running the 3-D Pipeline
+
+```bash
+# Run the FDTD simulation (requires CUDA GPU)
+bash examples/run_valley_3d.sh
+
+# Run the detection/tracking/fire-control pipeline (batch)
+python examples/run_full_pipeline_3d.py output/valley_3d_test
+
+# Run the real-time causal pipeline
+python examples/run_full_pipeline_3d.py output/valley_3d_test --source-speed 50 --realtime
+```
+
+---
+
+## Study 12: Real-Time Causal Engagement Pipeline
+
+Extends the 3-D valley pipeline (Study 11) with **streaming causal processing**
+that only uses past observations at each window, meeting the real-time
+constraint for actual target engagement.
+
+### Setup
+
+| Parameter | Value |
+|-----------|-------|
+| Domain | Valley (Study 11), dx = 0.25 m, FD order 8 |
+| Array | 16 mics, 2 m radius, centre (-5.0, 7.0, 5.5) |
+| Source | Propeller drone, 50 m/s, 180 Hz fundamental |
+| Processing | 100 ms window, 75% overlap → 25 ms hop |
+| Weapon | Co-located with array at (-5.0, 7.0, 5.5) |
+
+### Key Algorithmic Improvements
+
+1. **Instantaneous aiming** — Fire control uses the direct per-window
+   bearing + range detection for aiming instead of the LS track extrapolation.
+   Near CPA, the direct observation is more accurate than a track propagated
+   through 40° bearing noise.
+
+2. **EMA bearing smoother** (alpha = 0.35) — Exponential moving average on
+   the unit-circle bearing reduces frame-to-frame jitter while incurring
+   minimal lag at the 25 ms hop rate.
+
+3. **RMS-gated engagement** (threshold = 20% of peak RMS) — Restricts firing
+   to windows near CPA where signal strength is highest and bearing estimates
+   are most reliable. Eliminates wasteful shots at long range.
+
+4. **Causal weighted LS tracker** — Provides velocity estimate (for lead
+   computation) using only past detections, minimum 5 observations to start.
+
+### Detection & Tracking
+
+| Metric | Value |
+|--------|-------|
+| Detection rate | 34/37 windows (91.9%) |
+| Mean bearing error | 44.9° |
+| Track windows | 30 (with ≥ 5 detections) |
+| Mean track error | 8.8 m |
+| Min track error | 4.6 m |
+
+### Fire Control Results
+
+| Metric | Value |
+|--------|-------|
+| Shots fired | 7 |
+| Hits < 3 m | 5 (71.4%) |
+| Hits < 5 m | 7 (100.0%) |
+| Mean miss | 2.8 m |
+| Min miss | 2.3 m |
+| Max miss | 3.2 m |
+
+### Real-Time Timing
+
+| Metric | Value |
+|--------|-------|
+| Audio cadence (window hop) | 25.0 ms |
+| Mean processing time | 293 µs / window |
+| Max processing time | 576 µs / window |
+| Real-time margin | **85× faster than real-time** |
+
+**Finding:** The causal real-time pipeline achieves **100% hit rate within 5 m**
+and **71% within 3 m** by combining three techniques: (1) instantaneous
+bearing+range aiming instead of track extrapolation, (2) EMA bearing
+smoothing, and (3) RMS-gated engagement restricted to near-CPA windows
+where the sensor is most accurate. Processing at 293 µs per window leaves
+an 85× margin over the 25 ms real-time requirement. The system
+is fundamentally limited by the 4 m array aperture at 180 Hz (Rayleigh
+limit ~27°, observed ~45° in this reverberant terrain), but the engagement
+strategy compensates by concentrating fire during the highest-confidence
+windows.
+
+**Plots:** `output/valley_3d_test/realtime_pipeline_3d.png`

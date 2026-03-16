@@ -522,6 +522,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     g.add_argument("--fd-order", type=int, default=2,
                    help="FD spatial order of accuracy (2, 4, 6, …)")
 
+    # Field plane (for decoupled array placement)
+    g = p.add_argument_group("Field plane")
+    g.add_argument("--field-plane-z", type=float, default=None,
+                   help="Save horizontal pressure slice at this altitude "
+                        "[m] at every timestep.  Enables post-hoc "
+                        "receiver placement without re-running FDTD.")
+    g.add_argument("--field-plane-subsample", type=int, default=4,
+                   help="Spatial subsampling factor for field plane "
+                        "(default 4; with dx=0.25 → 1.0 m spacing)")
+
     # Output
     p.add_argument("--output-dir", default="output/test_3d")
 
@@ -681,13 +691,25 @@ def main(argv: list[str] | None = None) -> None:
         model=model, config=cfg, source=source,
         receivers=receivers, domain_meta=meta,
     )
-    result = solver.run(snapshot_dir=snap_dir, verbose=True)
+    result = solver.run(
+        snapshot_dir=snap_dir, verbose=True,
+        field_plane_z=args.field_plane_z,
+        field_plane_subsample=args.field_plane_subsample,
+    )
 
     # -- Save outputs (rank 0 only) ----------------------------------------
     if is_root:
         traces = result["traces"]
         np.save(str(out / "traces.npy"), traces)
         print(f"Saved traces {traces.shape} to {out / 'traces.npy'}")
+
+        # -- Save field plane (if recorded) ----------------------------
+        if "field_plane" in result:
+            fp = result["field_plane"]
+            np.save(str(out / "field_plane.npy"), fp)
+            print(f"Saved field_plane {fp.shape} "
+                  f"({fp.nbytes / 1e6:.0f} MB) to "
+                  f"{out / 'field_plane.npy'}")
 
         metadata = {
             "domain": args.domain,
@@ -720,6 +742,13 @@ def main(argv: list[str] | None = None) -> None:
             "fd_order": args.fd_order,
             "grid_shape": list(model.shape),
         }
+
+        if "field_plane" in result:
+            metadata["field_plane_z"] = result["field_plane_z"]
+            metadata["field_plane_x"] = result["field_plane_x"].tolist()
+            metadata["field_plane_y"] = result["field_plane_y"].tolist()
+            metadata["field_plane_subsample"] = result["field_plane_subsample"]
+
         with open(str(out / "metadata.json"), "w") as f:
             json.dump(metadata, f, indent=2)
 

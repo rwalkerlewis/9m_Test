@@ -243,12 +243,22 @@ class FDTD3DSolver:
         in_local = (giz >= self.slab_start) & (giz + 1 < self.slab_end)
 
         self._recv_global_idx = np.where(in_local)[0]
-        self._recv_iz = giz[in_local] - self.slab_start + self._ghost_lo
-        self._recv_iy = giy[in_local]
-        self._recv_ix = gix[in_local]
-        self._recv_wx = wx[in_local]
-        self._recv_wy = wy[in_local]
-        self._recv_wz = wz[in_local]
+        _iz = giz[in_local] - self.slab_start + self._ghost_lo
+        _iy = giy[in_local]
+        _ix = gix[in_local]
+        _wx = wx[in_local]
+        _wy = wy[in_local]
+        _wz = wz[in_local]
+
+        # Keep index/weight arrays on GPU when using CUDA so
+        # _sample_receivers can do device-side fancy indexing.
+        xp = self.xp
+        self._recv_iz = xp.asarray(_iz)
+        self._recv_iy = xp.asarray(_iy)
+        self._recv_ix = xp.asarray(_ix)
+        self._recv_wx = xp.asarray(_wx, dtype=np.float64)
+        self._recv_wy = xp.asarray(_wy, dtype=np.float64)
+        self._recv_wz = xp.asarray(_wz, dtype=np.float64)
 
     # ------------------------------------------------------------------
     # Source injection (trilinear, 8 cells)
@@ -280,11 +290,26 @@ class FDTD3DSolver:
         sig_val = self.source.signal[min(n, len(self.source.signal) - 1)]
         amp = self.cfg.source_amplitude * sig_val
 
-        # Trilinear injection into 8 surrounding cells.
-        for diz, wwz in ((0, 1.0 - wz), (1, wz)):
-            for diy, wwy in ((0, 1.0 - wy), (1, wy)):
-                for dix, wwx in ((0, 1.0 - wx), (1, wx)):
-                    p[liz + diz, giy + diy, gix + dix] += amp * wwx * wwy * wwz
+        # Vectorised trilinear injection into 8 surrounding cells.
+        xp = self.xp
+        iz = xp.array([liz, liz, liz, liz, liz + 1, liz + 1, liz + 1, liz + 1])
+        iy = xp.array([giy, giy, giy + 1, giy + 1, giy, giy, giy + 1, giy + 1])
+        ix = xp.array([gix, gix + 1, gix, gix + 1, gix, gix + 1, gix, gix + 1])
+        wt = xp.array([
+            (1 - wz) * (1 - wy) * (1 - wx),
+            (1 - wz) * (1 - wy) *      wx,
+            (1 - wz) *      wy  * (1 - wx),
+            (1 - wz) *      wy  *      wx,
+                 wz  * (1 - wy) * (1 - wx),
+                 wz  * (1 - wy) *      wx,
+                 wz  *      wy  * (1 - wx),
+                 wz  *      wy  *      wx,
+        ])
+        if self.is_cuda:
+            # 8 trilinear corners are always distinct — safe to use +=.
+            p[iz, iy, ix] += amp * wt
+        else:
+            np.add.at(p, (iz, iy, ix), amp * wt)
 
     # ------------------------------------------------------------------
     # Receiver sampling (trilinear)
@@ -296,24 +321,25 @@ class FDTD3DSolver:
         local_vals = np.zeros(n_local)
 
         if n_local > 0:
-            p_host = xp.asnumpy(self.p_now) if self.is_cuda else self.p_now
+            p = self.p_now  # stay on device — no D2H copy
             iz = self._recv_iz
             iy = self._recv_iy
             ix = self._recv_ix
             wx = self._recv_wx
             wy = self._recv_wy
             wz = self._recv_wz
-            # Trilinear interpolation over 8 corners.
-            local_vals = (
-                p_host[iz,     iy,     ix    ] * (1 - wz) * (1 - wy) * (1 - wx)
-              + p_host[iz,     iy,     ix + 1] * (1 - wz) * (1 - wy) *      wx
-              + p_host[iz,     iy + 1, ix    ] * (1 - wz) *      wy  * (1 - wx)
-              + p_host[iz,     iy + 1, ix + 1] * (1 - wz) *      wy  *      wx
-              + p_host[iz + 1, iy,     ix    ] *      wz  * (1 - wy) * (1 - wx)
-              + p_host[iz + 1, iy,     ix + 1] *      wz  * (1 - wy) *      wx
-              + p_host[iz + 1, iy + 1, ix    ] *      wz  *      wy  * (1 - wx)
-              + p_host[iz + 1, iy + 1, ix + 1] *      wz  *      wy  *      wx
+            # Trilinear interpolation over 8 corners (GPU-resident).
+            vals = (
+                p[iz,     iy,     ix    ] * (1 - wz) * (1 - wy) * (1 - wx)
+              + p[iz,     iy,     ix + 1] * (1 - wz) * (1 - wy) *      wx
+              + p[iz,     iy + 1, ix    ] * (1 - wz) *      wy  * (1 - wx)
+              + p[iz,     iy + 1, ix + 1] * (1 - wz) *      wy  *      wx
+              + p[iz + 1, iy,     ix    ] *      wz  * (1 - wy) * (1 - wx)
+              + p[iz + 1, iy,     ix + 1] *      wz  * (1 - wy) *      wx
+              + p[iz + 1, iy + 1, ix    ] *      wz  *      wy  * (1 - wx)
+              + p[iz + 1, iy + 1, ix + 1] *      wz  *      wy  *      wx
             )
+            local_vals = xp.asnumpy(vals) if self.is_cuda else np.asarray(vals)
 
         if not self.use_mpi:
             self.traces[:, n] = local_vals
@@ -479,7 +505,10 @@ class FDTD3DSolver:
         self,
         snapshot_dir: str | None = None,
         snapshot_z_index: int | None = None,
+        snapshot_y_index: int | None = None,
         verbose: bool = True,
+        field_plane_z: float | None = None,
+        field_plane_subsample: int = 4,
     ) -> dict[str, Any]:
         """Run the full 3-D simulation.
 
@@ -489,12 +518,25 @@ class FDTD3DSolver:
             Directory for snapshot images.  None = disabled.
         snapshot_z_index : int or None
             Which z-slab to save as snapshot.  None = middle slab.
+        snapshot_y_index : int or None
+            Which y-slab for the X-Z cross-section.  None = middle slab.
         verbose : bool
+        field_plane_z : float or None
+            If given, save the horizontal pressure slice at this altitude
+            (metres) at every timestep.  Enables post-hoc receiver
+            placement without re-running the forward model.
+        field_plane_subsample : int
+            Spatial subsampling factor for the field plane (default 4).
+            With dx=0.25 this gives 1.0 m spacing.
 
         Returns
         -------
-        dict with ``traces``, ``dt``, ``n_steps``.
+        dict with ``traces``, ``dt``, ``n_steps`` and optionally
+        ``field_plane``, ``field_plane_x``, ``field_plane_y``,
+        ``field_plane_z``.
         """
+        from acoustic_sim.plotting_3d import save_snapshot_3d
+
         is_root = self.rank == 0
 
         if snapshot_dir is not None and is_root:
@@ -502,9 +544,77 @@ class FDTD3DSolver:
 
         if snapshot_z_index is None:
             snapshot_z_index = self.global_nz // 2
+        if snapshot_y_index is None:
+            snapshot_y_index = self.global_ny // 2
+
+        # -- Field plane setup ----------------------------------------
+        _fp_buf = None
+        _fp_z_local = None
+        _fp_sub = max(1, int(field_plane_subsample))
+        _fp_z_global = None
+
+        if field_plane_z is not None:
+            _fp_z_global = int(np.argmin(np.abs(self.model.z - field_plane_z)))
+            _fp_owns = (
+                _fp_z_global >= self.slab_start
+                and _fp_z_global < self.slab_end
+            )
+            if _fp_owns:
+                _fp_z_local = (
+                    _fp_z_global - self.slab_start + self._ghost_lo
+                )
+            fp_ny = math.ceil(self.global_ny / _fp_sub)
+            fp_nx = math.ceil(self.global_nx / _fp_sub)
+            # For MPI: determine which rank owns the z-index.
+            _fp_owner_rank = 0
+            if self.use_mpi:
+                for _r, (_s, _e) in enumerate(self.splits):
+                    if _fp_z_global >= _s and _fp_z_global < _e:
+                        _fp_owner_rank = _r
+                        break
+            if is_root:
+                plane_mb = self.n_steps * fp_ny * fp_nx * 4 / 1e6
+                _fp_buf = np.zeros(
+                    (self.n_steps, fp_ny, fp_nx), dtype=np.float32,
+                )
+                if verbose:
+                    print(
+                        f"  Field plane: "
+                        f"z={self.model.z[_fp_z_global]:.2f} m, "
+                        f"grid {fp_ny}×{fp_nx}, sub={_fp_sub}, "
+                        f"{plane_mb:.0f} MB"
+                    )
 
         for n in range(self.n_steps):
             self._step(n)
+
+            # -- Extract field plane slice ----------------------------
+            if _fp_z_local is not None:
+                xp = self.xp
+                _plane = self.p_now[_fp_z_local, ::_fp_sub, ::_fp_sub]
+                _plane_np = (
+                    xp.asnumpy(_plane) if self.is_cuda
+                    else np.asarray(_plane)
+                )
+                if is_root and _fp_buf is not None:
+                    _fp_buf[n] = _plane_np.astype(np.float32)
+                elif self.use_mpi:
+                    self.comm.Send(
+                        np.ascontiguousarray(
+                            _plane_np.astype(np.float32)
+                        ),
+                        dest=0, tag=n % 32768,
+                    )
+            elif (
+                field_plane_z is not None
+                and is_root
+                and self.use_mpi
+                and _fp_buf is not None
+            ):
+                self.comm.Recv(
+                    _fp_buf[n], source=_fp_owner_rank,
+                    tag=n % 32768,
+                )
 
             if (
                 snapshot_dir is not None
@@ -513,11 +623,16 @@ class FDTD3DSolver:
             ):
                 full_field = self._gather_field()
                 if is_root and full_field is not None:
-                    iz = min(snapshot_z_index, full_field.shape[0] - 1)
-                    slice_2d = full_field[iz, :, :]
-                    # Save as simple numpy (plotting is user's responsibility).
-                    fpath = Path(snapshot_dir) / f"snapshot3d_{n:06d}.npy"
-                    np.save(str(fpath), slice_2d)
+                    sx, sy, sz = self.source.position_at(n, self.dt)
+                    save_snapshot_3d(
+                        full_field, n, snapshot_dir,
+                        extent_xy=self.model.extent_xy,
+                        extent_xz=self.model.extent_xz,
+                        z_index=snapshot_z_index,
+                        y_index=snapshot_y_index,
+                        receivers=self.receivers,
+                        source_xyz=np.array([sx, sy, sz]),
+                    )
 
             if verbose and is_root and n % 500 == 0:
                 print(f"  step {n:>6d} / {self.n_steps}")
@@ -525,8 +640,17 @@ class FDTD3DSolver:
         if verbose and is_root:
             print(f"  step {self.n_steps:>6d} / {self.n_steps}  (done)")
 
-        return {
+        result: dict[str, Any] = {
             "traces": self.traces if is_root else np.empty((0, 0)),
             "dt": self.dt,
             "n_steps": self.n_steps,
         }
+
+        if _fp_buf is not None and _fp_z_global is not None:
+            result["field_plane"] = _fp_buf
+            result["field_plane_x"] = self.model.x[::_fp_sub].copy()
+            result["field_plane_y"] = self.model.y[::_fp_sub].copy()
+            result["field_plane_z"] = float(self.model.z[_fp_z_global])
+            result["field_plane_subsample"] = _fp_sub
+
+        return result
