@@ -374,7 +374,19 @@ class ElasticFDTD2DSolver:
     def _setup_attenuation(
         self, model: ElasticModel2D, g_lo: int, g_hi: int,
     ) -> None:
-        """Precompute SLS memory variable coefficients."""
+        """Precompute SLS memory variable coefficients.
+
+        Uses one Standard Linear Solid mechanism per Q value.
+        The memory variable update (Blanch et al. 1995) is:
+
+            R^{n+1} = decay * R^n + alpha * dt * stress_rate
+
+        where:
+            tau_sigma = 1 / (2*pi*f0)
+            tau_epsilon = tau_sigma * (2Q+1) / (2Q-1)
+            decay = exp(-dt / tau_sigma)
+            alpha = (1/Q) * (1 - decay) / dt  (simplified single-mechanism)
+        """
         xp = self.xp
         self._has_attenuation = self.cfg.enable_attenuation
 
@@ -390,27 +402,27 @@ class ElasticFDTD2DSolver:
         qp_local = model.qp[g_lo:g_hi, :]
         qs_local = model.qs[g_lo:g_hi, :]
 
-        # SLS relaxation times
         tau_sigma = 1.0 / (2.0 * np.pi * f0)
-
-        # tau_epsilon = tau_sigma * (2Q+1)/(2Q-1)
-        # For very large Q → tau_epsilon ≈ tau_sigma (no attenuation)
-        tau_eps_p = tau_sigma * (2.0 * qp_local + 1.0) / np.maximum(2.0 * qp_local - 1.0, 0.01)
-        tau_eps_s = tau_sigma * (2.0 * qs_local + 1.0) / np.maximum(2.0 * qs_local - 1.0, 0.01)
-
-        # Precomputed coefficients:
-        #   decay = exp(-dt / tau_sigma)
-        #   coeff = (tau_eps / tau_sigma - 1) * (1 - decay)
         decay = math.exp(-dt / tau_sigma)
         self._sls_decay = decay
 
-        coeff_p = (tau_eps_p / tau_sigma - 1.0) * (1.0 - decay)
-        coeff_s = (tau_eps_s / tau_sigma - 1.0) * (1.0 - decay)
+        # alpha_p = modulus correction factor for P-wave
+        # For large Q, alpha → 0 (no attenuation)
+        # For Q ~ 10-30, alpha provides appropriate dissipation
+        alpha_p = np.where(
+            qp_local > 1.0,
+            (1.0 / qp_local) * (1.0 - decay),
+            0.0,
+        )
+        alpha_s = np.where(
+            qs_local > 1.0,
+            (1.0 / qs_local) * (1.0 - decay),
+            0.0,
+        )
 
-        self._sls_coeff_p = xp.asarray(coeff_p)
-        self._sls_coeff_s = xp.asarray(coeff_s)
+        self._sls_alpha_p = xp.asarray(alpha_p)
+        self._sls_alpha_s = xp.asarray(alpha_s)
 
-        # Memory variables
         shape = (self._pad_nz, self.global_nx)
         self.Rxx = xp.zeros(shape, dtype=np.float64)
         self.Rzz = xp.zeros(shape, dtype=np.float64)
@@ -734,15 +746,20 @@ class ElasticFDTD2DSolver:
         if self._has_attenuation and self.Rxx is not None:
             decay = self._sls_decay
 
-            # Update memory variables
-            self.Rxx = decay * self.Rxx + self._sls_coeff_p * dsxx
-            self.Rzz = decay * self.Rzz + self._sls_coeff_p * dszz
-            self.Rxz = decay * self.Rxz + self._sls_coeff_s * dsxz
+            # Stress increment (elastic part)
+            inc_sxx = dt * dsxx
+            inc_szz = dt * dszz
+            inc_sxz = dt * dsxz
 
-            # Add memory variable contribution to stress update
-            self.sxx += dt * dsxx - self.Rxx
-            self.szz += dt * dszz - self.Rzz
-            self.sxz += dt * dsxz - self.Rxz
+            # Update memory variables (exponential decay + new contribution)
+            self.Rxx = decay * self.Rxx + self._sls_alpha_p * inc_sxx
+            self.Rzz = decay * self.Rzz + self._sls_alpha_p * inc_szz
+            self.Rxz = decay * self.Rxz + self._sls_alpha_s * inc_sxz
+
+            # Apply stress update with memory variable subtraction
+            self.sxx += inc_sxx - self.Rxx
+            self.szz += inc_szz - self.Rzz
+            self.sxz += inc_sxz - self.Rxz
         else:
             self.sxx += dt * dsxx
             self.szz += dt * dszz
@@ -1079,14 +1096,14 @@ class ElasticFDTD3DSolver:
         qp_local = model.qp[g_lo:g_hi, :, :]
         qs_local = model.qs[g_lo:g_hi, :, :]
 
-        tau_eps_p = tau_sigma * (2.0 * qp_local + 1.0) / np.maximum(2.0 * qp_local - 1.0, 0.01)
-        tau_eps_s = tau_sigma * (2.0 * qs_local + 1.0) / np.maximum(2.0 * qs_local - 1.0, 0.01)
-
         decay = math.exp(-dt / tau_sigma)
         self._sls_decay = decay
 
-        self._sls_coeff_p = xp.asarray((tau_eps_p / tau_sigma - 1.0) * (1.0 - decay))
-        self._sls_coeff_s = xp.asarray((tau_eps_s / tau_sigma - 1.0) * (1.0 - decay))
+        alpha_p = np.where(qp_local > 1.0, (1.0 / qp_local) * (1.0 - decay), 0.0)
+        alpha_s = np.where(qs_local > 1.0, (1.0 / qs_local) * (1.0 - decay), 0.0)
+
+        self._sls_alpha_p = xp.asarray(alpha_p)
+        self._sls_alpha_s = xp.asarray(alpha_s)
 
         shape = (self._pad_nz, self.global_ny, self.global_nx)
         self.Rxx = xp.zeros(shape, dtype=np.float64)
@@ -1461,19 +1478,27 @@ class ElasticFDTD3DSolver:
         # SLS attenuation
         if self._has_attenuation and self.Rxx is not None:
             decay = self._sls_decay
-            self.Rxx = decay * self.Rxx + self._sls_coeff_p * dsxx
-            self.Ryy = decay * self.Ryy + self._sls_coeff_p * dsyy
-            self.Rzz = decay * self.Rzz + self._sls_coeff_p * dszz
-            self.Rxy = decay * self.Rxy + self._sls_coeff_s * dsxy
-            self.Rxz = decay * self.Rxz + self._sls_coeff_s * dsxz
-            self.Ryz = decay * self.Ryz + self._sls_coeff_s * dsyz
 
-            self.sxx += dt * dsxx - self.Rxx
-            self.syy += dt * dsyy - self.Ryy
-            self.szz += dt * dszz - self.Rzz
-            self.sxy += dt * dsxy - self.Rxy
-            self.sxz += dt * dsxz - self.Rxz
-            self.syz += dt * dsyz - self.Ryz
+            inc_sxx = dt * dsxx
+            inc_syy = dt * dsyy
+            inc_szz = dt * dszz
+            inc_sxy = dt * dsxy
+            inc_sxz = dt * dsxz
+            inc_syz = dt * dsyz
+
+            self.Rxx = decay * self.Rxx + self._sls_alpha_p * inc_sxx
+            self.Ryy = decay * self.Ryy + self._sls_alpha_p * inc_syy
+            self.Rzz = decay * self.Rzz + self._sls_alpha_p * inc_szz
+            self.Rxy = decay * self.Rxy + self._sls_alpha_s * inc_sxy
+            self.Rxz = decay * self.Rxz + self._sls_alpha_s * inc_sxz
+            self.Ryz = decay * self.Ryz + self._sls_alpha_s * inc_syz
+
+            self.sxx += inc_sxx - self.Rxx
+            self.syy += inc_syy - self.Ryy
+            self.szz += inc_szz - self.Rzz
+            self.sxy += inc_sxy - self.Rxy
+            self.sxz += inc_sxz - self.Rxz
+            self.syz += inc_syz - self.Ryz
         else:
             self.sxx += dt * dsxx
             self.syy += dt * dsyy
