@@ -309,3 +309,146 @@ def create_receiver_custom_3d(
 ) -> np.ndarray:
     """Wrap a list of ``(x, y, z)`` tuples as an ``(N, 3)`` array."""
     return np.asarray(positions, dtype=np.float64).reshape(-1, 3)
+
+
+# ═════════════════════════════════════════════════════════════════════
+# Elastic / seismic receiver support (microphones + geophones)
+# ═════════════════════════════════════════════════════════════════════
+
+from dataclasses import dataclass
+
+
+@dataclass
+class ReceiverSpec:
+    """Combined receiver specification with sensor type metadata.
+
+    Attributes
+    ----------
+    positions : np.ndarray
+        Receiver positions, shape ``(N, 2)`` (2-D) or ``(N, 3)`` (3-D).
+    sensor_types : list[str]
+        ``"microphone"`` or ``"geophone"`` per receiver.
+    field_components : list[str]
+        ``"pressure"`` for microphones, ``"vz"`` for geophones.
+    """
+
+    positions: np.ndarray
+    sensor_types: list[str]
+    field_components: list[str]
+
+    @property
+    def n_receivers(self) -> int:
+        return self.positions.shape[0]
+
+    @property
+    def n_microphones(self) -> int:
+        return sum(1 for s in self.sensor_types if s == "microphone")
+
+    @property
+    def n_geophones(self) -> int:
+        return sum(1 for s in self.sensor_types if s == "geophone")
+
+    @property
+    def mic_indices(self) -> np.ndarray:
+        """Indices of microphones in the positions array."""
+        return np.array(
+            [i for i, s in enumerate(self.sensor_types) if s == "microphone"],
+            dtype=int,
+        )
+
+    @property
+    def geo_indices(self) -> np.ndarray:
+        """Indices of geophones in the positions array."""
+        return np.array(
+            [i for i, s in enumerate(self.sensor_types) if s == "geophone"],
+            dtype=int,
+        )
+
+
+def create_colocated_array_2d(
+    cx: float = 0.0,
+    radius: float = 2.0,
+    count: int = 16,
+    mic_z: float = 1.5,
+    geo_z: float = -0.05,
+) -> ReceiverSpec:
+    """Create a colocated microphone + geophone circular array in 2-D.
+
+    Microphones are placed at ``z = mic_z`` and geophones at
+    ``z = geo_z`` (just below the surface), sharing the same x positions.
+
+    In 2-D the position array has shape ``(2*count, 2)`` with columns
+    ``(x, z)``.
+
+    Parameters
+    ----------
+    cx : float
+        Array centre x-coordinate [m].
+    radius : float
+        Array radius [m].
+    count : int
+        Number of elements per ring (same for mics and geophones).
+    mic_z : float
+        Microphone altitude [m] (positive = above ground).
+    geo_z : float
+        Geophone depth [m] (negative = below ground).
+
+    Returns
+    -------
+    ReceiverSpec
+    """
+    angles = np.linspace(0, 2 * np.pi, count, endpoint=False)
+    x_pos = cx + radius * np.cos(angles)
+
+    mic_positions = np.column_stack([x_pos, np.full(count, mic_z)])
+    geo_positions = np.column_stack([x_pos, np.full(count, geo_z)])
+
+    positions = np.vstack([mic_positions, geo_positions])
+    sensor_types = ["microphone"] * count + ["geophone"] * count
+    field_components = ["pressure"] * count + ["vz"] * count
+
+    return ReceiverSpec(
+        positions=positions,
+        sensor_types=sensor_types,
+        field_components=field_components,
+    )
+
+
+def create_colocated_array_3d(
+    cx: float = 50.0,
+    cy: float = 50.0,
+    radius: float = 2.0,
+    count: int = 16,
+    mic_z: float = 1.5,
+    geo_z: float = -0.05,
+) -> ReceiverSpec:
+    """Create a colocated microphone + geophone circular array in 3-D.
+
+    Microphones at ``z = mic_z``, geophones at ``z = geo_z``, sharing
+    the same ``(x, y)`` positions on a circle of given radius.
+
+    Returns
+    -------
+    ReceiverSpec
+        Positions have shape ``(2*count, 3)``.
+    """
+    angles = np.linspace(0, 2 * np.pi, count, endpoint=False)
+    x_pos = cx + radius * np.cos(angles)
+    y_pos = cy + radius * np.sin(angles)
+
+    mic_positions = np.column_stack([
+        x_pos, y_pos, np.full(count, mic_z),
+    ])
+    geo_positions = np.column_stack([
+        x_pos, y_pos, np.full(count, geo_z),
+    ])
+
+    positions = np.vstack([mic_positions, geo_positions])
+    sensor_types = ["microphone"] * count + ["geophone"] * count
+    field_components = ["pressure"] * count + ["vz"] * count
+
+    return ReceiverSpec(
+        positions=positions,
+        sensor_types=sensor_types,
+        field_components=field_components,
+    )

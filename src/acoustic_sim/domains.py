@@ -506,3 +506,92 @@ def create_hills_vegetation_domain_3d(
         description="3D Hills + vegetation (valley between two ridges)",
     )
     return model, meta
+
+
+# ═════════════════════════════════════════════════════════════════════
+# Elastic (seismic) domain builders
+# ═════════════════════════════════════════════════════════════════════
+
+from acoustic_sim.elastic_model import (  # noqa: E402
+    ElasticModel2D,
+    ElasticModel3D,
+    GroundConfig,
+    create_coupled_air_ground_2d,
+    create_coupled_air_ground_3d,
+)
+
+
+@dataclass
+class ElasticDomainMeta2D:
+    """Metadata for 2-D elastic (coupled air–ground) domains."""
+
+    description: str = ""
+
+
+@dataclass
+class ElasticDomainMeta3D:
+    """Metadata for 3-D elastic (coupled air–ground) domains."""
+
+    description: str = ""
+
+
+def create_coupled_domain_2d(
+    x_min: float = -100.0,
+    x_max: float = 100.0,
+    z_min: float = -5.0,
+    z_max: float = 15.0,
+    dx: float = 0.5,
+    air_vp: float = 343.0,
+    air_density: float = 1.225,
+    ground: GroundConfig | None = None,
+) -> tuple[ElasticModel2D, ElasticDomainMeta2D]:
+    """Create a coupled air–ground 2-D elastic domain.
+
+    Returns ``(ElasticModel2D, ElasticDomainMeta2D)``.
+    """
+    if ground is None:
+        ground = GroundConfig()
+    model = create_coupled_air_ground_2d(
+        x_min=x_min, x_max=x_max, z_min=z_min, z_max=z_max,
+        dx=dx, air_vp=air_vp, air_density=air_density, ground=ground,
+    )
+    meta = ElasticDomainMeta2D(
+        description=(
+            f"Coupled air–ground 2D: air Vp={air_vp}, "
+            f"ground Vp={ground.vp} Vs={ground.vs} ρ={ground.density}"
+        ),
+    )
+    return model, meta
+
+
+def create_coupled_domain_3d(
+    x_min: float = 0.0,
+    x_max: float = 100.0,
+    y_min: float = 0.0,
+    y_max: float = 100.0,
+    z_min: float = -5.0,
+    z_max: float = 15.0,
+    dx: float = 0.5,
+    air_vp: float = 343.0,
+    air_density: float = 1.225,
+    ground: GroundConfig | None = None,
+) -> tuple[ElasticModel3D, ElasticDomainMeta3D]:
+    """Create a coupled air–ground 3-D elastic domain.
+
+    Returns ``(ElasticModel3D, ElasticDomainMeta3D)``.
+    """
+    if ground is None:
+        ground = GroundConfig()
+    model = create_coupled_air_ground_3d(
+        x_min=x_min, x_max=x_max,
+        y_min=y_min, y_max=y_max,
+        z_min=z_min, z_max=z_max,
+        dx=dx, air_vp=air_vp, air_density=air_density, ground=ground,
+    )
+    meta = ElasticDomainMeta3D(
+        description=(
+            f"Coupled air–ground 3D: air Vp={air_vp}, "
+            f"ground Vp={ground.vp} Vs={ground.vs} ρ={ground.density}"
+        ),
+    )
+    return model, meta
