@@ -80,5 +80,6 @@
   "wind_vx": 0.0,
   "wind_vy": 0.0,
   "use_cuda": true,
-  "fd_order": 2
+  "fd_order": 2,
+  "source_arc_height": 15.0
 }

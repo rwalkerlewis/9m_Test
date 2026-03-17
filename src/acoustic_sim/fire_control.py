@@ -1005,3 +1005,176 @@ def prioritize_threats_3d(
 
     scored.sort(key=lambda t: t["priority_score"], reverse=True)
     return scored
+
+
+# -----------------------------------------------------------------------
+# Projectile trajectory helpers
+# -----------------------------------------------------------------------
+
+def projectile_path(
+    weapon_pos: np.ndarray,
+    aim_bearing: float,
+    aim_elevation: float,
+    muzzle_velocity: float,
+    decel: float,
+    tof: float,
+    n_points: int = 50,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute 3-D projectile trajectory points.
+
+    Parameters
+    ----------
+    weapon_pos : (3,) array  – weapon x, y, z.
+    aim_bearing : float      – azimuth in radians (math convention).
+    aim_elevation : float    – elevation in radians.
+    muzzle_velocity : float  – pellet muzzle speed [m/s].
+    decel : float            – velocity loss per metre [m/s per m].
+    tof : float              – flight time to trace [s].
+    n_points : int           – number of sample points.
+
+    Returns
+    -------
+    x_path, y_path, z_path : 1-D arrays of positions.
+    """
+    wx, wy, wz = float(weapon_pos[0]), float(weapon_pos[1]), float(weapon_pos[2])
+    times = np.linspace(0, tof, n_points)
+    cos_el = math.cos(aim_elevation)
+    sin_el = math.sin(aim_elevation)
+    cos_az = math.cos(aim_bearing)
+    sin_az = math.sin(aim_bearing)
+
+    x_path, y_path, z_path = [], [], []
+    for tv in times:
+        v_avg = muzzle_velocity
+        for _ in range(3):
+            s = v_avg * tv
+            v_end = max(muzzle_velocity - decel * s, 0)
+            v_avg = 0.5 * (muzzle_velocity + v_end)
+        s = v_avg * tv
+        x_path.append(wx + s * cos_el * cos_az)
+        y_path.append(wy + s * cos_el * sin_az)
+        z_path.append(wz + s * sin_el)
+    return np.array(x_path), np.array(y_path), np.array(z_path)
+
+
+# -----------------------------------------------------------------------
+# Closest point of approach (CPA)
+# -----------------------------------------------------------------------
+
+def find_cpa(
+    weapon_pos: np.ndarray,
+    aim_dir: np.ndarray,
+    muzzle_velocity: float,
+    pellet_decel: float,
+    target_position_fn,
+    t_fire: float,
+    n_samples: int = 200,
+) -> dict:
+    """Find the closest point of approach between the projectile and a
+    moving target along the entire flight path.
+
+    The projectile follows a straight ray from *weapon_pos* in direction
+    *aim_dir*, decelerating according to *pellet_decel* (velocity loss
+    per metre of travel).  The target position at absolute time
+    ``t_fire + flight_time`` is queried from *target_position_fn*.
+
+    Parameters
+    ----------
+    weapon_pos : (3,) array
+    aim_dir : (3,) unit vector
+    muzzle_velocity, pellet_decel : float
+    target_position_fn : callable(t) → (x, y, z)
+    t_fire : float – absolute time the shot is fired.
+    n_samples : int – time-step resolution along the trajectory.
+
+    Returns
+    -------
+    dict with keys:
+        miss       – 3-D separation at CPA [m]
+        cpa_range  – distance along the ray at CPA [m]
+        cpa_time   – flight-time at CPA [s]
+        cpa_pos    – (3,) projectile position at CPA
+        gt_at_cpa  – (3,) target position at CPA
+        in_range   – True if CPA is reachable by the projectile
+    """
+    wp = np.asarray(weapon_pos, dtype=np.float64)[:3]
+    ad = np.asarray(aim_dir, dtype=np.float64)[:3]
+    max_range = muzzle_velocity / pellet_decel
+    t_max = 2.0 * max_range / muzzle_velocity
+    flight_times = np.linspace(0, t_max, n_samples)
+
+    best_miss = float("inf")
+    best: dict = {
+        "miss": float("inf"), "cpa_range": 0.0, "cpa_time": 0.0,
+        "cpa_pos": wp.copy(), "gt_at_cpa": wp.copy(), "in_range": False,
+    }
+
+    for ft in flight_times:
+        v_avg = muzzle_velocity
+        for _ in range(3):
+            s = v_avg * ft
+            v_end = max(muzzle_velocity - pellet_decel * s, 0)
+            v_avg = 0.5 * (muzzle_velocity + v_end)
+        s = v_avg * ft
+        if s > max_range:
+            break
+
+        proj_pos = wp + ad * s
+        gt_pos = np.asarray(target_position_fn(t_fire + ft), dtype=np.float64)
+        separation = float(np.linalg.norm(gt_pos - proj_pos))
+
+        if separation < best_miss:
+            best_miss = separation
+            best = {
+                "miss": separation,
+                "cpa_range": s,
+                "cpa_time": ft,
+                "cpa_pos": proj_pos.copy(),
+                "gt_at_cpa": gt_pos.copy(),
+                "in_range": 0 < s <= max_range,
+            }
+
+    return best
+
+
+# -----------------------------------------------------------------------
+# Bearing-rate computation
+# -----------------------------------------------------------------------
+
+def compute_bearing_rate(
+    bearing_history: list[tuple[float, float]],
+    t_now: float,
+    bearing_rad: float,
+    window_s: float = 0.15,
+) -> tuple[float, list[tuple[float, float]]]:
+    """Update bearing history and return the bearing rate.
+
+    Parameters
+    ----------
+    bearing_history : mutable list of (time, bearing_rad) tuples.
+        Updated in-place (trimmed to *window_s*).
+    t_now : float – current time.
+    bearing_rad : float – current bearing in radians.
+    window_s : float – sliding window duration [s].
+
+    Returns
+    -------
+    (bearing_rate_dps, bearing_history) – rate in deg/s, updated list.
+    """
+    bearing_history.append((t_now, bearing_rad))
+    cutoff = t_now - window_s
+    while bearing_history and bearing_history[0][0] < cutoff:
+        bearing_history.pop(0)
+
+    if len(bearing_history) < 2:
+        return float("inf"), bearing_history
+
+    t0, b0 = bearing_history[0]
+    t1, b1 = bearing_history[-1]
+    dt = t1 - t0
+    if dt < 1e-6:
+        return float("inf"), bearing_history
+
+    db = math.atan2(math.sin(b1 - b0), math.cos(b1 - b0))
+    rate_dps = abs(math.degrees(db) / dt)
+    return rate_dps, bearing_history

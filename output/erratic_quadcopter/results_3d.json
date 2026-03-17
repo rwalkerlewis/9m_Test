@@ -1,6 +1,6 @@
 {
-  "dimensions": "2-D",
-  "simulation": "output/valley_test",
+  "dimensions": "3-D",
+  "simulation": "output/erratic_quadcopter",
   "config": {
     "detection": {
       "window_length_s": 0.1,
@@ -46,19 +46,19 @@
       "altitude_estimate_m": null
     }
   },
-  "n_detections": 22,
-  "n_windows": 23,
-  "mean_bearing_error_deg": 3.204971944447726,
+  "n_detections": 7,
+  "n_windows": 7,
+  "mean_bearing_error_deg": 1.121080951743436,
   "shots_fired": 3,
   "hits": 3,
   "hit_threshold_m": 1.0,
-  "mean_miss_m": 1.17151114377453,
-  "min_miss_m": 0.8929618965388492,
-  "max_miss_m": 1.5229026829207453,
+  "mean_miss_m": 1.5037505363889372,
+  "min_miss_m": 0.9115898782172042,
+  "max_miss_m": 1.8453815118087273,
   "timing": {
-    "hop_ms": 24.97218308438411,
-    "mean_latency_us": 3664.2593787173214,
-    "max_latency_us": 5402.385024353862,
-    "realtime_margin_x": 6.815069705334466
+    "hop_ms": 25.024558568447038,
+    "mean_latency_us": 3433.2709786083014,
+    "max_latency_us": 4740.274976938963,
+    "realtime_margin_x": 7.288838755917514
   }
 }

@@ -1,6 +1,6 @@
 {
   "dimensions": "2-D",
-  "simulation": "output/valley_test",
+  "simulation": "output/isotropic_2D",
   "config": {
     "detection": {
       "window_length_s": 0.1,
@@ -46,19 +46,19 @@
       "altitude_estimate_m": null
     }
   },
-  "n_detections": 22,
-  "n_windows": 23,
-  "mean_bearing_error_deg": 3.204971944447726,
+  "n_detections": 23,
+  "n_windows": 24,
+  "mean_bearing_error_deg": 11.567893470381533,
   "shots_fired": 3,
   "hits": 3,
   "hit_threshold_m": 1.0,
-  "mean_miss_m": 1.17151114377453,
-  "min_miss_m": 0.8929618965388492,
-  "max_miss_m": 1.5229026829207453,
+  "mean_miss_m": 0.880047241574576,
+  "min_miss_m": 0.2327325969392865,
+  "max_miss_m": 1.3892887760470627,
   "timing": {
-    "hop_ms": 24.97218308438411,
-    "mean_latency_us": 3664.2593787173214,
-    "max_latency_us": 5402.385024353862,
-    "realtime_margin_x": 6.815069705334466
+    "hop_ms": 25.016950258530954,
+    "mean_latency_us": 3633.5654149297625,
+    "max_latency_us": 5032.881977967918,
+    "realtime_margin_x": 6.884959372339946
   }
 }

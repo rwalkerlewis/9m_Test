@@ -8,9 +8,16 @@
       "min_signal_rms": 5e-05
     },
     "beamformer": {
+      "method": "srp_phat",
       "n_bearings": 360,
       "freq_lo_hz": 100.0,
-      "freq_hi_hz": 2000.0
+      "freq_hi_hz": 2000.0,
+      "max_sources": 1
+    },
+    "ranging": {
+      "method": "auto",
+      "n_range_bins": 80,
+      "auto_cpa_threshold_m": 3.0
     },
     "tracking": {
       "min_detections": 5,
@@ -20,7 +27,8 @@
       "range_max_m": 100.0,
       "rms_ref_range_m": 10.0,
       "covariance_floor": 0.5,
-      "covariance_cap": 1.0
+      "covariance_cap": 1.0,
+      "max_history": 20
     },
     "fire_control": {
       "muzzle_velocity_mps": 400.0,
@@ -30,7 +38,7 @@
       "max_position_uncertainty_m": 0.0,
       "class_label": "fixed_wing",
       "class_confidence": 0.9,
-      "hit_threshold_m": 2.0,
+      "hit_threshold_m": 1.0,
       "max_hits": 3
     },
     "source": {
@@ -38,19 +46,19 @@
       "altitude_estimate_m": null
     }
   },
-  "n_detections": 18,
-  "n_windows": 21,
-  "mean_bearing_error_deg": 1.6287405002878,
-  "shots_fired": 6,
+  "n_detections": 15,
+  "n_windows": 18,
+  "mean_bearing_error_deg": 9.551001290271943,
+  "shots_fired": 3,
   "hits": 3,
-  "hit_threshold_m": 2.0,
-  "mean_miss_m": 2.324914977014935,
-  "min_miss_m": 1.4551225588292644,
-  "max_miss_m": 4.529596860508396,
+  "hit_threshold_m": 1.0,
+  "mean_miss_m": 1.3808567774135392,
+  "min_miss_m": 1.1943586880847608,
+  "max_miss_m": 1.7015978912090566,
   "timing": {
     "hop_ms": 24.997624887176784,
-    "mean_latency_us": 2799.326043930792,
-    "max_latency_us": 4108.821041882038,
-    "realtime_margin_x": 8.929872581785904
+    "mean_latency_us": 3133.777735961808,
+    "max_latency_us": 5318.440031260252,
+    "realtime_margin_x": 7.976834030159641
   }
 }
