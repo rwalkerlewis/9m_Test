@@ -1,5 +1,6 @@
 """Machine learning modules for acoustic drone detection.
 
-Provides source classification, maneuver detection, and kinematic
-fusion classification built on top of the 3D detection pipeline.
+Provides source classification, maneuver detection, kinematic
+fusion classification, and a Fourier Neural Operator (FNO) surrogate
+model for fast FDTD wavefield approximation.
 """

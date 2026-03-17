@@ -49,6 +49,15 @@ exception is `ml/`, which contains optional PyTorch classifiers.
 | `data_generation.py` | Synthetic data factories for all three classifiers.  Physics-based source signals (rotor blade modulation, harmonic engine, wing-beat pulses). |
 | `training.py` | `train_classifier`, `train_fusion_classifier`, `evaluate_classifier`, `evaluate_fusion_classifier`.  Adam optimiser, cross-entropy loss, confusion matrix evaluation. |
 
+#### FNO surrogate (`ml/fno*.py`)
+
+| Module | Purpose |
+|--------|---------|
+| `fno.py` | `AcousticFNO(nn.Module)` — Fourier Neural Operator surrogate for FDTD.  Input: 4-channel field (normalised velocity, source x/y Gaussian blobs, frequency encoding).  `SpectralConv2d` retains lowest Fourier modes; `FNOBlock2d` = spectral + pointwise conv + residual + GELU; `TraceDecoder` MLP maps latent features at receiver locations → time-domain traces.  Output: `(batch, n_recv, n_time_steps)`. |
+| `fno_data_gen.py` | FDTD training data pipeline.  Randomises domain type, source params, receiver layout; runs `FDTDSolver` / `FDTD3DSolver`; saves `.npz` per sample.  CLI: `python -m acoustic_sim.ml.fno_data_gen --n-samples 500 --output-dir data/fno_train`. |
+| `fno_training.py` | `FNODataset` (lazy `.npz` loader with receiver/trace padding), `train_fno` (relative L2 loss, masked receivers, cosine LR schedule, gradient clipping).  CLI: `python -m acoustic_sim.ml.fno_training --data-dir data/fno_train --epochs 200`. |
+| `fno_inference.py` | `FNOForwardModel` — drop-in replacement for FDTD.  Loads a trained checkpoint and provides `predict(velocity_field, grid, receivers, source) → traces`. |
+
 ---
 
 ## Data Flow

@@ -11,6 +11,7 @@
   },
   "tracking": {
     "min_detections": 5,
+    "max_history": 20,
     "ema_alpha": 0.35,
     "rms_fire_gate_frac": 0.20,
     "range_min_m": 5.0,

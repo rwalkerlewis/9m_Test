@@ -920,6 +920,139 @@ class EvasiveSource3D:
 
 
 @dataclass
+class ErraticQuadcopterSource3D:
+    """Erratic 3-D trajectory confined to a bounding box.
+
+    Velocity follows an Ornstein-Uhlenbeck (mean-reverting) process so
+    the source darts unpredictably but stays within the domain.  A soft
+    repulsive force pushes the trajectory away from domain walls.
+
+    Parameters
+    ----------
+    x0, y0, z0 : float
+        Initial position.
+    bbox_min, bbox_max : tuple[float, float, float]
+        Domain bounds ``(x, y, z)`` for confinement.
+    mean_speed : float
+        Characteristic speed (m/s).
+    agility : float
+        Rate of velocity direction changes (higher = more erratic).
+    speed_var : float
+        Standard deviation of speed perturbation noise.
+    signal : np.ndarray
+        Source time-series.
+    seed : int
+        RNG seed for reproducibility.
+    """
+    x0: float
+    y0: float
+    z0: float
+    bbox_min: tuple[float, float, float] = (-20.0, -20.0, 2.0)
+    bbox_max: tuple[float, float, float] = (20.0, 20.0, 20.0)
+    mean_speed: float = 8.0
+    agility: float = 6.0
+    speed_var: float = 4.0
+    signal: np.ndarray = dc_field(default_factory=lambda: np.empty(0))
+    seed: int = 42
+    _xs: np.ndarray = dc_field(default_factory=lambda: np.empty(0), repr=False)
+    _ys: np.ndarray = dc_field(default_factory=lambda: np.empty(0), repr=False)
+    _zs: np.ndarray = dc_field(default_factory=lambda: np.empty(0), repr=False)
+    _dt_cache: float = 0.0
+
+    def _build_path(self, n_steps: int, dt: float) -> None:
+        rng = np.random.default_rng(self.seed)
+        bmin = np.array(self.bbox_min, dtype=np.float64)
+        bmax = np.array(self.bbox_max, dtype=np.float64)
+        center = 0.5 * (bmin + bmax)
+        halfext = 0.5 * (bmax - bmin)
+
+        # Build trajectory on a coarse "maneuver clock" (~50 Hz)
+        # then interpolate to FDTD dt.  This avoids tiny per-step
+        # noise that averages out at high sample rates.
+        maneuver_dt = 0.02  # 50 Hz maneuver decisions
+        total_time = n_steps * dt
+        n_coarse = max(int(np.ceil(total_time / maneuver_dt)) + 1, 2)
+
+        cx = np.empty(n_coarse)
+        cy = np.empty(n_coarse)
+        cz = np.empty(n_coarse)
+
+        pos = np.array([self.x0, self.y0, self.z0], dtype=np.float64)
+        # Start with a random velocity.
+        theta = rng.uniform(0, 2.0 * np.pi)
+        phi = rng.uniform(-0.5, 0.5)
+        vel = self.mean_speed * np.array([
+            np.cos(theta) * np.cos(phi),
+            np.sin(theta) * np.cos(phi),
+            np.sin(phi),
+        ])
+
+        ag = self.agility
+        max_speed = self.mean_speed * 3.0
+        accel_mag = self.mean_speed * ag  # characteristic acceleration
+
+        for i in range(n_coarse):
+            cx[i] = pos[0]
+            cy[i] = pos[1]
+            cz[i] = pos[2]
+
+            # Random acceleration — aggressive directional changes.
+            accel = rng.normal(0.0, accel_mag, size=3)
+
+            # Wall repulsion: strong push away from boundaries.
+            for ax in range(3):
+                frac_lo = (pos[ax] - bmin[ax]) / max(halfext[ax], 1e-6)
+                frac_hi = (bmax[ax] - pos[ax]) / max(halfext[ax], 1e-6)
+                if frac_lo < 0.3:
+                    accel[ax] += accel_mag * 3.0 * (0.3 - frac_lo) / 0.3
+                if frac_hi < 0.3:
+                    accel[ax] -= accel_mag * 3.0 * (0.3 - frac_hi) / 0.3
+
+            # Occasional sharp reversal (~10% chance per maneuver step).
+            if rng.random() < 0.10:
+                vel = -vel * rng.uniform(0.5, 1.5)
+
+            vel += accel * maneuver_dt
+            # Speed clamp.
+            spd = np.linalg.norm(vel)
+            if spd > max_speed:
+                vel *= max_speed / spd
+            elif spd < self.mean_speed * 0.3:
+                # Boost if too slow.
+                kick_dir = rng.normal(size=3)
+                kick_dir /= max(np.linalg.norm(kick_dir), 1e-9)
+                vel = kick_dir * self.mean_speed
+
+            pos = pos + vel * maneuver_dt
+            pos = np.clip(pos, bmin, bmax)
+            # Bounce off walls (reflect velocity component).
+            for ax in range(3):
+                if pos[ax] <= bmin[ax] or pos[ax] >= bmax[ax]:
+                    vel[ax] = -vel[ax] * 0.8
+
+        # Interpolate coarse trajectory to FDTD timesteps.
+        t_coarse = np.arange(n_coarse) * maneuver_dt
+        t_fine = np.arange(n_steps) * dt
+
+        self._xs = np.interp(t_fine, t_coarse, cx)
+        self._ys = np.interp(t_fine, t_coarse, cy)
+        self._zs = np.interp(t_fine, t_coarse, cz)
+        self._dt_cache = dt
+
+    def position_at(self, step: int, dt: float) -> tuple[float, float, float]:
+        if len(self._xs) == 0 or abs(self._dt_cache - dt) > 1e-15:
+            self._build_path(len(self.signal), dt)
+        idx = min(step, len(self._xs) - 1)
+        return (float(self._xs[idx]), float(self._ys[idx]), float(self._zs[idx]))
+
+    def get_trajectory(self, n_steps: int, dt: float) -> np.ndarray:
+        """Return the full trajectory as an (n_steps, 3) array."""
+        if len(self._xs) == 0 or abs(self._dt_cache - dt) > 1e-15:
+            self._build_path(n_steps, dt)
+        return np.column_stack([self._xs, self._ys, self._zs])
+
+
+@dataclass
 class CustomTrajectorySource3D:
     """User-supplied trajectory as (t, x, y, z) arrays.
 

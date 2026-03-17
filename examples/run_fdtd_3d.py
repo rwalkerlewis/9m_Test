@@ -726,6 +726,7 @@ def main(argv: list[str] | None = None) -> None:
             "source_x1": args.source_x1,
             "source_y1": args.source_y1,
             "source_z1": args.source_z1,
+            "source_arc_height": args.source_arc_height,
             "x_min": args.x_min,
             "x_max": args.x_max,
             "y_min": args.y_min,

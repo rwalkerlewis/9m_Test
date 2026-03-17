@@ -43,9 +43,18 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from acoustic_sim.detection import (
+    BearingEstimator,
+    DetectionEngine,
+    SRPBeamformer,
+    WindowDetection,
+    available_bearing_methods,
+)
 from acoustic_sim.fire_control import (
     compute_engagement_3d,
     compute_lead_3d,
+    pattern_diameter,
+    time_of_flight,
 )
 
 # ============================================================================
@@ -59,9 +68,16 @@ _DEFAULTS = {
         "min_signal_rms": 5e-5,
     },
     "beamformer": {
+        "method": "srp_phat",
         "n_bearings": 360,
         "freq_lo_hz": 100.0,
         "freq_hi_hz": 2000.0,
+        "max_sources": 1,
+    },
+    "ranging": {
+        "method": "auto",
+        "n_range_bins": 80,
+        "auto_cpa_threshold_m": 3.0,
     },
     "tracking": {
         "min_detections": 5,
@@ -76,10 +92,10 @@ _DEFAULTS = {
     "fire_control": {
         "muzzle_velocity_mps": 400.0,
         "pellet_decel_mps2": 1.5,
-        "pattern_spread_rate": 0.3,
+        "pattern_spread_rate": 0.2,
         "max_engagement_range_m": 500.0,
         "max_position_uncertainty_m": 0.0,
-        "class_label": "fixed_wing",
+        "class_label": "quadcopter",
         "class_confidence": 0.9,
         "hit_threshold_m": 2.0,
         "max_hits": 3,
@@ -138,12 +154,40 @@ def load_simulation(sim_dir: Path) -> dict:
     }
 
 
-def compute_ground_truth(metadata: dict, source_speed: float):
+def compute_ground_truth(metadata: dict, source_speed: float,
+                         sim_dir: Path | None = None):
     """Build a ground-truth trajectory returning ``(x, y, z)``.
 
     For 2-D simulations that lack ``source_z``, z defaults to 0 and a
-    sine arc is applied; for 3-D a parabolic arc is used.
+    sine arc is applied only when ``source_arc_height`` is explicitly
+    set in *metadata*; for 3-D a parabolic arc is used similarly.
+    If the metadata does not contain ``source_arc_height`` the path is
+    assumed to be a straight line (matching :class:`MovingSource`
+    default ``arc_height = 0``).
+
+    For erratic trajectories (``source_type == "erratic_quadcopter"``),
+    the ground-truth positions are loaded from a saved trajectory file.
     """
+    # -- Erratic trajectory from file ----------------------------------
+    traj_file = metadata.get("source_trajectory_file")
+    if traj_file and sim_dir is not None:
+        traj_path = sim_dir / traj_file
+        if traj_path.exists():
+            traj = np.load(str(traj_path))  # (n_steps, 3)
+            dt_sim = metadata["dt"]
+            duration = (traj.shape[0] - 1) * dt_sim
+
+            def trajectory(t: float) -> tuple[float, float, float]:
+                frac = min(max(t / duration, 0.0), 1.0) if duration > 0 else 0.0
+                idx_f = frac * (traj.shape[0] - 1)
+                i0 = int(idx_f)
+                i1 = min(i0 + 1, traj.shape[0] - 1)
+                w = idx_f - i0
+                pos = traj[i0] * (1.0 - w) + traj[i1] * w
+                return float(pos[0]), float(pos[1]), float(pos[2])
+
+            return trajectory, duration
+
     start_x = metadata.get("source_x", -40.0)
     start_y = metadata.get("source_y", 0.0)
     start_z = metadata.get("source_z", 0.0)
@@ -152,8 +196,7 @@ def compute_ground_truth(metadata: dict, source_speed: float):
     end_z = metadata.get("source_z1", start_z)
 
     has_z = "source_z" in metadata
-    default_arc = 10.0 if has_z else 15.0
-    arc_height = metadata.get("source_arc_height", default_arc)
+    arc_height = metadata.get("source_arc_height", 0.0)
     horiz_dist = math.hypot(end_x - start_x, end_y - start_y)
     duration = horiz_dist / source_speed if source_speed > 0 else 3.0
 
@@ -172,99 +215,8 @@ def compute_ground_truth(metadata: dict, source_speed: float):
     return trajectory, duration
 
 
-# ============================================================================
-# SRP-PHAT Beamformer
-# ============================================================================
-
-class SRPBeamformer:
-    """SRP-PHAT beamformer with pre-computed steering vectors."""
-
-    def __init__(
-        self,
-        mic_positions: np.ndarray,
-        fs: float,
-        window_samples: int,
-        c: float = 343.0,
-        n_bearings: int = 180,
-        freq_lo: float = 100.0,
-        freq_hi: float = 1000.0,
-    ):
-        self.n_mics = mic_positions.shape[0]
-        self.fs = fs
-        self.c = c
-        self.n_bearings = n_bearings
-
-        mic_xy = mic_positions[:, :2]
-        center = mic_xy.mean(axis=0)
-        mic_rel = mic_xy - center
-
-        self.nfft = int(2 ** np.ceil(np.log2(window_samples)))
-        freqs = np.fft.rfftfreq(self.nfft, d=1.0 / fs)
-        fmask = (freqs >= freq_lo) & (freqs <= freq_hi)
-        self.fmask = fmask
-        omega = 2.0 * np.pi * freqs[fmask]
-
-        self.bearings = np.linspace(0, 2 * np.pi, n_bearings, endpoint=False)
-        look = np.column_stack([np.cos(self.bearings), np.sin(self.bearings)])
-
-        taus = -(mic_rel @ look.T) / c
-        self.steering = np.exp(
-            1j * taus[:, :, np.newaxis] * omega[np.newaxis, np.newaxis, :]
-        ).astype(np.complex64)
-
-    def __call__(self, seg: np.ndarray) -> tuple[float, np.ndarray, np.ndarray]:
-        """Return ``(best_bearing_rad, bearings, power)``."""
-        X = np.fft.rfft(seg.astype(np.float32), n=self.nfft, axis=1)
-        X_bp = X[:, self.fmask]
-        mag = np.abs(X_bp)
-        mag[mag < 1e-30] = 1e-30
-        X_phat = (X_bp / mag).astype(np.complex64)
-        steered = np.einsum("mf,mbf->bf", X_phat, self.steering)
-        power = np.sum(np.abs(steered) ** 2, axis=1)
-        best_idx = int(np.argmax(power))
-        return float(self.bearings[best_idx]), self.bearings, power
-
-
-# ============================================================================
-# Causal WLS track fitter
-# ============================================================================
-
-def causal_ls_fit(
-    det_t: np.ndarray,
-    det_x: np.ndarray,
-    det_y: np.ndarray,
-    det_z: np.ndarray,
-    det_rms: np.ndarray,
-) -> dict | None:
-    """Constant-velocity WLS fit on past detections. ``None`` if < 5 pts."""
-    n = len(det_t)
-    if n < 5:
-        return None
-
-    t_ref = 0.5 * (det_t[0] + det_t[-1])
-    dt_arr = det_t - t_ref
-    weights = det_rms / max(det_rms.max(), 1e-12)
-    A = np.column_stack([np.ones(n), dt_arr])
-    W = np.diag(weights)
-
-    def wls(y):
-        AtW = A.T @ W
-        return np.linalg.lstsq(AtW @ A, AtW @ y, rcond=None)[0]
-
-    cx = wls(det_x)
-    cy = wls(det_y)
-    cz = wls(det_z)
-    sq_n = max(math.sqrt(n), 1.0)
-
-    return {
-        "x0": float(cx[0]), "y0": float(cy[0]), "z0": float(cz[0]),
-        "vx": float(cx[1]), "vy": float(cy[1]), "vz": float(cz[1]),
-        "t_ref": t_ref,
-        "res_x": float(np.std(det_x - A @ cx)) / sq_n,
-        "res_y": float(np.std(det_y - A @ cy)) / sq_n,
-        "res_z": float(np.std(det_z - A @ cz)) / sq_n,
-        "n_det": n,
-    }
+# SRPBeamformer and causal_ls_fit have been moved to the
+# acoustic_sim.detection module.  The pipeline now uses DetectionEngine.
 
 
 # ============================================================================
@@ -302,7 +254,7 @@ def evaluate_results(
 
     miss_dists = [f["miss"] for f in fire_decisions if f.get("miss") is not None]
     n_shots = sum(1 for f in fire_decisions if f["can_fire"])
-    n_hits = sum(1 for m in miss_dists if m < hit_threshold)
+    n_hits = sum(1 for f in fire_decisions if f.get("hit"))
 
     return {
         "n_detections": sum(1 for d in detections if d.get("detected")),
@@ -628,7 +580,7 @@ def plot_beamformer_diagnostic(
     ground_truth_fn,
     source_duration: float,
     array_center: np.ndarray,
-    beamformer: SRPBeamformer,
+    beamformer: BearingEstimator,
     cfg_det: dict,
     output_path: Path | None = None,
 ) -> None:
@@ -648,6 +600,9 @@ def plot_beamformer_diagnostic(
 
     times, true_bearings, rms_bearings, srp_bearings = [], [], [], []
     rms_errors, srp_errors, srp_power_maps, rms_values = [], [], [], []
+
+    # Determine scan bearings from beamformer if available.
+    scan_angles: np.ndarray | None = None
 
     pos = 0
     while pos + win_len <= n_samples:
@@ -671,7 +626,11 @@ def plot_beamformer_diagnostic(
         if rms_brg < 0:
             rms_brg += 2 * math.pi
 
-        srp_brg, scan_angles, srp_pow = beamformer(seg)
+        result = beamformer.estimate(seg, max_sources=1)
+        srp_brg = result.detections[0].bearing_rad if result.detections else 0.0
+        srp_pow = result.spectrum
+        if scan_angles is None and result.bearings_rad is not None:
+            scan_angles = result.bearings_rad
 
         def angle_err_deg(est, true):
             d = math.degrees(est - true)
@@ -787,6 +746,8 @@ def run_pipeline(
     hit_threshold = cfg_fc["hit_threshold_m"]
     max_hits = cfg_fc["max_hits"]
     min_track_det = cfg_trk["min_detections"]
+    max_track_hist = cfg_trk.get("max_history", 20)
+    min_rms = cfg_det["min_signal_rms"]
     ema_alpha = cfg_trk["ema_alpha"]
     rms_fire_gate = cfg_trk["rms_fire_gate_frac"]
     range_min = cfg_trk["range_min_m"]
@@ -813,7 +774,8 @@ def run_pipeline(
     array_center = mic_positions.mean(axis=0)
     weapon_pos = array_center.copy()
 
-    ground_truth_fn, src_duration = compute_ground_truth(metadata, source_speed)
+    ground_truth_fn, src_duration = compute_ground_truth(metadata, source_speed,
+                                                          sim_dir=sim_dir)
     source_z_est = cfg_src["altitude_estimate_m"]
     if source_z_est is None:
         source_z_est = float(metadata.get("source_z", 0.0))
@@ -836,18 +798,14 @@ def run_pipeline(
     print(f"       Window: {cfg_det['window_length_s'] * 1e3:.0f} ms, "
           f"hop: {hop_sec * 1e3:.1f} ms, {n_windows} windows")
 
-    # -- beamformer ----------------------------------------------------------
+    # -- detection engine -----------------------------------------------------
     c_sound = float(metadata.get("velocity", 343.0))
-    beamformer = SRPBeamformer(
-        mic_positions, fs, win_len, c=c_sound,
-        n_bearings=cfg_bf["n_bearings"],
-        freq_lo=cfg_bf["freq_lo_hz"],
-        freq_hi=cfg_bf["freq_hi_hz"],
-    )
-    print(f"       SRP-PHAT: {beamformer.n_bearings} bearings, "
-          f"nfft={beamformer.nfft}, steering {beamformer.steering.shape}")
+    bearing_method = cfg_bf.get("method", "srp_phat")
+    max_sources = cfg_bf.get("max_sources", 1)
+    cfg_rng = cfg.get("ranging", {})
+    range_method = cfg_rng.get("method", "auto")
 
-    # -- RMS calibration -----------------------------------------------------
+    # -- RMS profile (needed for fire gate regardless of range method) ------
     rms_profile = np.array([
         float(np.sqrt(np.mean(traces[:, p:p + win_len] ** 2)))
         for p in range(0, n_samples - win_len + 1, hop)
@@ -857,18 +815,69 @@ def run_pipeline(
     peak_t = (peak_idx * hop + win_len / 2) * dt_sim
     gt_peak = ground_truth_fn(peak_t)
     cpa_dist = max(float(np.linalg.norm(np.array(gt_peak) - array_center)), 1.0)
-    rms_times_range = peak_rms * cpa_dist
-    rms_ref_value = rms_times_range / rms_ref_range
-    print(f"       RMS cal: peak={peak_rms:.6f}, CPA dist={cpa_dist:.1f} m")
+
+    # -- auto-select range method based on CPA geometry ---------------------
+    if range_method == "auto":
+        cpa_threshold = cfg_rng.get("auto_cpa_threshold_m", 3.0)
+        if cpa_dist <= cpa_threshold:
+            range_method = "tdoa"
+            print(f"       [AUTO] CPA={cpa_dist:.1f}m <= {cpa_threshold:.0f}m "
+                  f"-> using TDOA ranging (RMS unreliable at near-zero CPA)")
+        else:
+            range_method = "rms"
+            print(f"       [AUTO] CPA={cpa_dist:.1f}m > {cpa_threshold:.0f}m "
+                  f"-> using RMS ranging")
+
+    range_kwargs: dict = dict(
+        range_min=range_min,
+        range_max=range_max,
+    )
+    if range_method == "rms":
+        range_kwargs["ref_range"] = rms_ref_range
+    elif range_method == "bearing_rate":
+        range_kwargs["source_speed"] = source_speed
+        range_kwargs["hop_sec"] = hop_sec
+        range_kwargs["ema_alpha"] = ema_alpha
+    else:
+        # tdoa / nearfield
+        range_kwargs["freq_lo"] = cfg_bf["freq_lo_hz"]
+        range_kwargs["freq_hi"] = cfg_bf["freq_hi_hz"]
+        range_kwargs["n_range_bins"] = cfg_rng.get("n_range_bins", 80)
+
+    engine = DetectionEngine(
+        mic_positions=mic_positions,
+        fs=fs,
+        window_samples=win_len,
+        bearing_method=bearing_method,
+        range_method=range_method,
+        max_sources=max_sources,
+        min_signal_rms=min_rms,
+        ema_alpha=ema_alpha,
+        source_z_estimate=source_z_est,
+        c=c_sound,
+        bearing_kwargs=dict(
+            n_bearings=cfg_bf["n_bearings"],
+            freq_lo=cfg_bf["freq_lo_hz"],
+            freq_hi=cfg_bf["freq_hi_hz"],
+        ),
+        range_kwargs=range_kwargs,
+        tracker_min_detections=min_track_det,
+        tracker_max_history=max_track_hist,
+    )
+
+    print(f"       Bearing: {bearing_method} "
+          f"({cfg_bf['n_bearings']} bearings, "
+          f"{cfg_bf['freq_lo_hz']}-{cfg_bf['freq_hi_hz']} Hz)"
+          + (f", max_sources={max_sources}" if max_sources > 1 else "")
+          + f"\n       Range: {range_method}"
+          + f"\n       Available methods: {available_bearing_methods()}")
+
+    if range_method == "rms":
+        engine.calibrate_range(peak_rms, cpa_dist)
+        print(f"       RMS cal: peak={peak_rms:.6f}, CPA dist={cpa_dist:.1f} m")
 
     # -- main loop -----------------------------------------------------------
     print(f"\n[RUN]  Streaming {n_windows} windows (causal mode)")
-
-    det_times: list[float] = []
-    det_xs: list[float] = []
-    det_ys: list[float] = []
-    det_zs: list[float] = []
-    det_rms_list: list[float] = []
 
     all_detections: list[dict] = []
     all_track_states: list = []
@@ -876,121 +885,192 @@ def run_pipeline(
     wall_times_list: list[float] = []
     hits = 0
 
-    ema_sin = 0.0
-    ema_cos = 0.0
-    bearing_init = False
-    min_rms = cfg_det["min_signal_rms"]
+    # Bearing-rate tracking for fire gate.
+    bearing_history: list[tuple[float, float]] = []  # (time, bearing_rad)
+    BEARING_RATE_WINDOW = 0.15  # seconds of history for rate estimate
+    BEARING_RATE_THRESHOLD = 15.0  # deg/s — below this, bearing is "stable"
 
     pos = 0
     while pos + win_len <= n_samples:
         t0_wall = time.perf_counter()
         t_center = (pos + win_len / 2.0) * dt_sim
         seg = traces[:, pos:pos + win_len]
-        window_rms = float(np.sqrt(np.mean(seg ** 2)))
-        detected = window_rms >= min_rms
 
-        det_dict: dict = {"time": t_center, "window_rms": window_rms,
-                          "detected": detected}
+        det = engine.process_window(seg, t_center)
 
-        if detected:
-            raw_bearing, _, _ = beamformer(seg)
-
-            if not bearing_init:
-                ema_sin = math.sin(raw_bearing)
-                ema_cos = math.cos(raw_bearing)
-                bearing_init = True
-            else:
-                ema_sin = ema_alpha * math.sin(raw_bearing) + (1 - ema_alpha) * ema_sin
-                ema_cos = ema_alpha * math.cos(raw_bearing) + (1 - ema_alpha) * ema_cos
-            bearing_rad = math.atan2(ema_sin, ema_cos)
-            if bearing_rad < 0:
-                bearing_rad += 2 * math.pi
-            bearing_deg = math.degrees(bearing_rad)
-
-            est_range = rms_ref_range * math.sqrt(
-                rms_ref_value / max(window_rms, 1e-12))
-            est_range = max(range_min, min(range_max, est_range))
-
-            est_x = array_center[0] + est_range * math.cos(bearing_rad)
-            est_y = array_center[1] + est_range * math.sin(bearing_rad)
-
+        det_dict: dict = {"time": t_center, "window_rms": det.window_rms,
+                          "detected": det.detected}
+        if det.detected and not math.isnan(det.bearing_rad):
             det_dict.update({
-                "bearing": bearing_rad, "bearing_deg": bearing_deg,
-                "range": est_range, "z": source_z_est,
-                "x": est_x, "y": est_y,
+                "bearing": det.bearing_rad, "bearing_deg": det.bearing_deg,
+                "range": det.range_m, "z": det.z,
+                "x": det.x, "y": det.y,
             })
-            det_times.append(t_center)
-            det_xs.append(est_x)
-            det_ys.append(est_y)
-            det_zs.append(source_z_est)
-            det_rms_list.append(window_rms)
-
         all_detections.append(det_dict)
 
-        # -- causal track update ---------------------------------------------
-        track_state = None
-        if len(det_times) >= min_track_det:
-            track_state = causal_ls_fit(
-                np.array(det_times), np.array(det_xs),
-                np.array(det_ys), np.array(det_zs),
-                np.array(det_rms_list),
-            )
+        track_state = det.track
         all_track_states.append(track_state)
 
         # -- fire control ----------------------------------------------------
         fire_decision: dict = {"time": t_center, "can_fire": False,
                                "reason": "NO_TRACK"}
 
-        rms_gate = window_rms >= rms_fire_gate * peak_rms
-        use_instant = detected and track_state is not None and rms_gate
+        # Track bearing rate — if the angular position is stable the
+        # target is heading roughly radially (toward or away).  Shooting
+        # when bearing is constant means zero angular lead is needed;
+        # just point where the target is.
+        bearing_rate_dps = float("inf")
+        if det.detected and not math.isnan(det.bearing_rad):
+            bearing_history.append((t_center, det.bearing_rad))
+            # Trim old entries outside the rate window.
+            cutoff = t_center - BEARING_RATE_WINDOW
+            while bearing_history and bearing_history[0][0] < cutoff:
+                bearing_history.pop(0)
+            if len(bearing_history) >= 2:
+                t0b, b0 = bearing_history[0]
+                t1b, b1 = bearing_history[-1]
+                dt_b = t1b - t0b
+                if dt_b > 1e-6:
+                    # Unwrap angular difference.
+                    db = math.atan2(math.sin(b1 - b0), math.cos(b1 - b0))
+                    bearing_rate_dps = abs(math.degrees(db) / dt_b)
 
-        if use_instant:
-            fit = track_state
-            est_vel = np.array([fit["vx"], fit["vy"], fit["vz"]])
-            est_pos = np.array([det_dict["x"], det_dict["y"], source_z_est])
+        stable_bearing = bearing_rate_dps < BEARING_RATE_THRESHOLD
+        rms_gate = det.window_rms >= rms_fire_gate * peak_rms
 
-            cov = np.zeros((6, 6))
-            cov[0, 0] = min(max(fit["res_x"], cov_floor), cov_cap) ** 2
-            cov[1, 1] = min(max(fit["res_y"], cov_floor), cov_cap) ** 2
-            cov[2, 2] = min(max(fit["res_z"], cov_floor), cov_cap) ** 2
-            cov[3, 3] = cov[4, 4] = cov[5, 5] = 1.0
+        # Decide which fire mode to use:
+        #  - stable bearing + rms gate → radial shot (no lead needed)
+        #  - changing bearing + rms gate → lead shot (need pos/vel)
+        #  - stable bearing but weak rms → wait (don't waste ammo at range)
+        can_engage = det.detected and track_state is not None and rms_gate
 
-            if max_hits > 0 and hits >= max_hits:
-                fire_decision = {"time": t_center, "can_fire": False,
-                                 "reason": "TARGET_ENGAGED",
-                                 "est_pos": est_pos.tolist()}
-            else:
-                lead = compute_lead_3d(est_pos, est_vel, weapon_pos,
-                                       muzzle_velocity, pellet_decel)
-                eng = compute_engagement_3d(
-                    est_pos, est_vel, cov, weapon_pos,
-                    muzzle_velocity, pellet_decel, pattern_spread_rate,
-                    max_position_uncertainty=cfg_fc["max_position_uncertainty_m"],
-                    max_engagement_range=cfg_fc["max_engagement_range_m"],
-                    class_label=cfg_fc["class_label"],
-                    class_confidence=cfg_fc["class_confidence"],
-                )
-                fire_decision = {
-                    "time": t_center,
-                    "can_fire": eng["can_fire"],
-                    "reason": eng["reason"],
-                    "est_pos": est_pos.tolist(),
-                    "intercept_pos": lead["intercept_pos"].tolist(),
-                    "aim_bearing": lead["aim_bearing"],
-                    "aim_elevation": lead["aim_elevation"],
-                    "tof": lead["tof"],
-                    "range": eng["range"],
-                    "pattern_diam": eng["pattern_diam"],
-                    "pos_unc": eng["position_uncertainty"],
-                }
-                if eng["can_fire"]:
-                    gt = np.asarray(ground_truth_fn(t_center))
-                    intercept = lead["intercept_pos"]
-                    miss = float(np.linalg.norm(intercept - gt))
-                    fire_decision["miss"] = miss
-                    if miss < hit_threshold:
-                        hits += 1
-                        fire_decision["hit"] = True
+        if can_engage and max_hits > 0 and hits >= max_hits:
+            fire_decision = {"time": t_center, "can_fire": False,
+                             "reason": "TARGET_ENGAGED"}
+        elif can_engage and stable_bearing:
+            # ----- RADIAL SHOT -----
+            # Bearing isn't changing → target is on the same ray as
+            # the weapon.  No lead needed.  Just shoot along the
+            # current bearing; the projectile and target share the
+            # same line.  We don't need position or velocity estimates.
+            brg = det.bearing_rad
+            elev = 0.0
+            if dim == "3-D" and not math.isnan(det.z):
+                raw_pos = np.array([det.x, det.y, det.z])
+                dx = raw_pos - weapon_pos
+                r_horiz = math.sqrt(dx[0]**2 + dx[1]**2)
+                elev = math.atan2(dx[2], max(r_horiz, 1e-6))
+            # Aim direction from bearing + elevation.
+            # SRP-PHAT uses math convention: bearing θ → (cos θ, sin θ).
+            aim_dir = np.array([
+                math.cos(brg) * math.cos(elev),
+                math.sin(brg) * math.cos(elev),
+                math.sin(elev),
+            ])
+            # Use estimated range only for pattern-spread calculation.
+            est_range = det.range_m if det.range_m > 0 else 20.0
+            tof = time_of_flight(est_range, muzzle_velocity, pellet_decel)
+            if tof == float("inf"):
+                tof = est_range / muzzle_velocity
+            intercept = weapon_pos + aim_dir * est_range
+            pat_diam = pattern_diameter(est_range, pattern_spread_rate)
+
+            # Evaluate hit: ground truth at impact time.
+            t_impact = t_center + tof
+            gt_impact = np.asarray(ground_truth_fn(t_impact))
+            # Miss = perpendicular distance from the shot ray to gt.
+            gt_vec = gt_impact - weapon_pos
+            along = float(np.dot(gt_vec, aim_dir))
+            perp = gt_vec - along * aim_dir
+            miss = float(np.linalg.norm(perp))
+            # Only count if target is in front (along > 0) and pellets
+            # can reach it.
+            max_range = muzzle_velocity / pellet_decel
+            in_front = along > 0 and along < max_range
+
+            pattern_radius = pat_diam / 2.0
+            effective_threshold = max(pattern_radius, hit_threshold)
+
+            fire_decision = {
+                "time": t_center,
+                "can_fire": in_front,
+                "reason": "RADIAL_FIRE" if in_front else "BEHIND",
+                "est_pos": intercept.tolist(),
+                "intercept_pos": intercept.tolist(),
+                "aim_bearing": math.degrees(brg),
+                "aim_elevation": math.degrees(elev),
+                "tof": tof,
+                "range": est_range,
+                "pattern_diam": pat_diam,
+                "pos_unc": 0.0,
+                "miss": miss,
+                "pattern_radius": pattern_radius,
+            }
+            if in_front and miss < effective_threshold:
+                hits += 1
+                fire_decision["hit"] = True
+        elif can_engage and not stable_bearing:
+            # ----- LEAD SHOT -----
+            # Bearing is changing → need position + velocity for lead.
+            est_vel = track_state.velocity
+            raw_pos = np.array([det.x, det.y, det.z])
+            fit_pos = track_state.position_at(t_center)
+            rng = float(np.linalg.norm(raw_pos - weapon_pos))
+            blend = min(rng / 20.0, 1.0)
+            est_pos = (1.0 - blend) * raw_pos + blend * fit_pos
+            cov = track_state.covariance_6x6(floor=cov_floor, cap=cov_cap)
+
+            lead = compute_lead_3d(est_pos, est_vel, weapon_pos,
+                                   muzzle_velocity, pellet_decel)
+            eng = compute_engagement_3d(
+                est_pos, est_vel, cov, weapon_pos,
+                muzzle_velocity, pellet_decel, pattern_spread_rate,
+                max_position_uncertainty=cfg_fc["max_position_uncertainty_m"],
+                max_engagement_range=cfg_fc["max_engagement_range_m"],
+                class_label=cfg_fc["class_label"],
+                class_confidence=cfg_fc["class_confidence"],
+            )
+            fire_decision = {
+                "time": t_center,
+                "can_fire": eng["can_fire"],
+                "reason": eng["reason"],
+                "est_pos": est_pos.tolist(),
+                "intercept_pos": lead["intercept_pos"].tolist(),
+                "aim_bearing": lead["aim_bearing"],
+                "aim_elevation": lead["aim_elevation"],
+                "tof": lead["tof"],
+                "range": eng["range"],
+                "pattern_diam": eng["pattern_diam"],
+                "pos_unc": eng["position_uncertainty"],
+            }
+            if eng["can_fire"]:
+                # The pellet cloud is a cone along the aim direction.
+                # It doesn't stop at the predicted intercept — it keeps
+                # flying.  A hit occurs when the target is within the
+                # cone radius at any point along the ray.
+                #
+                # Check perpendicular distance from the shot ray to
+                # the ground truth at the predicted impact time.
+                aim_dir = lead["intercept_pos"] - weapon_pos
+                aim_len = float(np.linalg.norm(aim_dir))
+                if aim_len > 1e-6:
+                    aim_dir = aim_dir / aim_len
+                t_impact = t_center + lead["tof"]
+                gt_impact = np.asarray(ground_truth_fn(t_impact))
+                gt_vec = gt_impact - weapon_pos
+                along = float(np.dot(gt_vec, aim_dir))
+                perp = gt_vec - along * aim_dir
+                miss = float(np.linalg.norm(perp))
+                max_range = muzzle_velocity / pellet_decel
+                in_range = 0 < along < max_range
+                pat_r_at_gt = pattern_diameter(max(along, 0.1),
+                                               pattern_spread_rate) / 2.0
+                effective_threshold = max(pat_r_at_gt, hit_threshold)
+                fire_decision["miss"] = miss
+                fire_decision["pattern_radius"] = pat_r_at_gt
+                if in_range and miss < effective_threshold:
+                    hits += 1
+                    fire_decision["hit"] = True
 
         all_fire_decisions.append(fire_decision)
         wall_times_list.append(time.perf_counter() - t0_wall)
@@ -1019,8 +1099,14 @@ def run_pipeline(
     print(f"\n  Detection:  {n_detected}/{len(all_detections)} windows")
     print(f"  Bearing:    {mean_brg_err:.1f} deg mean error")
     print(f"\n  Shots:      {n_shots}")
-    print(f"  Hits <{hit_threshold}m:  {n_hits_val} "
-          f"({100 * n_hits_val / max(n_shots, 1):.1f}%)")
+    # Compute pattern info for display.
+    pattern_rads = [f.get("pattern_radius", 0) for f in all_fire_decisions
+                    if f.get("can_fire") and f.get("pattern_radius")]
+    avg_pat_rad = np.mean(pattern_rads) if pattern_rads else 0.0
+    print(f"  Hits:       {n_hits_val} "
+          f"({100 * n_hits_val / max(n_shots, 1):.1f}%)"
+          f"  [pattern radius={avg_pat_rad:.1f}m, "
+          f"point threshold={hit_threshold}m]")
     print(f"  Mean miss:  {mean_miss:.1f} m")
     if miss_dists:
         print(f"  Min miss:   {min(miss_dists):.1f} m")
@@ -1050,7 +1136,7 @@ def run_pipeline(
     plot_beamformer_diagnostic(
         traces, mic_positions, dt_sim,
         ground_truth_fn, src_duration,
-        array_center, beamformer, cfg_det,
+        array_center, engine.bearing_estimator, cfg_det,
         output_path=output_dir / f"beamformer_diagnostic{suffix}.png",
     )
 

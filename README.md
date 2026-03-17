@@ -132,3 +132,32 @@ See [docs/index.md](docs/index.md#ml-module) for details.
 | mpi4py | yes (single-process fallback) |
 | cupy-cuda12x | optional (GPU) |
 | torch | optional (ML classifiers) |
+
+
+## Discussion
+
+When given this problem my first thought was that a modeling enviornment was missing,
+and I began with that before expanding much further to the suggestions listed in the prompting
+document. I began by playing with using the Helmholz representation of the acoustic wave equation over a 2D plane, but realized that if I wanted to add moving sources I needed to model the wave equation in time domain.
+Thus after a bit of effort I implemented a Finite Difference representation of the acoustic wave equation. Following some difficulties with constructive noise I implemented a variable higher order implementation for the finite differences (I am not sure if this was ultimately necessary as I added at the same time that I tore out the FDTD model and rewrote it). 
+
+I ultimately settled on a process where the forward model is decoupled from the detection and targeting algorithm. With this forward model source behavior, added noise, transient explosions, and sound wave interactions can be modelled. The idea was to generate complete 3D or 4D wavefields (ndim + time) so that the end user could place receivers wherever they wanted. Unfortunately this would result in unacceptably large files for the frequencies of investigation necessary. Instead, the receiver locations are specified by the forward model and a first effort toward a Fourier Neural Operator training infrastructure to replace the FDTD is included. 
+
+The injected source is purely synthetic and generation is modeled after the method given in your script, although other options, including taking sources from wav files, are available. The source is injected in the domain by either bilinear or trilinear interpolation depending on whether it is a 2D or 3D domain.
+
+Aside from the isotropic 2D domain, I included two rudimentary examples with the acoustic array in a valley between two reflective hills. For all examples the array is circular as my focus was getting the system functional above array manipulation. It is set such that differing array geometry can be tested and I am interested in doing so, however I opted to provide this packet in a functional form first.
+
+After the forward model is generated it is passed to a detection and targeting pipeline. Here only the transient pressure at a given sensor location is used to detect and engage targets. Future work would likely include local ambient conditions at the sensors as well (e.g. detecting transient winds by big enough arrays). At the moment all detections are considered hostile and are also considered neutralzed following a user defined (set at 3) number of shots that fall within the acceptable miss distance. Computational time is considered here as well as it is modeled as a real time system.
+
+The biggest surpise I encountered was from attempting to combine the detection and targeting algorithms for 3D and 2D into one unified framework. It turned out that the 3D methods did not work well for 2D data and it was easier to just consider 2D examples in 3D space with zero elevation in the model. Also when I started enforcing scoring results by the computed miss distance (considering projectile flight as well) the more complicated means of state estimation did not hold up as well as simpler methods. I imagine that would change as more noise is added in the model and I have left more advanced algorithms in. Also ensuring that the fire control worked for the isotropic case seemed to be fiendishly difficult to debug for a system expecting a moving target.
+
+I also included but did not implement more advanced ML classifiers. Ultimately it was more important to return something. The real benefit these classifers could bring would be to interpret source behavior to classify the type of source, and whether it is likely to be hostile or benign (e.g. a bird).
+
+Were I to continue to work with you my first priority would be to iron down the forward model generation, likely using FNOs to build wavefields. After that, I would include all sorts of noise, transient signals, variable weather, wild and complex domains, simulated vehicles, and whatever else we could think of. I would use these cases to test our detection and targeting algorithms to failure, improving from what we learn from model runs in complement from that learned through live testing.
+
+Other ways I would exploit FNO
+- Ensemble forward models: cheap wavefield modeling means that no two runs need be identical. Then we could start to play with stochastic inputs for noise, source path, etc, as well as drawing from probability distributions.
+- Dimensional analysis of forward model input factors: if we can vary everything we can figure out what parameters matter less
+
+
+The docs folder contains extensive documentation of the code, and each directory under output has a README.md detailing the resultant plots.

@@ -68,6 +68,7 @@ from acoustic_sim.sources import (
     CircularOrbitSource3D,
     CustomTrajectorySource,
     CustomTrajectorySource3D,
+    ErraticQuadcopterSource3D,
     EvasiveSource,
     EvasiveSource3D,
     FigureEightSource,
