@@ -1476,17 +1476,21 @@ def plot_pipeline_summary(
 
     # Panel 3 -- miss distance vs time
     ax = axes[0, 2]
-    shot_times = [f["time"] for f in all_fire_decisions
-                  if f.get("miss") is not None]
-    shot_misses = [f["miss"] for f in all_fire_decisions
-                   if f.get("miss") is not None]
+    fired = [f for f in all_fire_decisions if f.get("miss") is not None]
+    shot_times = [f["time"] for f in fired]
+    shot_misses = [f["miss"] for f in fired]
+    shot_eff_thresh = [
+        max(f.get("pattern_radius", 0.0), hit_threshold) for f in fired
+    ]
     if shot_times:
-        colors_shot = ["green" if m < hit_threshold else "red"
-                       for m in shot_misses]
+        colors_shot = ["green" if f.get("hit") else "red" for f in fired]
         ax.scatter(shot_times, shot_misses, c=colors_shot, s=60,
                    marker="x", zorder=5)
+        ax.scatter(shot_times, shot_eff_thresh, c="gray", s=30,
+                   marker="_", linewidths=2, alpha=0.6, zorder=4,
+                   label="Eff. threshold")
         ax.axhline(hit_threshold, color="g", ls="--", alpha=0.7,
-                   label=f"{hit_threshold}m")
+                   label=f"Point threshold {hit_threshold}m")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Miss Distance (m)")
     ax.set_title("Fire Control Miss Distance")

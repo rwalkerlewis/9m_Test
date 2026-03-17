@@ -57,8 +57,8 @@
   "max_miss_m": 1.8453815118087273,
   "timing": {
     "hop_ms": 25.024558568447038,
-    "mean_latency_us": 3433.2709786083014,
-    "max_latency_us": 4740.274976938963,
-    "realtime_margin_x": 7.288838755917514
+    "mean_latency_us": 3279.106026249273,
+    "max_latency_us": 4636.146011762321,
+    "realtime_margin_x": 7.631518581017273
   }
 }
