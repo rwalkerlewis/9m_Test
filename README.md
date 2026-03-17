@@ -1,15 +1,99 @@
-# acoustic-sim
+# Passive Acoustic Drone Detection and Engagement System
 
-2-D / 3-D acoustic wave propagation and passive acoustic engagement.
+Response to the Audio Processing Home Task.
 
-FDTD solvers produce synthetic microphone traces.  A real-time SRP-PHAT
-pipeline turns those traces into fire-control solutions.
+Full technical documentation: [docs/](docs/index.md)
 
-Full documentation: [docs/](docs/index.md)
+## What I Chose To Work On
 
----
+I chose all four directions and integrated them into a unified system.
 
-## Install
+The prompt offered signal enhancement, realistic simulation, advanced DOA, and array geometry as separate options. My first observation was that these are not independent problems. You cannot evaluate a DOA algorithm without a realistic simulation to test it against, and you cannot evaluate a simulation without a detection pipeline to consume its output. Rather than pick one piece, I built the end-to-end chain: a physics-based forward model that generates synthetic microphone traces, and a real-time detection and engagement pipeline that turns those traces into fire-control solutions.
+
+The system has two decoupled stages:
+
+1. A 2D/3D FDTD acoustic wave propagation solver that produces synthetic pressure traces at configurable receiver locations. This replaces the clean simulation in the provided code with physics-based propagation through heterogeneous media including terrain, vegetation, and wind.
+
+2. A real-time detection and engagement pipeline that takes the receiver traces and performs detection, bearing estimation, range estimation, tracking, and fire control.
+
+The forward model and the pipeline are deliberately decoupled so that each can be developed, tested, and improved independently. The forward model can be made arbitrarily complex (more noise, more sources, more terrain) and the pipeline must handle whatever comes out of it.
+
+## Approach and Design Decisions
+
+**Forward model.** I started with a Helmholtz (frequency domain) representation of the acoustic wave equation over a 2D plane, but realized that moving sources require time-domain propagation. I implemented a Finite Difference Time Domain solver with configurable stencil order (2nd, 4th, 6th, 8th). The solver supports both 2D and 3D domains with MPI domain decomposition and optional CUDA acceleration via CuPy. Sponge-layer absorbing boundaries prevent reflections from the domain edges.
+
+The source signal is purely synthetic, modeled after the method in the provided script, though the system also accepts WAV files, tones, Ricker wavelets, and noise as source inputs. Sources are injected by bilinear (2D) or trilinear (3D) interpolation to support arbitrary trajectories.
+
+I included three domain configurations: isotropic (free space), wind (uniform flow), and a valley between two reflective hills with vegetation absorption. The valley examples are the most physically interesting because they introduce multipath and terrain effects that stress the detection pipeline.
+
+**Detection pipeline.** The pipeline is a causal, real-time system. It processes receiver traces frame by frame in the order they would arrive.
+
+| Stage | Algorithm |
+|-------|-----------|
+| Detection | RMS threshold gate |
+| Bearing | SRP-PHAT with pre-computed steering vectors (360 azimuth bins) |
+| Range | RMS inverse-square-law with CPA calibration |
+| Tracking | Causal weighted-least-squares constant-velocity fit |
+| Fire control | 3D iterative ballistic lead with pattern spread modeling |
+
+All detections are currently treated as hostile. Engagement is scored by computed miss distance including projectile flight time. A target is considered neutralized after a configurable number of shots (default 3) fall within the acceptable miss distance. Computational latency is tracked because this is modeled as a real-time system.
+
+**ML classifiers (included but not integrated into the production pipeline).** I built PyTorch classifiers for source type (CNN on mel spectrograms, 6 classes: quadcopter, hexacopter, fixed wing, bird, ground vehicle, unknown), maneuver state (1D CNN on kinematic features, 6 classes: steady, turning, accelerating, diving, evasive, hovering), and a fusion classifier that combines acoustic and kinematic inputs. These are not wired into the SRP-PHAT pipeline. No pre-trained weights are shipped. Their value would be in classifying whether a detection is hostile or benign, and in adapting tracker process noise based on detected maneuver state.
+
+**FNO surrogate (included but not integrated).** A Fourier Neural Operator infrastructure to replace the FDTD solver for rapid forward propagation is included with data generation, training, and inference modules. The motivation is that the FDTD solver is too slow for real-time ensemble analysis or rapid parameter studies. An FNO trained on FDTD output could provide forward model evaluations at a fraction of the cost.
+
+## Assumptions
+
+- Single target. The system currently handles one source at a time.
+- Hostile by default. No friend-or-foe classification in the production pipeline.
+- Known array geometry. Receiver positions are assumed perfectly known. Real deployments would require self-calibration.
+- Synthetic sources only. The provided input.wav was used as a reference but the pipeline consumes FDTD output rather than raw recordings.
+- Shotgun engagement model. Fire control assumes a shotgun-class effector with modeled pattern spread.
+
+## What Worked
+
+- The FDTD solver produces physically reasonable wavefields in both 2D and 3D, including multipath from terrain and absorption from vegetation.
+- SRP-PHAT bearing estimation is robust and computationally efficient. The pre-computed steering vector approach scales well to 360 bins.
+- The decoupled architecture (forward model separate from pipeline) proved valuable. Problems in one stage did not propagate to the other.
+- Fire control with ballistic lead and miss distance scoring works for moving targets in 3D.
+- The unified 2D/3D codebase avoids code duplication across dimensions.
+
+## What Did Not Work (Or Needs More Work)
+
+- Combining 2D and 3D detection algorithms into one unified framework was harder than expected. The 3D methods did not perform well on 2D data. The practical solution was to treat 2D examples as 3D with zero elevation.
+- When scoring by computed miss distance (including projectile flight), simpler state estimation methods outperformed more complex ones. I expect this would reverse as the simulation adds more noise, but it was a surprise.
+- Fire control for the isotropic (free space) case with a stationary target was unexpectedly difficult to debug, because the system expects a moving target and a stationary one is a degenerate case.
+- The ML classifiers are not integrated. I chose to return a working system rather than a partially integrated one.
+- I originally wanted to generate complete 3D/4D wavefields (spatial dimensions plus time) so receivers could be placed anywhere in post-processing. The file sizes at the frequencies of interest made this impractical. Receiver locations must be specified before the forward model runs.
+
+## How I Would Improve This For Real-World Deployment
+
+**Immediate priorities:**
+
+- Iron down the forward model, likely replacing FDTD with trained FNO surrogates for rapid wavefield generation.
+- Add realistic noise: sensor self-noise, wind noise (including transient gusts), multiple interfering sources, microphone gain and phase mismatches.
+- Add complex environments: variable weather, echo-prone terrain, urban canyons.
+- Integrate the ML classifiers into the production pipeline for hostile/benign discrimination and maneuver-adaptive tracking.
+- Multi-target support.
+
+**Exploiting FNO surrogates:**
+
+- Ensemble forward models: cheap wavefield evaluation means no two runs need be identical. Enable stochastic inputs for noise, source path, and environmental conditions drawn from probability distributions.
+- Dimensional analysis: vary all input factors to determine which parameters matter most and which can be simplified.
+- Array geometry optimization: combine FNO forward models with optimization to find the best array configuration for a given operating environment, including minimizing the number of sensors required.
+- Robustness testing: evaluate performance when receiver positions are uncertain or incorrect, simulating hasty field deployment.
+- Echo-prone environments: test and improve detection algorithms in multipath-heavy settings.
+
+**Detection and targeting pipeline:**
+
+- More realistic engagement scenarios: multiple simultaneous targets, varied topography, realistic drone flight profiles (evasive maneuvers, terrain masking).
+- Self-calibration for receiver position and gain errors.
+- Integration of local ambient conditions at the sensors (detecting transient winds from large enough arrays).
+- Transition from "all detections are hostile" to a classification-based rules of engagement system.
+
+## Running the System
+
+### Install
 
 ```bash
 pip install -e .
@@ -34,11 +118,7 @@ Docker:
 docker compose up dev
 ```
 
----
-
-## Quick Start
-
-### 1. Run the FDTD forward model
+### Run the FDTD forward model
 
 ```bash
 # 2-D valley
@@ -59,68 +139,24 @@ python examples/run_fdtd.py \
     --use-cuda
 ```
 
-### 2. Run the engagement pipeline
+### Run the engagement pipeline
 
 ```bash
 python examples/run_pipeline.py output/valley_test
 ```
 
-Auto-detects 2-D vs 3-D.  Produces:
+Auto-detects 2D vs 3D. Produces:
 
-- `pipeline_summary_{2d,3d}.png` — 6-panel overview
-- `radial_engagement_{2d,3d}.png` — engagement diagram
-- `beamformer_diagnostic_{2d,3d}.png` — SRP-PHAT vs RMS comparison
-- `results_{2d,3d}.json` — machine-readable metrics
+- `pipeline_summary_{2d,3d}.png` - 6-panel overview
+- `radial_engagement_{2d,3d}.png` - engagement diagram
+- `beamformer_diagnostic_{2d,3d}.png` - SRP-PHAT vs RMS comparison
+- `results_{2d,3d}.json` - machine-readable metrics
 
-### 3. Helmholtz solver
+### Helmholtz solver
 
 ```bash
 acoustic-sim --model-preset gradient --frequency 40
 ```
-
----
-
-## Pipeline
-
-| Stage | Algorithm |
-|-------|-----------|
-| Detection | RMS threshold gate |
-| Bearing | SRP-PHAT (pre-computed steering, 360 bins) |
-| Range | RMS inverse-square-law, CPA-calibrated |
-| Tracking | Causal weighted-least-squares fit |
-| Fire control | 3-D iterative ballistic lead (azimuth + elevation) |
-
-Configuration: [`examples/pipeline.config.json`](examples/pipeline.config.json)
-
----
-
-## FDTD Solver
-
-- 2-D and 3-D, unified codebase
-- Configurable FD order (2, 4, 6, 8)
-- MPI domain decomposition (y-axis 2-D, z-slab 3-D)
-- Optional CUDA via CuPy (automatic fallback to NumPy)
-- Sponge-layer absorbing boundaries
-- Source signals: propeller, tone, noise, ricker, WAV file
-- Domains: isotropic, wind, hills+vegetation
-
----
-
-## ML Module (Optional)
-
-Six files under `src/acoustic_sim/ml/` implement PyTorch classifiers for
-source type (CNN on mel spectrograms), maneuver state (1-D CNN on
-kinematics), and fusion classification (acoustic + kinematic).  **Not
-wired into the pipeline.**  Requires `torch` (not a project dependency).
-
-Potential value:
-- **ManeuverClassifier** → adaptive tracker process noise
-- **FusionClassifier** → class-based fire/no-fire decisions
-- **compute_kinematic_features()** → pure-numpy threat heuristics (usable now)
-
-See [docs/index.md](docs/index.md#ml-module) for details.
-
----
 
 ## Dependencies
 
@@ -131,39 +167,18 @@ See [docs/index.md](docs/index.md#ml-module) for details.
 | matplotlib | yes |
 | mpi4py | yes (single-process fallback) |
 | cupy-cuda12x | optional (GPU) |
-| torch | optional (ML classifiers) |
+| torch | optional (ML classifiers and FNO) |
 
+## Documentation
 
-## Discussion
+The docs/ folder contains extensive documentation of the code, algorithms, and underlying physics. Each directory under output/ has a README.md detailing the resultant plots.
 
-When given this problem my first thought was that a modeling enviornment was missing,
-and I began with that before expanding much further to the suggestions listed in the prompting
-document. I began by playing with using the Helmholz representation of the acoustic wave equation over a 2D plane, but realized that if I wanted to add moving sources I needed to model the wave equation in time domain.
-Thus after a bit of effort I implemented a Finite Difference representation of the acoustic wave equation. Following some difficulties with constructive noise I implemented a variable higher order implementation for the finite differences (I am not sure if this was ultimately necessary as I added at the same time that I tore out the FDTD model and rewrote it). 
-
-I ultimately settled on a process where the forward model is decoupled from the detection and targeting algorithm. With this forward model source behavior, added noise, transient explosions, and sound wave interactions can be modelled. The idea was to generate complete 3D or 4D wavefields (ndim + time) so that the end user could place receivers wherever they wanted. Unfortunately this would result in unacceptably large files for the frequencies of investigation necessary. Instead, the receiver locations are specified by the forward model and a first effort toward a Fourier Neural Operator training infrastructure to replace the FDTD is included. 
-
-The injected source is purely synthetic and generation is modeled after the method given in your script, although other options, including taking sources from wav files, are available. The source is injected in the domain by either bilinear or trilinear interpolation depending on whether it is a 2D or 3D domain.
-
-Aside from the isotropic 2D domain, I included two rudimentary examples with the acoustic array in a valley between two reflective hills. For all examples the array is circular as my focus was getting the system functional above array manipulation. It is set such that differing array geometry can be tested and I am interested in doing so, however I opted to provide this packet in a functional form first.
-
-After the forward model is generated it is passed to a detection and targeting pipeline. Here only the transient pressure at a given sensor location is used to detect and engage targets. Future work would likely include local ambient conditions at the sensors as well (e.g. detecting transient winds by big enough arrays). At the moment all detections are considered hostile and are also considered neutralzed following a user defined (set at 3) number of shots that fall within the acceptable miss distance. Computational time is considered here as well as it is modeled as a real time system.
-
-The biggest surpise I encountered was from attempting to combine the detection and targeting algorithms for 3D and 2D into one unified framework. It turned out that the 3D methods did not work well for 2D data and it was easier to just consider 2D examples in 3D space with zero elevation in the model. Also when I started enforcing scoring results by the computed miss distance (considering projectile flight as well) the more complicated means of state estimation did not hold up as well as simpler methods. I imagine that would change as more noise is added in the model and I have left more advanced algorithms in. Also ensuring that the fire control worked for the isotropic case seemed to be fiendishly difficult to debug for a system expecting a moving target.
-
-I also included but did not implement more advanced ML classifiers. Ultimately it was more important to return something. The real benefit these classifers could bring would be to interpret source behavior to classify the type of source, and whether it is likely to be hostile or benign (e.g. a bird).
-
-Were I to continue to work with you my first priority would be to iron down the forward model generation, likely using FNOs to build wavefields. After that, I would include all sorts of noise, transient signals, variable weather, wild and complex domains, simulated vehicles, and whatever else we could think of. I would use these cases to test our detection and targeting algorithms to failure, improving from what we learn from model runs in complement from that learned through live testing.
-
-A quick collectiof of other ways I would exploit FNO
-
-- Ensemble forward models: cheap wavefield modeling means that no two runs need be identical. Then we could start to play with stochastic inputs for noise, source path, etc, as well as drawing from probability distributions.
-- Dimensional analysis of forward model input factors: if we can vary everything we can figure out what parameters matter less
-- Testing different model geometry: This combined with optimization is an essential step. Also optimize for the fewest sensors
-- Testing stations with uncertain or wrong positioning information: can this work if the receivers are hastily deployed?
-- Test environments prone to echos
-
-
-The detection and targeting pipeline requires more time and effort than I was able to include to arrive at a reasonable solution for conditions better representing reality. I paid lip service to this by including the erratic_quadcopter example. Much more complexity needs to be considered, including multiple targets, more realistic noise, and more varied topography to state a few.
-
-The docs folder contains extensive documentation of the code, algorithms, and underlying physics. Each directory under output has a README.md detailing the resultant plots.
+| Page | Contents |
+|------|----------|
+| [Architecture](docs/architecture.md) | Package layout, module inventory, data flow |
+| [Algorithms](docs/algorithms.md) | SRP-PHAT, WLS tracker, ballistics, MFP/EKF, ML classifiers |
+| [Physics](docs/physics.md) | Wave equation, FD stencils, CFL, absorption, SPL, noise models |
+| [Configuration](docs/configuration.md) | Pipeline JSON config, DetectionConfig, CLI flags |
+| [API Reference](docs/api.md) | Every public class, method, and function |
+| [Usage](docs/usage.md) | Installation, CLI commands, running examples |
+| [Studies](docs/studies.md) | Nine parametric robustness studies |
