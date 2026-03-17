@@ -275,6 +275,69 @@ def evaluate_results(
 
 
 # ============================================================================
+# Projectile–target closest-point-of-approach
+# ============================================================================
+
+def _find_cpa(
+    weapon_pos: np.ndarray,
+    aim_dir: np.ndarray,
+    muzzle_velocity: float,
+    pellet_decel: float,
+    ground_truth_fn,
+    t_fire: float,
+    n_samples: int = 200,
+) -> dict:
+    """Find the closest point of approach between the projectile cone
+    and the moving target along the entire flight path.
+
+    Returns dict with keys:
+        miss       – perpendicular distance at CPA [m]
+        cpa_range  – distance along the ray at CPA [m]
+        cpa_time   – flight-time at CPA [s]
+        cpa_pos    – 3-D position of the projectile at CPA
+        gt_at_cpa  – 3-D ground-truth position at CPA
+        in_range   – True if CPA is reachable by the projectile
+    """
+    max_range = muzzle_velocity / pellet_decel
+    # Max flight time: when pellet stops.
+    t_max = 2.0 * max_range / muzzle_velocity  # generous upper bound
+    flight_times = np.linspace(0, t_max, n_samples)
+
+    best_miss = float("inf")
+    best = {"miss": float("inf"), "cpa_range": 0.0, "cpa_time": 0.0,
+            "cpa_pos": weapon_pos.copy(), "gt_at_cpa": weapon_pos.copy(),
+            "in_range": False}
+
+    for ft in flight_times:
+        # Projectile range along ray at flight-time ft (iterative avg-v).
+        v_avg = muzzle_velocity
+        for _ in range(3):
+            s = v_avg * ft
+            v_end = max(muzzle_velocity - pellet_decel * s, 0)
+            v_avg = 0.5 * (muzzle_velocity + v_end)
+        s = v_avg * ft
+        if s > max_range:
+            break  # pellet has stopped
+
+        proj_pos = weapon_pos + aim_dir * s
+        gt_pos = np.asarray(ground_truth_fn(t_fire + ft))
+        separation = float(np.linalg.norm(gt_pos - proj_pos))
+
+        if separation < best_miss:
+            best_miss = separation
+            best = {
+                "miss": separation,
+                "cpa_range": s,
+                "cpa_time": ft,
+                "cpa_pos": proj_pos.copy(),
+                "gt_at_cpa": gt_pos.copy(),
+                "in_range": 0 < s <= max_range,
+            }
+
+    return best
+
+
+# ============================================================================
 # Plotting helpers
 # ============================================================================
 
@@ -345,6 +408,7 @@ def plot_radial_engagement(
             ax_xy.text(r * 0.707, r * 0.707, f"{r}m", fontsize=8, color="gray", alpha=0.7)
 
     n_shots = n_hits = 0
+    max_pellet_range = muzzle_velocity / decel
     for fd in fire_decisions:
         if not fd.get("can_fire"):
             continue
@@ -358,8 +422,20 @@ def plot_radial_engagement(
         is_hit = fd.get("hit", False)
         if is_hit:
             n_hits += 1
+        # Draw projectile: terminate at CPA for hits, extend to max
+        # range for misses.
+        if is_hit:
+            draw_range = fd.get("cpa_range", None)
+        else:
+            draw_range = max_pellet_range
+        if draw_range is not None and draw_range > 0:
+            draw_tof = time_of_flight(draw_range, muzzle_velocity, decel)
+            if draw_tof == float("inf"):
+                draw_tof = tof
+        else:
+            draw_tof = tof
         proj_x, proj_y, _ = _projectile_path(
-            weapon_pos, aim_brg, aim_el, muzzle_velocity, decel, tof)
+            weapon_pos, aim_brg, aim_el, muzzle_velocity, decel, draw_tof)
         color = "green" if is_hit else "red"
         ax_xy.plot(proj_x - wx, proj_y - wy, "-", color=color, lw=2, alpha=0.8)
         ipos = fd.get("intercept_pos")
@@ -396,8 +472,18 @@ def plot_radial_engagement(
             if np.isnan(aim_brg) or np.isnan(tof) or tof <= 0:
                 continue
             is_hit = fd.get("hit", False)
+            if is_hit:
+                draw_range = fd.get("cpa_range", None)
+            else:
+                draw_range = max_pellet_range
+            if draw_range is not None and draw_range > 0:
+                draw_tof = time_of_flight(draw_range, muzzle_velocity, decel)
+                if draw_tof == float("inf"):
+                    draw_tof = tof
+            else:
+                draw_tof = tof
             proj_x, _, proj_z = _projectile_path(
-                weapon_pos, aim_brg, aim_el, muzzle_velocity, decel, tof)
+                weapon_pos, aim_brg, aim_el, muzzle_velocity, decel, draw_tof)
             color = "green" if is_hit else "red"
             ax_xz.plot(proj_x - wx, proj_z - wz, "-", color=color, lw=2, alpha=0.8)
             ipos = fd.get("intercept_pos")
@@ -975,33 +1061,32 @@ def run_pipeline(
             intercept = weapon_pos + aim_dir * est_range
             pat_diam = pattern_diameter(est_range, pattern_spread_rate)
 
-            # Evaluate hit: ground truth at impact time.
-            t_impact = t_center + tof
-            gt_impact = np.asarray(ground_truth_fn(t_impact))
-            # Miss = perpendicular distance from the shot ray to gt.
-            gt_vec = gt_impact - weapon_pos
-            along = float(np.dot(gt_vec, aim_dir))
-            perp = gt_vec - along * aim_dir
-            miss = float(np.linalg.norm(perp))
-            # Only count if target is in front (along > 0) and pellets
-            # can reach it.
-            max_range = muzzle_velocity / pellet_decel
-            in_front = along > 0 and along < max_range
+            # Evaluate hit: find closest point of approach along
+            # the entire flight path (projectile vs moving target).
+            cpa = _find_cpa(weapon_pos, aim_dir, muzzle_velocity,
+                            pellet_decel, ground_truth_fn, t_center)
+            miss = cpa["miss"]
+            cpa_range = cpa["cpa_range"]
+            in_front = cpa["in_range"]
 
-            pattern_radius = pat_diam / 2.0
+            pat_diam_cpa = pattern_diameter(max(cpa_range, 0.1),
+                                            pattern_spread_rate)
+            pattern_radius = pat_diam_cpa / 2.0
             effective_threshold = max(pattern_radius, hit_threshold)
 
+            cpa_pos = cpa["cpa_pos"]
             fire_decision = {
                 "time": t_center,
                 "can_fire": in_front,
                 "reason": "RADIAL_FIRE" if in_front else "BEHIND",
                 "est_pos": intercept.tolist(),
-                "intercept_pos": intercept.tolist(),
+                "intercept_pos": cpa_pos.tolist(),
                 "aim_bearing": brg,
                 "aim_elevation": elev,
                 "tof": tof,
+                "cpa_range": cpa_range,
                 "range": est_range,
-                "pattern_diam": pat_diam,
+                "pattern_diam": pat_diam_cpa,
                 "pos_unc": 0.0,
                 "miss": miss,
                 "pattern_radius": pattern_radius,
@@ -1044,31 +1129,24 @@ def run_pipeline(
                 "pos_unc": eng["position_uncertainty"],
             }
             if eng["can_fire"]:
-                # The pellet cloud is a cone along the aim direction.
-                # It doesn't stop at the predicted intercept — it keeps
-                # flying.  A hit occurs when the target is within the
-                # cone radius at any point along the ray.
-                #
-                # Check perpendicular distance from the shot ray to
-                # the ground truth at the predicted impact time.
+                # Find closest point of approach between the pellet
+                # cone and the moving target along the entire flight.
                 aim_dir = lead["intercept_pos"] - weapon_pos
                 aim_len = float(np.linalg.norm(aim_dir))
                 if aim_len > 1e-6:
                     aim_dir = aim_dir / aim_len
-                t_impact = t_center + lead["tof"]
-                gt_impact = np.asarray(ground_truth_fn(t_impact))
-                gt_vec = gt_impact - weapon_pos
-                along = float(np.dot(gt_vec, aim_dir))
-                perp = gt_vec - along * aim_dir
-                miss = float(np.linalg.norm(perp))
-                max_range = muzzle_velocity / pellet_decel
-                in_range = 0 < along < max_range
-                pat_r_at_gt = pattern_diameter(max(along, 0.1),
+                cpa = _find_cpa(weapon_pos, aim_dir, muzzle_velocity,
+                                pellet_decel, ground_truth_fn, t_center)
+                miss = cpa["miss"]
+                cpa_range = cpa["cpa_range"]
+                pat_r_at_gt = pattern_diameter(max(cpa_range, 0.1),
                                                pattern_spread_rate) / 2.0
                 effective_threshold = max(pat_r_at_gt, hit_threshold)
                 fire_decision["miss"] = miss
                 fire_decision["pattern_radius"] = pat_r_at_gt
-                if in_range and miss < effective_threshold:
+                fire_decision["cpa_range"] = cpa_range
+                fire_decision["intercept_pos"] = cpa["cpa_pos"].tolist()
+                if cpa["in_range"] and miss < effective_threshold:
                     hits += 1
                     fire_decision["hit"] = True
 
