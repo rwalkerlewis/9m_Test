@@ -27,10 +27,9 @@ ENV/
 Thumbs.db
 
 # Generated output
-*.png
+output/*/snapshots/
 *.npy
 *.npz
-output/
 
 # Audio files (tracked in audio/ but ignore stray ones)
 *.wav

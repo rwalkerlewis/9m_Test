@@ -1,0 +1,56 @@
+{
+  "dimensions": "3-D",
+  "simulation": "output/valley_3d_test",
+  "config": {
+    "detection": {
+      "window_length_s": 0.1,
+      "window_overlap": 0.75,
+      "min_signal_rms": 5e-05
+    },
+    "beamformer": {
+      "n_bearings": 360,
+      "freq_lo_hz": 100.0,
+      "freq_hi_hz": 2000.0
+    },
+    "tracking": {
+      "min_detections": 5,
+      "ema_alpha": 0.35,
+      "rms_fire_gate_frac": 0.2,
+      "range_min_m": 5.0,
+      "range_max_m": 100.0,
+      "rms_ref_range_m": 10.0,
+      "covariance_floor": 0.5,
+      "covariance_cap": 1.0
+    },
+    "fire_control": {
+      "muzzle_velocity_mps": 400.0,
+      "pellet_decel_mps2": 1.5,
+      "pattern_spread_rate": 0.3,
+      "max_engagement_range_m": 500.0,
+      "max_position_uncertainty_m": 0.0,
+      "class_label": "fixed_wing",
+      "class_confidence": 0.9,
+      "hit_threshold_m": 2.0,
+      "max_hits": 3
+    },
+    "source": {
+      "speed_mps": 50.0,
+      "altitude_estimate_m": null
+    }
+  },
+  "n_detections": 18,
+  "n_windows": 21,
+  "mean_bearing_error_deg": 1.6287405002878,
+  "shots_fired": 6,
+  "hits": 3,
+  "hit_threshold_m": 2.0,
+  "mean_miss_m": 2.324914977014935,
+  "min_miss_m": 1.4551225588292644,
+  "max_miss_m": 4.529596860508396,
+  "timing": {
+    "hop_ms": 24.997624887176784,
+    "mean_latency_us": 2799.326043930792,
+    "max_latency_us": 4108.821041882038,
+    "realtime_margin_x": 8.929872581785904
+  }
+}

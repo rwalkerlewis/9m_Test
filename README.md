@@ -1,64 +1,34 @@
-# acoustic-sim — 2D Acoustic Simulation
+# acoustic-sim
 
-2D acoustic simulation built around a user-defined velocity model stored as a
-NumPy array.  Includes a **Helmholtz (frequency-domain) solver** and a
-**time-domain FDTD solver** with MPI parallelisation and optional CUDA
-acceleration.
+2-D / 3-D acoustic wave propagation and passive acoustic engagement.
 
----
+FDTD solvers produce synthetic microphone traces.  A real-time SRP-PHAT
+pipeline turns those traces into fire-control solutions.
 
-## Project Structure
-
-```
-├── src/acoustic_sim/       # Python package
-│   ├── __init__.py         # Public API re-exports
-│   ├── __main__.py         # python -m acoustic_sim
-│   ├── cli.py              # Argument parsing & Helmholtz entry point
-│   ├── model.py            # VelocityModel + creation helpers + anomalies
-│   ├── sampling.py         # Spatial-sampling & CFL checks
-│   ├── solver.py           # 2D Helmholtz solver
-│   ├── backend.py          # NumPy / CuPy backend abstraction
-│   ├── sources.py          # Audio source signals (WAV, propeller, tone, …)
-│   ├── domains.py          # Domain builders (isotropic, wind, hills+veg)
-│   ├── fdtd.py             # 2D FDTD solver with MPI + optional CUDA
-│   ├── receivers.py        # Receiver geometry helpers
-│   ├── io.py               # JSON/NPZ load & save
-│   └── plotting.py         # Velocity model, wavefield, gather & snapshot plots
-├── audio/                  # Sound / WAV files
-├── examples/               # Example JSON configs & runner scripts
-│   ├── run_fdtd.py         # Single FDTD run with full CLI control
-│   └── run_all_examples.py # Orchestrate all 18 example combinations
-├── simulate_array.py       # Legacy entry point (thin wrapper)
-├── pyproject.toml          # Package metadata & dependencies
-├── Dockerfile
-├── docker-compose.yml
-└── .devcontainer/
-    └── devcontainer.json
-```
+Full documentation: [docs/](docs/index.md)
 
 ---
 
-## Installation
+## Install
 
 ```bash
 pip install -e .
 ```
 
-MPI support requires an MPI library (e.g. OpenMPI):
+MPI (for parallel FDTD):
 
 ```bash
-# Ubuntu / Debian
 sudo apt-get install libopenmpi-dev openmpi-bin
 pip install mpi4py
 ```
 
-Optional CUDA acceleration (requires an NVIDIA GPU):
+GPU acceleration:
 
 ```bash
 pip install -e ".[cuda]"
 ```
 
-Or use the Docker dev container:
+Docker:
 
 ```bash
 docker compose up dev
@@ -66,7 +36,43 @@ docker compose up dev
 
 ---
 
-## Quick Start — Helmholtz (frequency-domain)
+## Quick Start
+
+### 1. Run the FDTD forward model
+
+```bash
+# 2-D valley
+bash examples/run_valley.sh
+
+# 3-D valley
+bash examples/run_valley_3d.sh
+```
+
+Or directly:
+
+```bash
+python examples/run_fdtd.py \
+    --domain hills_vegetation \
+    --source-type moving --source-signal propeller \
+    --array circular --receiver-count 16 --receiver-radius 2.0 \
+    --total-time 3.0 --dx 0.18 --output-dir output/valley_test \
+    --use-cuda
+```
+
+### 2. Run the engagement pipeline
+
+```bash
+python examples/run_pipeline.py output/valley_test
+```
+
+Auto-detects 2-D vs 3-D.  Produces:
+
+- `pipeline_summary_{2d,3d}.png` — 6-panel overview
+- `radial_engagement_{2d,3d}.png` — engagement diagram
+- `beamformer_diagnostic_{2d,3d}.png` — SRP-PHAT vs RMS comparison
+- `results_{2d,3d}.json` — machine-readable metrics
+
+### 3. Helmholtz solver
 
 ```bash
 acoustic-sim --model-preset gradient --frequency 40
@@ -74,119 +80,55 @@ acoustic-sim --model-preset gradient --frequency 40
 
 ---
 
-## Quick Start — FDTD (time-domain, MPI)
+## Pipeline
 
-### Single run
+| Stage | Algorithm |
+|-------|-----------|
+| Detection | RMS threshold gate |
+| Bearing | SRP-PHAT (pre-computed steering, 360 bins) |
+| Range | RMS inverse-square-law, CPA-calibrated |
+| Tracking | Causal weighted-least-squares fit |
+| Fire control | 3-D iterative ballistic lead (azimuth + elevation) |
 
-```bash
-# Static source, isotropic domain, circular array, Ricker wavelet
-mpirun -np 4 python examples/run_fdtd.py \
-    --domain isotropic --source-type static \
-    --source-signal ricker --source-freq 25 \
-    --array circular --receiver-radius 15 \
-    --total-time 0.3 --output-dir output/quick_test
-
-# Static source with a WAV file as the source signal
-mpirun -np 4 python examples/run_fdtd.py \
-    --domain isotropic --source-type static \
-    --source-signal file --source-wav audio/input.wav --max-seconds 0.3 \
-    --array linear --output-dir output/wav_test
-
-# Moving source with propeller model, wind domain
-mpirun -np 4 python examples/run_fdtd.py \
-    --domain wind --wind-speed 15 --wind-dir 45 \
-    --source-type moving --source-x -30 --source-y 0 \
-    --source-x1 30 --source-y1 0 --source-speed 50 \
-    --source-signal propeller \
-    --array concentric --output-dir output/wind_moving
-```
-
-### Run all 18 example combinations
-
-```bash
-python examples/run_all_examples.py --np 4
-```
-
-This runs every combination of:
-
-| Source Type | Domain                | Array Geometry |
-|-------------|-----------------------|----------------|
-| static      | isotropic             | concentric     |
-| moving      | isotropic + wind      | circular       |
-|             | hills + vegetation    | linear         |
-
-Each run produces in its output directory:
-
-| File | Description |
-|------|-------------|
-| `domain.png` | Velocity model + receivers + source + wind overlay |
-| `gather.png` | Seismic-style receiver gather (receiver × time) |
-| `traces.npy` | Raw trace data, shape `(n_receivers, n_samples)` |
-| `metadata.json` | Simulation parameters (dt, positions, etc.) |
-| `snapshots/` | Numbered PNG frames of the wavefield for movie assembly |
+Configuration: [`examples/pipeline.config.json`](examples/pipeline.config.json)
 
 ---
 
-## Source Signal Options
+## FDTD Solver
 
-The FDTD solver accepts any 1-D time-series as the source signal.  Built-in
-options:
-
-| `--source-signal` | Description |
-|-------------------|-------------|
-| `file`            | Load a WAV file (`--source-wav`), LP-filter to grid resolution, resample |
-| `propeller`       | Synthetic rotor noise (blade harmonics + broadband) |
-| `tone`            | Pure sine wave at `--source-freq` Hz |
-| `noise`           | Band-limited coloured noise |
-| `ricker`          | Ricker (Mexican-hat) wavelet at `--source-freq` Hz |
-
-Audio files are automatically low-pass filtered at the grid's maximum
-resolvable frequency (`c_min / (10 × dx)`) and resampled to the simulation
-timestep to ensure physical correctness.
+- 2-D and 3-D, unified codebase
+- Configurable FD order (2, 4, 6, 8)
+- MPI domain decomposition (y-axis 2-D, z-slab 3-D)
+- Optional CUDA via CuPy (automatic fallback to NumPy)
+- Sponge-layer absorbing boundaries
+- Source signals: propeller, tone, noise, ricker, WAV file
+- Domains: isotropic, wind, hills+vegetation
 
 ---
 
-## MPI & CUDA
+## ML Module (Optional)
 
-**MPI**: The FDTD solver uses 2-D Cartesian domain decomposition.  Each rank
-owns a rectangular sub-domain with one-cell ghost (halo) layers exchanged
-every timestep.
+Six files under `src/acoustic_sim/ml/` implement PyTorch classifiers for
+source type (CNN on mel spectrograms), maneuver state (1-D CNN on
+kinematics), and fusion classification (acoustic + kinematic).  **Not
+wired into the pipeline.**  Requires `torch` (not a project dependency).
 
-```bash
-mpirun -np 8 python examples/run_fdtd.py ...
-```
+Potential value:
+- **ManeuverClassifier** → adaptive tracker process noise
+- **FusionClassifier** → class-based fire/no-fire decisions
+- **compute_kinematic_features()** → pure-numpy threat heuristics (usable now)
 
-**CUDA**: Pass `--use-cuda` to offload array operations to the GPU via CuPy.
-Falls back to NumPy automatically if CuPy is not installed or no GPU is
-detected.
-
----
-
-## Spatial Sampling & CFL
-
-The CLI automatically validates grid resolution:
-
-- **Points-per-wavelength**: `λ_min / dx ≥ 10`
-- **CFL**: `c_max · dt / dx ≤ 1/√2` (dt auto-computed with 0.9× safety margin)
-
----
-
-## Docker
-
-```bash
-# Interactive dev shell
-docker compose run dev
-
-# Run simulation
-docker compose run simulate --model-preset gradient --frequency 40
-```
+See [docs/index.md](docs/index.md#ml-module) for details.
 
 ---
 
 ## Dependencies
 
-- numpy
-- scipy
-- matplotlib
-- mpi4py
-- *Optional*: cupy-cuda12x (for GPU acceleration)
+| Package | Required |
+|---------|----------|
+| numpy | yes |
+| scipy | yes |
+| matplotlib | yes |
+| mpi4py | yes (single-process fallback) |
+| cupy-cuda12x | optional (GPU) |
+| torch | optional (ML classifiers) |

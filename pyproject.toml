@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "acoustic-sim"
 version = "0.1.0"
-description = "2D acoustic simulation on user-defined velocity models"
+description = "2D/3D acoustic simulation and passive acoustic engagement"
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
