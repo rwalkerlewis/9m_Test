@@ -106,6 +106,31 @@ from acoustic_sim.domains import (
     create_hills_vegetation_domain_3d,
 )
 from acoustic_sim.fdtd import FDTD3DConfig, FDTD3DSolver, FDTDConfig, FDTDSolver
+from acoustic_sim.elastic_model import (
+    ElasticModel2D,
+    ElasticModel3D,
+    GroundConfig,
+    create_coupled_air_ground_2d,
+    create_coupled_air_ground_3d,
+)
+from acoustic_sim.elastic_fdtd import (
+    ElasticFDTDConfig,
+    ElasticFDTD2DSolver,
+    ElasticFDTD3DSolver,
+    fd1_staggered_coefficients,
+    elastic_cfl_factor,
+)
+from acoustic_sim.domains import (
+    ElasticDomainMeta2D,
+    ElasticDomainMeta3D,
+    create_coupled_domain_2d,
+    create_coupled_domain_3d,
+)
+from acoustic_sim.receivers import (
+    ReceiverSpec,
+    create_colocated_array_2d,
+    create_colocated_array_3d,
+)
 from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
 from acoustic_sim.config import DetectionConfig, sound_speed_from_temperature
 from acoustic_sim.noise import (
@@ -294,6 +319,27 @@ __all__ = [
     "FDTD3DConfig",
     "FDTDSolver",
     "FDTD3DSolver",
+    # ── Elastic model ──
+    "ElasticModel2D",
+    "ElasticModel3D",
+    "GroundConfig",
+    "create_coupled_air_ground_2d",
+    "create_coupled_air_ground_3d",
+    # ── Elastic FDTD ──
+    "ElasticFDTDConfig",
+    "ElasticFDTD2DSolver",
+    "ElasticFDTD3DSolver",
+    "fd1_staggered_coefficients",
+    "elastic_cfl_factor",
+    # ── Elastic domains ──
+    "ElasticDomainMeta2D",
+    "ElasticDomainMeta3D",
+    "create_coupled_domain_2d",
+    "create_coupled_domain_3d",
+    # ── Receiver spec (seismic) ──
+    "ReceiverSpec",
+    "create_colocated_array_2d",
+    "create_colocated_array_3d",
     # ── Setup ──
     "build_domain",
     "build_receivers",
