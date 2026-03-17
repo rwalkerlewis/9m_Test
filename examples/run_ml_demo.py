@@ -142,10 +142,10 @@ def plot_mel_examples(
     vmin = min(s.min() for _, s in specs)
     vmax = max(s.max() for _, s in specs)
 
-    fig, axes = plt.subplots(2, 3, figsize=(12, 6))
-    axes = axes.ravel()
+    fig, axes = plt.subplots(2, 3, figsize=(13, 6))
+    axes_flat = axes.ravel()
     im = None
-    for ax, (cls_name, mel) in zip(axes, specs):
+    for ax, (cls_name, mel) in zip(axes_flat, specs):
         im = ax.imshow(
             mel, aspect="auto", origin="lower", cmap="viridis",
             vmin=vmin, vmax=vmax,
@@ -154,9 +154,10 @@ def plot_mel_examples(
         ax.set_xlabel("Time frame")
         ax.set_ylabel("Mel band")
 
-    fig.colorbar(im, ax=axes.tolist(), label="Log power")
+    fig.subplots_adjust(right=0.88)
+    cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7])
+    fig.colorbar(im, cax=cbar_ax, label="Log power")
     fig.suptitle("Mel Spectrogram Examples by Source Class", fontsize=13)
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
     path = output_dir / "mel_spectrogram_examples.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
