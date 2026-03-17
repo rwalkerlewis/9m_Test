@@ -189,6 +189,14 @@ class DetectionConfig:
     inject_position_error: bool = False
     position_error_std: float = 0.01  # metres (14mm tolerance from spec)
 
+    # ── Ground model (elastic / seismic extension) ────────────────────
+    ground_vp: float = 500.0
+    ground_vs: float = 250.0
+    ground_density: float = 1800.0
+    ground_qp: float = 20.0
+    ground_qs: float = 10.0
+    ground_depth: float = 5.0
+
     # ── CUDA ────────────────────────────────────────────────────────────
     use_cuda: bool = False
 
