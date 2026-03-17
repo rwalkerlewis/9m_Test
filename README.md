@@ -155,9 +155,15 @@ I also included but did not implement more advanced ML classifiers. Ultimately i
 
 Were I to continue to work with you my first priority would be to iron down the forward model generation, likely using FNOs to build wavefields. After that, I would include all sorts of noise, transient signals, variable weather, wild and complex domains, simulated vehicles, and whatever else we could think of. I would use these cases to test our detection and targeting algorithms to failure, improving from what we learn from model runs in complement from that learned through live testing.
 
-Other ways I would exploit FNO
+A quick collectiof of other ways I would exploit FNO
+
 - Ensemble forward models: cheap wavefield modeling means that no two runs need be identical. Then we could start to play with stochastic inputs for noise, source path, etc, as well as drawing from probability distributions.
 - Dimensional analysis of forward model input factors: if we can vary everything we can figure out what parameters matter less
+- Testing different model geometry: This combined with optimization is an essential step. Also optimize for the fewest sensors
+- Testing stations with uncertain or wrong positioning information: can this work if the receivers are hastily deployed?
+- Test environments prone to echos
 
 
-The docs folder contains extensive documentation of the code, and each directory under output has a README.md detailing the resultant plots.
+The detection and targeting pipeline requires more time and effort than I was able to include to arrive at a reasonable solution for conditions better representing reality. I paid lip service to this by including the erratic_quadcopter example. Much more complexity needs to be considered, including multiple targets, more realistic noise, and more varied topography to state a few.
+
+The docs folder contains extensive documentation of the code, algorithms, and underlying physics. Each directory under output has a README.md detailing the resultant plots.
