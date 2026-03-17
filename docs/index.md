@@ -96,10 +96,10 @@ python src/acoustic_sim/detection_main.py --output-dir output/demo
 ### Detection pipeline (3D)
 
 ```python
-from acoustic_sim.sources_3d import CircularOrbitSource3D, make_drone_harmonics
-from acoustic_sim.receivers_3d import create_receiver_circle_3d
-from acoustic_sim.forward_3d import simulate_scenario_3d
-from acoustic_sim.detection_main_3d import run_detection_3d, evaluate_results_3d
+from acoustic_sim.sources import CircularOrbitSource3D, make_drone_harmonics
+from acoustic_sim.receivers import create_receiver_circle_3d
+from acoustic_sim.forward import simulate_scenario_3d
+from acoustic_sim.detection_main import run_detection_3d, evaluate_results_3d
 
 # Create source at 50 m altitude
 signal = make_drone_harmonics(n_steps=40000, dt=0.00025)
@@ -179,16 +179,20 @@ acoustic-sim/
 │       └── data_generation.py      # Physics-based training data synthesis
 │
 ├── examples/                       # Example scripts & JSON configs
-│   ├── run_fdtd.py                 # Single FDTD run with full CLI
+│   ├── run_fdtd.py                 # Single 2D FDTD run with full CLI
+│   ├── run_fdtd_3d.py              # Single 3D FDTD run with full CLI
 │   ├── run_all_examples.py         # Orchestrate all 18 combinations
-│   ├── run_full_pipeline.py        # End-to-end detection & targeting
-│   ├── run_valley.sh               # Valley domain shell script
+│   ├── run_pipeline.py             # End-to-end detection & targeting
+│   ├── pipeline.config.json        # Pipeline configuration (JSON)
+│   ├── extract_array_traces.py     # Extract traces from field plane
+│   ├── run_valley.sh               # 2D valley shell script
+│   ├── run_valley_3d.sh            # 3D valley shell script
 │   ├── run_wind_circular.sh        # Wind + circular orbit shell script
 │   ├── domain.example.json         # Gradient model with anomalies
 │   ├── layered.example.json        # Layered model with anomaly
 │   └── valley.example.json         # Valley model configuration
 ├── audio/                          # WAV files for source signals
-├── tests/                          # Test and debug scripts
+├── tests/                          # Test and diagnostic scripts
 │   ├── test_3d_extension.py        # 3D pipeline integration tests
 │   ├── test_classification.py      # Acoustic classifier tests
 │   ├── test_fusion.py              # Fusion classifier tests
@@ -201,7 +205,11 @@ acoustic-sim/
 │   ├── calibrate_rms_range.py      # RMS range calibration utility
 │   ├── debug_accuracy.py           # Accuracy debugging script
 │   ├── debug_fire_control.py       # Fire control debugging script
-│   └── debug_tracker.py            # Tracker debugging script
+│   ├── debug_tracker.py            # Tracker debugging script
+│   ├── analyse_3d_traces.py        # 3D trace analysis diagnostic
+│   ├── diagnose_3d_mfp.py          # MFP bearing diagnostic
+│   ├── diagnose_mfp_bpm.py         # MFP beam-power diagnostic
+│   └── estimate_3d_grid.py         # 3D grid sizing utility
 ├── docs/                           # This documentation
 ├── pyproject.toml                  # Package metadata & dependencies
 ├── requirements.txt                # Dependency list

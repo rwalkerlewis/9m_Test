@@ -15,22 +15,23 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.sources_3d import (
+from acoustic_sim.sources import (
     CircularOrbitSource3D,
     EvasiveSource3D,
     LoiterApproachSource3D,
     MovingSource3D,
     StaticSource3D,
     source_velocity_at_3d,
+    make_drone_harmonics,
+    make_stationary_tonal,
 )
-from acoustic_sim.sources import make_drone_harmonics, make_stationary_tonal
-from acoustic_sim.forward_3d import simulate_3d_traces, simulate_scenario_3d
-from acoustic_sim.receivers_3d import create_receiver_l_shaped_3d
-from acoustic_sim.processor_3d import matched_field_process_3d
-from acoustic_sim.tracker_3d import EKFTracker3D, run_tracker_3d
-from acoustic_sim.fire_control_3d import run_fire_control_3d
-from acoustic_sim.detection_main_3d import run_detection_3d, evaluate_results_3d
-from acoustic_sim.plotting_3d import (
+from acoustic_sim.forward import simulate_3d_traces, simulate_scenario_3d
+from acoustic_sim.receivers import create_receiver_l_shaped_3d
+from acoustic_sim.processor import matched_field_process_3d
+from acoustic_sim.tracker import EKFTracker3D, run_tracker_3d
+from acoustic_sim.fire_control import run_fire_control_3d
+from acoustic_sim.detection_main import run_detection_3d, evaluate_results_3d
+from acoustic_sim.plotting import (
     plot_3d_trajectory,
     plot_altitude_vs_time,
     plot_tracking_3d,

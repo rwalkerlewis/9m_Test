@@ -1362,9 +1362,9 @@ Single FDTD run with full CLI control. Builds domain/receivers/source from argum
 
 Orchestrates all 18 combinations of `{static, moving} × {isotropic, wind, hills_vegetation} × {concentric, circular, linear}` via `subprocess.call` with `mpirun`.
 
-### `examples/run_full_pipeline.py`
+### `examples/run_pipeline.py`
 
-End-to-end detection and targeting pipeline that loads pre-computed FDTD data, runs MFP detection, EKF tracking, and fire control, then produces comprehensive evaluation plots including a radial engagement view.
+Unified end-to-end detection and targeting pipeline that loads pre-computed FDTD data, runs SRP-PHAT detection, causal tracking, and fire control, then produces comprehensive evaluation plots including a radial engagement view. Auto-detects 2-D vs 3-D from receiver positions. Configuration via `pipeline.config.json`.
 
 ### `examples/run_valley.sh`
 

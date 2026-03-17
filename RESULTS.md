@@ -338,11 +338,11 @@ a system operating at its physical limits.
 # Run the FDTD simulation (requires CUDA GPU)
 bash examples/run_valley_3d.sh
 
-# Run the detection/tracking/fire-control pipeline (batch)
-python examples/run_full_pipeline_3d.py output/valley_3d_test
+# Run the detection/tracking/fire-control pipeline
+python examples/run_pipeline.py output/valley_3d_test
 
-# Run the real-time causal pipeline
-python examples/run_full_pipeline_3d.py output/valley_3d_test --source-speed 50 --realtime
+# Run with CLI overrides
+python examples/run_pipeline.py output/valley_3d_test --source-speed 50
 ```
 
 ---

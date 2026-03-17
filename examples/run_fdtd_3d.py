@@ -34,22 +34,19 @@ _root = Path(__file__).resolve().parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root / "src"))
 
-from acoustic_sim.domains_3d import (
+from acoustic_sim.domains import (
     DomainMeta3D,
     create_ground_layer_domain_3d,
     create_hills_vegetation_domain_3d,
     create_isotropic_domain_3d,
     create_wind_domain_3d,
 )
-from acoustic_sim.fdtd import fd2_coefficients, fd2_cfl_factor
-from acoustic_sim.fdtd_3d import FDTD3DConfig, FDTD3DSolver
-from acoustic_sim.model_3d import VelocityModel3D
+from acoustic_sim.fdtd import fd2_coefficients, fd2_cfl_factor, FDTD3DConfig, FDTD3DSolver
+from acoustic_sim.model import VelocityModel3D
 from acoustic_sim.plotting import plot_gather
-from acoustic_sim.receivers_3d import (
+from acoustic_sim.receivers import (
     create_receiver_circle_3d,
     create_receiver_line_3d,
-)
-from acoustic_sim.receivers import (
     create_receiver_concentric,
     create_receiver_l_shaped,
     create_receiver_random,
@@ -61,8 +58,9 @@ from acoustic_sim.sources import (
     make_source_propeller,
     make_source_tone,
     make_wavelet_ricker,
+    MovingSource3D,
+    StaticSource3D,
 )
-from acoustic_sim.sources_3d import MovingSource3D, StaticSource3D
 
 
 # ---------------------------------------------------------------------------

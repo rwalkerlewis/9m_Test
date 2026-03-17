@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from acoustic_sim.processor_3d import matched_field_process_3d
+from acoustic_sim.processor import matched_field_process_3d
 
 
 def load_simulation(sim_dir):

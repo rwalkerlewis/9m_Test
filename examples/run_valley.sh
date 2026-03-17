@@ -94,5 +94,5 @@ RUN_DETECTION=${RUN_DETECTION:-true}
 if [ "$RUN_DETECTION" = true ]; then
     echo ""
     echo "Running detection pipeline evaluation..."
-    python examples/run_full_pipeline.py "$OUTPUT_DIR" --source-speed "$SOURCE_SPEED"
+    python examples/run_pipeline.py "$OUTPUT_DIR" --source-speed "$SOURCE_SPEED"
 fi

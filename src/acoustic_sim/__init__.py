@@ -1,4 +1,4 @@
-"""acoustic_sim — 2D acoustic simulation on user-defined velocity models.
+"""acoustic_sim — 2D/3D acoustic simulation on user-defined velocity models.
 
 Extended with passive acoustic drone detection, tracking, and fire
 control capabilities using matched field processing.  Includes a
@@ -7,6 +7,7 @@ comprehensive study framework for robustness analysis.
 
 from acoustic_sim.model import (
     VelocityModel,
+    VelocityModel3D,
     add_circle_anomaly,
     add_rectangle_anomaly,
     create_checkerboard_model,
@@ -14,20 +15,29 @@ from acoustic_sim.model import (
     create_layered_model,
     create_uniform_model,
     create_valley_model,
+    create_uniform_model_3d,
+    create_layered_z_model_3d,
+    model_3d_from_array,
     model_from_array,
 )
 from acoustic_sim.sampling import check_cfl, check_spatial_sampling, suggest_dx
 from acoustic_sim.solver import solve_helmholtz
 from acoustic_sim.receivers import (
     create_receiver_circle,
+    create_receiver_circle_3d,
     create_receiver_concentric,
     create_receiver_custom,
+    create_receiver_custom_3d,
     create_receiver_l_shaped,
+    create_receiver_l_shaped_3d,
     create_receiver_line,
+    create_receiver_line_3d,
     create_receiver_log_spiral,
     create_receiver_nested_circular,
+    create_receiver_nested_circular_3d,
     create_receiver_random,
     create_receiver_random_disk,
+    create_receiver_random_disk_3d,
     print_array_diagnostics,
 )
 from acoustic_sim.io import load_json, load_model, model_from_json, save_model
@@ -45,16 +55,29 @@ from acoustic_sim.plotting import (
     plot_vespagram,
     plot_wavefield,
     save_snapshot,
+    # 3D
+    plot_3d_trajectory,
+    plot_altitude_vs_time,
+    plot_tracking_3d,
+    plot_kinematic_scatter,
+    save_snapshot_3d,
 )
 from acoustic_sim.backend import get_backend
 from acoustic_sim.sources import (
     CircularOrbitSource,
+    CircularOrbitSource3D,
     CustomTrajectorySource,
+    CustomTrajectorySource3D,
     EvasiveSource,
+    EvasiveSource3D,
     FigureEightSource,
+    FigureEightSource3D,
     LoiterApproachSource,
+    LoiterApproachSource3D,
     MovingSource,
+    MovingSource3D,
     StaticSource,
+    StaticSource3D,
     inject_source,
     load_wav_mono,
     make_drone_harmonics,
@@ -66,16 +89,22 @@ from acoustic_sim.sources import (
     make_wavelet_ricker,
     prepare_source_signal,
     source_velocity_at,
+    source_velocity_at_3d,
 )
 from acoustic_sim.domains import (
     DomainMeta,
+    DomainMeta3D,
     create_echo_canyon_domain,
     create_hills_vegetation_domain,
     create_isotropic_domain,
     create_urban_echo_domain,
     create_wind_domain,
+    create_isotropic_domain_3d,
+    create_wind_domain_3d,
+    create_ground_layer_domain_3d,
+    create_hills_vegetation_domain_3d,
 )
-from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
+from acoustic_sim.fdtd import FDTD3DConfig, FDTD3DSolver, FDTDConfig, FDTDSolver
 from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
 from acoustic_sim.config import DetectionConfig, sound_speed_from_temperature
 from acoustic_sim.noise import (
@@ -99,24 +128,33 @@ from acoustic_sim.processor import (
     detect_stationary,
     find_peaks_polar,
     matched_field_process,
+    matched_field_process_3d,
     mvdr_beam_power,
     polar_to_cartesian,
     select_harmonic_bins,
 )
 from acoustic_sim.tracker import (
     EKFTracker,
+    EKFTracker3D,
     MultiTargetTracker,
+    MultiTargetTracker3D,
     run_multi_tracker,
+    run_multi_tracker_3d,
     run_tracker,
+    run_tracker_3d,
 )
 from acoustic_sim.fire_control import (
     compute_engagement,
+    compute_engagement_3d,
     compute_lead,
+    compute_lead_3d,
     compute_miss_distance,
+    compute_miss_distance_3d,
     pattern_diameter,
     pellet_velocity_at_range,
     prioritize_threats,
     run_fire_control,
+    run_fire_control_3d,
     run_multi_fire_control,
     time_of_flight,
 )
@@ -130,9 +168,15 @@ from acoustic_sim.validate import (
 )
 from acoustic_sim.detection_main import (
     evaluate_results,
+    evaluate_results_3d,
     run_detection,
+    run_detection_3d,
     run_detection_pipeline,
     simulate_scenario,
+)
+from acoustic_sim.forward import (
+    simulate_3d_traces,
+    simulate_scenario_3d,
 )
 from acoustic_sim.studies import (
     run_all_studies,
@@ -150,6 +194,7 @@ from acoustic_sim.studies import (
 __all__ = [
     # ── Model ──
     "VelocityModel",
+    "VelocityModel3D",
     "add_circle_anomaly",
     "add_rectangle_anomaly",
     "create_checkerboard_model",
@@ -158,6 +203,9 @@ __all__ = [
     "create_uniform_model",
     "create_valley_model",
     "model_from_array",
+    "create_uniform_model_3d",
+    "create_layered_z_model_3d",
+    "model_3d_from_array",
     # ── Sampling ──
     "check_cfl",
     "check_spatial_sampling",
@@ -194,6 +242,11 @@ __all__ = [
     "plot_vespagram",
     "plot_wavefield",
     "save_snapshot",
+    "plot_3d_trajectory",
+    "plot_altitude_vs_time",
+    "plot_tracking_3d",
+    "plot_kinematic_scatter",
+    "save_snapshot_3d",
     # ── Backend ──
     "get_backend",
     # ── Sources ──
@@ -215,16 +268,31 @@ __all__ = [
     "make_wavelet_ricker",
     "prepare_source_signal",
     "source_velocity_at",
+    "source_velocity_at_3d",
+    "StaticSource3D",
+    "MovingSource3D",
+    "CircularOrbitSource3D",
+    "FigureEightSource3D",
+    "LoiterApproachSource3D",
+    "EvasiveSource3D",
+    "CustomTrajectorySource3D",
     # ── Domains ──
     "DomainMeta",
+    "DomainMeta3D",
     "create_echo_canyon_domain",
     "create_hills_vegetation_domain",
     "create_isotropic_domain",
     "create_urban_echo_domain",
     "create_wind_domain",
+    "create_isotropic_domain_3d",
+    "create_wind_domain_3d",
+    "create_ground_layer_domain_3d",
+    "create_hills_vegetation_domain_3d",
     # ── FDTD ──
     "FDTDConfig",
+    "FDTD3DConfig",
     "FDTDSolver",
+    "FDTD3DSolver",
     # ── Setup ──
     "build_domain",
     "build_receivers",
@@ -252,22 +320,31 @@ __all__ = [
     "detect_stationary",
     "find_peaks_polar",
     "matched_field_process",
+    "matched_field_process_3d",
     "mvdr_beam_power",
     "polar_to_cartesian",
     "select_harmonic_bins",
     # ── Tracker ──
     "EKFTracker",
+    "EKFTracker3D",
     "MultiTargetTracker",
+    "MultiTargetTracker3D",
     "run_multi_tracker",
+    "run_multi_tracker_3d",
     "run_tracker",
+    "run_tracker_3d",
     # ── Fire control ──
     "compute_engagement",
+    "compute_engagement_3d",
     "compute_lead",
+    "compute_lead_3d",
     "compute_miss_distance",
+    "compute_miss_distance_3d",
     "pattern_diameter",
     "pellet_velocity_at_range",
     "prioritize_threats",
     "run_fire_control",
+    "run_fire_control_3d",
     "run_multi_fire_control",
     "time_of_flight",
     # ── Validate ──
@@ -279,9 +356,13 @@ __all__ = [
     "run_all_checks",
     # ── Pipeline ──
     "evaluate_results",
+    "evaluate_results_3d",
     "run_detection",
+    "run_detection_3d",
     "run_detection_pipeline",
     "simulate_scenario",
+    "simulate_3d_traces",
+    "simulate_scenario_3d",
     # ── Studies ──
     "run_all_studies",
     "study_array_geometry",

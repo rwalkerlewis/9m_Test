@@ -11,14 +11,14 @@ import math
 import numpy as np
 from scipy import signal as sp_signal
 
-from acoustic_sim.sources_3d import (
+from acoustic_sim.sources import (
     CircularOrbitSource3D,
     EvasiveSource3D,
     MovingSource3D,
     StaticSource3D,
     source_velocity_at_3d,
 )
-from acoustic_sim.forward_3d import simulate_3d_traces
+from acoustic_sim.forward import simulate_3d_traces
 from acoustic_sim.noise import generate_sensor_noise, generate_wind_noise
 
 _P_REF = 20e-6
@@ -250,7 +250,7 @@ def generate_classification_dataset(
     n_steps = int(window_duration / dt)
 
     # Simple microphone array (L-shaped, 9 elements).
-    from acoustic_sim.receivers_3d import create_receiver_l_shaped_3d
+    from acoustic_sim.receivers import create_receiver_l_shaped_3d
     mics = create_receiver_l_shaped_3d(5, 5, spacing=0.3,
                                         origin_x=0.0, origin_y=0.0, z=0.0)
 

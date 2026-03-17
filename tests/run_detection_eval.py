@@ -2,8 +2,8 @@
 """
 Detection Pipeline Evaluation Script (simplified)
 
-This wraps run_full_pipeline.py for quick evaluation runs with additional
-diagnostic output. For the main pipeline, use run_full_pipeline.py directly.
+This wraps run_pipeline.py for quick evaluation runs with additional
+diagnostic output. For the main pipeline, use run_pipeline.py directly.
 
 Usage:
     python tests/run_detection_eval.py [--output-dir OUTPUT_DIR]
@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "examples"))
 
-from run_full_pipeline import run_pipeline
+from run_pipeline import run_pipeline, load_config
 
 
 def main():
@@ -49,10 +49,12 @@ def main():
     args = parser.parse_args()
     
     # Just use the main pipeline
+    cfg = load_config(Path(__file__).parent.parent / "examples" / "pipeline.config.json")
+    cfg["source"]["speed_mps"] = args.source_speed
     run_pipeline(
         args.output_dir,
         args.output_dir,
-        source_speed=args.source_speed,
+        cfg,
     )
 
 

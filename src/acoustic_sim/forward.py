@@ -23,7 +23,7 @@ import math
 import numpy as np
 from scipy import signal as sp_signal
 
-from acoustic_sim.sources_3d import source_velocity_at_3d
+from acoustic_sim.sources import source_velocity_at_3d
 
 _P_REF = 20e-6  # 20 µPa
 
@@ -397,8 +397,8 @@ def simulate_3d_traces_fdtd(
         traces : (n_mics, n_steps) pressure at receivers
         dt_actual : float, the actual timestep used
     """
-    from acoustic_sim.domains_3d import DomainMeta3D, create_isotropic_domain_3d
-    from acoustic_sim.fdtd_3d import FDTD3DConfig, FDTD3DSolver
+    from acoustic_sim.domains import DomainMeta3D, create_isotropic_domain_3d
+    from acoustic_sim.fdtd import FDTD3DConfig, FDTD3DSolver
 
     mic_pos = np.asarray(mic_positions, dtype=np.float64)
     if mic_pos.shape[1] == 2:

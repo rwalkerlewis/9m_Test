@@ -18,23 +18,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from acoustic_sim.sources import (
     MovingSource,
-    make_drone_harmonics,
-    source_velocity_at,
-)
-from acoustic_sim.sources_3d import (
     MovingSource3D,
     StaticSource3D,
+    make_drone_harmonics,
+    source_velocity_at,
     source_velocity_at_3d,
 )
-from acoustic_sim.receivers import create_receiver_l_shaped
-from acoustic_sim.receivers_3d import create_receiver_l_shaped_3d
-from acoustic_sim.processor import matched_field_process
-from acoustic_sim.processor_3d import matched_field_process_3d
-from acoustic_sim.tracker import run_tracker
-from acoustic_sim.tracker_3d import run_tracker_3d
-from acoustic_sim.fire_control import compute_lead, run_fire_control
-from acoustic_sim.fire_control_3d import compute_lead_3d, run_fire_control_3d
-from acoustic_sim.forward_3d import simulate_3d_traces
+from acoustic_sim.receivers import create_receiver_l_shaped, create_receiver_l_shaped_3d
+from acoustic_sim.processor import matched_field_process, matched_field_process_3d
+from acoustic_sim.tracker import run_tracker, run_tracker_3d
+from acoustic_sim.fire_control import compute_lead, run_fire_control, compute_lead_3d, run_fire_control_3d
+from acoustic_sim.forward import simulate_3d_traces
 
 
 def _make_test_signal(n_steps, dt):

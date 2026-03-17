@@ -534,8 +534,8 @@ python -c "from acoustic_sim.studies import study_mixed_failures; study_mixed_fa
 The study framework's design principle — separate FDTD simulation from detection processing — applies equally to the 3D pipeline. A single 3D forward-model run can serve as the base for many 3D detection experiments:
 
 ```python
-from acoustic_sim.forward_3d import simulate_scenario_3d
-from acoustic_sim.detection_main_3d import run_detection_3d, evaluate_results_3d
+from acoustic_sim.forward import simulate_scenario_3d
+from acoustic_sim.detection_main import run_detection_3d, evaluate_results_3d
 
 # Generate 3D base traces (once)
 scenario = simulate_scenario_3d(sources, mics, dt, n_steps, ...)

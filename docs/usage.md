@@ -368,7 +368,7 @@ Each detection run produces in `output_dir/`:
 
 ## 5. Running the Full Pipeline Example
 
-The `examples/run_full_pipeline.py` script loads pre-computed FDTD data and runs the detection/targeting pipeline with visualisation.
+The `examples/run_pipeline.py` script loads pre-computed FDTD data and runs the detection/targeting pipeline with visualisation.
 
 ### 5.1 Prerequisites
 
@@ -387,8 +387,8 @@ mpirun -np 4 python examples/run_fdtd.py \
 ### 5.2 Run the Pipeline
 
 ```bash
-python examples/run_full_pipeline.py output/sim_data \
-    --source-speed 50 --fundamental 180 --n-harmonics 4 \
+python examples/run_pipeline.py output/sim_data \
+    --source-speed 50 \
     --output-dir output/pipeline_results
 ```
 
@@ -782,7 +782,7 @@ The cyan dashed line marks `1/c` (reference slowness). A bright track at this sl
 ### 11.1 Creating 3D Sources
 
 ```python
-from acoustic_sim.sources_3d import (
+from acoustic_sim.sources import (
     StaticSource3D, MovingSource3D, CircularOrbitSource3D,
     LoiterApproachSource3D, EvasiveSource3D, CustomTrajectorySource3D,
 )
@@ -814,7 +814,7 @@ src = LoiterApproachSource3D(
 ### 11.2 Creating 3D Receivers
 
 ```python
-from acoustic_sim.receivers_3d import (
+from acoustic_sim.receivers import (
     create_receiver_circle_3d,
     create_receiver_nested_circular_3d,
     create_receiver_custom_3d,
@@ -835,7 +835,7 @@ mics = create_receiver_custom_3d([
 ### 11.3 Running the 3D Analytical Forward Model
 
 ```python
-from acoustic_sim.forward_3d import simulate_scenario_3d
+from acoustic_sim.forward import simulate_scenario_3d
 
 scenario = simulate_scenario_3d(
     sources=[src],
@@ -857,7 +857,7 @@ true_positions = scenario["true_positions"]  # list of (n_steps, 3) per source
 ### 11.4 Running the 3D FDTD Forward Model
 
 ```python
-from acoustic_sim.forward_3d import simulate_scenario_3d_fdtd
+from acoustic_sim.forward import simulate_scenario_3d_fdtd
 
 scenario = simulate_scenario_3d_fdtd(
     sources=[src],
@@ -874,7 +874,7 @@ scenario = simulate_scenario_3d_fdtd(
 ### 11.5 Running the 3D Detection Pipeline
 
 ```python
-from acoustic_sim.detection_main_3d import run_detection_3d, evaluate_results_3d
+from acoustic_sim.detection_main import run_detection_3d, evaluate_results_3d
 
 # Stage 2: Detection (sensor data only)
 result = run_detection_3d(
@@ -909,7 +909,7 @@ print(f"First shot miss: {metrics['first_shot_miss']:.2f} m")
 ### 11.6 3D Plotting
 
 ```python
-from acoustic_sim.plotting_3d import (
+from acoustic_sim.plotting import (
     plot_3d_trajectory, plot_altitude_vs_time, plot_tracking_3d,
 )
 
@@ -1033,7 +1033,7 @@ history = train_classifier(
 ### 12.5 Using Classifiers in the Detection Pipeline
 
 ```python
-from acoustic_sim.detection_main_3d import run_detection_3d
+from acoustic_sim.detection_main import run_detection_3d
 
 # Load pre-trained models
 acoustic_model = AcousticClassifier(n_classes=6)

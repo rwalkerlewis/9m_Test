@@ -18,7 +18,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from acoustic_sim.processor_3d import (
+from acoustic_sim.processor import (
     build_3d_grid,
     broadband_weighted_sum_3d,
     compute_csdm,
