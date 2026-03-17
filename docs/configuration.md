@@ -23,15 +23,29 @@ CLI flags override individual values.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `n_bearings` | int | 360 | number of candidate look directions |
-| `freq_lo_hz` | float | 100.0 | lower band edge for SRP-PHAT (Hz) |
-| `freq_hi_hz` | float | 2000.0 | upper band edge for SRP-PHAT (Hz) |
+| `method` | str | `"srp_phat"` | Bearing estimator: `srp_phat`, `music`, or `mvdr` |
+| `n_bearings` | int | 360 | Number of candidate look directions |
+| `freq_lo_hz` | float | 100.0 | Lower band edge (Hz) |
+| `freq_hi_hz` | float | 2000.0 | Upper band edge (Hz) |
+| `max_sources` | int | 1 | Maximum number of sources to detect per window |
+
+### `ranging`
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `method` | str | `"auto"` | Range method: `rms`, `tdoa`, `bearing_rate`, or `auto` |
+| `n_range_bins` | int | 80 | Grid size for TDOA range search |
+| `auto_cpa_threshold_m` | float | 3.0 | Auto mode: use TDOA when CPA ≤ this; else RMS |
+
+When `method` is `"auto"`, the pipeline selects TDOA for nearfield
+scenarios (ground-truth CPA ≤ threshold) and RMS otherwise.
 
 ### `tracking`
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `min_detections` | int | 5 | detections needed before WLS fit |
+| `max_history` | int | 20 | maximum number of detections in sliding window |
 | `ema_alpha` | float | 0.35 | bearing EMA smoothing factor |
 | `rms_fire_gate_frac` | float | 0.20 | fire gate: window RMS must exceed this fraction of peak RMS |
 | `range_min_m` | float | 5.0 | minimum clamped range estimate (m) |
@@ -47,6 +61,14 @@ CLI flags override individual values.
 | `muzzle_velocity_mps` | float | 400.0 | pellet muzzle velocity (m/s) |
 | `pellet_decel_mps2` | float | 1.5 | velocity loss per metre of travel |
 | `pattern_spread_rate` | float | 0.3 | pattern diameter per metre of range |
+
+> **Note on `pattern_spread_rate` defaults:** Three defaults exist in
+> the codebase: `DetectionConfig` uses 0.025, the `pattern_diameter()`
+> function signature defaults to 0.025, and `pipeline.config.json`
+> overrides to 0.3.  The pipeline config value (0.3) is what the
+> production pipeline uses.  The function-level default (0.025)
+> applies only when calling `pattern_diameter()` directly without
+> specifying a spread rate.
 | `max_engagement_range_m` | float | 500.0 | maximum engagement range (m) |
 | `max_position_uncertainty_m` | float | 0.0 | position uncertainty gate (0 = disabled) |
 | `class_label` | str | "fixed_wing" | assumed source class for engagement rules |

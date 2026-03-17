@@ -291,3 +291,25 @@ from examples.run_pipeline import load_config, run_pipeline
 cfg = load_config(Path("examples/pipeline.config.json"))
 results = run_pipeline(Path("output/valley_test"), Path("output/valley_test"), cfg)
 ```
+
+### Use DetectionEngine directly
+
+```python
+from acoustic_sim.detection import DetectionEngine
+
+engine = DetectionEngine(
+    mic_positions=mics,       # (n_mics, 2 or 3)
+    fs=fs,                    # sample rate
+    window_samples=win,       # samples per window
+    bearing_method="srp_phat",
+    range_method="rms",       # or "tdoa", "bearing_rate"
+    max_sources=1,
+    tracker_max_history=20,
+)
+engine.calibrate_range(peak_rms, cpa_distance)
+
+for seg in windows:
+    det = engine.process_window(seg, t_center)
+    if det.detected:
+        print(det.bearing_deg, det.range_m, det.track)
+```

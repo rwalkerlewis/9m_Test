@@ -4,12 +4,18 @@ Nine parametric studies in `src/acoustic_sim/studies.py` sweep
 configuration parameters to evaluate detection pipeline robustness.
 All operate on the MFP/EKF library pipeline (`detection_main.py`).
 
-Run all studies:
+Run all single-FDTD studies (4 of 9):
 
 ```python
 from acoustic_sim.studies import run_all_studies
 results = run_all_studies()
 ```
+
+`run_all_studies` executes only the four studies that reuse a single
+FDTD run (sensor faults, transient, position errors, mixed failures).
+The remaining five (array geometry, min sensors, multi-drone, haphazard
+array, echo domains) require separate FDTD runs per case and must be
+called individually.
 
 Each study generates console output (tabulated metrics) and a
 comparison plot via `plot_study_comparison`.

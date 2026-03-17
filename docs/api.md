@@ -288,7 +288,7 @@ Return pellet speed at `range_m` (m/s).
 ### `pattern_diameter(range_m, spread_rate=0.025)` — L78
 
 Shotgun pattern diameter at `range_m` (m).  Uses linear spread:
-$d = 2 \cdot r \cdot \text{spread\_rate}$.
+$d = \text{spread\_rate} \times r$.
 
 ### `compute_lead(target_pos, target_vel, weapon_pos, muzzle_velocity=400.0, decel=1.5, max_iter=5)` — L93
 
@@ -333,6 +333,27 @@ Fire-control solution for multiple targets, sorted by threat priority.
 | `run_fire_control_3d(track)` | 778 | 3-D fire-control at every time step |
 | `compute_miss_distance_3d(...)` | 881 | 3-D miss distances |
 | `prioritize_threats_3d(...)` | 960 | 3-D threat scoring |
+
+### Trajectory and CPA analysis
+
+### `projectile_path(weapon_pos, aim_bearing, aim_elevation, muzzle_velocity, decel, tof, n_points=50)`
+
+Generate 3-D pellet trajectory from weapon position along aim direction.
+Returns `(xs, ys, zs)` arrays of $n$ evenly spaced points with ballistic
+velocity decay.
+
+### `find_cpa(weapon_pos, aim_dir, muzzle_velocity, pellet_decel, target_position_fn, t_fire, n_samples=200)`
+
+Evaluate the closest point of approach between the projectile path and
+the target trajectory over the time-of-flight window.  Returns a dict
+with `miss_distance_m`, `cpa_time`, `cpa_pellet_pos`, `cpa_target_pos`,
+`pattern_radius_at_cpa`.
+
+### `compute_bearing_rate(bearing_history, t_now, bearing_rad, window_s=0.15)`
+
+Compute the angular rate of change of bearing from a sliding history
+window.  Returns `(rate_rad_s, updated_history)`.  Used for
+bearing-rate fire gating.
 
 ---
 
@@ -579,6 +600,14 @@ write PNG files to `output_path`; none display interactively.
 | `plot_tracking_3d(track, true_positions, true_times, fire_control, weapon_pos, output_path, maneuver_labels, class_label, class_confidence)` | 954 | Six-panel 3-D tracking + fire-control display with altitude and maneuver state |
 | `plot_kinematic_scatter(features_by_class, feature_names, title, output_path)` | 1087 | 2-D scatter of kinematic features coloured by class |
 | `save_snapshot_3d(field_3d, step, output_dir)` | 1132 | Two-panel (x-y + x-z) wavefield snapshot |
+
+### Pipeline engagement plots
+
+| Function | Description |
+|----------|-------------|
+| `plot_radial_engagement(fire_decisions, ground_truth_fn, source_duration, weapon_pos, is_3d, cfg_fc, output_path)` | Polar plot of fire decisions with per-shot effective threshold markers; colours by hit/miss |
+| `plot_pipeline_summary(all_detections, all_fire_decisions, all_track_states, wall_times, ground_truth_fn, source_duration, array_center, weapon_pos, is_3d, hop_sec, hit_threshold, metrics, output_path)` | Six-panel pipeline summary: bearing, range, position track, fire decisions, RMS, and metrics |
+| `plot_beamformer_diagnostic(traces, mic_positions, dt, ground_truth_fn, source_duration, array_center, beamformer, cfg_det, output_path)` | Four-panel beamformer diagnostic: power spectrum, bearing vs time, polar power map, SNR |
 
 ---
 
@@ -920,6 +949,7 @@ All expose `position_at(step, dt) → (x, y, z)`.  Same motion models as
 | `FigureEightSource3D` | 787 | Figure-eight with optional z oscillation |
 | `LoiterApproachSource3D` | 817 | Loiter then descend on approach |
 | `EvasiveSource3D` | 869 | Random-walk heading with altitude variation |
+| `ErraticQuadcopterSource3D` | — | Ornstein–Uhlenbeck mean-reverting 3-D trajectory confined to a bounding box; fields: `x0, y0, z0, bbox_min, bbox_max, mean_speed, agility, speed_var, signal, seed` |
 | `CustomTrajectorySource3D` | 923 | User-supplied `(t, x, y, z)` arrays |
 
 ### Utility functions
@@ -1332,3 +1362,242 @@ per-class precision, recall, F1, and overall accuracy.
 ### `evaluate_fusion_classifier(model, X_acoustic, X_kinematic, y_test, class_names)` — L221
 
 Evaluate the fusion classifier.  Same metrics as `evaluate_classifier`.
+
+---
+
+## detection/bearing.py
+
+*Pluggable bearing (DOA) estimation algorithms.*
+
+### dataclass `BearingDetection`
+
+Single bearing estimate: `bearing_rad`, `power`.  Property:
+`bearing_deg`.
+
+### dataclass `BearingResult`
+
+Collection of bearing detections with optional power spectrum and
+source-count estimate.  Fields: `detections`, `spectrum`,
+`bearings_rad`, `n_sources_estimated`.
+
+### class `BearingEstimator` (ABC)
+
+Abstract base class.  Subclasses must implement
+`estimate(segment, max_sources) → BearingResult`.
+
+### class `SRPBeamformer(BearingEstimator)`
+
+Steered Response Power with Phase Transform.
+
+| Method | Description |
+|--------|-------------|
+| `__init__(mic_positions, fs, window_samples, c=343.0, n_bearings=360, freq_lo=100.0, freq_hi=2000.0, min_peak_sep_deg=15.0, secondary_threshold=0.3)` | Pre-compute steering matrix |
+| `estimate(segment, max_sources=1)` | SRP-PHAT → `BearingResult` |
+
+### class `MUSICEstimator(BearingEstimator)`
+
+MUSIC subspace DOA with MDL source-count estimation.
+
+| Method | Description |
+|--------|-------------|
+| `__init__(mic_positions, fs, window_samples, c=343.0, n_bearings=360, freq_lo=100.0, freq_hi=2000.0, n_subbands=0, diagonal_loading=0.01, min_peak_sep_deg=10.0)` | Init |
+| `estimate(segment, max_sources=1)` | MUSIC pseudo-spectrum → `BearingResult` |
+
+### class `MVDRBeamformer(BearingEstimator)`
+
+MVDR (Capon) beamformer on a polar grid with harmonic selection.
+
+| Method | Description |
+|--------|-------------|
+| `__init__(mic_positions, dt, sound_speed=343.0, azimuth_spacing_deg=1.0, range_min=20.0, range_max=500.0, range_spacing=5.0, fundamental=150.0, n_harmonics=6, harmonic_bandwidth=10.0, ...)` | Init |
+| `estimate(segment, max_sources=1)` | MVDR → `BearingResult` |
+
+### Factory functions
+
+- `available_bearing_methods() → list[str]` — returns `["srp_phat", "music", "mvdr"]`
+- `create_bearing_estimator(method, **kwargs) → BearingEstimator`
+
+---
+
+## detection/engine.py
+
+*Streaming detection engine that chains bearing, range, and tracking.*
+
+### dataclass `WindowDetection`
+
+Per-window detection result.  Fields: `time`, `detected`, `window_rms`,
+`bearings`, `bearing_rad`, `bearing_deg`, `range_m`, `x`, `y`, `z`,
+`track` (`TrackState` or None), `n_sources`, `bearing_method`.
+
+### class `DetectionEngine`
+
+| Method | Description |
+|--------|-------------|
+| `__init__(mic_positions, fs, window_samples, bearing_method="srp_phat", range_method="rms", max_sources=1, min_signal_rms=5e-5, ema_alpha=0.35, source_z_estimate=0.0, c=343.0, bearing_kwargs=None, range_kwargs=None, tracker_min_detections=5, tracker_max_history=20)` | Create engine with chosen estimators |
+| `calibrate_range(peak_rms, cpa_distance)` | Set RMS reference for range estimation |
+| `reset()` | Clear tracker and smoother state |
+| `process_window(segment, t_center) → WindowDetection` | Process one window through the full chain |
+
+---
+
+## detection/ranging.py
+
+*Pluggable range estimation algorithms.*
+
+### dataclass `RangeEstimate`
+
+Single range estimate: `range_m`, `uncertainty_m`.
+
+### class `RangeEstimator` (ABC)
+
+Abstract base class.  Subclasses must implement
+`estimate(segment, bearing_rad) → RangeEstimate`.
+
+### class `RMSRangeEstimator(RangeEstimator)`
+
+Inverse-square-law range from RMS amplitude.
+
+| Method | Description |
+|--------|-------------|
+| `__init__(ref_range=10.0, ref_rms=None, range_min=5.0, range_max=100.0)` | Init |
+| `calibrate(peak_rms, cpa_distance)` | Set reference from CPA |
+| `estimate(segment, bearing_rad=None)` | RMS → range |
+
+### class `TDOARangeEstimator(RangeEstimator)`
+
+GCC-PHAT TDOA multilateration with bearing-constrained grid search.
+
+| Method | Description |
+|--------|-------------|
+| `__init__(mic_positions, fs, window_samples, c=343.0, range_min=2.0, range_max=200.0, n_range_bins=80, freq_lo=100.0, freq_hi=2000.0)` | Init |
+| `estimate(segment, bearing_rad)` | TDOA → range |
+
+### class `BearingRateRangeEstimator(RangeEstimator)`
+
+Kinematic range from angular rate of change: $R \approx v/|\dot{\theta}|$.
+
+| Method | Description |
+|--------|-------------|
+| `__init__(source_speed=50.0, hop_sec=0.025, ema_alpha=0.30, range_min=2.0, range_max=200.0, min_rate_dps=5.0)` | Init |
+| `reset()` | Clear state |
+| `estimate(segment, bearing_rad)` | Bearing rate → range |
+
+### Factory functions
+
+- `available_range_methods() → list[str]` — returns `["rms", "tdoa", "bearing_rate", "nearfield"]`
+- `create_range_estimator(method, **kwargs) → RangeEstimator`
+
+---
+
+## detection/tracking.py
+
+*Causal tracking (no Kalman filter).*
+
+### dataclass `TrackState`
+
+6-DOF track state: `x0, y0, z0, vx, vy, vz, t_ref, res_x, res_y,
+res_z, n_det`.
+
+| Method | Description |
+|--------|-------------|
+| `position_at(t) → ndarray` | Extrapolate position to time $t$ |
+| `velocity → ndarray` | Return velocity vector |
+| `covariance_6x6(floor=0.5, cap=1.0) → ndarray` | Diagonal covariance from residuals |
+
+### class `CausalWLSTracker`
+
+Weighted-least-squares constant-velocity fit over a sliding window.
+
+| Method | Description |
+|--------|-------------|
+| `__init__(min_detections=5, max_history=20)` | Init |
+| `reset()` | Clear detections |
+| `n_detections → int` | Property: count of stored detections |
+| `add_detection(t, x, y, z, rms)` | Append a detection |
+| `fit() → TrackState \| None` | Solve WLS; returns None if too few detections |
+
+### class `EMABearingSmoother`
+
+Exponential moving average on the unit circle.
+
+| Method | Description |
+|--------|-------------|
+| `__init__(alpha=0.35)` | Init |
+| `reset()` | Clear state |
+| `update(bearing_rad) → float` | Return smoothed bearing |
+
+---
+
+## ml/fno.py
+
+*Fourier Neural Operator surrogate for FDTD.*  Requires `torch`.
+
+### class `SpectralConv2d(nn.Module)`
+
+Truncated Fourier-space convolution layer.  Retains the lowest
+`modes1 × modes2` Fourier modes and applies a learnable complex weight.
+
+### class `FNOBlock2d(nn.Module)`
+
+Single FNO block: `SpectralConv2d` + pointwise `Conv2d(1×1)` +
+residual skip + GELU activation.
+
+### class `TraceDecoder(nn.Module)`
+
+MLP that maps latent features at receiver locations to time-domain
+traces.  Output: `(batch, n_recv, n_time_steps)`.
+
+### class `AcousticFNO(nn.Module)`
+
+Full FNO model.  Input: 4-channel field (normalised velocity model,
+source $x/y$ Gaussian blobs, frequency encoding).
+
+| Method | Description |
+|--------|-------------|
+| `__init__(modes1, modes2, width, n_layers, n_recv, n_time_steps)` | Build model |
+| `forward(x, receiver_positions)` | Field → traces |
+
+---
+
+## ml/fno_data_gen.py
+
+*FDTD training data pipeline for FNO.*  Requires `torch`.
+
+### `generate_sample(sample_id, output_dir, ...)`
+
+Randomise domain type, source parameters, receiver layout; run
+`FDTDSolver` or `FDTD3DSolver`; save `.npz` per sample.
+
+CLI: `python -m acoustic_sim.ml.fno_data_gen --n-samples 500 --output-dir data/fno_train`
+
+---
+
+## ml/fno_training.py
+
+*FNO training loop.*  Requires `torch`.
+
+### class `FNODataset(Dataset)`
+
+Lazy `.npz` loader with receiver/trace padding.
+
+### `train_fno(data_dir, epochs=200, ...)`
+
+Training loop: relative $L^2$ loss, masked receivers, cosine LR
+schedule, gradient clipping.
+
+CLI: `python -m acoustic_sim.ml.fno_training --data-dir data/fno_train --epochs 200`
+
+---
+
+## ml/fno_inference.py
+
+*FNO inference wrapper.*  Requires `torch`.
+
+### class `FNOForwardModel`
+
+Drop-in replacement for FDTD.  Loads a trained checkpoint.
+
+| Method | Description |
+|--------|-------------|
+| `__init__(checkpoint_path, device="cpu")` | Load model |
+| `predict(velocity_field, grid, receivers, source) → traces` | Forward pass |
