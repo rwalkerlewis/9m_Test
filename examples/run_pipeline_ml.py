@@ -591,7 +591,6 @@ def run_pipeline(
     NON_DRONE_CLASSES = {"bird", "ground_vehicle", "unknown"}
 
     # Maneuver-aware fire control state.
-    ml_suppress_fire = False       # Suppress fire this window (evasive)
     ml_hit_threshold_mult = 1.0    # Multiply effective hit threshold
 
     pos = 0
@@ -620,7 +619,6 @@ def run_pipeline(
         # ================================================================
         ml_class_reject = False
         cov_cap_effective = cov_cap  # may be modified by maneuver detection
-        ml_suppress_fire = False
         ml_hit_threshold_mult = 1.0
 
         if det.detected and not math.isnan(det.bearing_rad) and ml_active:
@@ -756,15 +754,6 @@ def run_pipeline(
                 "reason": "CLASS_REJECT",
                 "predicted_class": det_dict.get("ml_predicted_class"),
                 "confidence": det_dict.get("ml_classification_confidence"),
-            }
-        elif ml_suppress_fire:
-            # Maneuver-aware gate: suppress fire during evasive maneuvers
-            # where predictions are unreliable.
-            fire_decision = {
-                "time": t_center, "can_fire": False,
-                "reason": "MANEUVER_SUPPRESS",
-                "maneuver_class": det_dict.get("ml_maneuver_class"),
-                "maneuver_confidence": det_dict.get("ml_maneuver_confidence"),
             }
         else:
             bearing_rate_dps = float("inf")
