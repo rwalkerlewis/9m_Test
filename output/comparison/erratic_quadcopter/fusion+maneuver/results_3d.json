@@ -54,32 +54,32 @@
       "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
       "fusion_checkpoint": "output/models/fusion_classifier.pt",
       "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
-      "classification_confidence_threshold": 0.7,
+      "classification_confidence_threshold": 0.99,
       "maneuver_window_size": 20,
       "reject_non_drone_classes": true,
       "maneuver_aware_tracking": true
     }
   },
-  "n_detections": 61,
-  "n_windows": 61,
+  "n_detections": 58,
+  "n_windows": 58,
   "detection_rate": 1.0,
-  "mean_bearing_error_deg": 4.3963750460020545,
+  "mean_bearing_error_deg": 4.489372994055621,
   "shots_fired": 3,
   "hits": 3,
   "hit_rate_pct": 100.0,
   "hit_threshold_m": 2.0,
-  "mean_miss_m": 1.38659287065847,
-  "min_miss_m": 1.3077274712934994,
-  "max_miss_m": 1.4513434938101548,
+  "mean_miss_m": 1.5259085072688034,
+  "min_miss_m": 1.5163183839115177,
+  "max_miss_m": 1.5444822278596184,
   "timing": {
     "hop_ms": 25.024558568447038,
-    "mean_latency_us": 2618.6788193433026,
-    "max_latency_us": 3966.650998336263,
-    "realtime_margin_x": 9.556177101062953
+    "mean_latency_us": 2690.26982716931,
+    "max_latency_us": 4095.5179938464426,
+    "realtime_margin_x": 9.301876828755786
   },
   "ml": {
-    "class_reject_count": 58,
-    "n_classified_windows": 61,
-    "mean_classification_confidence": 0.9822693193545107
+    "class_reject_count": 55,
+    "n_classified_windows": 58,
+    "mean_classification_confidence": 0.9938383369610228
   }
 }

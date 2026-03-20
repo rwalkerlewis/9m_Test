@@ -54,7 +54,7 @@
       "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
       "fusion_checkpoint": "output/models/fusion_classifier.pt",
       "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
-      "classification_confidence_threshold": 0.7,
+      "classification_confidence_threshold": 0.99,
       "maneuver_window_size": 20,
       "reject_non_drone_classes": true,
       "maneuver_aware_tracking": true
@@ -73,9 +73,9 @@
   "max_miss_m": null,
   "timing": {
     "hop_ms": 25.016950258530954,
-    "mean_latency_us": 3149.8316548722555,
-    "max_latency_us": 7481.431995984167,
-    "realtime_margin_x": 7.9423134312063866
+    "mean_latency_us": 3145.4533104963425,
+    "max_latency_us": 7668.42200391693,
+    "realtime_margin_x": 7.953368811754309
   },
   "ml": {
     "class_reject_count": 115,

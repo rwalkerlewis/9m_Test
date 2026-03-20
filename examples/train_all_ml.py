@@ -50,25 +50,33 @@ def _generate_kinematic_features_for_dataset(
 ) -> np.ndarray:
     """Generate kinematic features consistent with each sample's class.
 
-    Adapted from tests/test_fusion.py to produce realistic kinematic
-    signatures for each source class.
+    Uses speed and altitude distributions that match real pipeline
+    scenarios: speeds 5-80 m/s, altitudes 0-100m (including z=0 for
+    2D scenarios).  This ensures the fusion classifier generalises to
+    the detection pipeline where 2D scenarios have z=0 and sources
+    can move at 50+ m/s.
     """
     rng = np.random.default_rng(seed)
     features = []
 
     for params in dataset["params"]:
         cls = params["class"]
-        speed = params["speed"]
-        alt = params["altitude"]
         window_size = 50
         dt_kin = 0.1
+
+        # Use wider speed/altitude ranges matching pipeline scenarios.
+        # The pipeline uses source speeds of 8-50 m/s.
+        speed = rng.uniform(5, 60)
+        # 50% chance of z=0 (2D scenario) for drone classes.
+        use_ground_level = rng.random() < 0.5
+        alt = 0.0 if use_ground_level else rng.uniform(5, 100)
 
         positions = np.zeros((window_size, 3))
         velocities = np.zeros((window_size, 3))
 
         if cls == "quadcopter":
-            vx = speed * 0.7
-            vy = speed * 0.5
+            vx = speed * rng.uniform(0.5, 0.9)
+            vy = speed * rng.uniform(0.3, 0.7)
             for i in range(window_size):
                 positions[i] = [i * dt_kin * vx, i * dt_kin * vy,
                                alt + rng.normal(0, 2)]
@@ -76,8 +84,8 @@ def _generate_kinematic_features_for_dataset(
                                 vy + rng.normal(0, 1),
                                 rng.normal(0, 0.5)]
         elif cls == "hexacopter":
-            vx = speed * 0.6
-            vy = speed * 0.6
+            vx = speed * rng.uniform(0.4, 0.8)
+            vy = speed * rng.uniform(0.4, 0.8)
             for i in range(window_size):
                 positions[i] = [i * dt_kin * vx, i * dt_kin * vy,
                                alt + rng.normal(0, 1.5)]
@@ -93,18 +101,20 @@ def _generate_kinematic_features_for_dataset(
                                 rng.normal(0, 0.3),
                                 rng.normal(0, 0.2)]
         elif cls == "bird":
+            bird_speed = rng.uniform(3, 15)  # birds are slower
+            bird_alt = rng.uniform(5, 200)  # birds always have altitude
             for i in range(window_size):
                 t = i * dt_kin
-                vx = speed * math.cos(t * 0.5) + rng.normal(0, 2)
-                vy = speed * math.sin(t * 0.3) + rng.normal(0, 2)
-                z_osc = alt + 10 * math.sin(t * 0.3)
+                vx = bird_speed * math.cos(t * 0.5) + rng.normal(0, 2)
+                vy = bird_speed * math.sin(t * 0.3) + rng.normal(0, 2)
+                z_osc = bird_alt + 10 * math.sin(t * 0.3)
                 positions[i] = [50 + vx * t, 50 + vy * t, z_osc]
                 velocities[i] = [vx, vy, 10 * 0.3 * math.cos(t * 0.3)]
         elif cls == "ground_vehicle":
-            vx = speed
+            veh_speed = rng.uniform(2, 20)  # vehicles are slower
             for i in range(window_size):
-                positions[i] = [i * dt_kin * vx, rng.normal(0, 0.3), 0]
-                velocities[i] = [vx + rng.normal(0, 0.3),
+                positions[i] = [i * dt_kin * veh_speed, rng.normal(0, 0.3), 0]
+                velocities[i] = [veh_speed + rng.normal(0, 0.3),
                                 rng.normal(0, 0.1), 0]
         else:  # unknown
             for i in range(window_size):
@@ -122,26 +132,68 @@ def _generate_kinematic_features_for_dataset(
 
 
 def train_acoustic(n_samples: int, n_epochs: int, model_dir: Path) -> tuple:
-    """Train the acoustic source classifier."""
+    """Train the acoustic source classifier.
+
+    Uses multiple sample rates and a short window to match pipeline
+    characteristics (the pipeline uses 0.1s windows at 3-13 kHz).
+    """
     print("\n" + "=" * 60)
     print("  STEP 1: Acoustic Source Classifier")
     print("=" * 60)
 
     t0 = time.perf_counter()
-    print(f"\n  Generating {n_samples * 6} training samples "
-          f"({n_samples}/class) ...")
-    dataset = generate_classification_dataset(
-        n_samples_per_class=n_samples,
-        dt=1.0 / 4000,
-        window_duration=0.5,
-        seed=42,
-    )
-    sample_rate = 1.0 / dataset["dt"]
+
+    # Generate data at multiple sample rates to be robust to pipeline
+    # variation.  The pipeline operates at 3-13 kHz depending on the
+    # scenario, with 0.1s windows.
+    all_signals = []
+    all_labels = []
+    all_params = []
+    all_snr = []
+
+    sample_rates = [4000, 6000, 10000]
+    n_per_rate = max(n_samples // len(sample_rates), 50)
+
+    for sr in sample_rates:
+        dt = 1.0 / sr
+        print(f"\n  Generating {n_per_rate * 6} samples at {sr} Hz ...")
+        ds = generate_classification_dataset(
+            n_samples_per_class=n_per_rate,
+            dt=dt,
+            window_duration=0.1,  # match pipeline window
+            seed=42 + sr,
+        )
+        all_signals.extend(ds["signals"])
+        all_labels.extend(ds["labels"])
+        all_params.extend(ds["params"])
+        all_snr.extend(ds["snr_dbs"])
+
+    # Package into a single dataset dict.
+    dataset = {
+        "signals": all_signals,
+        "labels": all_labels,
+        "params": all_params,
+        "snr_dbs": all_snr,
+        "dt": 1.0 / sample_rates[0],  # used for sample_rate
+        "class_names": SOURCE_CLASSES,
+    }
+    # Use a fixed sample_rate for spectrogram computation —
+    # all mel specs end up similar size after padding.
+    sample_rate = 8000.0
     elapsed = time.perf_counter() - t0
-    print(f"  Generated in {elapsed:.1f}s")
+    print(f"  Generated {len(all_signals)} total samples in {elapsed:.1f}s")
 
     print("  Computing mel spectrograms ...")
-    X, y = prepare_acoustic_data(dataset["signals"], dataset["labels"],
+    # Pad signals to minimum 1024 samples (matches pipeline padding).
+    padded_signals = []
+    for sig in dataset["signals"]:
+        if len(sig) < 1024:
+            p = np.zeros(1024)
+            p[:len(sig)] = sig
+            padded_signals.append(p)
+        else:
+            padded_signals.append(sig)
+    X, y = prepare_acoustic_data(padded_signals, dataset["labels"],
                                   sample_rate)
     print(f"  Tensor shape: X={tuple(X.shape)}, y={tuple(y.shape)}")
 

@@ -639,7 +639,10 @@ def run_pipeline(
                         kin_feats[np.newaxis, :], dtype=torch.float32)
                     with torch.no_grad():
                         logits = fusion_model(mel_tensor, kin_tensor)
-                elif acoustic_model is not None:
+                elif acoustic_model is not None and fusion_model is None:
+                    # Only use acoustic-only when fusion is not enabled.
+                    # Acoustic-only is unreliable on short pipeline windows;
+                    # fusion's kinematic features carry the discriminative info.
                     with torch.no_grad():
                         logits = acoustic_model(mel_tensor)
 
@@ -648,17 +651,25 @@ def run_pipeline(
                     pred_idx = int(probs.argmax())
                     pred_class = source_classes[pred_idx]
                     pred_conf = float(probs[pred_idx])
+
+                    # Compute aggregate drone vs non-drone probability.
+                    drone_classes = {"quadcopter", "hexacopter", "fixed_wing"}
+                    p_drone = sum(float(probs[i]) for i in range(len(source_classes))
+                                  if source_classes[i] in drone_classes)
+                    p_non_drone = 1.0 - p_drone
+
                     det_dict["ml_predicted_class"] = pred_class
                     det_dict["ml_classification_confidence"] = pred_conf
+                    det_dict["ml_drone_probability"] = p_drone
                     det_dict["ml_class_probabilities"] = {
                         source_classes[i]: float(probs[i])
                         for i in range(len(source_classes))
                     }
 
-                    # Classification gate: reject non-drone.
+                    # Classification gate: reject only when very
+                    # confident it is NOT a drone (aggregate probability).
                     if (ml_reject_non_drone
-                            and pred_class in NON_DRONE_CLASSES
-                            and pred_conf >= ml_confidence_threshold):
+                            and p_non_drone >= ml_confidence_threshold):
                         ml_class_reject = True
 
             # -- Update kinematic history for fusion and maneuver --
