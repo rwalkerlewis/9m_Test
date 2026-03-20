@@ -38,7 +38,7 @@
       "max_position_uncertainty_m": 0.0,
       "class_label": "fixed_wing",
       "class_confidence": 0.9,
-      "hit_threshold_m": 1.0,
+      "hit_threshold_m": 2.0,
       "max_hits": 3
     },
     "source": {
@@ -46,19 +46,19 @@
       "altitude_estimate_m": null
     }
   },
-  "n_detections": 23,
-  "n_windows": 24,
-  "mean_bearing_error_deg": 11.567893470381533,
+  "n_detections": 29,
+  "n_windows": 30,
+  "mean_bearing_error_deg": 0.0,
   "shots_fired": 3,
   "hits": 3,
-  "hit_threshold_m": 1.0,
-  "mean_miss_m": 0.880047241574576,
-  "min_miss_m": 0.2327325969392865,
-  "max_miss_m": 1.3892887760470627,
+  "hit_threshold_m": 2.0,
+  "mean_miss_m": 0.6328493068223482,
+  "min_miss_m": 0.20039467059478344,
+  "max_miss_m": 1.4512421835213312,
   "timing": {
     "hop_ms": 25.016950258530954,
-    "mean_latency_us": 3696.9681192810335,
-    "max_latency_us": 5536.392913199961,
-    "realtime_margin_x": 6.766882875743088
+    "mean_latency_us": 2521.479866845766,
+    "max_latency_us": 3451.971999311354,
+    "realtime_margin_x": 9.921534804807223
   }
 }
