@@ -64,9 +64,10 @@ def _generate_kinematic_features_for_dataset(
         window_size = 50
         dt_kin = 0.1
 
-        # Use wider speed/altitude ranges matching pipeline scenarios.
-        # The pipeline uses source speeds of 8-50 m/s.
-        speed = rng.uniform(5, 60)
+        # Use very wide speed/altitude ranges matching pipeline tracker
+        # output: tracker can overestimate speed (up to 120 m/s) due to
+        # noisy range estimation, and 2D scenarios have z=0.
+        speed = rng.uniform(5, 120)
         # 50% chance of z=0 (2D scenario) for drone classes.
         use_ground_level = rng.random() < 0.5
         alt = 0.0 if use_ground_level else rng.uniform(5, 100)
@@ -111,7 +112,7 @@ def _generate_kinematic_features_for_dataset(
                 positions[i] = [50 + vx * t, 50 + vy * t, z_osc]
                 velocities[i] = [vx, vy, 10 * 0.3 * math.cos(t * 0.3)]
         elif cls == "ground_vehicle":
-            veh_speed = rng.uniform(2, 20)  # vehicles are slower
+            veh_speed = rng.uniform(2, 30)  # vehicles
             for i in range(window_size):
                 positions[i] = [i * dt_kin * veh_speed, rng.normal(0, 0.3), 0]
                 velocities[i] = [veh_speed + rng.normal(0, 0.3),
@@ -123,8 +124,12 @@ def _generate_kinematic_features_for_dataset(
                 velocities[i] = [rng.normal(0, 3), rng.normal(0, 3),
                                 rng.normal(0, 1)]
 
-        positions += rng.normal(0, 2, positions.shape)
-        velocities += rng.normal(0, 1, velocities.shape)
+        # Add tracker-level noise (pipeline tracker has significant
+        # position/velocity noise, especially early in the track).
+        pos_noise = rng.uniform(2, 10)
+        vel_noise = rng.uniform(1, 5)
+        positions += rng.normal(0, pos_noise, positions.shape)
+        velocities += rng.normal(0, vel_noise, velocities.shape)
         kf = compute_kinematic_features(positions, velocities, dt_kin)
         features.append(kf)
 

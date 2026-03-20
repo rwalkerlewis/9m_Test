@@ -44,7 +44,7 @@
     "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
     "fusion_checkpoint": "output/models/fusion_classifier.pt",
     "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
-    "classification_confidence_threshold": 0.8,
+    "classification_confidence_threshold": 0.95,
     "maneuver_window_size": 20,
     "reject_non_drone_classes": true,
     "maneuver_aware_tracking": true
