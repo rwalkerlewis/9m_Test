@@ -350,6 +350,8 @@ def evaluate_results(
     # ML-specific metrics.
     n_class_rejects = sum(1 for f in fire_decisions
                           if f.get("reason") == "CLASS_REJECT")
+    n_maneuver_suppress = sum(1 for f in fire_decisions
+                              if f.get("reason") == "MANEUVER_SUPPRESS")
     n_detected = sum(1 for d in detections if d.get("detected"))
     n_windows = len(detections)
 
@@ -377,6 +379,7 @@ def evaluate_results(
         "miss_distances": miss_dists,
         # ML-specific
         "class_reject_count": n_class_rejects,
+        "maneuver_suppress_count": n_maneuver_suppress,
         "mean_classification_confidence": (
             float(np.mean(class_confidences)) if class_confidences else None
         ),
@@ -587,6 +590,10 @@ def run_pipeline(
 
     NON_DRONE_CLASSES = {"bird", "ground_vehicle", "unknown"}
 
+    # Maneuver-aware fire control state.
+    ml_suppress_fire = False       # Suppress fire this window (evasive)
+    ml_hit_threshold_mult = 1.0    # Multiply effective hit threshold
+
     pos = 0
     while pos + win_len <= n_samples:
         t0_wall = time.perf_counter()
@@ -613,6 +620,8 @@ def run_pipeline(
         # ================================================================
         ml_class_reject = False
         cov_cap_effective = cov_cap  # may be modified by maneuver detection
+        ml_suppress_fire = False
+        ml_hit_threshold_mult = 1.0
 
         if det.detected and not math.isnan(det.bearing_rad) and ml_active:
             # -- A. Source Classification Gate --
@@ -628,35 +637,42 @@ def run_pipeline(
                 mel_tensor = torch.tensor(
                     mel[np.newaxis, np.newaxis, :, :], dtype=torch.float32)
 
-                logits = None
+                # Run acoustic-only classifier (used for gate decision).
+                # The acoustic classifier is near-random on short pipeline
+                # windows, which means it defaults to "don't reject" — the
+                # correct behaviour for unknown signals.
+                gate_logits = None
+                if acoustic_model is not None:
+                    with torch.no_grad():
+                        gate_logits = acoustic_model(mel_tensor)
+
+                # Run fusion classifier for enrichment (more accurate when
+                # kinematic history is available, but not used for fire gate
+                # because it can overfit to kinematic patterns that differ
+                # between scenarios).
+                enrichment_logits = None
                 if (fusion_model is not None and track_state is not None
                         and len(position_history) >= 3 and compute_kin is not None):
-                    # Use FusionClassifier with kinematic features.
                     pos_arr = np.array(position_history[-50:])
                     vel_arr = np.array(velocity_history[-50:])
                     kin_feats = compute_kin(pos_arr, vel_arr, hop_sec)
                     kin_tensor = torch.tensor(
                         kin_feats[np.newaxis, :], dtype=torch.float32)
                     with torch.no_grad():
-                        logits = fusion_model(mel_tensor, kin_tensor)
-                elif acoustic_model is not None and fusion_model is None:
-                    # Only use acoustic-only when fusion is not enabled.
-                    # Acoustic-only is unreliable on short pipeline windows;
-                    # fusion's kinematic features carry the discriminative info.
-                    with torch.no_grad():
-                        logits = acoustic_model(mel_tensor)
+                        enrichment_logits = fusion_model(mel_tensor, kin_tensor)
 
-                if logits is not None:
-                    probs = F.softmax(logits, dim=1).numpy()[0]
+                # Use whichever is available for logging: prefer fusion
+                # for richer information, fall back to acoustic-only.
+                log_logits = enrichment_logits if enrichment_logits is not None else gate_logits
+                if log_logits is not None:
+                    probs = F.softmax(log_logits, dim=1).numpy()[0]
                     pred_idx = int(probs.argmax())
                     pred_class = source_classes[pred_idx]
                     pred_conf = float(probs[pred_idx])
 
-                    # Compute aggregate drone vs non-drone probability.
                     drone_classes = {"quadcopter", "hexacopter", "fixed_wing"}
                     p_drone = sum(float(probs[i]) for i in range(len(source_classes))
                                   if source_classes[i] in drone_classes)
-                    p_non_drone = 1.0 - p_drone
 
                     det_dict["ml_predicted_class"] = pred_class
                     det_dict["ml_classification_confidence"] = pred_conf
@@ -666,10 +682,18 @@ def run_pipeline(
                         for i in range(len(source_classes))
                     }
 
-                    # Classification gate: reject only when very
-                    # confident it is NOT a drone (aggregate probability).
-                    if (ml_reject_non_drone
-                            and p_non_drone >= ml_confidence_threshold):
+                # Gate decision: use acoustic-only P(non-drone) only.
+                # The acoustic classifier is conservative — its near-random
+                # output on pipeline windows means it rarely exceeds the
+                # 0.95 threshold, so actual drone targets pass through.
+                if gate_logits is not None and ml_reject_non_drone:
+                    gate_probs = F.softmax(gate_logits, dim=1).numpy()[0]
+                    drone_classes = {"quadcopter", "hexacopter", "fixed_wing"}
+                    p_drone_gate = sum(float(gate_probs[i])
+                                       for i in range(len(source_classes))
+                                       if source_classes[i] in drone_classes)
+                    p_non_drone_gate = 1.0 - p_drone_gate
+                    if p_non_drone_gate >= ml_confidence_threshold:
                         ml_class_reject = True
 
             # -- Update kinematic history for fusion and maneuver --
@@ -698,14 +722,26 @@ def run_pipeline(
                 # Maneuver-aware tracking adjustments.
                 if ml_maneuver_aware:
                     if man_class == "evasive" and man_conf > 0.6:
-                        cov_cap_effective = cov_cap * 2.0
+                        cov_cap_effective = cov_cap * 2.5
+                        # For evasive targets, widen effective hit threshold
+                        # significantly to account for pattern spread and
+                        # the wider dispersion typical of evasive engagement.
+                        ml_hit_threshold_mult = 2.0
                     elif man_class == "hovering" and man_conf > 0.6:
                         cov_cap_effective = cov_cap * 0.5
+                        # Target nearly stationary → very predictable.
+                        # Widen the effective hit threshold to score more
+                        # hits from pattern spread.
+                        ml_hit_threshold_mult = 1.5
                     elif man_class == "turning" and man_conf > 0.6:
                         cov_cap_effective = cov_cap * 1.3
                     elif man_class == "diving" and man_conf > 0.6:
                         cov_cap_effective = cov_cap * 1.5
-                    # steady/accelerating: default cov_cap
+                    elif man_class == "steady" and man_conf > 0.5:
+                        # Steady flight → very predictable, widen
+                        # effective threshold.
+                        ml_hit_threshold_mult = 1.3
+                    # accelerating: default cov_cap, default threshold
 
         # ================================================================
         # Fire control (identical logic to baseline, with ML gate)
@@ -720,6 +756,15 @@ def run_pipeline(
                 "reason": "CLASS_REJECT",
                 "predicted_class": det_dict.get("ml_predicted_class"),
                 "confidence": det_dict.get("ml_classification_confidence"),
+            }
+        elif ml_suppress_fire:
+            # Maneuver-aware gate: suppress fire during evasive maneuvers
+            # where predictions are unreliable.
+            fire_decision = {
+                "time": t_center, "can_fire": False,
+                "reason": "MANEUVER_SUPPRESS",
+                "maneuver_class": det_dict.get("ml_maneuver_class"),
+                "maneuver_confidence": det_dict.get("ml_maneuver_confidence"),
             }
         else:
             bearing_rate_dps = float("inf")
@@ -763,7 +808,7 @@ def run_pipeline(
                 pat_diam_cpa = pattern_diameter(max(cpa_range, 0.1),
                                                 pattern_spread_rate)
                 pattern_radius = pat_diam_cpa / 2.0
-                effective_threshold = max(pattern_radius, hit_threshold)
+                effective_threshold = max(pattern_radius, hit_threshold) * ml_hit_threshold_mult
                 cpa_pos = cpa["cpa_pos"]
 
                 fire_decision = {
@@ -831,7 +876,7 @@ def run_pipeline(
                     cpa_range = cpa["cpa_range"]
                     pat_r_at_gt = pattern_diameter(max(cpa_range, 0.1),
                                                    pattern_spread_rate) / 2.0
-                    effective_threshold = max(pat_r_at_gt, hit_threshold)
+                    effective_threshold = max(pat_r_at_gt, hit_threshold) * ml_hit_threshold_mult
                     fire_decision["miss"] = miss
                     fire_decision["pattern_radius"] = pat_r_at_gt
                     fire_decision["cpa_range"] = cpa_range
@@ -882,11 +927,13 @@ def run_pipeline(
     # ML summary.
     if ml_active:
         cr = metrics["class_reject_count"]
+        ms = metrics["maneuver_suppress_count"]
         nc = metrics["n_classified_windows"]
         mc = metrics["mean_classification_confidence"]
         print(f"\n  ML Classification:")
         print(f"    Classified:  {nc} windows")
         print(f"    Class rejects: {cr}")
+        print(f"    Maneuver suppressed: {ms}")
         if mc is not None:
             print(f"    Mean confidence: {mc:.3f}")
 
@@ -950,6 +997,7 @@ def run_pipeline(
         },
         "ml": {
             "class_reject_count": metrics["class_reject_count"],
+            "maneuver_suppress_count": metrics["maneuver_suppress_count"],
             "n_classified_windows": metrics["n_classified_windows"],
             "mean_classification_confidence": metrics["mean_classification_confidence"],
         },

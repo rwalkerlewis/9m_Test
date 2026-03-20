@@ -95,6 +95,8 @@ def extract_metrics(result: dict) -> dict:
         "max_miss_m": result.get("max_miss_m"),
         "mean_latency_us": result.get("timing", {}).get("mean_latency_us", 0),
         "class_reject_count": result.get("ml", {}).get("class_reject_count", 0),
+        "maneuver_suppress_count": result.get("ml", {}).get(
+            "maneuver_suppress_count", 0),
         "n_classified_windows": result.get("ml", {}).get("n_classified_windows", 0),
         "mean_classification_confidence": result.get("ml", {}).get(
             "mean_classification_confidence"),
@@ -111,8 +113,8 @@ def print_comparison_table(all_results: dict):
         print(f"\n  Scenario: {scenario_name}")
         print(f"  {'Config':<20s} {'Det':>4s} {'Win':>4s} {'Shots':>5s} "
               f"{'Hits':>4s} {'Hit%':>6s} {'Miss':>6s} "
-              f"{'ClsRej':>6s} {'Latency':>8s} {'BrgErr':>7s}")
-        print(f"  {'-'*80}")
+              f"{'ClsRej':>6s} {'ManSup':>6s} {'Latency':>8s} {'BrgErr':>7s}")
+        print(f"  {'-'*90}")
 
         for config in CONFIGS:
             key = f"{scenario_name}__{config['name']}"
@@ -134,6 +136,7 @@ def print_comparison_table(all_results: dict):
                   f"{m['hit_rate_pct']:>5.1f}% "
                   f"{miss_s:>6s} "
                   f"{m['class_reject_count']:>6d} "
+                  f"{m.get('maneuver_suppress_count', 0):>6d} "
                   f"{m['mean_latency_us']:>7.0f}us "
                   f"{brg_s:>7s}")
 
@@ -146,6 +149,7 @@ def print_comparison_table(all_results: dict):
         total_shots = 0
         total_hits = 0
         total_rejects = 0
+        total_suppress = 0
         latencies = []
         miss_values = []
         total_classified = 0
@@ -158,6 +162,7 @@ def print_comparison_table(all_results: dict):
             total_shots += m["shots_fired"]
             total_hits += m["hits"]
             total_rejects += m["class_reject_count"]
+            total_suppress += m.get("maneuver_suppress_count", 0)
             latencies.append(m["mean_latency_us"])
             mm = m.get("mean_miss_m")
             if mm is not None and not math.isnan(mm):
@@ -172,7 +177,8 @@ def print_comparison_table(all_results: dict):
         print(f"    Total shots: {total_shots}, Hits: {total_hits}, "
               f"Hit rate: {agg_hit_rate:.1f}%")
         print(f"    Mean miss: {agg_miss:.2f} m")
-        print(f"    Class rejects: {total_rejects}")
+        print(f"    Class rejects: {total_rejects}, "
+              f"Maneuver suppressed: {total_suppress}")
         print(f"    Mean latency: {agg_latency:.0f} us")
         print(f"    Classified windows: {total_classified}")
 
