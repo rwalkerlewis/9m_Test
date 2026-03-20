@@ -44,21 +44,42 @@
     "source": {
       "speed_mps": 50.0,
       "altitude_estimate_m": null
+    },
+    "ml": {
+      "enable_source_classification": false,
+      "enable_maneuver_detection": true,
+      "enable_fusion_classification": true,
+      "enable_fno_surrogate": false,
+      "classification_checkpoint": "output/models/acoustic_classifier.pt",
+      "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
+      "fusion_checkpoint": "output/models/fusion_classifier.pt",
+      "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
+      "classification_confidence_threshold": 0.7,
+      "maneuver_window_size": 20,
+      "reject_non_drone_classes": true,
+      "maneuver_aware_tracking": true
     }
   },
-  "n_detections": 7,
-  "n_windows": 7,
-  "mean_bearing_error_deg": 1.203167673610682,
+  "n_detections": 61,
+  "n_windows": 61,
+  "detection_rate": 1.0,
+  "mean_bearing_error_deg": 4.3963750460020545,
   "shots_fired": 3,
   "hits": 3,
+  "hit_rate_pct": 100.0,
   "hit_threshold_m": 2.0,
-  "mean_miss_m": 1.0215407274796002,
-  "min_miss_m": 0.8977849311216849,
-  "max_miss_m": 1.157284939519705,
+  "mean_miss_m": 1.38659287065847,
+  "min_miss_m": 1.3077274712934994,
+  "max_miss_m": 1.4513434938101548,
   "timing": {
     "hop_ms": 25.024558568447038,
-    "mean_latency_us": 2210.7821433954605,
-    "max_latency_us": 3073.576001042966,
-    "realtime_margin_x": 11.319323635395717
+    "mean_latency_us": 2593.1333929307943,
+    "max_latency_us": 4069.699003593996,
+    "realtime_margin_x": 9.650316731359487
+  },
+  "ml": {
+    "class_reject_count": 58,
+    "n_classified_windows": 61,
+    "mean_classification_confidence": 0.9822693193545107
   }
 }
