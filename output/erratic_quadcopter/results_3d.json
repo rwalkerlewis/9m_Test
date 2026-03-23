@@ -46,11 +46,11 @@
       "altitude_estimate_m": null
     },
     "ml": {
-      "enable_source_classification": false,
-      "enable_maneuver_detection": false,
+      "enable_source_classification": true,
+      "enable_maneuver_detection": true,
       "enable_fusion_classification": false,
       "enable_fno_surrogate": false,
-      "enable_anomaly_detection": false,
+      "enable_anomaly_detection": true,
       "classification_checkpoint": "output/models/acoustic_classifier.pt",
       "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
       "fusion_checkpoint": "output/models/fusion_classifier.pt",
@@ -77,9 +77,9 @@
   "max_miss_m": 1.8453815118087273,
   "timing": {
     "hop_ms": 25.024558568447038,
-    "mean_latency_us": 3383.717150427401,
-    "max_latency_us": 4932.0190155413,
-    "realtime_margin_x": 7.395582271197272
+    "mean_latency_us": 4012.931138277054,
+    "max_latency_us": 5815.135984448716,
+    "realtime_margin_x": 6.235980061993113
   },
   "ml": {
     "class_reject_count": 0,
