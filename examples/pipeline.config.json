@@ -34,5 +34,20 @@
   "source": {
     "speed_mps": 50.0,
     "altitude_estimate_m": null
+  },
+  "ml": {
+    "enable_source_classification": false,
+    "enable_maneuver_detection": false,
+    "enable_fusion_classification": false,
+    "enable_fno_surrogate": false,
+    "enable_anomaly_detection": false,
+    "classification_checkpoint": "output/models/acoustic_classifier.pt",
+    "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
+    "fusion_checkpoint": "output/models/fusion_classifier.pt",
+    "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
+    "classification_confidence_threshold": 0.95,
+    "maneuver_window_size": 20,
+    "reject_non_drone_classes": true,
+    "maneuver_aware_tracking": true
   }
 }

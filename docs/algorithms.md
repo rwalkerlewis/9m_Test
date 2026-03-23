@@ -555,7 +555,10 @@ unassociated detections, and track deletion after $N$ missed updates.
 
 ## 6  ML Classifiers (Optional)
 
-All classifiers require PyTorch.  No pre-trained weights are shipped.
+All classifiers require PyTorch.  Pre-trained weights are shipped in
+`output/models/` (acoustic_classifier.pt, maneuver_classifier.pt,
+fusion_classifier.pt).  Retraining requires running the data generation
+and training loops in `examples/train_all_ml.py`.
 
 ### 6.1  Acoustic Classifier
 
@@ -607,15 +610,68 @@ $N = 20$ timesteps.  Output: logits over 6 maneuver classes.
 
 ### 6.4  Integration Points
 
-`detection_main.py` contains two ready-made integration functions:
+The production SRP-PHAT pipeline (`run_pipeline.py`) integrates ML
+classifiers directly in the main loop when enabled via CLI flags.
+Source classification runs per-window: beamformed audio is converted to
+a mel spectrogram, passed through the AcousticClassifier, and the
+resulting P(non-drone) gates fire control decisions.  Maneuver
+classification runs when sufficient kinematic history is available: a
+rolling 20-step buffer of $(x, y, z, v_x, v_y, v_z)$ is passed through
+the ManeuverClassifier, and the predicted maneuver class scales the
+tracker covariance cap (evasive: $2.5\times$, hovering: $0.5\times$,
+turning: $1.3\times$, diving: $1.5\times$).  Fusion classification
+enriches the source type prediction when both acoustic and kinematic
+features are available.  CVAE anomaly detection flags acoustically
+novel targets via reconstruction error.
 
-- `_classify_source()` — runs acoustic or fusion inference per window;
-  majority vote across windows.
-- `_detect_maneuvers()` — slides a 20-step window over the tracker
-  history and returns a process-noise multiplier
-  (steady = $1\times$, turning = $5\times$, evasive = $10\times$).
+The MFP/EKF library path (`detection_main.py`) also contains
+integration scaffolding via `_classify_source()` and
+`_detect_maneuvers()`.
 
-Neither is called by the production SRP-PHAT pipeline.
+### 6.5  Anomaly Detection (CVAE)
+
+**Module:** `acoustic_sim.ml.anomaly_detector`, `acoustic_sim.ml.anomaly_integration`
+
+A convolutional variational autoencoder (CVAE) for novel threat
+detection.
+
+#### Architecture
+
+The CVAE operates on mel spectrograms (same feature extraction as
+§6.1).  The encoder maps the input to a latent distribution
+$q(z|x) = \mathcal{N}(\mu, \sigma^2)$ via the reparameterisation
+trick; the decoder reconstructs the input from a sampled latent
+vector.  The loss is the sum of reconstruction error (MSE) and KL
+divergence from the standard normal prior.
+
+#### Training
+
+The CVAE is trained on known threat classes only (quadcopter,
+hexacopter, fixed_wing).  Because it only sees known threats during
+training, novel acoustic signatures (unseen source types, adversarial
+emitters) produce high reconstruction error at inference time.
+
+#### Inference
+
+At inference, the reconstruction error plus KL divergence are computed
+for each mel spectrogram window.  The threshold is calibrated at
+3-sigma on a held-out validation set of known threats:
+$\tau = \mu_\text{val} + 3\,\sigma_\text{val}$.  If the reconstruction
+error exceeds $\tau$, the detection is flagged as novel.
+
+#### Integration
+
+Anomaly detection runs as a parallel path alongside the CNN classifier
+in the production pipeline.  The decision logic is:
+
+- If the anomaly detector flags **novel** AND the CNN classification
+  confidence is below `anomaly_override_confidence_threshold`
+  (default 0.7), the classification is overridden to `NOVEL_THREAT`
+  with threat level "high".
+- If the anomaly detector flags **novel** but the CNN is confident,
+  a warning is logged (possible adversarial or edge-case target).
+- If the anomaly detector does not flag novel, the CNN classification
+  stands unmodified.
 
 ---
 

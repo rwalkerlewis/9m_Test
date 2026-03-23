@@ -44,21 +44,51 @@
     "source": {
       "speed_mps": 50.0,
       "altitude_estimate_m": null
+    },
+    "ml": {
+      "enable_source_classification": false,
+      "enable_maneuver_detection": false,
+      "enable_fusion_classification": false,
+      "enable_fno_surrogate": false,
+      "enable_anomaly_detection": false,
+      "classification_checkpoint": "output/models/acoustic_classifier.pt",
+      "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
+      "fusion_checkpoint": "output/models/fusion_classifier.pt",
+      "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
+      "anomaly_checkpoint": "output/models/anomaly_detector.pt",
+      "anomaly_threshold_file": "output/models/anomaly_threshold.json",
+      "anomaly_override_confidence_threshold": 0.7,
+      "classification_confidence_threshold": 0.95,
+      "maneuver_window_size": 20,
+      "reject_non_drone_classes": true,
+      "maneuver_aware_tracking": true
     }
   },
   "n_detections": 15,
-  "n_windows": 15,
-  "mean_bearing_error_deg": 1.3138359693311883,
-  "shots_fired": 11,
+  "n_windows": 18,
+  "detection_rate": 0.8333333333333334,
+  "mean_bearing_error_deg": 9.551001290271943,
+  "shots_fired": 3,
   "hits": 3,
+  "hit_rate_pct": 100.0,
   "hit_threshold_m": 2.0,
-  "mean_miss_m": 4.232716496400105,
-  "min_miss_m": 1.5952533911172222,
-  "max_miss_m": 8.396212810701547,
+  "mean_miss_m": 1.3808567774135392,
+  "min_miss_m": 1.1943586880847608,
+  "max_miss_m": 1.7015978912090566,
   "timing": {
     "hop_ms": 24.997624887176784,
-    "mean_latency_us": 2798.2364656054415,
-    "max_latency_us": 3251.4670019736513,
-    "realtime_margin_x": 8.933349698796153
+    "mean_latency_us": 2985.9344504075125,
+    "max_latency_us": 4703.279002569616,
+    "realtime_margin_x": 8.371792918550229
+  },
+  "ml": {
+    "class_reject_count": 0,
+    "maneuver_suppress_count": 0,
+    "n_classified_windows": 0,
+    "mean_classification_confidence": null,
+    "anomaly_novel_count": 0,
+    "anomaly_windows_analysed": 0,
+    "anomaly_mean_error": null,
+    "novel_threat_overrides": 0
   }
 }

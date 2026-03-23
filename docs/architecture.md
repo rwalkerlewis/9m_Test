@@ -44,7 +44,7 @@ pluggable framework with abstract base classes and factory functions.
 | `processor.py` | Matched field processing in 2-D and 3-D (legacy MFP/EKF path).  Polar grid construction, steering vector computation, CSDM estimation with harmonic selection, MVDR and conventional beamforming, broadband weighted sum, peak finding with parabolic interpolation.  Robustness: `compute_sensor_weights` (fault detection), `blank_transients`, `calibrate_positions` (TDOA self-calibration), `detect_stationary` (interference rejection).  Top-level: `matched_field_process(traces, mic_positions, dt, sound_speed, config)`. |
 | `tracker.py` | `EKFTracker` (4-state: x, y, vx, vy), `EKFTracker3D` (6-state: x, y, z, vx, vy, vz).  Both use bearing + range + amplitude measurements (legacy MFP/EKF path).  `MultiTargetTracker` / `MultiTargetTracker3D` add nearest-neighbour data association and track initiation/deletion.  Top-level: `run_tracker`, `run_tracker_3d`, `run_multi_tracker`, `run_multi_tracker_3d`. |
 | `fire_control.py` | Pellet ballistics: `time_of_flight`, `pellet_velocity_at_range`, `pattern_diameter`.  2-D: `compute_lead`, `compute_engagement`, `run_fire_control`.  3-D: `compute_lead_3d` (iterative ballistic intercept), `compute_engagement_3d` (class-based rules, maneuver-adaptive thresholds, position uncertainty gating), `compute_miss_distance_3d`.  Trajectory analysis: `projectile_path`, `find_cpa`, `compute_bearing_rate`.  Multi-target: `prioritize_threats`, `prioritize_threats_3d`, `run_multi_fire_control`. |
-| `detection_main.py` | Full MFP/EKF pipeline orchestrator: `simulate_scenario`, `run_detection`, `run_detection_pipeline`, `evaluate_results`.  3-D: `run_detection_3d`, `run_detection_pipeline_3d`.  Contains ML integration scaffolding (`_classify_source`, `_detect_maneuvers`) that is not called by the SRP-PHAT pipeline. |
+| `detection_main.py` | Full MFP/EKF pipeline orchestrator: `simulate_scenario`, `run_detection`, `run_detection_pipeline`, `evaluate_results`.  3-D: `run_detection_3d`, `run_detection_pipeline_3d`.  Contains ML integration scaffolding (`_classify_source`, `_detect_maneuvers`).  The production SRP-PHAT pipeline (`run_pipeline.py`) has its own ML integration with source classification gating, maneuver-adaptive covariance, fusion classification, and CVAE anomaly detection, all enabled via CLI flags. |
 | `validate.py` | Sanity checks: `check_amplitude`, `check_snr`, `check_travel_times`, `check_localization`, `check_energy`, `run_all_checks`. |
 | `setup.py` | High-level builders: `build_domain`, `build_receivers`, `build_source`, `compute_dt`. |
 | `config.py` | `DetectionConfig` dataclass — all parameters for the MFP/EKF pipeline.  Not used by `run_pipeline.py`, which reads `pipeline.config.json` instead. |
@@ -61,6 +61,9 @@ pluggable framework with abstract base classes and factory functions.
 | `maneuver_classifier.py` | `ManeuverClassifier` — 2-layer 1-D CNN, input `(B, 6, N)` kinematic channels × timesteps, output `(B, 6)` maneuver classes. |
 | `data_generation.py` | Synthetic data factories for all three classifiers.  Physics-based source signals (rotor blade modulation, harmonic engine, wing-beat pulses). |
 | `training.py` | `train_classifier`, `train_fusion_classifier`, `evaluate_classifier`, `evaluate_fusion_classifier`.  Adam optimiser, cross-entropy loss, confusion matrix evaluation. |
+| `anomaly_detector.py` | CVAE model (convolutional variational autoencoder) for novel threat detection via reconstruction error. |
+| `anomaly_integration.py` | `AnomalyDetector` wrapper: loads model + threshold, provides `process_frame()` and `process_mel_spectrogram()` returning `AnomalyResult` dataclass. |
+| `anomaly_training.py` | Training script for the CVAE: synthetic data generation, training loop, threshold calibration. |
 
 #### FNO surrogate (`ml/fno*.py`)
 
@@ -119,11 +122,22 @@ traces.npy + metadata.json
   │  for each window:                                           │
   │    1. RMS gate (below min_signal_rms → skip)                │
   │    2. SRP-PHAT → bearing(s) (EMA-smoothed on unit circle)   │
+  │    2a. [optional] Source classification:                     │
+  │        beamformed audio → mel spectrogram → CNN             │
+  │        → 6-class prediction → hostile/benign gate           │
+  │        if P(non-drone) > threshold → CLASS_REJECT           │
   │    3. Auto range selection:                                 │
   │       CPA ≤ auto_cpa_threshold → TDOA (nearfield)          │
   │       CPA > threshold → RMS (farfield)                     │
   │    4. Cartesian (r, θ) → (x, y, z)                         │
   │    5. CausalWLSTracker.add_detection() → WLS fit            │
+  │    5a. [optional] Maneuver detection:                       │
+  │        kinematic buffer (20 steps) → 1D CNN                 │
+  │        → maneuver class → covariance multiplier             │
+  │        evasive: 2.5x, hovering: 0.5x, turning: 1.3x       │
+  │    5b. [optional] Anomaly detection:                        │
+  │        mel spectrogram → CVAE → reconstruction error        │
+  │        if novel + CNN uncertain → NOVEL_THREAT override     │
   │    6. Track blending:                                       │
   │       blend = min(range / 20, 1)                            │
   │       pos = blend × fitted + (1 − blend) × raw             │

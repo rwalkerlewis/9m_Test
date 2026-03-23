@@ -168,6 +168,21 @@ python examples/run_pipeline.py output/valley_test \
     --source-speed 60 --hit-threshold 3.0 --max-hits 5
 ```
 
+#### ML-enabled modes
+
+```bash
+# With source classification gate
+python examples/run_pipeline.py output/valley_test --enable-classification
+
+# Full ML stack
+python examples/run_pipeline.py output/valley_test \
+    --enable-classification --enable-maneuver --enable-anomaly
+
+# Custom classification threshold
+python examples/run_pipeline.py output/valley_test \
+    --enable-classification --classification-threshold 0.8
+```
+
 The pipeline auto-detects 2-D vs 3-D from the shape of `mic_positions`
 in `metadata.json`.
 
@@ -181,6 +196,12 @@ in `metadata.json`.
 | `--source-speed` | from config (50.0) | override ground-truth source speed |
 | `--hit-threshold` | from config (2.0) | override hit distance threshold |
 | `--max-hits` | from config (3) | override max hits before stop |
+| `--enable-classification` | off | enable source classification gate |
+| `--enable-maneuver` | off | enable maneuver-adaptive tracking |
+| `--enable-fusion` | off | enable fusion classification |
+| `--enable-anomaly` | off | enable CVAE anomaly detection |
+| `--classification-threshold` | from config (0.7) | override classification confidence threshold |
+| `--maneuver-window` | from config (20) | override maneuver window size |
 
 ### Output
 
@@ -189,7 +210,21 @@ in `metadata.json`.
 | `pipeline_summary_{2d,3d}.png` | 6-panel summary: spatial, bearing, miss distance, track error, latency, text |
 | `radial_engagement_{2d,3d}.png` | plan-view (+ elevation for 3-D) engagement diagram |
 | `beamformer_diagnostic_{2d,3d}.png` | 4-panel SRP-PHAT vs RMS bearing comparison |
-| `results_{2d,3d}.json` | machine-readable metrics |
+| `results_{2d,3d}.json` | machine-readable metrics (includes `ml` section with classification/anomaly stats when ML is enabled) |
+
+---
+
+## ML Training
+
+Pre-trained weights are shipped in `output/models/`.  To retrain:
+
+```bash
+# Train all classifiers (generates synthetic data + trains)
+python examples/train_all_ml.py
+
+# Run ML demo (classification + confusion matrices)
+python examples/run_ml_demo.py
+```
 
 ---
 
