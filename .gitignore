@@ -28,6 +28,7 @@ Thumbs.db
 
 # Generated output
 output/*/snapshots/
+output/comparison/
 *.npy
 *.npz
 
