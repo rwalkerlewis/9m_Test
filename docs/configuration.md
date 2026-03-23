@@ -8,8 +8,8 @@ library pipeline (`DetectionConfig` dataclass).
 
 ## Pipeline Configuration (`pipeline.config.json`)
 
-Used by `examples/run_pipeline.py`.  JSON file with five sections.
-CLI flags override individual values.
+Used by `examples/run_pipeline.py`.  JSON file with six sections
+(five core + optional `ml`).  CLI flags override individual values.
 
 ### `detection`
 
@@ -83,6 +83,29 @@ scenarios (ground-truth CPA ≤ threshold) and RMS otherwise.
 | `speed_mps` | float | 50.0 | assumed source speed for ground-truth trajectory reconstruction |
 | `altitude_estimate_m` | float\|null | null | assumed z coordinate; null reads from metadata `source_z` |
 
+### `ml` (optional)
+
+All ML features are disabled by default.  When disabled, the pipeline
+produces identical results to a signal-processing-only baseline.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enable_source_classification` | bool | false | Enable CNN source type classification gate |
+| `enable_maneuver_detection` | bool | false | Enable maneuver-adaptive tracking |
+| `enable_fusion_classification` | bool | false | Enable fusion (acoustic + kinematic) classifier |
+| `enable_fno_surrogate` | bool | false | Enable FNO data augmentation path |
+| `enable_anomaly_detection` | bool | false | Enable CVAE anomaly detection |
+| `classification_checkpoint` | str | `"output/models/acoustic_classifier.pt"` | Path to acoustic classifier weights |
+| `maneuver_checkpoint` | str | `"output/models/maneuver_classifier.pt"` | Path to maneuver classifier weights |
+| `fusion_checkpoint` | str | `"output/models/fusion_classifier.pt"` | Path to fusion classifier weights |
+| `anomaly_checkpoint` | str | `"output/models/anomaly_detector.pt"` | Path to CVAE anomaly detector weights |
+| `anomaly_threshold_file` | str | `"output/models/anomaly_threshold.json"` | Path to anomaly threshold calibration |
+| `anomaly_override_confidence_threshold` | float | 0.7 | CNN confidence below this + anomaly novel = NOVEL_THREAT |
+| `classification_confidence_threshold` | float | 0.7 | P(non-drone) must exceed this to reject a detection |
+| `maneuver_window_size` | int | 20 | Number of kinematic history steps for maneuver classifier |
+| `reject_non_drone_classes` | bool | true | Whether to suppress fire on non-drone classifications |
+| `maneuver_aware_tracking` | bool | true | Whether maneuver class adjusts tracker covariance |
+
 ### CLI overrides
 
 ```
@@ -92,6 +115,12 @@ python examples/run_pipeline.py SIM_DIR \
     [--source-speed FLOAT]   # override source.speed_mps
     [--hit-threshold FLOAT]  # override fire_control.hit_threshold_m
     [--max-hits INT]         # override fire_control.max_hits
+    [--enable-classification]    # enable source classification gate
+    [--enable-maneuver]          # enable maneuver detection
+    [--enable-fusion]            # enable fusion classification
+    [--enable-anomaly]           # enable CVAE anomaly detection
+    [--classification-threshold FLOAT]  # override ml.classification_confidence_threshold
+    [--maneuver-window INT]      # override ml.maneuver_window_size
 ```
 
 ---

@@ -22,7 +22,7 @@ runs in real time on commodity hardware.
 | **Range estimation** | RMS inverse-square, GCC-PHAT TDOA, bearing-rate | `detection.ranging` |
 | **Tracking** | Causal weighted-least-squares constant-velocity fit | `detection.tracking` |
 | **Fire control** | 3-D iterative ballistic lead, CPA evaluation, pattern spread | `fire_control` |
-| **Classification** | CNN / fusion / maneuver classifiers (optional, PyTorch) | `ml` |
+| **Classification** | CNN / fusion / maneuver / anomaly classifiers (optional, PyTorch, pre-trained weights shipped) | `ml` |
 | **FNO surrogate** | Fourier Neural Operator to replace FDTD (optional) | `ml.fno` |
 
 An older MFP/EKF path (`detection_main.py`) remains in the library for
@@ -79,6 +79,9 @@ acoustic-sim/
 │       ├── acoustic_classifier.py
 │       ├── fusion_classifier.py
 │       ├── maneuver_classifier.py
+│       ├── anomaly_detector.py # CVAE model for novel threat detection
+│       ├── anomaly_integration.py # AnomalyDetector wrapper
+│       ├── anomaly_training.py # CVAE training & threshold calibration
 │       ├── training.py
 │       ├── data_generation.py
 │       ├── fno.py              # Fourier Neural Operator surrogate
@@ -89,9 +92,15 @@ acoustic-sim/
 ├── examples/
 │   ├── run_fdtd.py             # 2-D FDTD forward model
 │   ├── run_fdtd_3d.py          # 3-D FDTD forward model
+│   ├── run_fdtd_erratic.py     # erratic quadcopter FDTD scenario
 │   ├── run_all_examples.py     # batch 18 FDTD combinations
-│   ├── run_pipeline.py         # SRP-PHAT engagement pipeline
-│   ├── pipeline.config.json    # pipeline configuration
+│   ├── run_pipeline.py         # SRP-PHAT engagement pipeline (with optional ML)
+│   ├── run_comparison.py       # baseline vs ML pipeline comparison
+│   ├── run_ml_demo.py          # ML classification demo + confusion matrices
+│   ├── train_all_ml.py         # train all ML classifiers
+│   ├── generate_traces.py      # generate synthetic trace datasets
+│   ├── run_fno.py              # FNO surrogate demo
+│   ├── pipeline.config.json    # pipeline configuration (incl. optional ML section)
 │   ├── extract_array_traces.py # post-process field plane to traces
 │   ├── run_valley.sh           # 2-D valley demo (FDTD → pipeline)
 │   ├── run_valley_3d.sh        # 3-D valley demo
@@ -99,6 +108,10 @@ acoustic-sim/
 │
 ├── tests/                      # unit tests & diagnostics
 ├── output/                     # simulation outputs
+│   └── models/                 # pre-trained ML checkpoints
+│       ├── acoustic_classifier.pt
+│       ├── maneuver_classifier.pt
+│       └── fusion_classifier.pt
 ├── audio/                      # WAV source files
 ├── pyproject.toml
 ├── requirements.txt
@@ -119,8 +132,10 @@ acoustic-sim/
 
 ## ML Module
 
-Six classifier files plus four FNO files under `src/acoustic_sim/ml/`.
-Requires `torch` (not a project dependency).
+Nine classifier/anomaly files plus four FNO files under
+`src/acoustic_sim/ml/`.  Requires `torch` (not a project dependency).
+Pre-trained weights for the acoustic, maneuver, and fusion classifiers
+are shipped in `output/models/`.
 
 ### Classifiers
 
@@ -148,8 +163,10 @@ pipeline.
 
 ### Integration Status
 
-ML classifiers are integrated into `detection_main.py` (MFP/EKF path)
-via `_classify_source()` and `_detect_maneuvers()`.  The production
-SRP-PHAT pipeline (`run_pipeline.py`) does not call them.  No
-pre-trained weights are shipped; training requires installing `torch`
-and running the data generation + training loops.
+ML classifiers are integrated into the production SRP-PHAT pipeline
+(`run_pipeline.py`) as optional components enabled via CLI flags
+(`--enable-classification`, `--enable-maneuver`, `--enable-fusion`,
+`--enable-anomaly`).  Pre-trained weights are shipped in
+`output/models/`.  The MFP/EKF library path (`detection_main.py`) also
+contains ML integration scaffolding via `_classify_source()` and
+`_detect_maneuvers()`.

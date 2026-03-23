@@ -31,21 +31,24 @@ I included three domain configurations: isotropic (free space), wind (uniform fl
 | Stage | Algorithm |
 |-------|-----------|
 | Detection | RMS threshold gate |
+| Classification | CNN on mel spectrograms (6-class source type, hostile/benign gate) [optional] |
 | Bearing | SRP-PHAT with pre-computed steering vectors (360 azimuth bins) |
 | Range | RMS inverse-square-law with CPA calibration |
 | Tracking | Causal weighted-least-squares constant-velocity fit |
+| Maneuver ID | 1D CNN on kinematic features (6-class maneuver state, covariance adaptation) [optional] |
+| Anomaly | CVAE reconstruction error (novel threat detection) [optional] |
 | Fire control | 3D iterative ballistic lead with pattern spread modeling |
 
-All detections are currently treated as hostile. Engagement is scored by computed miss distance including projectile flight time. A target is considered neutralized after a configurable number of shots (default 3) fall within the acceptable miss distance. Computational latency is tracked because this is modeled as a real-time system.
+All detections default to hostile. Engagement is scored by computed miss distance including projectile flight time. A target is considered neutralized after a configurable number of shots (default 3) fall within the acceptable miss distance. Computational latency is tracked because this is modeled as a real-time system.
 
-**ML classifiers (included but not integrated into the production pipeline).** I built PyTorch classifiers for source type (CNN on mel spectrograms, 6 classes: quadcopter, hexacopter, fixed wing, bird, ground vehicle, unknown), maneuver state (1D CNN on kinematic features, 6 classes: steady, turning, accelerating, diving, evasive, hovering), and a fusion classifier that combines acoustic and kinematic inputs. These are not wired into the SRP-PHAT pipeline. No pre-trained weights are shipped. Their value would be in classifying whether a detection is hostile or benign, and in adapting tracker process noise based on detected maneuver state.
+**ML classifiers (integrated into the detection pipeline).** PyTorch classifiers for source type (CNN on mel spectrograms, 6 classes: quadcopter, hexacopter, fixed wing, bird, ground vehicle, unknown), maneuver state (1D CNN on kinematic features, 6 classes: steady, turning, accelerating, diving, evasive, hovering), and a fusion classifier that combines acoustic and kinematic inputs are wired into the production pipeline as optional components. Source classification gates engagement decisions by filtering non-drone detections before fire control. Maneuver classification adapts tracker covariance based on detected flight behavior (evasive targets get 2.5x covariance, hovering targets get 0.5x). Trained weights are included in output/models/. All ML components are disabled by default; with ML disabled, the pipeline produces identical results to a signal-processing-only baseline.
 
 **FNO surrogate (included but not integrated).** A Fourier Neural Operator infrastructure to replace the FDTD solver for rapid forward propagation is included with data generation, training, and inference modules. The motivation is that the FDTD solver is too slow for real-time ensemble analysis or rapid parameter studies. An FNO trained on FDTD output could provide forward model evaluations at a fraction of the cost.
 
 ## Assumptions
 
 - Single target. The system currently handles one source at a time.
-- Hostile by default. No friend-or-foe classification in the production pipeline.
+- Hostile by default. All detections default to hostile. When source classification is enabled (--enable-classification), non-drone detections (bird, ground vehicle) are filtered if classification confidence exceeds the threshold. Unknown sources default to hostile.
 - Known array geometry. Receiver positions are assumed perfectly known. Real deployments would require self-calibration.
 - Synthetic sources only. The provided input.wav was used as a reference but the pipeline consumes FDTD output rather than raw recordings.
 - Shotgun engagement model. Fire control assumes a shotgun-class effector with modeled pattern spread.
@@ -63,7 +66,7 @@ All detections are currently treated as hostile. Engagement is scored by compute
 - Combining 2D and 3D detection algorithms into one unified framework was harder than expected. The 3D methods did not perform well on 2D data. The practical solution was to treat 2D examples as 3D with zero elevation.
 - When scoring by computed miss distance (including projectile flight), simpler state estimation methods outperformed more complex ones. I expect this would reverse as the simulation adds more noise, but it was a surprise.
 - Fire control for the isotropic (free space) case with a stationary target was unexpectedly difficult to debug, because the system expects a moving target and a stationary one is a degenerate case.
-- The ML classifiers are not integrated. I chose to return a working system rather than a partially integrated one.
+- The acoustic classifier is near-random on short pipeline windows (100ms default) due to limited frequency resolution, so it defaults to not rejecting targets. This is the correct conservative behavior for a C-UAS system, but classification accuracy would improve with longer observation windows or multi-window accumulation.
 - I originally wanted to generate complete 3D/4D wavefields (spatial dimensions plus time) so receivers could be placed anywhere in post-processing. The file sizes at the frequencies of interest made this impractical. Receiver locations must be specified before the forward model runs.
 
 ## How I Would Improve This For Real-World Deployment
@@ -73,7 +76,7 @@ All detections are currently treated as hostile. Engagement is scored by compute
 - Iron down the forward model, likely replacing FDTD with trained FNO surrogates for rapid wavefield generation.
 - Add realistic noise: sensor self-noise, wind noise (including transient gusts), multiple interfering sources, microphone gain and phase mismatches.
 - Add complex environments: variable weather, echo-prone terrain, urban canyons.
-- Integrate the ML classifiers into the production pipeline for hostile/benign discrimination and maneuver-adaptive tracking.
+- Improve ML classifier accuracy with longer observation windows or multi-window accumulation; current 100ms windows limit frequency resolution.
 - Multi-target support.
 
 **Exploiting FNO surrogates:**
@@ -142,7 +145,15 @@ python examples/run_fdtd.py \
 ### Run the engagement pipeline
 
 ```bash
+# Baseline (no ML)
 python examples/run_pipeline.py output/valley_test
+
+# With source classification gate
+python examples/run_pipeline.py output/valley_test --enable-classification
+
+# Full ML (classification + maneuver + anomaly)
+python examples/run_pipeline.py output/valley_test \
+    --enable-classification --enable-maneuver --enable-anomaly
 ```
 
 Auto-detects 2D vs 3D. Produces:
