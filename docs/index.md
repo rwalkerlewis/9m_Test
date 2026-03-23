@@ -39,6 +39,7 @@ parametric studies but is not used by the production pipeline.
 | [API Reference](api.md) | Every public class, method, and function with signatures |
 | [Usage](usage.md) | Installation, CLI commands, running examples |
 | [Studies](studies.md) | Nine parametric robustness studies |
+| [Glossary](glossary.md) | Definitions of terms, acronyms, and concepts |
 
 ## Repository Layout
 
