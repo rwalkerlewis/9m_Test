@@ -38,27 +38,49 @@
       "max_position_uncertainty_m": 0.0,
       "class_label": "fixed_wing",
       "class_confidence": 0.9,
-      "hit_threshold_m": 1.0,
-      "max_hits": 3
+      "hit_threshold_m": 2.0,
+      "max_hits": 0
     },
     "source": {
       "speed_mps": 50.0,
       "altitude_estimate_m": null
+    },
+    "ml": {
+      "enable_source_classification": false,
+      "enable_maneuver_detection": true,
+      "enable_fusion_classification": true,
+      "enable_fno_surrogate": false,
+      "classification_checkpoint": "output/models/acoustic_classifier.pt",
+      "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
+      "fusion_checkpoint": "output/models/fusion_classifier.pt",
+      "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
+      "classification_confidence_threshold": 0.95,
+      "maneuver_window_size": 20,
+      "reject_non_drone_classes": true,
+      "maneuver_aware_tracking": true
     }
   },
-  "n_detections": 7,
-  "n_windows": 7,
-  "mean_bearing_error_deg": 1.121080951743436,
-  "shots_fired": 3,
-  "hits": 3,
-  "hit_threshold_m": 1.0,
-  "mean_miss_m": 1.5037505363889372,
-  "min_miss_m": 0.9115898782172042,
-  "max_miss_m": 1.8453815118087273,
+  "n_detections": 116,
+  "n_windows": 116,
+  "detection_rate": 1.0,
+  "mean_bearing_error_deg": 3.099095485195987,
+  "shots_fired": 112,
+  "hits": 87,
+  "hit_rate_pct": 77.67857142857143,
+  "hit_threshold_m": 2.0,
+  "mean_miss_m": 2.681733251850422,
+  "min_miss_m": 0.4768041530486463,
+  "max_miss_m": 7.081122410296381,
   "timing": {
     "hop_ms": 25.024558568447038,
-    "mean_latency_us": 3279.106026249273,
-    "max_latency_us": 4636.146011762321,
-    "realtime_margin_x": 7.631518581017273
+    "mean_latency_us": 6198.551146549734,
+    "max_latency_us": 9898.214000031658,
+    "realtime_margin_x": 4.03716255247427
+  },
+  "ml": {
+    "class_reject_count": 0,
+    "maneuver_suppress_count": 0,
+    "n_classified_windows": 116,
+    "mean_classification_confidence": 0.3271416015923023
   }
 }

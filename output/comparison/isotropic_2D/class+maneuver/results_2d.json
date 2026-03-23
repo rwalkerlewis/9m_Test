@@ -1,0 +1,85 @@
+{
+  "dimensions": "2-D",
+  "simulation": "output/isotropic_2D",
+  "config": {
+    "detection": {
+      "window_length_s": 0.1,
+      "window_overlap": 0.75,
+      "min_signal_rms": 5e-05
+    },
+    "beamformer": {
+      "method": "srp_phat",
+      "n_bearings": 360,
+      "freq_lo_hz": 100.0,
+      "freq_hi_hz": 2000.0,
+      "max_sources": 1
+    },
+    "ranging": {
+      "method": "auto",
+      "n_range_bins": 80,
+      "auto_cpa_threshold_m": 3.0
+    },
+    "tracking": {
+      "min_detections": 5,
+      "ema_alpha": 0.35,
+      "rms_fire_gate_frac": 0.2,
+      "range_min_m": 5.0,
+      "range_max_m": 100.0,
+      "rms_ref_range_m": 10.0,
+      "covariance_floor": 0.5,
+      "covariance_cap": 1.0,
+      "max_history": 20
+    },
+    "fire_control": {
+      "muzzle_velocity_mps": 400.0,
+      "pellet_decel_mps2": 1.5,
+      "pattern_spread_rate": 0.3,
+      "max_engagement_range_m": 500.0,
+      "max_position_uncertainty_m": 0.0,
+      "class_label": "fixed_wing",
+      "class_confidence": 0.9,
+      "hit_threshold_m": 2.0,
+      "max_hits": 3
+    },
+    "source": {
+      "speed_mps": 50.0,
+      "altitude_estimate_m": null
+    },
+    "ml": {
+      "enable_source_classification": true,
+      "enable_maneuver_detection": true,
+      "enable_fusion_classification": false,
+      "enable_fno_surrogate": false,
+      "classification_checkpoint": "output/models/acoustic_classifier.pt",
+      "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
+      "fusion_checkpoint": "output/models/fusion_classifier.pt",
+      "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
+      "classification_confidence_threshold": 0.95,
+      "maneuver_window_size": 20,
+      "reject_non_drone_classes": true,
+      "maneuver_aware_tracking": true
+    }
+  },
+  "n_detections": 29,
+  "n_windows": 30,
+  "detection_rate": 0.9666666666666667,
+  "mean_bearing_error_deg": 0.0,
+  "shots_fired": 3,
+  "hits": 3,
+  "hit_rate_pct": 100.0,
+  "hit_threshold_m": 2.0,
+  "mean_miss_m": 0.6328493068223482,
+  "min_miss_m": 0.20039467059478344,
+  "max_miss_m": 1.4512421835213312,
+  "timing": {
+    "hop_ms": 25.016950258530954,
+    "mean_latency_us": 3255.3764001931995,
+    "max_latency_us": 4398.569995828439,
+    "realtime_margin_x": 7.684810351591371
+  },
+  "ml": {
+    "class_reject_count": 0,
+    "n_classified_windows": 29,
+    "mean_classification_confidence": 0.19669248266466732
+  }
+}

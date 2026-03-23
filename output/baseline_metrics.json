@@ -1,0 +1,62 @@
+{
+  "valley_test": {
+    "dimensions": "2-D",
+    "n_detections": 117,
+    "n_windows": 117,
+    "detection_rate": 1.0,
+    "mean_bearing_error_deg": 15.47815823094699,
+    "shots_fired": 15,
+    "hits": 3,
+    "hit_rate_pct": 20.0,
+    "mean_miss_m": 2.929234726638153,
+    "min_miss_m": 1.2412197653052344,
+    "max_miss_m": 4.128302816251309,
+    "mean_latency_us": 3195.9896922998246,
+    "max_latency_us": 4679.133000081492
+  },
+  "valley_3d_test": {
+    "dimensions": "3-D",
+    "n_detections": 37,
+    "n_windows": 37,
+    "detection_rate": 1.0,
+    "mean_bearing_error_deg": 15.235665189422358,
+    "shots_fired": 33,
+    "hits": 10,
+    "hit_rate_pct": 30.303030303030305,
+    "mean_miss_m": 3.4657327060397236,
+    "min_miss_m": 0.8018621440879199,
+    "max_miss_m": 8.396212810701547,
+    "mean_latency_us": 4182.160351350634,
+    "max_latency_us": 4566.723000152706
+  },
+  "isotropic_2D": {
+    "dimensions": "2-D",
+    "n_detections": 115,
+    "n_windows": 116,
+    "detection_rate": 0.9913793103448276,
+    "mean_bearing_error_deg": 0.6935522963747308,
+    "shots_fired": 12,
+    "hits": 10,
+    "hit_rate_pct": 83.33333333333333,
+    "mean_miss_m": 0.7059138448698752,
+    "min_miss_m": 0.03051046535571096,
+    "max_miss_m": 1.4512421835213312,
+    "mean_latency_us": 3243.0652155269477,
+    "max_latency_us": 4802.904000143826
+  },
+  "erratic_quadcopter": {
+    "dimensions": "3-D",
+    "n_detections": 116,
+    "n_windows": 116,
+    "detection_rate": 1.0,
+    "mean_bearing_error_deg": 3.099095485195987,
+    "shots_fired": 112,
+    "hits": 73,
+    "hit_rate_pct": 65.17857142857143,
+    "mean_miss_m": 2.681733251850422,
+    "min_miss_m": 0.4768041530486463,
+    "max_miss_m": 7.081122410296381,
+    "mean_latency_us": 4150.923655176625,
+    "max_latency_us": 4410.304999964865
+  }
+}
