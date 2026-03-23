@@ -131,10 +131,14 @@ _DEFAULTS = {
         "enable_maneuver_detection": False,
         "enable_fusion_classification": False,
         "enable_fno_surrogate": False,
+        "enable_anomaly_detection": False,
         "classification_checkpoint": "output/models/acoustic_classifier.pt",
         "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
         "fusion_checkpoint": "output/models/fusion_classifier.pt",
         "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
+        "anomaly_checkpoint": "output/models/anomaly_detector.pt",
+        "anomaly_threshold_file": "output/models/anomaly_threshold.json",
+        "anomaly_override_confidence_threshold": 0.7,
         "classification_confidence_threshold": 0.7,
         "maneuver_window_size": 20,
         "reject_non_drone_classes": True,
@@ -247,16 +251,18 @@ def compute_ground_truth(metadata: dict, source_speed: float,
 def load_ml_models(cfg_ml: dict) -> dict:
     """Load ML models based on config flags.
 
-    Returns dict of loaded models (keys: acoustic, maneuver, fusion).
-    Models are None if not enabled or torch unavailable.
+    Returns dict of loaded models (keys: acoustic, maneuver, fusion,
+    anomaly).  Models are None if not enabled or torch unavailable.
     """
-    models = {"acoustic": None, "maneuver": None, "fusion": None}
+    models = {"acoustic": None, "maneuver": None, "fusion": None,
+              "anomaly": None}
 
     if not _torch_available:
         if any(cfg_ml.get(k) for k in [
             "enable_source_classification",
             "enable_maneuver_detection",
             "enable_fusion_classification",
+            "enable_anomaly_detection",
         ]):
             print("  WARNING: PyTorch not available, ML features disabled")
         return models
@@ -306,6 +312,24 @@ def load_ml_models(cfg_ml: dict) -> dict:
             print(f"       ML: Loaded FusionClassifier from {ckpt}")
         else:
             print(f"  WARNING: Fusion checkpoint not found: {ckpt}")
+
+    if cfg_ml.get("enable_anomaly_detection"):
+        from acoustic_sim.ml.anomaly_integration import AnomalyDetector
+        anomaly_ckpt = cfg_ml.get("anomaly_checkpoint",
+                                   "output/models/anomaly_detector.pt")
+        anomaly_thresh = cfg_ml.get("anomaly_threshold_file",
+                                     "output/models/anomaly_threshold.json")
+        if Path(anomaly_ckpt).exists() and Path(anomaly_thresh).exists():
+            models["anomaly"] = AnomalyDetector(
+                model_path=anomaly_ckpt,
+                threshold_path=anomaly_thresh,
+            )
+            print(f"       ML: Loaded AnomalyDetector from {anomaly_ckpt}")
+        else:
+            if not Path(anomaly_ckpt).exists():
+                print(f"  WARNING: Anomaly checkpoint not found: {anomaly_ckpt}")
+            if not Path(anomaly_thresh).exists():
+                print(f"  WARNING: Anomaly threshold not found: {anomaly_thresh}")
 
     return models
 
@@ -360,6 +384,17 @@ def evaluate_results(
                          for d in detections
                          if d.get("ml_predicted_class")]
 
+    # Anomaly detection info.
+    n_anomaly_novel = sum(1 for d in detections
+                          if d.get("anomaly_is_novel"))
+    n_anomaly_windows = sum(1 for d in detections
+                            if "anomaly_is_novel" in d)
+    anomaly_errors = [d["anomaly_reconstruction_error"] for d in detections
+                      if "anomaly_reconstruction_error" in d]
+    n_novel_threat_overrides = sum(
+        1 for d in detections
+        if d.get("ml_predicted_class") == "NOVEL_THREAT")
+
     return {
         "n_detections": n_detected,
         "n_windows": n_windows,
@@ -384,6 +419,13 @@ def evaluate_results(
             float(np.mean(class_confidences)) if class_confidences else None
         ),
         "n_classified_windows": len(class_confidences),
+        # Anomaly detection
+        "n_anomaly_novel": n_anomaly_novel,
+        "n_anomaly_windows": n_anomaly_windows,
+        "mean_anomaly_error": (
+            float(np.mean(anomaly_errors)) if anomaly_errors else None
+        ),
+        "n_novel_threat_overrides": n_novel_threat_overrides,
     }
 
 
@@ -468,12 +510,19 @@ def run_pipeline(
     acoustic_model = ml_models["acoustic"]
     maneuver_model = ml_models["maneuver"]
     fusion_model = ml_models["fusion"]
+    anomaly_detector = ml_models["anomaly"]
+
+    anomaly_override_threshold = cfg_ml.get(
+        "anomaly_override_confidence_threshold", 0.7)
 
     ml_active = any(m is not None for m in ml_models.values())
     if ml_active:
         print(f"       ML: classification_threshold={ml_confidence_threshold}")
         print(f"       ML: reject_non_drone={ml_reject_non_drone}")
         print(f"       ML: maneuver_aware={ml_maneuver_aware}")
+        if anomaly_detector is not None:
+            print(f"       ML: anomaly_detection=enabled "
+                  f"(threshold={anomaly_detector.threshold:.4f})")
 
     # ML feature imports (only when needed).
     compute_mel = None
@@ -615,15 +664,19 @@ def run_pipeline(
         all_track_states.append(track_state)
 
         # ================================================================
-        # ML: Source Classification & Maneuver Detection
+        # ML: Source Classification, Maneuver Detection & Anomaly
         # ================================================================
         ml_class_reject = False
         cov_cap_effective = cov_cap  # may be modified by maneuver detection
         ml_hit_threshold_mult = 1.0
+        _anomaly_beamformed = None  # set below if classification runs
+        _anomaly_mel = None
 
         if det.detected and not math.isnan(det.bearing_rad) and ml_active:
             # -- A. Source Classification Gate --
-            if (acoustic_model is not None or fusion_model is not None) and compute_mel is not None:
+            if ((acoustic_model is not None or fusion_model is not None
+                    or anomaly_detector is not None)
+                    and compute_mel is not None):
                 beamformed = np.mean(seg, axis=0)
                 # Pad to at least 2*n_fft to ensure valid mel spectrogram.
                 min_len = 1024
@@ -634,6 +687,10 @@ def run_pipeline(
                 mel = compute_mel(beamformed, fs)
                 mel_tensor = torch.tensor(
                     mel[np.newaxis, np.newaxis, :, :], dtype=torch.float32)
+
+                # Make mel/beamformed available for anomaly detection.
+                _anomaly_beamformed = beamformed
+                _anomaly_mel = mel
 
                 # Run acoustic-only classifier (used for gate decision).
                 # The acoustic classifier is near-random on short pipeline
@@ -740,6 +797,47 @@ def run_pipeline(
                         # effective threshold.
                         ml_hit_threshold_mult = 1.3
                     # accelerating: default cov_cap, default threshold
+
+            # -- C. Anomaly Detection (parallel path) --
+            if anomaly_detector is not None:
+                # Ensure beamformed signal is available (may have been
+                # computed above for classification; compute if not).
+                if _anomaly_beamformed is None:
+                    _anomaly_beamformed = np.mean(seg, axis=0)
+                    min_len = 1024
+                    if len(_anomaly_beamformed) < min_len:
+                        padded = np.zeros(min_len)
+                        padded[:len(_anomaly_beamformed)] = _anomaly_beamformed
+                        _anomaly_beamformed = padded
+
+                # Reuse pre-computed mel spectrogram if available,
+                # otherwise compute from beamformed audio.
+                if _anomaly_mel is not None:
+                    anomaly_result = anomaly_detector.process_mel_spectrogram(
+                        _anomaly_mel)
+                else:
+                    anomaly_result = anomaly_detector.process_frame(
+                        _anomaly_beamformed, sample_rate=fs)
+
+                det_dict["anomaly_is_novel"] = anomaly_result.is_novel
+                det_dict["anomaly_reconstruction_error"] = (
+                    anomaly_result.reconstruction_error)
+                det_dict["anomaly_threshold"] = anomaly_result.threshold
+                det_dict["anomaly_latent_vector"] = (
+                    anomaly_result.latent_vector.tolist())
+
+                # Override logic: CNN uncertain + anomaly flags novel.
+                cnn_conf = det_dict.get("ml_classification_confidence", 0.0)
+                if (anomaly_result.is_novel
+                        and cnn_conf < anomaly_override_threshold):
+                    det_dict["ml_predicted_class"] = "NOVEL_THREAT"
+                    det_dict["ml_threat_level"] = "high"
+                elif anomaly_result.is_novel and cnn_conf >= anomaly_override_threshold:
+                    # CNN is confident but anomaly detector disagrees —
+                    # possible adversarial or edge case.  Log a warning.
+                    det_dict["anomaly_warning"] = (
+                        "CNN confident but anomaly detector flags novel — "
+                        "possible adversarial or edge-case target")
 
         # ================================================================
         # Fire control (identical logic to baseline, with ML gate)
@@ -934,6 +1032,19 @@ def run_pipeline(
             mc = Counter(man_classes)
             print(f"    Maneuver detections: {dict(mc)}")
 
+        # Anomaly detection summary.
+        n_anom_novel = metrics["n_anomaly_novel"]
+        n_anom_win = metrics["n_anomaly_windows"]
+        n_novel_overrides = metrics["n_novel_threat_overrides"]
+        if n_anom_win > 0:
+            print(f"\n  Anomaly Detection:")
+            print(f"    Windows analysed: {n_anom_win}")
+            print(f"    Novel detections: {n_anom_novel}")
+            print(f"    NOVEL_THREAT overrides: {n_novel_overrides}")
+            mean_ae = metrics["mean_anomaly_error"]
+            if mean_ae is not None:
+                print(f"    Mean recon error: {mean_ae:.4f}")
+
     print(f"\n  TIMING:")
     print(f"  Mean process:  {wall_times.mean() * 1e6:.0f} us/window")
     print(f"  Max process:   {wall_times.max() * 1e6:.0f} us/window")
@@ -989,6 +1100,10 @@ def run_pipeline(
             "maneuver_suppress_count": metrics["maneuver_suppress_count"],
             "n_classified_windows": metrics["n_classified_windows"],
             "mean_classification_confidence": metrics["mean_classification_confidence"],
+            "anomaly_novel_count": metrics["n_anomaly_novel"],
+            "anomaly_windows_analysed": metrics["n_anomaly_windows"],
+            "anomaly_mean_error": metrics["mean_anomaly_error"],
+            "novel_threat_overrides": metrics["n_novel_threat_overrides"],
         },
     }
     results_path = output_dir / f"results{suffix}.json"
@@ -1029,6 +1144,8 @@ def main():
                         help="Enable maneuver detection")
     parser.add_argument("--enable-fusion", action="store_true",
                         help="Enable fusion classification (overrides acoustic)")
+    parser.add_argument("--enable-anomaly", action="store_true",
+                        help="Enable CVAE anomaly detection for novel threats")
     parser.add_argument("--classification-threshold", type=float, default=None,
                         help="Override classification confidence threshold")
     parser.add_argument("--maneuver-window", type=int, default=None,
@@ -1051,6 +1168,8 @@ def main():
         cfg["ml"]["enable_maneuver_detection"] = True
     if args.enable_fusion:
         cfg["ml"]["enable_fusion_classification"] = True
+    if args.enable_anomaly:
+        cfg["ml"]["enable_anomaly_detection"] = True
     if args.classification_threshold is not None:
         cfg["ml"]["classification_confidence_threshold"] = args.classification_threshold
     if args.maneuver_window is not None:
