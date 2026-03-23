@@ -1,0 +1,111 @@
+{
+  "simulation": "output/coupled_moving_3d",
+  "config": {
+    "acoustic": {
+      "detection": {
+        "window_length_s": 0.05,
+        "window_overlap": 0.75,
+        "min_signal_rms": 1e-05
+      },
+      "beamformer": {
+        "method": "srp_phat",
+        "n_bearings": 360,
+        "freq_lo_hz": 100.0,
+        "freq_hi_hz": 2000.0,
+        "max_sources": 1
+      },
+      "ranging": {
+        "method": "auto",
+        "n_range_bins": 80,
+        "auto_cpa_threshold_m": 3.0
+      },
+      "tracking": {
+        "min_detections": 3,
+        "max_history": 20,
+        "ema_alpha": 0.35,
+        "range_min_m": 5.0,
+        "range_max_m": 150.0,
+        "rms_ref_range_m": 10.0,
+        "covariance_floor": 0.5,
+        "covariance_cap": 1.0
+      }
+    },
+    "seismic": {
+      "detection": {
+        "window_length_s": 0.02,
+        "window_overlap": 0.75,
+        "min_signal_rms": 1e-10
+      },
+      "beamformer": {
+        "method": "srp_phat",
+        "n_bearings": 360,
+        "freq_lo_hz": 10.0,
+        "freq_hi_hz": 500.0,
+        "max_sources": 1
+      },
+      "ranging": {
+        "method": "rms",
+        "n_range_bins": 80
+      },
+      "tracking": {
+        "min_detections": 3,
+        "max_history": 30,
+        "ema_alpha": 0.45,
+        "range_min_m": 5.0,
+        "range_max_m": 200.0,
+        "rms_ref_range_m": 10.0,
+        "covariance_floor": 1.0,
+        "covariance_cap": 3.0
+      }
+    },
+    "fusion": {
+      "bearing_weight_acoustic": 0.6,
+      "bearing_weight_seismic": 0.4,
+      "range_weight_acoustic": 0.5,
+      "range_weight_seismic": 0.5,
+      "seismic_early_warning_only": false
+    },
+    "fire_control": {
+      "muzzle_velocity_mps": 400.0,
+      "pellet_decel_mps2": 1.5,
+      "pattern_spread_rate": 0.3,
+      "max_engagement_range_m": 500.0,
+      "max_position_uncertainty_m": 0.0,
+      "class_label": "quadcopter",
+      "class_confidence": 0.9,
+      "hit_threshold_m": 2.0,
+      "max_hits": 3,
+      "rms_fire_gate_frac": 0.2
+    },
+    "source": {
+      "speed_mps": 50.0,
+      "altitude_estimate_m": null
+    }
+  },
+  "c_air": 343.0,
+  "c_ground": 1500.0,
+  "seismic_lead_ms": -0.03299144395368936,
+  "acoustic": {
+    "n_detections": 16,
+    "n_windows": 20,
+    "first_detection_s": 0.07515450932651244,
+    "mean_bearing_error_deg": 28.114141311038065
+  },
+  "seismic": {
+    "n_detections": 43,
+    "n_windows": 56,
+    "first_detection_s": 0.07518750077046613,
+    "mean_bearing_error_deg": 53.799585951238925
+  },
+  "fused": {
+    "n_detections": 59,
+    "n_windows": 76,
+    "mean_bearing_error_deg": 46.83404164203191
+  },
+  "fire_control": {
+    "shots": 0,
+    "hits": 0,
+    "mean_miss_m": null
+  },
+  "processing_time_s": 0.04013515298720449
+}

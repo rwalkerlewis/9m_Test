@@ -508,7 +508,13 @@ class ElasticFDTD2DSolver:
     # ------------------------------------------------------------------
 
     def _inject(self, n: int) -> None:
-        """Inject pressure source into σxx and σzz."""
+        """Inject pressure source into σxx and σzz.
+
+        The injection is scaled by ``dt / dA`` so that
+        ``source_amplitude`` has units of [Pa · m² / s] (areal
+        stress-rate source strength) and is independent of the grid
+        spacing and time step.
+        """
         xp = self.xp
         # position_at returns (x, y) for 2D sources — we interpret y as z
         pos = self.source.position_at(n, self.dt)
@@ -530,7 +536,8 @@ class ElasticFDTD2DSolver:
         wz = fz - giz
 
         sig_val = self.source.signal[min(n, len(self.source.signal) - 1)]
-        amp = self.cfg.source_amplitude * sig_val
+        dA = self.model.dx * self.model.dz
+        amp = self.cfg.source_amplitude * sig_val * self.dt / dA
 
         # Inject as isotropic pressure: sxx -= amp, szz -= amp
         # Using bilinear interpolation over 4 surrounding cells
@@ -1218,7 +1225,13 @@ class ElasticFDTD3DSolver:
     # ------------------------------------------------------------------
 
     def _inject_3d(self, n: int) -> None:
-        """Inject pressure source into σxx, σyy, σzz."""
+        """Inject isotropic pressure source into σxx, σyy, σzz.
+
+        The injection is scaled by ``dt / dV`` so that
+        ``source_amplitude`` has units of [Pa · m³ / s] (volumetric
+        stress-rate source strength) and is independent of the grid
+        spacing and time step.
+        """
         sx, sy, sz = self.source.position_at(n, self.dt)
 
         fx = (sx - self.model.x[0]) / self.model.dx
@@ -1242,7 +1255,8 @@ class ElasticFDTD3DSolver:
         wz = fz - giz
 
         sig_val = self.source.signal[min(n, len(self.source.signal) - 1)]
-        amp = self.cfg.source_amplitude * sig_val
+        dV = self.model.dx * self.model.dy * self.model.dz
+        amp = self.cfg.source_amplitude * sig_val * self.dt / dV
 
         # Trilinear injection into 8 corners
         xp = self.xp
@@ -1546,22 +1560,130 @@ class ElasticFDTD3DSolver:
         return None
 
     # ------------------------------------------------------------------
+    # Gather vertical velocity field (3-D)
+    # ------------------------------------------------------------------
+
+    def _gather_vz_field_3d(self) -> np.ndarray | None:
+        """Gather the vz component for seismic ground-motion visualisation."""
+        xp = self.xp
+        gl = self._ghost_lo
+        owned = self.vz[gl: gl + self.local_nz, :, :]
+        owned_host = xp.asnumpy(owned) if self.is_cuda else np.array(owned)
+
+        if not self.use_mpi:
+            return owned_host
+
+        gathered = self.comm.gather(owned_host, root=0)
+        if self.rank == 0:
+            return np.concatenate(gathered, axis=0)
+        return None
+
+    # ------------------------------------------------------------------
     # Run (3-D)
     # ------------------------------------------------------------------
 
     def run(
         self,
         snapshot_dir: str | None = None,
+        snapshot_z_index: int | None = None,
+        snapshot_y_index: int | None = None,
         verbose: bool = True,
+        field_plane_z: float | None = None,
+        field_plane_subsample: int = 4,
     ) -> dict[str, Any]:
-        """Run the full 3-D elastic simulation."""
+        """Run the full 3-D elastic simulation.
+
+        Parameters
+        ----------
+        snapshot_dir : str or None
+            Directory for snapshot PNGs.  None = disabled.
+        snapshot_z_index, snapshot_y_index : int or None
+            Slice indices for snapshots.  None = middle.
+        verbose : bool
+        field_plane_z : float or None
+            If given, save the horizontal pressure slice at this
+            altitude (metres) every timestep.
+        field_plane_subsample : int
+            Spatial subsampling for the field plane.
+        """
         is_root = self.rank == 0
 
         if snapshot_dir is not None and is_root:
             Path(snapshot_dir).mkdir(parents=True, exist_ok=True)
 
+        if snapshot_z_index is None:
+            snapshot_z_index = self.global_nz // 2
+        if snapshot_y_index is None:
+            snapshot_y_index = self.global_ny // 2
+
+        # -- Field plane setup ----------------------------------------
+        _fp_buf = None
+        _fp_z_local = None
+        _fp_sub = max(1, int(field_plane_subsample))
+        _fp_z_global = None
+
+        if field_plane_z is not None:
+            _fp_z_global = int(np.argmin(np.abs(self.model.z - field_plane_z)))
+            _fp_owns = (
+                _fp_z_global >= self.slab_start
+                and _fp_z_global < self.slab_end
+            )
+            if _fp_owns:
+                _fp_z_local = (
+                    _fp_z_global - self.slab_start + self._ghost_lo
+                )
+            fp_ny = math.ceil(self.global_ny / _fp_sub)
+            fp_nx = math.ceil(self.model.nx / _fp_sub)
+            _fp_owner_rank = 0
+            if self.use_mpi:
+                for _r, (_s, _e) in enumerate(self.splits):
+                    if _fp_z_global >= _s and _fp_z_global < _e:
+                        _fp_owner_rank = _r
+                        break
+            if is_root:
+                plane_mb = self.n_steps * fp_ny * fp_nx * 4 / 1e6
+                _fp_buf = np.zeros(
+                    (self.n_steps, fp_ny, fp_nx), dtype=np.float32,
+                )
+                if verbose:
+                    print(
+                        f"  Field plane: "
+                        f"z={self.model.z[_fp_z_global]:.2f} m, "
+                        f"grid {fp_ny}\u00d7{fp_nx}, sub={_fp_sub}, "
+                        f"{plane_mb:.0f} MB"
+                    )
+
         for n in range(self.n_steps):
             self._step_3d(n)
+
+            # -- Extract field plane slice ----------------------------
+            if _fp_z_local is not None:
+                xp = self.xp
+                pressure = -(self.sxx + self.syy + self.szz) / 3.0
+                _plane = pressure[_fp_z_local, ::_fp_sub, ::_fp_sub]
+                _plane_np = (
+                    xp.asnumpy(_plane) if self.is_cuda
+                    else np.asarray(_plane)
+                )
+                if is_root and _fp_buf is not None:
+                    _fp_buf[n] = _plane_np.astype(np.float32)
+                elif self.use_mpi:
+                    self.comm.Send(
+                        np.ascontiguousarray(
+                            _plane_np.astype(np.float32)
+                        ),
+                        dest=0, tag=n % 32768,
+                    )
+            elif (
+                field_plane_z is not None
+                and is_root
+                and self.use_mpi
+                and _fp_buf is not None
+            ):
+                self.comm.Recv(
+                    _fp_buf[n], source=_fp_owner_rank,
+                    tag=n % 32768,
+                )
 
             if (
                 snapshot_dir is not None
@@ -1569,8 +1691,22 @@ class ElasticFDTD3DSolver:
                 and n % self.cfg.snapshot_interval == 0
             ):
                 field = self._gather_pressure_field_3d()
+                vz_field = self._gather_vz_field_3d()
                 if is_root and field is not None:
-                    self._save_snapshot_3d(field, n, snapshot_dir)
+                    sx, sy, sz = self.source.position_at(n, self.dt)
+                    src_xyz = np.array([sx, sy, sz])
+                    self._save_snapshot_3d(
+                        field, n, snapshot_dir,
+                        z_index=snapshot_z_index,
+                        y_index=snapshot_y_index,
+                        source_xyz=src_xyz,
+                    )
+                    if vz_field is not None:
+                        self._save_seismic_snapshot(
+                            vz_field, field, n, snapshot_dir,
+                            y_index=snapshot_y_index,
+                            source_xyz=src_xyz,
+                        )
 
             if verbose and is_root and n % 500 == 0:
                 print(f"  step {n:>6d} / {self.n_steps}")
@@ -1578,17 +1714,70 @@ class ElasticFDTD3DSolver:
         if verbose and is_root:
             print(f"  step {self.n_steps:>6d} / {self.n_steps}  (done)")
 
-        return {
+        result: dict[str, Any] = {
             "traces": self.traces if is_root else np.empty((0, 0)),
             "dt": self.dt,
             "n_steps": self.n_steps,
             "receiver_spec": self.receiver_spec,
         }
 
+        if _fp_buf is not None and _fp_z_global is not None:
+            result["field_plane"] = _fp_buf
+            result["field_plane_x"] = self.model.x[::_fp_sub].copy()
+            result["field_plane_y"] = self.model.y[::_fp_sub].copy()
+            result["field_plane_z"] = float(self.model.z[_fp_z_global])
+            result["field_plane_subsample"] = _fp_sub
+
+        return result
+
     def _save_snapshot_3d(
-        self, field: np.ndarray, step: int, output_dir: str,
+        self,
+        field: np.ndarray,
+        step: int,
+        output_dir: str,
+        *,
+        z_index: int | None = None,
+        y_index: int | None = None,
+        source_xyz: np.ndarray | None = None,
     ) -> None:
-        """Save x-z cross-section snapshot at y=ny//2."""
+        """Save two-panel snapshot: X-Y slab + X-Z cross-section."""
+        try:
+            from acoustic_sim.plotting import save_snapshot_3d
+        except ImportError:
+            return
+
+        recv_pos = None
+        if self.receiver_spec is not None:
+            recv_pos = self.receiver_spec.positions
+
+        save_snapshot_3d(
+            field, step, output_dir,
+            extent_xy=self.model.extent_xy,
+            extent_xz=self.model.extent_xz,
+            z_index=z_index,
+            y_index=y_index,
+            receivers=recv_pos,
+            source_xyz=source_xyz,
+        )
+
+    def _save_seismic_snapshot(
+        self,
+        vz_field: np.ndarray,
+        pressure: np.ndarray,
+        step: int,
+        output_dir: str,
+        *,
+        y_index: int | None = None,
+        source_xyz: np.ndarray | None = None,
+    ) -> None:
+        """Save a two-panel seismic snapshot: vertical velocity + pressure.
+
+        Both panels show X-Z cross-sections at the given y-index,
+        with a green dashed line at z = 0 marking the air-ground
+        interface.  The left panel shows vz (vertical particle
+        velocity — the quantity geophones measure); the right panel
+        shows pressure.
+        """
         try:
             import matplotlib
             matplotlib.use("Agg")
@@ -1596,22 +1785,71 @@ class ElasticFDTD3DSolver:
         except ImportError:
             return
 
-        y_mid = field.shape[1] // 2
-        slc = field[:, y_mid, :]
+        nz, ny, nx = vz_field.shape
+        if y_index is None:
+            y_index = ny // 2
+        y_index = min(max(y_index, 0), ny - 1)
 
-        fig, ax = plt.subplots(figsize=(12, 5))
-        ext = self.model.extent_xz
-        vmax = max(np.max(np.abs(slc)) * 0.5, 1e-20)
-        ax.imshow(
-            slc, origin="lower",
-            extent=[ext[0], ext[1], ext[2], ext[3]],
-            cmap="RdBu_r", vmin=-vmax, vmax=vmax,
+        vz_slice = vz_field[:, y_index, :]
+        pres_slice = pressure[:, y_index, :]
+
+        ext = list(self.model.extent_xz)
+
+        fig, (ax_v, ax_p) = plt.subplots(1, 2, figsize=(16, 6))
+
+        # -- Left panel: vertical velocity (vz) ---------------------
+        vz_max = max(float(np.max(np.abs(vz_slice))) * 0.8, 1e-20)
+        im1 = ax_v.imshow(
+            vz_slice, origin="lower", extent=ext,
+            cmap="RdBu_r", vmin=-vz_max, vmax=vz_max,
             aspect="auto", interpolation="bilinear",
         )
-        ax.axhline(0.0, color="green", linestyle="--", linewidth=0.8)
-        ax.set_xlabel("x [m]")
-        ax.set_ylabel("z [m]")
-        ax.set_title(f"Pressure (x-z, y=mid) — step {step}")
+        fig.colorbar(im1, ax=ax_v, label="vz [m/s]")
+        ax_v.axhline(0.0, color="lime", ls="--", lw=1.0, label="z = 0")
+        if source_xyz is not None:
+            ax_v.scatter(source_xyz[0], source_xyz[2],
+                         s=60, c="yellow", marker="*",
+                         edgecolors="black", zorder=6)
+        # Geophone positions on this slice
+        if self.receiver_spec is not None:
+            gidx = self.receiver_spec.geo_indices
+            if len(gidx) > 0:
+                gpos = self.receiver_spec.positions[gidx]
+                ax_v.scatter(gpos[:, 0], gpos[:, 2], s=18,
+                             c="cyan", edgecolors="black",
+                             linewidths=0.3, zorder=5)
+        ax_v.set_xlabel("x [m]")
+        ax_v.set_ylabel("z [m]")
+        ax_v.set_title(f"Vertical ground motion vz (x-z, y-idx {y_index})")
+        ax_v.legend(loc="upper right", fontsize=8)
+
+        # -- Right panel: pressure -----------------------------------
+        pmax = max(float(np.max(np.abs(pres_slice))) * 0.8, 1e-20)
+        im2 = ax_p.imshow(
+            pres_slice, origin="lower", extent=ext,
+            cmap="RdBu_r", vmin=-pmax, vmax=pmax,
+            aspect="auto", interpolation="bilinear",
+        )
+        fig.colorbar(im2, ax=ax_p, label="Pressure [Pa]")
+        ax_p.axhline(0.0, color="lime", ls="--", lw=1.0, label="z = 0")
+        if source_xyz is not None:
+            ax_p.scatter(source_xyz[0], source_xyz[2],
+                         s=60, c="yellow", marker="*",
+                         edgecolors="black", zorder=6)
+        if self.receiver_spec is not None:
+            gidx = self.receiver_spec.geo_indices
+            if len(gidx) > 0:
+                gpos = self.receiver_spec.positions[gidx]
+                ax_p.scatter(gpos[:, 0], gpos[:, 2], s=18,
+                             c="cyan", edgecolors="black",
+                             linewidths=0.3, zorder=5)
+        ax_p.set_xlabel("x [m]")
+        ax_p.set_ylabel("z [m]")
+        ax_p.set_title(f"Pressure (x-z, y-idx {y_index})")
+        ax_p.legend(loc="upper right", fontsize=8)
+
+        fig.suptitle(f"Seismic snapshot — step {step}",
+                     fontsize=13, fontweight="bold")
         fig.tight_layout()
-        fig.savefig(f"{output_dir}/snapshot_{step:06d}.png", dpi=120)
+        fig.savefig(f"{output_dir}/seismic_{step:06d}.png", dpi=120)
         plt.close(fig)
