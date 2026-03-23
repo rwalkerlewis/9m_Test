@@ -31,7 +31,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Import the ML pipeline's run_pipeline directly.
-from run_pipeline_ml import load_config, run_pipeline
+from run_pipeline import load_config, run_pipeline
 
 # ============================================================================
 # Scenarios and configurations
@@ -245,7 +245,7 @@ def main():
                         help="Output JSON path")
     args = parser.parse_args()
 
-    base_cfg = load_config(Path("examples/pipeline_ml.config.json"))
+    base_cfg = load_config(Path("examples/pipeline.config.json"))
 
     # Apply overrides.
     if args.max_hits is not None:

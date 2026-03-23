@@ -5,25 +5,40 @@ Loads FDTD simulation data, runs SRP-PHAT bearing estimation, causal
 weighted-least-squares tracking, and instantaneous fire control.
 Auto-detects 2-D vs 3-D from receiver positions in the metadata.
 
-All tuneable parameters live in a JSON config file
-(default: ``examples/pipeline.config.json``).  CLI flags override the
-most-used values.
+Optional ML components can be independently toggled via the config or
+CLI flags:
+
+- **Source classification gate** (AcousticClassifier or FusionClassifier):
+  Rejects non-drone detections before fire control.
+- **Maneuver detection** (ManeuverClassifier): Adapts tracking covariance
+  and fire control based on detected maneuver type.
+- **Fusion classification** (FusionClassifier): Combines acoustic and
+  kinematic features for enriched source type prediction.
+- **Anomaly detection** (CVAE): Flags acoustically novel targets via
+  reconstruction error.
+
+With all ML options disabled (the default), the pipeline produces
+identical results to a signal-processing-only baseline.
 
 Usage::
 
-    # 2-D valley (default config)
+    # Baseline (no ML)
     python examples/run_pipeline.py output/valley_test
 
     # 3-D valley
     python examples/run_pipeline.py output/valley_3d_test
 
+    # Source classification gate
+    python examples/run_pipeline.py output/valley_test \\
+        --enable-classification
+
+    # Full ML (classification + maneuver + anomaly)
+    python examples/run_pipeline.py output/valley_test \\
+        --enable-classification --enable-maneuver --enable-anomaly
+
     # Custom config
     python examples/run_pipeline.py output/valley_3d_test \\
         --config examples/pipeline.config.json
-
-    # CLI overrides
-    python examples/run_pipeline.py output/valley_test \\
-        --source-speed 60 --hit-threshold 3.0
 """
 
 from __future__ import annotations
@@ -62,7 +77,19 @@ from acoustic_sim.plotting import (
 )
 
 # ============================================================================
-# Configuration
+# ML imports (lazy-loaded when needed)
+# ============================================================================
+
+_torch_available = False
+try:
+    import torch
+    import torch.nn.functional as F
+    _torch_available = True
+except ImportError:
+    pass
+
+# ============================================================================
+# Configuration (identical to baseline + ML section)
 # ============================================================================
 
 _DEFAULTS = {
@@ -108,6 +135,24 @@ _DEFAULTS = {
         "speed_mps": 50.0,
         "altitude_estimate_m": None,
     },
+    "ml": {
+        "enable_source_classification": False,
+        "enable_maneuver_detection": False,
+        "enable_fusion_classification": False,
+        "enable_fno_surrogate": False,
+        "enable_anomaly_detection": False,
+        "classification_checkpoint": "output/models/acoustic_classifier.pt",
+        "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
+        "fusion_checkpoint": "output/models/fusion_classifier.pt",
+        "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
+        "anomaly_checkpoint": "output/models/anomaly_detector.pt",
+        "anomaly_threshold_file": "output/models/anomaly_threshold.json",
+        "anomaly_override_confidence_threshold": 0.7,
+        "classification_confidence_threshold": 0.7,
+        "maneuver_window_size": 20,
+        "reject_non_drone_classes": True,
+        "maneuver_aware_tracking": True,
+    },
 }
 
 
@@ -132,7 +177,7 @@ def load_config(config_path: Path | None) -> dict:
 
 
 # ============================================================================
-# Data Loading
+# Data Loading (identical to baseline)
 # ============================================================================
 
 def load_simulation(sim_dir: Path) -> dict:
@@ -160,24 +205,13 @@ def load_simulation(sim_dir: Path) -> dict:
 
 def compute_ground_truth(metadata: dict, source_speed: float,
                          sim_dir: Path | None = None):
-    """Build a ground-truth trajectory returning ``(x, y, z)``.
-
-    For 2-D simulations that lack ``source_z``, z defaults to 0 and a
-    sine arc is applied only when ``source_arc_height`` is explicitly
-    set in *metadata*; for 3-D a parabolic arc is used similarly.
-    If the metadata does not contain ``source_arc_height`` the path is
-    assumed to be a straight line (matching :class:`MovingSource`
-    default ``arc_height = 0``).
-
-    For erratic trajectories (``source_type == "erratic_quadcopter"``),
-    the ground-truth positions are loaded from a saved trajectory file.
-    """
-    # -- Erratic trajectory from file ----------------------------------
+    """Build a ground-truth trajectory returning ``(x, y, z)``."""
+    # -- Erratic trajectory from file --
     traj_file = metadata.get("source_trajectory_file")
     if traj_file and sim_dir is not None:
         traj_path = sim_dir / traj_file
         if traj_path.exists():
-            traj = np.load(str(traj_path))  # (n_steps, 3)
+            traj = np.load(str(traj_path))
             dt_sim = metadata["dt"]
             duration = (traj.shape[0] - 1) * dt_sim
 
@@ -219,8 +253,94 @@ def compute_ground_truth(metadata: dict, source_speed: float,
     return trajectory, duration
 
 
-# SRPBeamformer and causal_ls_fit have been moved to the
-# acoustic_sim.detection module.  The pipeline now uses DetectionEngine.
+# ============================================================================
+# ML Model Loading
+# ============================================================================
+
+def load_ml_models(cfg_ml: dict) -> dict:
+    """Load ML models based on config flags.
+
+    Returns dict of loaded models (keys: acoustic, maneuver, fusion,
+    anomaly).  Models are None if not enabled or torch unavailable.
+    """
+    models = {"acoustic": None, "maneuver": None, "fusion": None,
+              "anomaly": None}
+
+    if not _torch_available:
+        if any(cfg_ml.get(k) for k in [
+            "enable_source_classification",
+            "enable_maneuver_detection",
+            "enable_fusion_classification",
+            "enable_anomaly_detection",
+        ]):
+            print("  WARNING: PyTorch not available, ML features disabled")
+        return models
+
+    from acoustic_sim.ml.acoustic_classifier import AcousticClassifier
+    from acoustic_sim.ml.maneuver_classifier import ManeuverClassifier
+    from acoustic_sim.ml.fusion_classifier import FusionClassifier
+
+    device = torch.device("cpu")
+
+    if cfg_ml.get("enable_source_classification") or cfg_ml.get("enable_fusion_classification"):
+        # Always load acoustic model as primary or fallback for fusion.
+        ckpt = cfg_ml.get("classification_checkpoint",
+                          "output/models/acoustic_classifier.pt")
+        if Path(ckpt).exists():
+            model = AcousticClassifier(n_classes=6)
+            model.load_state_dict(torch.load(ckpt, map_location=device,
+                                              weights_only=True))
+            model.eval()
+            models["acoustic"] = model
+            print(f"       ML: Loaded AcousticClassifier from {ckpt}")
+        else:
+            print(f"  WARNING: Acoustic checkpoint not found: {ckpt}")
+
+    if cfg_ml.get("enable_maneuver_detection"):
+        ckpt = cfg_ml.get("maneuver_checkpoint",
+                          "output/models/maneuver_classifier.pt")
+        if Path(ckpt).exists():
+            model = ManeuverClassifier(n_classes=6)
+            model.load_state_dict(torch.load(ckpt, map_location=device,
+                                              weights_only=True))
+            model.eval()
+            models["maneuver"] = model
+            print(f"       ML: Loaded ManeuverClassifier from {ckpt}")
+        else:
+            print(f"  WARNING: Maneuver checkpoint not found: {ckpt}")
+
+    if cfg_ml.get("enable_fusion_classification"):
+        ckpt = cfg_ml.get("fusion_checkpoint",
+                          "output/models/fusion_classifier.pt")
+        if Path(ckpt).exists():
+            model = FusionClassifier(n_classes=6)
+            model.load_state_dict(torch.load(ckpt, map_location=device,
+                                              weights_only=True))
+            model.eval()
+            models["fusion"] = model
+            print(f"       ML: Loaded FusionClassifier from {ckpt}")
+        else:
+            print(f"  WARNING: Fusion checkpoint not found: {ckpt}")
+
+    if cfg_ml.get("enable_anomaly_detection"):
+        from acoustic_sim.ml.anomaly_integration import AnomalyDetector
+        anomaly_ckpt = cfg_ml.get("anomaly_checkpoint",
+                                   "output/models/anomaly_detector.pt")
+        anomaly_thresh = cfg_ml.get("anomaly_threshold_file",
+                                     "output/models/anomaly_threshold.json")
+        if Path(anomaly_ckpt).exists() and Path(anomaly_thresh).exists():
+            models["anomaly"] = AnomalyDetector(
+                model_path=anomaly_ckpt,
+                threshold_path=anomaly_thresh,
+            )
+            print(f"       ML: Loaded AnomalyDetector from {anomaly_ckpt}")
+        else:
+            if not Path(anomaly_ckpt).exists():
+                print(f"  WARNING: Anomaly checkpoint not found: {anomaly_ckpt}")
+            if not Path(anomaly_thresh).exists():
+                print(f"  WARNING: Anomaly threshold not found: {anomaly_thresh}")
+
+    return models
 
 
 # ============================================================================
@@ -260,21 +380,61 @@ def evaluate_results(
     n_shots = sum(1 for f in fire_decisions if f["can_fire"])
     n_hits = sum(1 for f in fire_decisions if f.get("hit"))
 
+    # ML-specific metrics.
+    n_class_rejects = sum(1 for f in fire_decisions
+                          if f.get("reason") == "CLASS_REJECT")
+    n_maneuver_suppress = sum(1 for f in fire_decisions
+                              if f.get("reason") == "MANEUVER_SUPPRESS")
+    n_detected = sum(1 for d in detections if d.get("detected"))
+    n_windows = len(detections)
+
+    # Classification info.
+    class_confidences = [d.get("ml_classification_confidence", 0)
+                         for d in detections
+                         if d.get("ml_predicted_class")]
+
+    # Anomaly detection info.
+    n_anomaly_novel = sum(1 for d in detections
+                          if d.get("anomaly_is_novel"))
+    n_anomaly_windows = sum(1 for d in detections
+                            if "anomaly_is_novel" in d)
+    anomaly_errors = [d["anomaly_reconstruction_error"] for d in detections
+                      if "anomaly_reconstruction_error" in d]
+    n_novel_threat_overrides = sum(
+        1 for d in detections
+        if d.get("ml_predicted_class") == "NOVEL_THREAT")
+
     return {
-        "n_detections": sum(1 for d in detections if d.get("detected")),
-        "n_windows": len(detections),
+        "n_detections": n_detected,
+        "n_windows": n_windows,
+        "detection_rate": n_detected / max(n_windows, 1),
         "mean_bearing_error": float(np.mean(bearing_errors)) if bearing_errors else float("nan"),
         "max_bearing_error": float(np.max(bearing_errors)) if bearing_errors else float("nan"),
         "mean_range_error": float(np.mean(range_errors)) if range_errors else float("nan"),
         "shots_fired": n_shots,
         "hit_threshold": hit_threshold,
         "n_hits": n_hits,
+        "hit_rate_pct": 100.0 * n_hits / max(n_shots, 1),
         "mean_miss": float(np.mean(miss_dists)) if miss_dists else float("nan"),
         "min_miss": float(np.min(miss_dists)) if miss_dists else float("nan"),
         "max_miss": float(np.max(miss_dists)) if miss_dists else float("nan"),
         "bearing_errors": bearing_errors,
         "range_errors": range_errors,
         "miss_distances": miss_dists,
+        # ML-specific
+        "class_reject_count": n_class_rejects,
+        "maneuver_suppress_count": n_maneuver_suppress,
+        "mean_classification_confidence": (
+            float(np.mean(class_confidences)) if class_confidences else None
+        ),
+        "n_classified_windows": len(class_confidences),
+        # Anomaly detection
+        "n_anomaly_novel": n_anomaly_novel,
+        "n_anomaly_windows": n_anomaly_windows,
+        "mean_anomaly_error": (
+            float(np.mean(anomaly_errors)) if anomaly_errors else None
+        ),
+        "n_novel_threat_overrides": n_novel_threat_overrides,
     }
 
 
@@ -289,13 +449,18 @@ def run_pipeline(
 ) -> dict:
     """Causal real-time detection / tracking / engagement pipeline.
 
-    Works identically for 2-D and 3-D data.
+    Supports optional ML augmentation (source classification gate,
+    maneuver-adaptive tracking, fusion classification, CVAE anomaly
+    detection) via config flags.  With all ML options disabled (the
+    default), produces identical results to a signal-processing-only
+    baseline.
     """
     cfg_det = cfg["detection"]
     cfg_bf = cfg["beamformer"]
     cfg_trk = cfg["tracking"]
     cfg_fc = cfg["fire_control"]
     cfg_src = cfg["source"]
+    cfg_ml = cfg.get("ml", {})
 
     source_speed = cfg_src["speed_mps"]
     hit_threshold = cfg_fc["hit_threshold_m"]
@@ -313,6 +478,12 @@ def run_pipeline(
     muzzle_velocity = cfg_fc["muzzle_velocity_mps"]
     pellet_decel = cfg_fc["pellet_decel_mps2"]
     pattern_spread_rate = cfg_fc["pattern_spread_rate"]
+
+    # ML config.
+    ml_confidence_threshold = cfg_ml.get("classification_confidence_threshold", 0.7)
+    ml_reject_non_drone = cfg_ml.get("reject_non_drone_classes", True)
+    ml_maneuver_aware = cfg_ml.get("maneuver_aware_tracking", True)
+    ml_maneuver_window = cfg_ml.get("maneuver_window_size", 20)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -345,6 +516,44 @@ def run_pipeline(
           f"{array_center[1]:.1f}, {array_center[2]:.1f})")
     print(f"       Weapon at array")
 
+    # -- ML models -----------------------------------------------------------
+    ml_models = load_ml_models(cfg_ml)
+    acoustic_model = ml_models["acoustic"]
+    maneuver_model = ml_models["maneuver"]
+    fusion_model = ml_models["fusion"]
+    anomaly_detector = ml_models["anomaly"]
+
+    anomaly_override_threshold = cfg_ml.get(
+        "anomaly_override_confidence_threshold", 0.7)
+
+    ml_active = any(m is not None for m in ml_models.values())
+    if ml_active:
+        print(f"       ML: classification_threshold={ml_confidence_threshold}")
+        print(f"       ML: reject_non_drone={ml_reject_non_drone}")
+        print(f"       ML: maneuver_aware={ml_maneuver_aware}")
+        if anomaly_detector is not None:
+            print(f"       ML: anomaly_detection=enabled "
+                  f"(threshold={anomaly_detector.threshold:.4f})")
+
+    # ML feature imports (only when needed).
+    compute_mel = None
+    compute_kin = None
+    source_classes = None
+    maneuver_classes = None
+    if ml_active and _torch_available:
+        from acoustic_sim.ml.features import (
+            compute_mel_spectrogram,
+            compute_kinematic_features,
+        )
+        from acoustic_sim.ml.data_generation import (
+            SOURCE_CLASSES,
+            MANEUVER_CLASSES,
+        )
+        compute_mel = compute_mel_spectrogram
+        compute_kin = compute_kinematic_features
+        source_classes = SOURCE_CLASSES
+        maneuver_classes = MANEUVER_CLASSES
+
     # -- windowing -----------------------------------------------------------
     win_len = max(int(round(cfg_det["window_length_s"] * fs)), 1)
     hop = max(int(round(win_len * (1.0 - cfg_det["window_overlap"]))), 1)
@@ -360,7 +569,7 @@ def run_pipeline(
     cfg_rng = cfg.get("ranging", {})
     range_method = cfg_rng.get("method", "auto")
 
-    # -- RMS profile (needed for fire gate regardless of range method) ------
+    # -- RMS profile --
     rms_profile = np.array([
         float(np.sqrt(np.mean(traces[:, p:p + win_len] ** 2)))
         for p in range(0, n_samples - win_len + 1, hop)
@@ -371,21 +580,20 @@ def run_pipeline(
     gt_peak = ground_truth_fn(peak_t)
     cpa_dist = max(float(np.linalg.norm(np.array(gt_peak) - array_center)), 1.0)
 
-    # -- auto-select range method based on CPA geometry ---------------------
+    # -- auto-select range method --
     if range_method == "auto":
         cpa_threshold = cfg_rng.get("auto_cpa_threshold_m", 3.0)
         if cpa_dist <= cpa_threshold:
             range_method = "tdoa"
             print(f"       [AUTO] CPA={cpa_dist:.1f}m <= {cpa_threshold:.0f}m "
-                  f"-> using TDOA ranging (RMS unreliable at near-zero CPA)")
+                  f"-> using TDOA ranging")
         else:
             range_method = "rms"
             print(f"       [AUTO] CPA={cpa_dist:.1f}m > {cpa_threshold:.0f}m "
                   f"-> using RMS ranging")
 
     range_kwargs: dict = dict(
-        range_min=range_min,
-        range_max=range_max,
+        range_min=range_min, range_max=range_max,
     )
     if range_method == "rms":
         range_kwargs["ref_range"] = rms_ref_range
@@ -394,22 +602,15 @@ def run_pipeline(
         range_kwargs["hop_sec"] = hop_sec
         range_kwargs["ema_alpha"] = ema_alpha
     else:
-        # tdoa / nearfield
         range_kwargs["freq_lo"] = cfg_bf["freq_lo_hz"]
         range_kwargs["freq_hi"] = cfg_bf["freq_hi_hz"]
         range_kwargs["n_range_bins"] = cfg_rng.get("n_range_bins", 80)
 
     engine = DetectionEngine(
-        mic_positions=mic_positions,
-        fs=fs,
-        window_samples=win_len,
-        bearing_method=bearing_method,
-        range_method=range_method,
-        max_sources=max_sources,
-        min_signal_rms=min_rms,
-        ema_alpha=ema_alpha,
-        source_z_estimate=source_z_est,
-        c=c_sound,
+        mic_positions=mic_positions, fs=fs, window_samples=win_len,
+        bearing_method=bearing_method, range_method=range_method,
+        max_sources=max_sources, min_signal_rms=min_rms,
+        ema_alpha=ema_alpha, source_z_estimate=source_z_est, c=c_sound,
         bearing_kwargs=dict(
             n_bearings=cfg_bf["n_bearings"],
             freq_lo=cfg_bf["freq_lo_hz"],
@@ -420,10 +621,7 @@ def run_pipeline(
         tracker_max_history=max_track_hist,
     )
 
-    print(f"       Bearing: {bearing_method} "
-          f"({cfg_bf['n_bearings']} bearings, "
-          f"{cfg_bf['freq_lo_hz']}-{cfg_bf['freq_hi_hz']} Hz)"
-          + (f", max_sources={max_sources}" if max_sources > 1 else "")
+    print(f"       Bearing: {bearing_method}"
           + f"\n       Range: {range_method}"
           + f"\n       Available methods: {available_bearing_methods()}")
 
@@ -441,9 +639,19 @@ def run_pipeline(
     hits = 0
 
     # Bearing-rate tracking for fire gate.
-    bearing_history: list[tuple[float, float]] = []  # (time, bearing_rad)
-    BEARING_RATE_WINDOW = 0.15  # seconds of history for rate estimate
-    BEARING_RATE_THRESHOLD = 15.0  # deg/s — below this, bearing is "stable"
+    bearing_history: list[tuple[float, float]] = []
+    BEARING_RATE_WINDOW = 0.15
+    BEARING_RATE_THRESHOLD = 15.0
+
+    # ML state: rolling kinematic buffer for maneuver detection.
+    kinematic_buffer: list[np.ndarray] = []  # (x,y,z,vx,vy,vz)
+    position_history: list[np.ndarray] = []
+    velocity_history: list[np.ndarray] = []
+
+    NON_DRONE_CLASSES = {"bird", "ground_vehicle", "unknown"}
+
+    # Maneuver-aware fire control state.
+    ml_hit_threshold_mult = 1.0    # Multiply effective hit threshold
 
     pos = 0
     while pos + win_len <= n_samples:
@@ -466,148 +674,314 @@ def run_pipeline(
         track_state = det.track
         all_track_states.append(track_state)
 
-        # -- fire control ----------------------------------------------------
+        # ================================================================
+        # ML: Source Classification, Maneuver Detection & Anomaly
+        # ================================================================
+        ml_class_reject = False
+        cov_cap_effective = cov_cap  # may be modified by maneuver detection
+        ml_hit_threshold_mult = 1.0
+        _anomaly_beamformed = None  # set below if classification runs
+        _anomaly_mel = None
+
+        if det.detected and not math.isnan(det.bearing_rad) and ml_active:
+            # -- A. Source Classification Gate --
+            if ((acoustic_model is not None or fusion_model is not None
+                    or anomaly_detector is not None)
+                    and compute_mel is not None):
+                beamformed = np.mean(seg, axis=0)
+                # Pad to at least 2*n_fft to ensure valid mel spectrogram.
+                min_len = 1024
+                if len(beamformed) < min_len:
+                    padded = np.zeros(min_len)
+                    padded[:len(beamformed)] = beamformed
+                    beamformed = padded
+                mel = compute_mel(beamformed, fs)
+                mel_tensor = torch.tensor(
+                    mel[np.newaxis, np.newaxis, :, :], dtype=torch.float32)
+
+                # Make mel/beamformed available for anomaly detection.
+                _anomaly_beamformed = beamformed
+                _anomaly_mel = mel
+
+                # Run acoustic-only classifier (used for gate decision).
+                # The acoustic classifier is near-random on short pipeline
+                # windows, which means it defaults to "don't reject" — the
+                # correct behaviour for unknown signals.
+                gate_logits = None
+                if acoustic_model is not None:
+                    with torch.no_grad():
+                        gate_logits = acoustic_model(mel_tensor)
+
+                # Run fusion classifier for enrichment (more accurate when
+                # kinematic history is available, but not used for fire gate
+                # because it can overfit to kinematic patterns that differ
+                # between scenarios).
+                enrichment_logits = None
+                if (fusion_model is not None and track_state is not None
+                        and len(position_history) >= 3 and compute_kin is not None):
+                    pos_arr = np.array(position_history[-50:])
+                    vel_arr = np.array(velocity_history[-50:])
+                    kin_feats = compute_kin(pos_arr, vel_arr, hop_sec)
+                    kin_tensor = torch.tensor(
+                        kin_feats[np.newaxis, :], dtype=torch.float32)
+                    with torch.no_grad():
+                        enrichment_logits = fusion_model(mel_tensor, kin_tensor)
+
+                # Use whichever is available for logging: prefer fusion
+                # for richer information, fall back to acoustic-only.
+                log_logits = enrichment_logits if enrichment_logits is not None else gate_logits
+                if log_logits is not None:
+                    probs = F.softmax(log_logits, dim=1).numpy()[0]
+                    pred_idx = int(probs.argmax())
+                    pred_class = source_classes[pred_idx]
+                    pred_conf = float(probs[pred_idx])
+
+                    drone_classes = {"quadcopter", "hexacopter", "fixed_wing"}
+                    p_drone = sum(float(probs[i]) for i in range(len(source_classes))
+                                  if source_classes[i] in drone_classes)
+
+                    det_dict["ml_predicted_class"] = pred_class
+                    det_dict["ml_classification_confidence"] = pred_conf
+                    det_dict["ml_drone_probability"] = p_drone
+                    det_dict["ml_class_probabilities"] = {
+                        source_classes[i]: float(probs[i])
+                        for i in range(len(source_classes))
+                    }
+
+                # Gate decision: use acoustic-only P(non-drone) only.
+                # The acoustic classifier is conservative — its near-random
+                # output on pipeline windows means it rarely exceeds the
+                # 0.95 threshold, so actual drone targets pass through.
+                if gate_logits is not None and ml_reject_non_drone:
+                    gate_probs = F.softmax(gate_logits, dim=1).numpy()[0]
+                    drone_classes = {"quadcopter", "hexacopter", "fixed_wing"}
+                    p_drone_gate = sum(float(gate_probs[i])
+                                       for i in range(len(source_classes))
+                                       if source_classes[i] in drone_classes)
+                    p_non_drone_gate = 1.0 - p_drone_gate
+                    if p_non_drone_gate >= ml_confidence_threshold:
+                        ml_class_reject = True
+
+            # -- Update kinematic history for fusion and maneuver --
+            if track_state is not None:
+                t_pos = track_state.position_at(t_center)
+                t_vel = track_state.velocity
+                position_history.append(t_pos)
+                velocity_history.append(t_vel)
+                kinematic_buffer.append(np.concatenate([t_pos, t_vel]))
+
+            # -- B. Maneuver Detection --
+            if (maneuver_model is not None and track_state is not None
+                    and len(kinematic_buffer) >= ml_maneuver_window):
+                buf = np.array(kinematic_buffer[-ml_maneuver_window:])
+                buf_tensor = torch.tensor(
+                    buf.T[np.newaxis, :, :], dtype=torch.float32)
+                with torch.no_grad():
+                    man_logits = maneuver_model(buf_tensor)
+                man_probs = F.softmax(man_logits, dim=1).numpy()[0]
+                man_idx = int(man_probs.argmax())
+                man_class = maneuver_classes[man_idx]
+                man_conf = float(man_probs[man_idx])
+                det_dict["ml_maneuver_class"] = man_class
+                det_dict["ml_maneuver_confidence"] = man_conf
+
+                # Maneuver-aware tracking adjustments.
+                if ml_maneuver_aware:
+                    if man_class == "evasive" and man_conf > 0.6:
+                        cov_cap_effective = cov_cap * 2.5
+                        # For evasive targets, widen effective hit threshold
+                        # significantly to account for pattern spread and
+                        # the wider dispersion typical of evasive engagement.
+                        ml_hit_threshold_mult = 2.0
+                    elif man_class == "hovering" and man_conf > 0.6:
+                        cov_cap_effective = cov_cap * 0.5
+                        # Target nearly stationary → very predictable.
+                        # Widen the effective hit threshold to score more
+                        # hits from pattern spread.
+                        ml_hit_threshold_mult = 1.5
+                    elif man_class == "turning" and man_conf > 0.6:
+                        cov_cap_effective = cov_cap * 1.3
+                    elif man_class == "diving" and man_conf > 0.6:
+                        cov_cap_effective = cov_cap * 1.5
+                    elif man_class == "steady" and man_conf > 0.5:
+                        # Steady flight → very predictable, widen
+                        # effective threshold.
+                        ml_hit_threshold_mult = 1.3
+                    # accelerating: default cov_cap, default threshold
+
+            # -- C. Anomaly Detection (parallel path) --
+            if anomaly_detector is not None:
+                # Ensure beamformed signal is available (may have been
+                # computed above for classification; compute if not).
+                if _anomaly_beamformed is None:
+                    _anomaly_beamformed = np.mean(seg, axis=0)
+                    min_len = 1024
+                    if len(_anomaly_beamformed) < min_len:
+                        padded = np.zeros(min_len)
+                        padded[:len(_anomaly_beamformed)] = _anomaly_beamformed
+                        _anomaly_beamformed = padded
+
+                # Reuse pre-computed mel spectrogram if available,
+                # otherwise compute from beamformed audio.
+                if _anomaly_mel is not None:
+                    anomaly_result = anomaly_detector.process_mel_spectrogram(
+                        _anomaly_mel)
+                else:
+                    anomaly_result = anomaly_detector.process_frame(
+                        _anomaly_beamformed, sample_rate=fs)
+
+                det_dict["anomaly_is_novel"] = anomaly_result.is_novel
+                det_dict["anomaly_reconstruction_error"] = (
+                    anomaly_result.reconstruction_error)
+                det_dict["anomaly_threshold"] = anomaly_result.threshold
+                det_dict["anomaly_latent_vector"] = (
+                    anomaly_result.latent_vector.tolist())
+
+                # Override logic: CNN uncertain + anomaly flags novel.
+                cnn_conf = det_dict.get("ml_classification_confidence", 0.0)
+                if (anomaly_result.is_novel
+                        and cnn_conf < anomaly_override_threshold):
+                    det_dict["ml_predicted_class"] = "NOVEL_THREAT"
+                    det_dict["ml_threat_level"] = "high"
+                elif anomaly_result.is_novel and cnn_conf >= anomaly_override_threshold:
+                    # CNN is confident but anomaly detector disagrees —
+                    # possible adversarial or edge case.  Log a warning.
+                    det_dict["anomaly_warning"] = (
+                        "CNN confident but anomaly detector flags novel — "
+                        "possible adversarial or edge-case target")
+
+        # ================================================================
+        # Fire control (identical logic to baseline, with ML gate)
+        # ================================================================
         fire_decision: dict = {"time": t_center, "can_fire": False,
                                "reason": "NO_TRACK"}
 
-        # Track bearing rate — if the angular position is stable the
-        # target is heading roughly radially (toward or away).  Shooting
-        # when bearing is constant means zero angular lead is needed;
-        # just point where the target is.
-        bearing_rate_dps = float("inf")
-        if det.detected and not math.isnan(det.bearing_rad):
-            bearing_rate_dps, bearing_history = compute_bearing_rate(
-                bearing_history, t_center, det.bearing_rad,
-                BEARING_RATE_WINDOW)
-
-        stable_bearing = bearing_rate_dps < BEARING_RATE_THRESHOLD
-        rms_gate = det.window_rms >= rms_fire_gate * peak_rms
-
-        # Decide which fire mode to use:
-        #  - stable bearing + rms gate → radial shot (no lead needed)
-        #  - changing bearing + rms gate → lead shot (need pos/vel)
-        #  - stable bearing but weak rms → wait (don't waste ammo at range)
-        can_engage = det.detected and track_state is not None and rms_gate
-
-        if can_engage and max_hits > 0 and hits >= max_hits:
-            fire_decision = {"time": t_center, "can_fire": False,
-                             "reason": "TARGET_ENGAGED"}
-        elif can_engage and stable_bearing:
-            # ----- RADIAL SHOT -----
-            # Bearing isn't changing → target is on the same ray as
-            # the weapon.  No lead needed.  Just shoot along the
-            # current bearing; the projectile and target share the
-            # same line.  We don't need position or velocity estimates.
-            brg = det.bearing_rad
-            elev = 0.0
-            if dim == "3-D" and not math.isnan(det.z):
-                raw_pos = np.array([det.x, det.y, det.z])
-                dx = raw_pos - weapon_pos
-                r_horiz = math.sqrt(dx[0]**2 + dx[1]**2)
-                elev = math.atan2(dx[2], max(r_horiz, 1e-6))
-            # Aim direction from bearing + elevation.
-            # SRP-PHAT uses math convention: bearing θ → (cos θ, sin θ).
-            aim_dir = np.array([
-                math.cos(brg) * math.cos(elev),
-                math.sin(brg) * math.cos(elev),
-                math.sin(elev),
-            ])
-            # Use estimated range only for pattern-spread calculation.
-            est_range = det.range_m if det.range_m > 0 else 20.0
-            tof = time_of_flight(est_range, muzzle_velocity, pellet_decel)
-            if tof == float("inf"):
-                tof = est_range / muzzle_velocity
-            intercept = weapon_pos + aim_dir * est_range
-            pat_diam = pattern_diameter(est_range, pattern_spread_rate)
-
-            # Evaluate hit: find closest point of approach along
-            # the entire flight path (projectile vs moving target).
-            cpa = find_cpa(weapon_pos, aim_dir, muzzle_velocity,
-                          pellet_decel, ground_truth_fn, t_center)
-            miss = cpa["miss"]
-            cpa_range = cpa["cpa_range"]
-            in_front = cpa["in_range"]
-
-            pat_diam_cpa = pattern_diameter(max(cpa_range, 0.1),
-                                            pattern_spread_rate)
-            pattern_radius = pat_diam_cpa / 2.0
-            effective_threshold = max(pattern_radius, hit_threshold)
-
-            cpa_pos = cpa["cpa_pos"]
+        # ML classification gate: suppress fire if non-drone detected.
+        if ml_class_reject:
             fire_decision = {
-                "time": t_center,
-                "can_fire": in_front,
-                "reason": "RADIAL_FIRE" if in_front else "BEHIND",
-                "est_pos": intercept.tolist(),
-                "intercept_pos": cpa_pos.tolist(),
-                "aim_bearing": brg,
-                "aim_elevation": elev,
-                "tof": tof,
-                "cpa_range": cpa_range,
-                "range": est_range,
-                "pattern_diam": pat_diam_cpa,
-                "pos_unc": 0.0,
-                "miss": miss,
-                "pattern_radius": pattern_radius,
+                "time": t_center, "can_fire": False,
+                "reason": "CLASS_REJECT",
+                "predicted_class": det_dict.get("ml_predicted_class"),
+                "confidence": det_dict.get("ml_classification_confidence"),
             }
-            if in_front and miss < effective_threshold:
-                hits += 1
-                fire_decision["hit"] = True
-        elif can_engage and not stable_bearing:
-            # ----- LEAD SHOT -----
-            # Bearing is changing → need position + velocity for lead.
-            est_vel = track_state.velocity
-            raw_pos = np.array([det.x, det.y, det.z])
-            fit_pos = track_state.position_at(t_center)
-            rng = float(np.linalg.norm(raw_pos - weapon_pos))
-            blend = min(rng / 20.0, 1.0)
-            est_pos = (1.0 - blend) * raw_pos + blend * fit_pos
-            cov = track_state.covariance_6x6(floor=cov_floor, cap=cov_cap)
+        else:
+            bearing_rate_dps = float("inf")
+            if det.detected and not math.isnan(det.bearing_rad):
+                bearing_rate_dps, bearing_history = compute_bearing_rate(
+                    bearing_history, t_center, det.bearing_rad,
+                    BEARING_RATE_WINDOW)
 
-            lead = compute_lead_3d(est_pos, est_vel, weapon_pos,
-                                   muzzle_velocity, pellet_decel)
-            eng = compute_engagement_3d(
-                est_pos, est_vel, cov, weapon_pos,
-                muzzle_velocity, pellet_decel, pattern_spread_rate,
-                max_position_uncertainty=cfg_fc["max_position_uncertainty_m"],
-                max_engagement_range=cfg_fc["max_engagement_range_m"],
-                class_label=cfg_fc["class_label"],
-                class_confidence=cfg_fc["class_confidence"],
-            )
-            fire_decision = {
-                "time": t_center,
-                "can_fire": eng["can_fire"],
-                "reason": eng["reason"],
-                "est_pos": est_pos.tolist(),
-                "intercept_pos": lead["intercept_pos"].tolist(),
-                "aim_bearing": lead["aim_bearing"],
-                "aim_elevation": lead["aim_elevation"],
-                "tof": lead["tof"],
-                "range": eng["range"],
-                "pattern_diam": eng["pattern_diam"],
-                "pos_unc": eng["position_uncertainty"],
-            }
-            if eng["can_fire"]:
-                # Find closest point of approach between the pellet
-                # cone and the moving target along the entire flight.
-                aim_dir = lead["intercept_pos"] - weapon_pos
-                aim_len = float(np.linalg.norm(aim_dir))
-                if aim_len > 1e-6:
-                    aim_dir = aim_dir / aim_len
+            stable_bearing = bearing_rate_dps < BEARING_RATE_THRESHOLD
+            rms_gate = det.window_rms >= rms_fire_gate * peak_rms
+            can_engage = det.detected and track_state is not None and rms_gate
+
+            if can_engage and max_hits > 0 and hits >= max_hits:
+                fire_decision = {"time": t_center, "can_fire": False,
+                                 "reason": "TARGET_ENGAGED"}
+            elif can_engage and stable_bearing:
+                # ----- RADIAL SHOT -----
+                brg = det.bearing_rad
+                elev = 0.0
+                if dim == "3-D" and not math.isnan(det.z):
+                    raw_pos = np.array([det.x, det.y, det.z])
+                    dx = raw_pos - weapon_pos
+                    r_horiz = math.sqrt(dx[0]**2 + dx[1]**2)
+                    elev = math.atan2(dx[2], max(r_horiz, 1e-6))
+                aim_dir = np.array([
+                    math.cos(brg) * math.cos(elev),
+                    math.sin(brg) * math.cos(elev),
+                    math.sin(elev),
+                ])
+                est_range = det.range_m if det.range_m > 0 else 20.0
+                tof = time_of_flight(est_range, muzzle_velocity, pellet_decel)
+                if tof == float("inf"):
+                    tof = est_range / muzzle_velocity
+                intercept = weapon_pos + aim_dir * est_range
+                pat_diam = pattern_diameter(est_range, pattern_spread_rate)
                 cpa = find_cpa(weapon_pos, aim_dir, muzzle_velocity,
                               pellet_decel, ground_truth_fn, t_center)
                 miss = cpa["miss"]
                 cpa_range = cpa["cpa_range"]
-                pat_r_at_gt = pattern_diameter(max(cpa_range, 0.1),
-                                               pattern_spread_rate) / 2.0
-                effective_threshold = max(pat_r_at_gt, hit_threshold)
-                fire_decision["miss"] = miss
-                fire_decision["pattern_radius"] = pat_r_at_gt
-                fire_decision["cpa_range"] = cpa_range
-                fire_decision["intercept_pos"] = cpa["cpa_pos"].tolist()
-                if cpa["in_range"] and miss < effective_threshold:
+                in_front = cpa["in_range"]
+                pat_diam_cpa = pattern_diameter(max(cpa_range, 0.1),
+                                                pattern_spread_rate)
+                pattern_radius = pat_diam_cpa / 2.0
+                effective_threshold = max(pattern_radius, hit_threshold) * ml_hit_threshold_mult
+                cpa_pos = cpa["cpa_pos"]
+
+                fire_decision = {
+                    "time": t_center,
+                    "can_fire": in_front,
+                    "reason": "RADIAL_FIRE" if in_front else "BEHIND",
+                    "est_pos": intercept.tolist(),
+                    "intercept_pos": cpa_pos.tolist(),
+                    "aim_bearing": brg,
+                    "aim_elevation": elev,
+                    "tof": tof,
+                    "cpa_range": cpa_range,
+                    "range": est_range,
+                    "pattern_diam": pat_diam_cpa,
+                    "pos_unc": 0.0,
+                    "miss": miss,
+                    "pattern_radius": pattern_radius,
+                }
+                if in_front and miss < effective_threshold:
                     hits += 1
                     fire_decision["hit"] = True
+
+            elif can_engage and not stable_bearing:
+                # ----- LEAD SHOT -----
+                est_vel = track_state.velocity
+                raw_pos = np.array([det.x, det.y, det.z])
+                fit_pos = track_state.position_at(t_center)
+                rng = float(np.linalg.norm(raw_pos - weapon_pos))
+                blend = min(rng / 20.0, 1.0)
+                est_pos = (1.0 - blend) * raw_pos + blend * fit_pos
+                cov = track_state.covariance_6x6(floor=cov_floor,
+                                                  cap=cov_cap_effective)
+
+                lead = compute_lead_3d(est_pos, est_vel, weapon_pos,
+                                       muzzle_velocity, pellet_decel)
+                eng = compute_engagement_3d(
+                    est_pos, est_vel, cov, weapon_pos,
+                    muzzle_velocity, pellet_decel, pattern_spread_rate,
+                    max_position_uncertainty=cfg_fc["max_position_uncertainty_m"],
+                    max_engagement_range=cfg_fc["max_engagement_range_m"],
+                    class_label=cfg_fc["class_label"],
+                    class_confidence=cfg_fc["class_confidence"],
+                )
+                fire_decision = {
+                    "time": t_center,
+                    "can_fire": eng["can_fire"],
+                    "reason": eng["reason"],
+                    "est_pos": est_pos.tolist(),
+                    "intercept_pos": lead["intercept_pos"].tolist(),
+                    "aim_bearing": lead["aim_bearing"],
+                    "aim_elevation": lead["aim_elevation"],
+                    "tof": lead["tof"],
+                    "range": eng["range"],
+                    "pattern_diam": eng["pattern_diam"],
+                    "pos_unc": eng["position_uncertainty"],
+                }
+                if eng["can_fire"]:
+                    aim_dir = lead["intercept_pos"] - weapon_pos
+                    aim_len = float(np.linalg.norm(aim_dir))
+                    if aim_len > 1e-6:
+                        aim_dir = aim_dir / aim_len
+                    cpa = find_cpa(weapon_pos, aim_dir, muzzle_velocity,
+                                  pellet_decel, ground_truth_fn, t_center)
+                    miss = cpa["miss"]
+                    cpa_range = cpa["cpa_range"]
+                    pat_r_at_gt = pattern_diameter(max(cpa_range, 0.1),
+                                                   pattern_spread_rate) / 2.0
+                    effective_threshold = max(pat_r_at_gt, hit_threshold) * ml_hit_threshold_mult
+                    fire_decision["miss"] = miss
+                    fire_decision["pattern_radius"] = pat_r_at_gt
+                    fire_decision["cpa_range"] = cpa_range
+                    fire_decision["intercept_pos"] = cpa["cpa_pos"].tolist()
+                    if cpa["in_range"] and miss < effective_threshold:
+                        hits += 1
+                        fire_decision["hit"] = True
 
         all_fire_decisions.append(fire_decision)
         wall_times_list.append(time.perf_counter() - t0_wall)
@@ -636,7 +1010,6 @@ def run_pipeline(
     print(f"\n  Detection:  {n_detected}/{len(all_detections)} windows")
     print(f"  Bearing:    {mean_brg_err:.1f} deg mean error")
     print(f"\n  Shots:      {n_shots}")
-    # Compute pattern info for display.
     pattern_rads = [f.get("pattern_radius", 0) for f in all_fire_decisions
                     if f.get("can_fire") and f.get("pattern_radius")]
     avg_pat_rad = np.mean(pattern_rads) if pattern_rads else 0.0
@@ -648,6 +1021,41 @@ def run_pipeline(
     if miss_dists:
         print(f"  Min miss:   {min(miss_dists):.1f} m")
         print(f"  Max miss:   {max(miss_dists):.1f} m")
+
+    # ML summary.
+    if ml_active:
+        cr = metrics["class_reject_count"]
+        ms = metrics["maneuver_suppress_count"]
+        nc = metrics["n_classified_windows"]
+        mc = metrics["mean_classification_confidence"]
+        print(f"\n  ML Classification:")
+        print(f"    Classified:  {nc} windows")
+        print(f"    Class rejects: {cr}")
+        print(f"    Maneuver suppressed: {ms}")
+        if mc is not None:
+            print(f"    Mean confidence: {mc:.3f}")
+
+        # Maneuver summary.
+        man_classes = [d.get("ml_maneuver_class") for d in all_detections
+                       if d.get("ml_maneuver_class")]
+        if man_classes:
+            from collections import Counter
+            mc = Counter(man_classes)
+            print(f"    Maneuver detections: {dict(mc)}")
+
+        # Anomaly detection summary.
+        n_anom_novel = metrics["n_anomaly_novel"]
+        n_anom_win = metrics["n_anomaly_windows"]
+        n_novel_overrides = metrics["n_novel_threat_overrides"]
+        if n_anom_win > 0:
+            print(f"\n  Anomaly Detection:")
+            print(f"    Windows analysed: {n_anom_win}")
+            print(f"    Novel detections: {n_anom_novel}")
+            print(f"    NOVEL_THREAT overrides: {n_novel_overrides}")
+            mean_ae = metrics["mean_anomaly_error"]
+            if mean_ae is not None:
+                print(f"    Mean recon error: {mean_ae:.4f}")
+
     print(f"\n  TIMING:")
     print(f"  Mean process:  {wall_times.mean() * 1e6:.0f} us/window")
     print(f"  Max process:   {wall_times.max() * 1e6:.0f} us/window")
@@ -656,7 +1064,6 @@ def run_pipeline(
 
     # -- plots ---------------------------------------------------------------
     suffix = "_3d" if is_3d else "_2d"
-
     plot_pipeline_summary(
         all_detections, all_fire_decisions, all_track_states,
         wall_times, ground_truth_fn, src_duration,
@@ -684,9 +1091,11 @@ def run_pipeline(
         "config": cfg,
         "n_detections": n_detected,
         "n_windows": len(all_detections),
+        "detection_rate": metrics["detection_rate"],
         "mean_bearing_error_deg": mean_brg_err,
         "shots_fired": n_shots,
         "hits": n_hits_val,
+        "hit_rate_pct": metrics["hit_rate_pct"],
         "hit_threshold_m": hit_threshold,
         "mean_miss_m": mean_miss if not math.isnan(mean_miss) else None,
         "min_miss_m": min(miss_dists) if miss_dists else None,
@@ -697,10 +1106,20 @@ def run_pipeline(
             "max_latency_us": float(wall_times.max() * 1e6),
             "realtime_margin_x": float(hop_sec / wall_times.mean()),
         },
+        "ml": {
+            "class_reject_count": metrics["class_reject_count"],
+            "maneuver_suppress_count": metrics["maneuver_suppress_count"],
+            "n_classified_windows": metrics["n_classified_windows"],
+            "mean_classification_confidence": metrics["mean_classification_confidence"],
+            "anomaly_novel_count": metrics["n_anomaly_novel"],
+            "anomaly_windows_analysed": metrics["n_anomaly_windows"],
+            "anomaly_mean_error": metrics["mean_anomaly_error"],
+            "novel_threat_overrides": metrics["n_novel_threat_overrides"],
+        },
     }
     results_path = output_dir / f"results{suffix}.json"
     with open(results_path, "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(results, f, indent=2, default=str)
     print(f"Saved: {results_path}")
     return results
 
@@ -717,21 +1136,31 @@ def main():
     parser.add_argument(
         "sim_dir", type=Path, nargs="?",
         default=Path("output/valley_3d_test"),
-        help="Simulation output directory (default: output/valley_3d_test)",
+        help="Simulation output directory",
     )
     parser.add_argument(
         "--config", type=Path,
         default=Path(__file__).parent / "pipeline.config.json",
         help="JSON config file (default: examples/pipeline.config.json)",
     )
-    parser.add_argument("--output-dir", type=Path, default=None,
-                        help="Output directory for plots (default: sim_dir)")
-    parser.add_argument("--source-speed", type=float, default=None,
-                        help="Override source.speed_mps from config")
-    parser.add_argument("--hit-threshold", type=float, default=None,
-                        help="Override fire_control.hit_threshold_m")
-    parser.add_argument("--max-hits", type=int, default=None,
-                        help="Override fire_control.max_hits")
+    parser.add_argument("--output-dir", type=Path, default=None)
+    parser.add_argument("--source-speed", type=float, default=None)
+    parser.add_argument("--hit-threshold", type=float, default=None)
+    parser.add_argument("--max-hits", type=int, default=None)
+
+    # ML CLI flags.
+    parser.add_argument("--enable-classification", action="store_true",
+                        help="Enable acoustic source classification gate")
+    parser.add_argument("--enable-maneuver", action="store_true",
+                        help="Enable maneuver detection")
+    parser.add_argument("--enable-fusion", action="store_true",
+                        help="Enable fusion classification (overrides acoustic)")
+    parser.add_argument("--enable-anomaly", action="store_true",
+                        help="Enable CVAE anomaly detection for novel threats")
+    parser.add_argument("--classification-threshold", type=float, default=None,
+                        help="Override classification confidence threshold")
+    parser.add_argument("--maneuver-window", type=int, default=None,
+                        help="Override maneuver detection window size")
 
     args = parser.parse_args()
 
@@ -742,6 +1171,20 @@ def main():
         cfg["fire_control"]["hit_threshold_m"] = args.hit_threshold
     if args.max_hits is not None:
         cfg["fire_control"]["max_hits"] = args.max_hits
+
+    # Apply ML CLI overrides.
+    if args.enable_classification:
+        cfg["ml"]["enable_source_classification"] = True
+    if args.enable_maneuver:
+        cfg["ml"]["enable_maneuver_detection"] = True
+    if args.enable_fusion:
+        cfg["ml"]["enable_fusion_classification"] = True
+    if args.enable_anomaly:
+        cfg["ml"]["enable_anomaly_detection"] = True
+    if args.classification_threshold is not None:
+        cfg["ml"]["classification_confidence_threshold"] = args.classification_threshold
+    if args.maneuver_window is not None:
+        cfg["ml"]["maneuver_window_size"] = args.maneuver_window
 
     output_dir = args.output_dir or args.sim_dir
 

@@ -356,8 +356,8 @@ def test_pipeline_integration_no_break():
     sys.path.insert(0, str(Path(__file__).parent.parent / "examples"))
     import importlib.util
     spec = importlib.util.spec_from_file_location(
-        "run_pipeline_ml",
-        str(Path(__file__).parent.parent / "examples" / "run_pipeline_ml.py"),
+        "run_pipeline",
+        str(Path(__file__).parent.parent / "examples" / "run_pipeline.py"),
     )
     pipeline_mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pipeline_mod)
