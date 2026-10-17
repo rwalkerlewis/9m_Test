@@ -26,8 +26,11 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Generated output is committed (figures, JSON, datasets, FDTD caches).  GitHub rejects single
-# files above 100 MB; such files go through Git LFS or are left out, nothing else is excluded.
+# Generated output: figures, JSON and logs are committed; datasets and FDTD caches are not.
+output/**/cache/
+output/*/snapshots/
+*.npy
+*.npz
 
 # Audio files (tracked in audio/ but ignore stray ones)
 *.wav
