@@ -1,0 +1,268 @@
+"""FDTD runner for the harbor: per-source simulations with on-disk caching.
+
+The wave equation is linear, so a scenario is simulated by running one FDTD
+job per source and summing the resulting sensor gathers (plus noise added
+afterwards).  Each job is cached on disk, keyed by everything that affects
+the result.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
+import numpy as np
+from scipy.ndimage import distance_transform_edt
+
+from acoustic_sim.fdtd import FDTDConfig, FDTDSolver, fd2_coefficients, fd2_cfl_factor
+from acoustic_sim.harbor.environment import HarborEnvironment
+from acoustic_sim.harbor.sensors import SensorLayout
+from acoustic_sim.sources import CustomTrajectorySource, StaticSource
+
+
+@dataclass
+class HarborFDTDConfig:
+    """FDTD settings for harbor runs.
+
+    Attributes
+    ----------
+    fs : float
+        Output sample rate [Hz]; the solver steps at ``dt = 1 / fs``.
+    total_time : float
+        Simulated duration [s].
+    fd_order : int
+        Spatial stencil order.
+    damping_width, damping_max : int, float
+        Sponge layer at the grid edges (open-sea boundary).
+    background_absorption : float
+        Small per-step damping everywhere (water absorption).
+    shore_loss_width, shore_loss_max : float
+        Land is a pressure-release wall (p = 0 on land cells, so even thin
+        breakwaters are opaque).  To stop the harbor ringing forever, water
+        within ``shore_loss_width`` metres of land gets extra damping ramping
+        quadratically up to ``shore_loss_max`` (per step) at the wall, which
+        mimics sloping beaches and rip-rap.  The amplitude reflection
+        coefficient of a wall is roughly ``exp(-mean_sigma * width * fs / c)``
+        with ``mean_sigma = shore_loss_max / 3``; the defaults give R ≈ 0.5
+        (measured 0.51).
+        Set ``shore_loss_max = 0`` for perfectly reflecting quays.
+    """
+
+    fs: float = 600.0
+    total_time: float = 120.0
+    fd_order: int = 4
+    damping_width: int = 30
+    damping_max: float = 0.15
+    background_absorption: float = 1e-4
+    shore_loss_width: float = 40.0
+    shore_loss_max: float = 0.15
+    use_cuda: bool = False
+
+    @property
+    def dt(self) -> float:
+        return 1.0 / self.fs
+
+    @property
+    def n_steps(self) -> int:
+        return int(round(self.total_time * self.fs))
+
+
+def cfl_dt(env: HarborEnvironment, fd_order: int = 4) -> float:
+    """Largest stable timestep [s] for *env* (the solver's own CFL limit)."""
+    spec = fd2_cfl_factor(fd2_coefficients(fd_order))
+    return 2.0 * env.dx / (float(np.max(env.model.values)) * np.sqrt(2.0 * spec))
+
+
+@dataclass
+class Gather:
+    """Sensor traces from one FDTD run, shape ``(n_receivers, n_steps)``."""
+
+    traces: np.ndarray
+    fs: float
+
+    @property
+    def n_steps(self) -> int:
+        return self.traces.shape[1]
+
+    @property
+    def t(self) -> np.ndarray:
+        return np.arange(self.n_steps) / self.fs
+
+    def save(self, path: str | Path) -> None:
+        np.savez_compressed(path, traces=self.traces, fs=self.fs)
+
+    @classmethod
+    def load(cls, path: str | Path) -> "Gather":
+        with np.load(path) as d:
+            return cls(traces=d["traces"], fs=float(d["fs"]))
+
+
+class HarborFDTDSolver(FDTDSolver):
+    """:class:`FDTDSolver` with a shoreline (land mask) on top of the sponge edges."""
+
+    def __init__(
+        self,
+        env: HarborEnvironment,
+        hcfg: HarborFDTDConfig,
+        source: StaticSource | CustomTrajectorySource,
+        receivers: np.ndarray,
+    ) -> None:
+        self._env = env
+        self._hcfg = hcfg
+        fcfg = FDTDConfig(
+            # Half a step of slack so the solver's ceil() yields exactly n_steps.
+            total_time=(hcfg.n_steps - 0.5) * hcfg.dt,
+            dt=hcfg.dt,
+            damping_width=hcfg.damping_width,
+            damping_max=hcfg.damping_max,
+            air_absorption=hcfg.background_absorption,
+            snapshot_interval=0,
+            use_cuda=hcfg.use_cuda,
+            fd_order=hcfg.fd_order,
+        )
+        super().__init__(env.model, fcfg, source, receivers)
+        assert self.n_steps == hcfg.n_steps
+
+        g_top = self.row_start - self._ghost_top
+        g_bot = self.row_end + self._ghost_bot
+        self._water_local = self.xp.asarray(env.water[g_top:g_bot, :].astype(np.float64))
+
+    def _build_damping_global(self, ny: int, nx: int) -> np.ndarray:
+        sigma = super()._build_damping_global(ny, nx)
+        w, smax = self._hcfg.shore_loss_width, self._hcfg.shore_loss_max
+        if w > 0 and smax > 0:
+            dist = distance_transform_edt(self._env.water) * self._env.dx  # metres from land, 0 on land
+            ramp = np.clip((w - dist) / w, 0.0, 1.0) ** 2
+            sigma = np.maximum(sigma, smax * ramp)
+        return sigma
+
+    def _inject(self, p, n: int) -> None:
+        super()._inject(p, n)
+        p *= self._water_local  # pressure-release land
+
+    def _sample_receivers(self, n: int) -> None:
+        """Sample on the device (single process); the base class copies the whole field to the host every step."""
+        if not self.is_cuda or self.use_mpi:
+            return super()._sample_receivers(n)
+        xp = self.xp
+        if getattr(self, "_trace_buf", None) is None:
+            self._trace_buf = xp.zeros((self.receivers.shape[0], self.n_steps), dtype=xp.float64)
+            self._rx = [xp.asarray(a) for a in (self._recv_iy, self._recv_ix, self._recv_wx, self._recv_wy)]
+        iy, ix, wx, wy = self._rx
+        p = self.p_now
+        self._trace_buf[:, n] = (
+            p[iy, ix] * (1 - wx) * (1 - wy) + p[iy, ix + 1] * wx * (1 - wy)
+            + p[iy + 1, ix] * (1 - wx) * wy + p[iy + 1, ix + 1] * wx * wy
+        )
+
+    def _finish_traces(self) -> None:
+        if getattr(self, "_trace_buf", None) is not None:
+            self.traces[:] = self.xp.asnumpy(self._trace_buf)
+
+    def run(self, *args, **kwargs):
+        out = super().run(*args, **kwargs)
+        self._finish_traces()
+        return out
+
+    def run_with_snapshots(self, steps: list[int], verbose: bool = False) -> tuple[dict, dict[int, np.ndarray]]:
+        """Like :meth:`run` but also returns the full pressure field at the given steps (rank 0)."""
+        wanted = set(steps)
+        fields: dict[int, np.ndarray] = {}
+        for n in range(self.n_steps):
+            self._step(n)
+            if n in wanted:
+                field = self._gather_field()
+                if self.rank == 0:
+                    fields[n] = field
+            if verbose and self.rank == 0 and n % 1000 == 0:
+                print(f"  step {n:>6d} / {self.n_steps}")
+        self._finish_traces()
+        out = {"traces": self.traces, "dt": self.dt, "n_steps": self.n_steps}
+        return out, fields
+
+
+# ----------------------------------------------------------------------
+# Cache + top-level runner
+# ----------------------------------------------------------------------
+
+def _cache_key(
+    env: HarborEnvironment,
+    layout: SensorLayout,
+    cfg: HarborFDTDConfig,
+    signal: np.ndarray,
+    position: np.ndarray | None,
+    trajectory: tuple[np.ndarray, np.ndarray] | None,
+) -> str:
+    h = hashlib.sha1()
+    h.update(env.fingerprint().encode())
+    h.update(layout.fingerprint().encode())
+    h.update(json.dumps({k: v for k, v in asdict(cfg).items() if k != "use_cuda"}, sort_keys=True).encode())
+    h.update(np.ascontiguousarray(signal, dtype=np.float64).tobytes())
+    if position is not None:
+        h.update(b"static")
+        h.update(np.asarray(position, dtype=np.float64).tobytes())
+    else:
+        t, xy = trajectory  # type: ignore[misc]
+        h.update(b"moving")
+        h.update(np.asarray(t, dtype=np.float64).tobytes())
+        h.update(np.asarray(xy, dtype=np.float64).tobytes())
+    return h.hexdigest()
+
+
+def simulate_source(
+    env: HarborEnvironment,
+    layout: SensorLayout,
+    cfg: HarborFDTDConfig,
+    signal: np.ndarray,
+    *,
+    position: tuple[float, float] | None = None,
+    trajectory: tuple[np.ndarray, np.ndarray] | None = None,
+    cache_dir: str | Path | None = None,
+    verbose: bool = False,
+) -> Gather:
+    """Run one source through the harbor and record all sensors.
+
+    Parameters
+    ----------
+    signal : ndarray, shape ``(cfg.n_steps,)``
+        Source waveform sampled at ``cfg.fs``.
+    position : (x, y), optional
+        Fixed source location.
+    trajectory : (times, xy), optional
+        Moving source: ``times`` shape ``(M,)`` [s] and ``xy`` shape ``(M, 2)``,
+        linearly interpolated.  Exactly one of *position* / *trajectory* is required.
+    cache_dir : path, optional
+        If given, results are cached there and reused on identical inputs.
+    """
+    if (position is None) == (trajectory is None):
+        raise ValueError("provide exactly one of position or trajectory")
+    signal = np.asarray(signal, dtype=np.float64)
+    if signal.shape != (cfg.n_steps,):
+        raise ValueError(f"signal must have shape ({cfg.n_steps},), got {signal.shape}")
+
+    start_xy = np.asarray(position if position is not None else trajectory[1], dtype=float)
+    if not np.all(env.is_water(start_xy.reshape(-1, 2))):
+        raise ValueError("source position(s) must lie in water")
+
+    path = None
+    if cache_dir is not None:
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
+        key = _cache_key(env, layout, cfg, signal, None if position is None else np.asarray(position), trajectory)
+        path = Path(cache_dir) / f"gather_{key}.npz"
+        if path.exists():
+            return Gather.load(path)
+
+    if position is not None:
+        source = StaticSource(x=float(position[0]), y=float(position[1]), signal=signal)
+    else:
+        times, xy = trajectory
+        source = CustomTrajectorySource(times=np.asarray(times, float), positions=np.asarray(xy, float), signal=signal)
+
+    solver = HarborFDTDSolver(env, cfg, source, layout.receivers)
+    out = solver.run(verbose=verbose)
+    gather = Gather(traces=out["traces"].astype(np.float32), fs=cfg.fs)
+    if path is not None:
+        gather.save(path)
+    return gather
