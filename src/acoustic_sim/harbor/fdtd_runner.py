@@ -18,6 +18,7 @@ from scipy.ndimage import distance_transform_edt
 
 from acoustic_sim.fdtd import FDTDConfig, FDTDSolver, fd2_coefficients, fd2_cfl_factor
 from acoustic_sim.harbor.environment import HarborEnvironment
+from acoustic_sim.harbor.scatterer import Scatterer, body_factor
 from acoustic_sim.harbor.sensors import SensorLayout
 from acoustic_sim.sources import CustomTrajectorySource, StaticSource
 
@@ -100,7 +101,8 @@ class Gather:
 
 
 class HarborFDTDSolver(FDTDSolver):
-    """:class:`FDTDSolver` with a shoreline (land mask) on top of the sponge edges."""
+    """:class:`FDTDSolver` with a shoreline (land mask) on top of the sponge edges, and
+    optional moving scattering bodies (:class:`~acoustic_sim.harbor.scatterer.Scatterer`)."""
 
     def __init__(
         self,
@@ -108,9 +110,11 @@ class HarborFDTDSolver(FDTDSolver):
         hcfg: HarborFDTDConfig,
         source: StaticSource | CustomTrajectorySource,
         receivers: np.ndarray,
+        scatterers: list[Scatterer] | tuple[Scatterer, ...] = (),
     ) -> None:
         self._env = env
         self._hcfg = hcfg
+        self._scatterers = list(scatterers)
         fcfg = FDTDConfig(
             # Half a step of slack so the solver's ceil() yields exactly n_steps.
             total_time=(hcfg.n_steps - 0.5) * hcfg.dt,
@@ -141,6 +145,29 @@ class HarborFDTDSolver(FDTDSolver):
     def _inject(self, p, n: int) -> None:
         super()._inject(p, n)
         p *= self._water_local  # pressure-release land
+        if self._scatterers:
+            self._apply_scatterers(p, n)
+
+    def _apply_scatterers(self, p, n: int) -> None:
+        """Multiply the pressure inside every body by its (smooth) factor at this step."""
+        t = n * self.dt
+        x, y, dx = self.model.x, self.model.y, self._env.dx
+        for sc in self._scatterers:
+            if not sc.track.active_at(t)[0]:
+                continue
+            centre, heading = sc.pose_at(t)
+            res = body_factor(sc, centre, heading, x, y, dx)
+            if res is None:
+                continue
+            rows, cols, factor = res
+            # Global rows -> this rank's padded local rows.
+            r0 = rows.start - self.row_start + self._ghost_top
+            r1 = rows.stop - self.row_start + self._ghost_top
+            lo, hi = max(r0, 0), min(r1, p.shape[0])
+            if hi <= lo:
+                continue
+            f = factor[lo - r0: hi - r0]
+            p[lo:hi, cols] *= self.xp.asarray(f) if self.is_cuda else f
 
     def _sample_receivers(self, n: int) -> None:
         """Sample on the device (single process); the base class copies the whole field to the host every step."""
@@ -194,10 +221,13 @@ def _cache_key(
     signal: np.ndarray,
     position: np.ndarray | None,
     trajectory: tuple[np.ndarray, np.ndarray] | None,
+    scatterers: list[Scatterer] | tuple[Scatterer, ...] = (),
 ) -> str:
     h = hashlib.sha1()
     h.update(env.fingerprint().encode())
     h.update(layout.fingerprint().encode())
+    for sc in scatterers:
+        h.update(sc.fingerprint().encode())
     h.update(json.dumps({k: v for k, v in asdict(cfg).items() if k != "use_cuda"}, sort_keys=True).encode())
     h.update(np.ascontiguousarray(signal, dtype=np.float64).tobytes())
     if position is not None:
@@ -221,6 +251,7 @@ def simulate_source(
     trajectory: tuple[np.ndarray, np.ndarray] | None = None,
     cache_dir: str | Path | None = None,
     verbose: bool = False,
+    scatterers: list[Scatterer] | tuple[Scatterer, ...] = (),
 ) -> Gather:
     """Run one source through the harbor and record all sensors.
 
@@ -235,6 +266,10 @@ def simulate_source(
         linearly interpolated.  Exactly one of *position* / *trajectory* is required.
     cache_dir : path, optional
         If given, results are cached there and reused on identical inputs.
+    scatterers : list of Scatterer, optional
+        Bodies present in the water during this run (they scatter the source's field).
+        Strain cables are sampled at their three points per channel and collapsed, so the
+        returned gather always has ``layout.n_receivers`` rows.
     """
     if (position is None) == (trajectory is None):
         raise ValueError("provide exactly one of position or trajectory")
@@ -249,7 +284,8 @@ def simulate_source(
     path = None
     if cache_dir is not None:
         Path(cache_dir).mkdir(parents=True, exist_ok=True)
-        key = _cache_key(env, layout, cfg, signal, None if position is None else np.asarray(position), trajectory)
+        key = _cache_key(env, layout, cfg, signal, None if position is None else np.asarray(position), trajectory,
+                         scatterers)
         path = Path(cache_dir) / f"gather_{key}.npz"
         if path.exists():
             return Gather.load(path)
@@ -260,9 +296,10 @@ def simulate_source(
         times, xy = trajectory
         source = CustomTrajectorySource(times=np.asarray(times, float), positions=np.asarray(xy, float), signal=signal)
 
-    solver = HarborFDTDSolver(env, cfg, source, layout.receivers)
+    solver = HarborFDTDSolver(env, cfg, source, layout.sample_points, scatterers=scatterers)
     out = solver.run(verbose=verbose)
-    gather = Gather(traces=out["traces"].astype(np.float32), fs=cfg.fs)
+    traces = layout.collapse(out["traces"].T).T if layout.has_strain else out["traces"]
+    gather = Gather(traces=np.ascontiguousarray(traces, dtype=np.float32), fs=cfg.fs)
     if path is not None:
         gather.save(path)
     return gather

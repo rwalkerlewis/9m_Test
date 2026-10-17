@@ -155,21 +155,9 @@ def uniform_water_environment(
     return _finish_environment([], width, height, dx, c0, 0.0, "open_water")
 
 
-def build_synthetic_harbor(
-    dx: float = 5.0,
-    c0: float = 1500.0,
-    shallow_c_drop: float = 10.0,
-) -> HarborEnvironment:
-    """Synthetic 2400 m x 1800 m harbor: enclosed basin, breakwater, 200 m entrance.
-
-    Layout (metres, +y is north)::
-
-        north shore with two piers          y ~ 1450-1500
-        basin  x 330-2000, y 560-1450
-        breakwater at y ~ 520-620, entrance gap x 1250-1450
-        open sea south of the breakwater and east of x ~ 2200
-    """
-    polygons = [
+def harbor_polygons() -> list[np.ndarray]:
+    """Land polygons of the synthetic harbor, in harbor coordinates [m]."""
+    return [
         # North + west land mass (shoreline with a jagged quay)
         np.array([
             (0, 1800), (2400, 1800), (2400, 1560), (2000, 1500), (1650, 1470),
@@ -188,4 +176,32 @@ def build_synthetic_harbor(
         segment_polygon((300, 560), (1250, 520), 40.0),
         segment_polygon((1450, 520), (2200, 620), 40.0),
     ]
-    return _finish_environment(polygons, 2400.0, 1800.0, dx, c0, shallow_c_drop, "synthetic_harbor")
+
+
+def build_synthetic_harbor(
+    dx: float = 5.0,
+    c0: float = 1500.0,
+    shallow_c_drop: float = 10.0,
+    crop: tuple[float, float, float, float] | None = None,
+) -> HarborEnvironment:
+    """Synthetic 2400 m x 1800 m harbor: enclosed basin, breakwater, 200 m entrance.
+
+    Layout (metres, +y is north)::
+
+        north shore with two piers          y ~ 1450-1500
+        basin  x 330-2000, y 560-1450
+        breakwater at y ~ 520-620, entrance gap x 1250-1450
+        open sea south of the breakwater and east of x ~ 2200
+
+    *crop* = ``(x0, x1, y0, y1)`` cuts a rectangle out of the harbor and returns it as its own
+    environment with the origin moved to ``(x0, y0)``, so a fine grid can be run on a part of the
+    harbor (the bistatic scenario) with the same shoreline and piers.  Cuts through land polygons
+    are handled by rasterising the shifted polygons on the smaller grid.
+    """
+    polygons = harbor_polygons()
+    if crop is None:
+        return _finish_environment(polygons, 2400.0, 1800.0, dx, c0, shallow_c_drop, "synthetic_harbor")
+    x0, x1, y0, y1 = crop
+    shifted = [poly - np.array([x0, y0]) for poly in polygons]
+    env = _finish_environment(shifted, x1 - x0, y1 - y0, dx, c0, shallow_c_drop, "synthetic_harbor_crop")
+    return env

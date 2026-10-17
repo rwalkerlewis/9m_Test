@@ -10,17 +10,32 @@ import numpy as np
 from acoustic_sim.harbor.environment import HarborEnvironment
 
 
+DAS_MODES = ("pressure", "strain")
+
+
 @dataclass
 class Cable:
-    """A fiber cable modelled as a dense line of pressure receivers.
+    """A fiber cable modelled as a dense line of receivers.
 
     Channels are placed at equal arc-length spacing along the polyline
     ``waypoints``, starting at the first waypoint.
+
+    ``das_mode = "pressure"`` samples the pressure at the channel (the original toy
+    model).  ``das_mode = "strain"`` mimics what a DAS interrogator measures, the
+    axial strain over a gauge length ``gauge_length``: the field is sampled at
+    ``s - g/2``, ``s`` and ``s + g/2`` along the fiber and the second difference
+    ``p(s + g/2) - 2 p(s) + p(s - g/2)`` is the channel output.  For a plane wave this
+    equals ``-4 sin^2(k g cos(theta) / 4) p``, i.e. ``-(k g cos(theta))^2 p / 4`` to leading
+    order: the cos^2 directivity of DAS, and it is right for every arrival (scattered, multipath) without knowing its
+    direction.  The output is unnormalised (no ``1/(rho omega^2)``); replicas built
+    with :meth:`SensorLayout.collapse` of the same Green's function match it exactly.
     """
 
     name: str
     waypoints: np.ndarray  # (N, 2) metres
     channel_spacing: float = 10.0
+    das_mode: str = "pressure"
+    gauge_length: float = 10.0
 
     def __post_init__(self) -> None:
         self.waypoints = np.asarray(self.waypoints, dtype=float)
@@ -28,6 +43,28 @@ class Cable:
             raise ValueError("waypoints must have shape (N>=2, 2)")
         if self.channel_spacing <= 0:
             raise ValueError("channel_spacing must be positive")
+        if self.das_mode not in DAS_MODES:
+            raise ValueError(f"das_mode must be one of {DAS_MODES}, got {self.das_mode!r}")
+        if self.gauge_length <= 0:
+            raise ValueError("gauge_length must be positive")
+
+    @property
+    def is_strain(self) -> bool:
+        return self.das_mode == "strain"
+
+    @property
+    def sample_points(self) -> np.ndarray:
+        """Points at which the field is sampled: ``(n_channels, 2)`` for pressure,
+        ``(3 n_channels, 2)`` for strain (``s - g/2, s, s + g/2`` per channel, in that order)."""
+        pos = self.positions
+        if not self.is_strain:
+            return pos
+        half = 0.5 * self.gauge_length * self.tangents
+        return np.stack([pos - half, pos, pos + half], axis=1).reshape(-1, 2)
+
+    @property
+    def n_samples(self) -> int:
+        return self.n_channels * (3 if self.is_strain else 1)
 
     @property
     def length(self) -> float:
@@ -68,6 +105,9 @@ class SensorLayout:
     """All sensors in one scenario.
 
     Receiver ordering is: every cable's channels in order, then hydrophones.
+    ``receivers`` are the channel positions (what the processing uses);
+    ``sample_points`` are where the FDTD samples the field (three per strain
+    channel), and :meth:`collapse` turns sampled traces into channel traces.
     """
 
     cables: list[Cable] = field(default_factory=list)
@@ -96,8 +136,43 @@ class SensorLayout:
 
     @property
     def receivers(self) -> np.ndarray:
-        """Stacked receiver positions ``(n_receivers, 2)`` in solver order."""
+        """Stacked channel positions ``(n_receivers, 2)`` in solver order."""
         return np.vstack([self.das_positions, self.hydrophones])
+
+    @property
+    def has_strain(self) -> bool:
+        return any(c.is_strain for c in self.cables)
+
+    @property
+    def n_samples(self) -> int:
+        return sum(c.n_samples for c in self.cables) + self.n_hydrophones
+
+    @property
+    def sample_points(self) -> np.ndarray:
+        """Field sampling points ``(n_samples, 2)``: every cable's sample points, then hydrophones."""
+        parts = [c.sample_points for c in self.cables] + [self.hydrophones]
+        return np.vstack([p for p in parts if len(p)])
+
+    def collapse(self, sampled, xp=np):
+        """Channel values from sampled values: second difference for strain cables, identity otherwise.
+
+        *sampled* has the sample points on its **last** axis (``(..., n_samples)``); the result
+        has the receivers on its last axis (``(..., n_receivers)``).  Works for traces
+        ``(n_samples, n_t).T`` and for replica tables alike.
+        """
+        if not self.has_strain:
+            return sampled
+        out, start = [], 0
+        for c in self.cables:
+            block = sampled[..., start:start + c.n_samples]
+            start += c.n_samples
+            if c.is_strain:
+                b = block.reshape(block.shape[:-1] + (c.n_channels, 3))
+                out.append(b[..., 2] - 2.0 * b[..., 1] + b[..., 0])
+            else:
+                out.append(block)
+        out.append(sampled[..., start:])
+        return xp.concatenate(out, axis=-1)
 
     @property
     def slices(self) -> dict[str, slice]:
@@ -117,16 +192,21 @@ class SensorLayout:
         return {name: traces[sl] for name, sl in self.slices.items()}
 
     def validate(self, env: HarborEnvironment, margin: float = 10.0) -> None:
-        """Raise if any receiver is on land or closer than *margin* m to it."""
-        ok = env.is_water(self.receivers, margin=margin)
+        """Raise if any sampling point is on land or closer than *margin* m to it."""
+        pts = self.sample_points
+        ok = env.is_water(pts, margin=margin)
         if not np.all(ok):
             bad = np.flatnonzero(~ok)
             raise ValueError(
-                f"{bad.size} receiver(s) on land or within {margin} m of shore, "
-                f"first at index {bad[0]} {self.receivers[bad[0]]}"
+                f"{bad.size} receiver sample point(s) on land or within {margin} m of shore, "
+                f"first at index {bad[0]} {pts[bad[0]]}"
             )
 
     def fingerprint(self) -> str:
+        """Hash of everything that affects the sampled traces (unchanged for pressure layouts)."""
         h = hashlib.sha1()
         h.update(np.ascontiguousarray(self.receivers, dtype=np.float64).tobytes())
+        if self.has_strain:
+            h.update(b"strain")
+            h.update(np.ascontiguousarray(self.sample_points, dtype=np.float64).tobytes())
         return h.hexdigest()
