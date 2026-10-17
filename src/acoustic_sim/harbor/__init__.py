@@ -28,6 +28,7 @@ from acoustic_sim.harbor.scenario import (
 )
 from acoustic_sim.harbor.sensors import Cable, SensorLayout
 from acoustic_sim.harbor.vessels import Track, VesselConfig, build_track
+from acoustic_sim.harbor.helmholtz import HelmholtzConfig, HelmholtzSolver, ReplicaLibrary, replica_library
 
 __all__ = [
     "AISConfig",
@@ -40,8 +41,11 @@ __all__ = [
     "HarborFDTDConfig",
     "HarborFDTDSolver",
     "HarborScenarioConfig",
+    "HelmholtzConfig",
+    "HelmholtzSolver",
     "NoiseConfig",
     "NoiseRealisation",
+    "ReplicaLibrary",
     "SensorLayout",
     "Track",
     "VesselConfig",
@@ -55,6 +59,7 @@ __all__ = [
     "generate_ais",
     "generate_noise",
     "render_vessel_gathers",
+    "replica_library",
     "simulate_scenario",
     "simulate_source",
     "uniform_water_environment",
