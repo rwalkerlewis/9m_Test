@@ -95,3 +95,26 @@ def test_injection_calibration_gives_unit_rms_at_100m(kind, speed):
     rms = np.sqrt(np.mean(g.traces[:, t > 2.0] ** 2, axis=1))
     gain = 0.3 + 0.7 * min(speed / 5.0, 1.5) if kind == "ship" else 0.5 + 0.5 * min(speed / 2.0, 1.5)
     assert np.allclose(rms / gain, 1.0, atol=0.2)
+
+
+def test_f_max_follows_grid_spacing():
+    """The usable band is 80 Hz on the 5 m grid and scales inversely with dx."""
+    from acoustic_sim.harbor.signatures import F_MAX, f_max_for_grid
+
+    assert F_MAX == 80.0
+    assert f_max_for_grid(5.0) == 80.0
+    assert np.isclose(f_max_for_grid(0.5), 800.0)
+    assert np.isclose(f_max_for_grid(2.5, c=1500.0), 160.0)
+
+
+def test_injection_band_follows_f_max():
+    """to_injection on a fine grid keeps energy above 80 Hz; on the 5 m grid it does not."""
+    n = 6000
+    rng = np.random.default_rng(3)
+    ref = rng.standard_normal(n)
+    fine = to_injection(ref, FS, InjectionCalibration(dx=0.5, dt=1.0 / FS, c=1500.0))
+    coarse = to_injection(ref, FS, InjectionCalibration(dx=5.0, dt=1.0 / FS, c=1500.0))
+    f = np.fft.rfftfreq(n, 1.0 / FS)
+    hi = f > 100.0
+    assert np.sum(np.abs(np.fft.rfft(coarse))[hi] ** 2) < 1e-12 * np.sum(np.abs(np.fft.rfft(coarse)) ** 2)
+    assert np.sum(np.abs(np.fft.rfft(fine))[hi] ** 2) > 0.1 * np.sum(np.abs(np.fft.rfft(fine)) ** 2)

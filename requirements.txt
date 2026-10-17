@@ -1,4 +1,4 @@
 numpy
 scipy
 matplotlib
-mpi4py
+# optional: mpi4py (parallel FDTD), cupy-cuda12x (GPU), torch (ML classifiers), pytest

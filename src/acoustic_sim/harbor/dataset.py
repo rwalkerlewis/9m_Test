@@ -15,7 +15,7 @@ from acoustic_sim.harbor.fdtd_runner import Gather, simulate_source
 from acoustic_sim.harbor.noise import NoiseRealisation, generate_noise
 from acoustic_sim.harbor.scenario import HarborScenarioConfig, build_environment, build_layout
 from acoustic_sim.harbor.sensors import Cable, SensorLayout
-from acoustic_sim.harbor.signatures import InjectionCalibration, make_reference_signal, to_injection
+from acoustic_sim.harbor.signatures import InjectionCalibration, f_max_for_grid, make_reference_signal, to_injection
 from acoustic_sim.harbor.vessels import Track, VesselConfig, build_track
 
 
@@ -100,12 +100,17 @@ class HarborDataset:
 def vessel_injection(
     vcfg: VesselConfig, track: Track, env: HarborEnvironment, cfg: HarborScenarioConfig
 ) -> np.ndarray:
-    """Unit-level FDTD injection waveform (1 Pa rms at 100 m at nominal speed)."""
+    """Unit-level FDTD injection waveform (1 Pa rms at 100 m at nominal speed).
+
+    The radiated band ends at :func:`f_max_for_grid` of the environment's grid spacing
+    (80 Hz on the default 5 m grid) and never above the Nyquist frequency.
+    """
     fs, n = cfg.fdtd.fs, cfg.fdtd.n_steps
     t = np.arange(n) / fs
-    ref = make_reference_signal(vcfg.kind, track.speed_at(t), track.active_at(t), fs, vcfg.seed)
+    f_max = min(f_max_for_grid(env.dx), 0.45 * fs)
+    ref = make_reference_signal(vcfg.kind, track.speed_at(t), track.active_at(t), fs, vcfg.seed, f_max)
     cal = InjectionCalibration(dx=env.dx, dt=cfg.fdtd.dt, c=float(np.median(env.model.values[env.water])))
-    return to_injection(ref, fs, cal)
+    return to_injection(ref, fs, cal, f_max)
 
 
 def _job(args):

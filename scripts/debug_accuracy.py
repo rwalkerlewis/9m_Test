@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Debug fire control decisions to understand why shots aren't being fired.
+"""Analyze pipeline accuracy vs ground truth.
 
 Usage:
-    python tests/debug_fire_control.py output/valley_test --source-speed 50
+    python scripts/debug_accuracy.py output/valley_test --source-speed 50
 """
 
 import argparse
@@ -24,10 +24,14 @@ def main():
 
     cfg = load_config(Path(__file__).parent.parent / "examples" / "pipeline.config.json")
     cfg["source"]["speed_mps"] = args.source_speed
-    cfg["fire_control"]["max_hits"] = 0  # Don't stop early
+    cfg["fire_control"]["max_hits"] = 0  # Don't stop early — see all shots
 
     results = run_pipeline(args.sim_dir, args.sim_dir, cfg)
-    print(f"\nShots: {results['shots_fired']}, Hits: {results['hits']}")
+    brg = results["mean_bearing_error_deg"]
+    print(f"\nMean bearing error: {brg:.1f} deg")
+    print(f"Shots: {results['shots_fired']}, Hits: {results['hits']}")
+    if results["min_miss_m"] is not None:
+        print(f"Miss range: {results['min_miss_m']:.1f} – {results['max_miss_m']:.1f} m")
     sys.exit(0)
 
 

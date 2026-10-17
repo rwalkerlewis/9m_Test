@@ -6,10 +6,10 @@ This wraps run_pipeline.py for quick evaluation runs with additional
 diagnostic output. For the main pipeline, use run_pipeline.py directly.
 
 Usage:
-    python tests/run_detection_eval.py [--output-dir OUTPUT_DIR]
+    python scripts/run_detection_eval.py [--output-dir OUTPUT_DIR]
 
 Example:
-    python tests/run_detection_eval.py --output-dir output/valley_test
+    python scripts/run_detection_eval.py --output-dir output/valley_test
 """
 
 import argparse

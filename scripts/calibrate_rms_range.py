@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Analyze pipeline accuracy vs ground truth.
+"""Calibrate RMS-to-range relationship from simulation data.
+
+Runs the unified pipeline and reports range estimation metrics.
 
 Usage:
-    python tests/debug_accuracy.py output/valley_test --source-speed 50
+    python scripts/calibrate_rms_range.py output/valley_test --source-speed 50
 """
 
 import argparse
@@ -24,14 +26,11 @@ def main():
 
     cfg = load_config(Path(__file__).parent.parent / "examples" / "pipeline.config.json")
     cfg["source"]["speed_mps"] = args.source_speed
-    cfg["fire_control"]["max_hits"] = 0  # Don't stop early — see all shots
+    cfg["fire_control"]["max_hits"] = 0  # Run all windows
 
     results = run_pipeline(args.sim_dir, args.sim_dir, cfg)
-    brg = results["mean_bearing_error_deg"]
-    print(f"\nMean bearing error: {brg:.1f} deg")
+    print(f"\nBearing: {results['mean_bearing_error_deg']:.1f} deg")
     print(f"Shots: {results['shots_fired']}, Hits: {results['hits']}")
-    if results["min_miss_m"] is not None:
-        print(f"Miss range: {results['min_miss_m']:.1f} – {results['max_miss_m']:.1f} m")
     sys.exit(0)
 
 

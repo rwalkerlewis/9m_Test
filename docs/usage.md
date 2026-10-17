@@ -8,14 +8,17 @@
 pip install -e .
 ```
 
-Core dependencies: `numpy`, `scipy`, `matplotlib`, `mpi4py`.
+Core dependencies: `numpy`, `scipy`, `matplotlib`.  Everything else is an optional extra:
+`[cuda]` (CuPy), `[ml]` (torch), `[mpi]` (mpi4py), `[dev]` (pytest).
 
-### MPI (required for multi-process FDTD)
+### MPI (optional, only for multi-process FDTD)
+
+The solver runs single-process when mpi4py is absent.
 
 ```bash
 # Ubuntu / Debian
 sudo apt-get install libopenmpi-dev openmpi-bin
-pip install mpi4py
+pip install -e ".[mpi]"
 ```
 
 ### CUDA (optional GPU acceleration)

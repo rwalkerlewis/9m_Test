@@ -26,9 +26,14 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Generated output
+# Generated output: only metadata, results JSON, per-run READMEs and output/models/*.pt are tracked
 output/*/snapshots/
 output/comparison/
+output/ml_demo_test/
+output/ml_demo/*.pt
+output/harbor/
+output/harbor_bistatic/
+output/**/*.png
 *.npy
 *.npz
 

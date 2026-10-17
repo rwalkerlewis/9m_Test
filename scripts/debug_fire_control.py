@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Debug tracker vs ground truth positions.
+"""Debug fire control decisions to understand why shots aren't being fired.
 
 Usage:
-    python tests/debug_tracker.py output/valley_test --source-speed 50
+    python scripts/debug_fire_control.py output/valley_test --source-speed 50
 """
 
 import argparse
@@ -27,8 +27,7 @@ def main():
     cfg["fire_control"]["max_hits"] = 0  # Don't stop early
 
     results = run_pipeline(args.sim_dir, args.sim_dir, cfg)
-    print(f"\nBearing error: {results['mean_bearing_error_deg']:.1f} deg")
-    print(f"Shots: {results['shots_fired']}, Hits: {results['hits']}")
+    print(f"\nShots: {results['shots_fired']}, Hits: {results['hits']}")
     sys.exit(0)
 
 

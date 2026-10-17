@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Calibrate RMS-to-range relationship from simulation data.
-
-Runs the unified pipeline and reports range estimation metrics.
+"""Debug tracker vs ground truth positions.
 
 Usage:
-    python tests/calibrate_rms_range.py output/valley_test --source-speed 50
+    python scripts/debug_tracker.py output/valley_test --source-speed 50
 """
 
 import argparse
@@ -26,10 +24,10 @@ def main():
 
     cfg = load_config(Path(__file__).parent.parent / "examples" / "pipeline.config.json")
     cfg["source"]["speed_mps"] = args.source_speed
-    cfg["fire_control"]["max_hits"] = 0  # Run all windows
+    cfg["fire_control"]["max_hits"] = 0  # Don't stop early
 
     results = run_pipeline(args.sim_dir, args.sim_dir, cfg)
-    print(f"\nBearing: {results['mean_bearing_error_deg']:.1f} deg")
+    print(f"\nBearing error: {results['mean_bearing_error_deg']:.1f} deg")
     print(f"Shots: {results['shots_fired']}, Hits: {results['hits']}")
     sys.exit(0)
 
