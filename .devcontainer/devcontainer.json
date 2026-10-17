@@ -1,7 +1,11 @@
 {
-  "name": "Acoustic Sim",
-  "dockerComposeFile": "../docker-compose.yml",
+  "name": "Acoustic Sim (CPU)",
+  "dockerComposeFile": ["../docker-compose.yml"],
   "service": "dev",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "devuser",
+  "updateRemoteUserUID": true,
+  "shutdownAction": "stopCompose",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -9,22 +13,10 @@
         "ms-python.pylint"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/opt/venv/bin/python"
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"]
       }
     }
-  },
-  "postCreateCommand": "pip install -e '.[cuda]' && git config --global --add safe.directory /workspace",
-  "remoteUser": "devuser",
-  "containerUser": "devuser",
-  "features": {
-    "ghcr.io/devcontainers/features/git:1": {}
-  },
-  "mounts": [
-    "source=${localEnv:SSH_AUTH_SOCK},target=/ssh-agent,type=bind,consistency=cached"
-  ],
-  "containerEnv": {
-    "SSH_AUTH_SOCK": "/ssh-agent"
-  },
-  "workspaceFolder": "/workspace",
-  "overrideCommand": true
+  }
 }

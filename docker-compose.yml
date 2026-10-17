@@ -1,36 +1,35 @@
-services:
-  dev:
-    build: .
-    user: devuser
-    volumes:
-      - .:/workspace
-    working_dir: /workspace
-    entrypoint: ["/bin/bash", "-c", "ln -sfn /opt/venv /workspace/.venv && exec bash"]
-    stdin_open: true
-    tty: true
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+name: acoustic-sim
 
+# Works on any machine with Docker; no GPU required.  For an NVIDIA GPU add the override file:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d dev
+# ./dev.sh does this automatically when it detects the NVIDIA container runtime.
+
+x-dev: &dev
+  build:
+    context: .
+    args:
+      USER_UID: ${HOST_UID:-1000}
+      USER_GID: ${HOST_GID:-1000}
+      BASE_IMAGE: ${BASE_IMAGE:-ubuntu:24.04}
+      EXTRAS: ${EXTRAS:-cuda,dev}
+  image: acoustic-sim:dev
+  user: devuser
+  init: true
+  volumes:
+    - .:/workspace
+  working_dir: /workspace
+  environment:
+    MPLBACKEND: Agg
+
+services:
+  # Long-lived development container: `docker compose up -d dev` then `docker compose exec dev bash`
+  # (this is also what the VS Code Dev Container attaches to).
+  dev:
+    <<: *dev
+    command: sleep infinity
+
+  # One-shot Helmholtz CLI:
+  #   docker compose run --rm simulate --model-file examples/domain.example.json --frequency 40
   simulate:
-    build: .
-    user: devuser
-    volumes:
-      - .:/workspace
-    working_dir: /workspace
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    # Override entrypoint args via: docker compose run simulate [args...]
-    # Example:
-    #   docker compose run simulate \
-    #     --model-file examples/domain.example.json \
-    #     --frequency 40 --plot-rays
+    <<: *dev
+    entrypoint: ["acoustic-sim"]

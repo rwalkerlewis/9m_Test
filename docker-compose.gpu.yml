@@ -1,0 +1,16 @@
+# Adds NVIDIA GPU access (needs the NVIDIA Container Toolkit on the host).
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d dev
+x-gpu: &gpu
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+services:
+  dev:
+    <<: *gpu
+  simulate:
+    <<: *gpu
