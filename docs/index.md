@@ -118,7 +118,10 @@ acoustic-sim/
 ├── pyproject.toml
 ├── requirements.txt
 ├── Dockerfile
-└── docker-compose.yml
+├── docker-compose.yml          # dev container (no GPU needed)
+├── docker-compose.gpu.yml      # adds NVIDIA GPU access
+├── dev.sh                      # shell / test / run helper for the container
+└── .devcontainer/              # VS Code Dev Containers (CPU default, gpu/ variant)
 ```
 
 ## Dependencies

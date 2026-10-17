@@ -29,12 +29,37 @@ pip install -e ".[cuda]"   # installs cupy-cuda12x
 
 ### Docker
 
+The dev container works on any machine with Docker, with or without an NVIDIA GPU.  The
+repository is bind-mounted at `/workspace`, so source edits never need a rebuild; the image
+holds only the toolchain and Python dependencies (Python 3.12, OpenMPI, NumPy/SciPy/Matplotlib,
+CuPy with its CUDA toolkit from pip, pytest).
+
 ```bash
-docker compose up dev       # interactive shell with GPU
+./dev.sh shell          # build if needed, then open a shell (Linux, macOS, WSL)
+./dev.sh test [args]    # pytest in the container (default: tests/harbor)
+./dev.sh run CMD...     # any command, e.g. ./dev.sh run python examples/harbor_m1_demo.py
+./dev.sh status         # shows whether GPU passthrough was detected
+./dev.sh down
 ```
 
-The container is built on `nvidia/cuda:12.6.3-devel-ubuntu24.04` with
-Python 3.12, OpenMPI, and CuPy.
+`dev.sh` enables GPU passthrough automatically when the NVIDIA Container Toolkit and a GPU are
+present; force it with `USE_GPU=1` or `USE_GPU=0`.  Without a GPU, `use_cuda=True` falls back to
+the CPU with a warning and the GPU-only tests skip.  Without `dev.sh`:
+
+```bash
+docker compose up -d dev                                                  # CPU
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d dev  # NVIDIA GPU
+docker compose exec dev bash
+```
+
+**VS Code:** "Reopen in Container" and choose `Acoustic Sim (CPU)` or `Acoustic Sim (NVIDIA GPU)`
+(`.devcontainer/gpu`).  The remote user's UID is matched to yours automatically.
+
+**PyTorch** (only the optional `ml` modules and their tests need it) is not in the default image:
+`EXTRAS=cuda,dev,ml ./dev.sh build`.  **Windows:** use WSL or the Dev Container.
+
+Generated data (`output/`, caches, `.npz`) lives in the repository folder on the host and is not
+in git; on a new machine regenerate it, e.g. `./dev.sh run python examples/harbor_m2_dataset.py`.
 
 ---
 

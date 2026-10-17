@@ -123,11 +123,14 @@ sudo apt-get install libopenmpi-dev openmpi-bin
 pip install -e ".[mpi]"
 ```
 
-Docker:
+Docker (works on any machine, GPU optional; the repository is bind-mounted, so edits need no rebuild):
 
 ```bash
-docker compose up dev
+./dev.sh shell        # build if needed, then open a shell in the dev container
+./dev.sh test         # pytest tests/harbor inside the container
 ```
+
+See [Usage](docs/usage.md#docker) for VS Code Dev Containers, GPU control and PyTorch.
 
 ### Run the FDTD forward model
 
