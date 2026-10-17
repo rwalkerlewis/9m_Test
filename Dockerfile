@@ -37,14 +37,16 @@ RUN python -m venv $VIRTUAL_ENV && \
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 WORKDIR /workspace
+RUN chown ${USERNAME}:${USERNAME} /workspace
 
-COPY pyproject.toml requirements.txt ./
-COPY src/ src/
-RUN pip install --no-cache-dir --break-system-packages -e ".[cuda]"
-
-COPY . .
-RUN chown -R ${USERNAME}:${USERNAME} /workspace
-
+# Install as the non-root user so the venv stays writable (postCreateCommand
+# re-runs pip install inside the dev container).
 USER ${USERNAME}
+
+COPY --chown=${USERNAME}:${USERNAME} pyproject.toml requirements.txt ./
+COPY --chown=${USERNAME}:${USERNAME} src/ src/
+RUN pip install --no-cache-dir -e ".[cuda,dev]"
+
+COPY --chown=${USERNAME}:${USERNAME} . .
 
 CMD ["bash"]

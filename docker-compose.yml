@@ -5,7 +5,7 @@ services:
     volumes:
       - .:/workspace
     working_dir: /workspace
-    entrypoint: ["/bin/bash", "-c", "ln -sfn /opt/venv /workspace/.venv && exec bash"]
+    entrypoint: ["/bin/bash"]
     stdin_open: true
     tty: true
     deploy:

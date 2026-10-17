@@ -16,6 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 cuda = ["cupy-cuda12x"]
+dev = ["build"]
 
 [project.scripts]
 acoustic-sim = "acoustic_sim.cli:main"

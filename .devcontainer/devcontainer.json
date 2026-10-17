@@ -9,21 +9,19 @@
         "ms-python.pylint"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/opt/venv/bin/python"
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "explorer.excludeGitIgnore": false,
+        "files.exclude": {
+          "**/.git": false
+        }
       }
     }
   },
-  "postCreateCommand": "pip install -e '.[cuda]' && git config --global --add safe.directory /workspace",
+  "postCreateCommand": "python -m pip install -e '.[cuda,dev]' && git config --global --add safe.directory /workspace && git config --global core.autocrlf input",
   "remoteUser": "devuser",
   "containerUser": "devuser",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {}
-  },
-  "mounts": [
-    "source=${localEnv:SSH_AUTH_SOCK},target=/ssh-agent,type=bind,consistency=cached"
-  ],
-  "containerEnv": {
-    "SSH_AUTH_SOCK": "/ssh-agent"
   },
   "workspaceFolder": "/workspace",
   "overrideCommand": true

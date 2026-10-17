@@ -118,6 +118,12 @@ Docker:
 docker compose up dev
 ```
 
+For editing, building, committing, and pushing from VS Code, open the repository
+root and run **Dev Containers: Reopen in Container** (or **Rebuild and Reopen in
+Container** after configuration changes). The complete checkout, including
+`.git`, is mounted read-write at `/workspace`, not just `src/`. See the
+[development workflow](docs/usage.md#vs-code-dev-container) for build and Git setup.
+
 ### Run the FDTD forward model
 
 ```bash
