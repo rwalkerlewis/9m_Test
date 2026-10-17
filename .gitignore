@@ -26,16 +26,8 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Generated output: only metadata, results JSON, per-run READMEs and output/models/*.pt are tracked
-output/*/snapshots/
-output/comparison/
-output/ml_demo_test/
-output/ml_demo/*.pt
-output/harbor/
-output/harbor_bistatic/
-output/**/*.png
-*.npy
-*.npz
+# Generated output is committed (figures, JSON, datasets, FDTD caches).  GitHub rejects single
+# files above 100 MB; such files go through Git LFS or are left out, nothing else is excluded.
 
 # Audio files (tracked in audio/ but ignore stray ones)
 *.wav
