@@ -13,6 +13,7 @@ from acoustic_sim.harbor.ais import AISReports, generate_ais
 from acoustic_sim.harbor.environment import HarborEnvironment
 from acoustic_sim.harbor.fdtd_runner import Gather, simulate_source
 from acoustic_sim.harbor.noise import NoiseRealisation, generate_noise
+from acoustic_sim.harbor.scatterer import Scatterer
 from acoustic_sim.harbor.scenario import HarborScenarioConfig, build_environment, build_layout
 from acoustic_sim.harbor.sensors import Cable, SensorLayout
 from acoustic_sim.harbor.signatures import InjectionCalibration, f_max_for_grid, make_reference_signal, to_injection
@@ -33,6 +34,10 @@ class HarborDataset:
     gain: np.ndarray | None = None          # coupling gain per receiver
     dead: np.ndarray | None = None          # dead-channel mask (truth for QC)
     meta: dict = field(default_factory=dict)
+    components: dict[str, np.ndarray] | None = None
+    """Scaled noise-free parts of ``clean``: ``"direct:<vessel>"`` for each radiating vessel and
+    ``"scattered:<vessel>><body>"`` for the field of *vessel* scattered by *body*, plus
+    ``"noise"`` (the measurement minus the clean field).  Truth for measuring processing gain."""
 
     @property
     def t(self) -> np.ndarray:
@@ -52,6 +57,8 @@ class HarborDataset:
         for name in ("clean", "gain", "dead"):
             if getattr(self, name) is not None:
                 arrays[name] = getattr(self, name)
+        for key, arr in (self.components or {}).items():
+            arrays["comp:" + key] = arr
         track_meta = {}
         for k, tr in self.tracks.items():
             arrays[f"track_{k}_t"], arrays[f"track_{k}_xy"] = tr.t, tr.xy
@@ -90,6 +97,7 @@ class HarborDataset:
                 gain=d["gain"] if "gain" in d else None,
                 dead=d["dead"] if "dead" in d else None,
                 meta=header["meta"],
+                components={k[5:]: d[k] for k in d.files if k.startswith("comp:")} or None,
             )
 
 
@@ -113,9 +121,20 @@ def vessel_injection(
     return to_injection(ref, fs, cal, f_max)
 
 
+def make_scatterer(vcfg: VesselConfig, track: Track) -> Scatterer:
+    """The scattering body of a vessel with ``body_length > 0``."""
+    return Scatterer(vcfg.id, track, vcfg.body_length, vcfg.body_width, vcfg.body_kind, vcfg.body_strength, vcfg.body_shape)
+
+
+def scattered_key(source_id: str, body_id: str) -> str:
+    """Gather key of the field of *source_id* scattered by *body_id*."""
+    return f"{source_id}>{body_id}"
+
+
 def _job(args):
-    env, layout, fdtd_cfg, signal, position, trajectory, cache_dir = args
-    return simulate_source(env, layout, fdtd_cfg, signal, position=position, trajectory=trajectory, cache_dir=cache_dir)
+    env, layout, fdtd_cfg, signal, position, trajectory, cache_dir, scatterers = args
+    return simulate_source(env, layout, fdtd_cfg, signal, position=position, trajectory=trajectory, cache_dir=cache_dir,
+                           scatterers=scatterers)
 
 
 def render_vessel_gathers(
@@ -125,23 +144,47 @@ def render_vessel_gathers(
     tracks: dict[str, Track],
     cache_dir: str | Path | None = None,
     workers: int = 1,
+    include_silent: bool = False,
 ) -> dict[str, Gather]:
-    """Unit-level sensor gathers for every vessel (cached; FDTD jobs can run in parallel)."""
-    jobs = []
-    for v in cfg.vessels:
+    """Unit-level sensor gathers (cached; FDTD jobs can run in parallel).
+
+    One gather per radiating vessel (``level_pa != 0``, or every vessel with *include_silent*),
+    keyed by its id, plus, for every scattering body in the scenario, one gather per radiating
+    vessel keyed ``scattered_key(vessel, body)``: the field of that vessel **scattered** by the
+    body, i.e. the run with the body present minus the run without it.  Multiple scattering
+    between two bodies is not represented (each body is run on its own).  A body that also
+    radiates (``level_pa != 0``) is run as a source without itself as a body.
+    """
+    cache = None if cache_dir is None else str(cache_dir)
+    bodies = {v.id: make_scatterer(v, tracks[v.id]) for v in cfg.vessels if v.is_body}
+    radiating = [v for v in cfg.vessels if include_silent or v.level_pa != 0.0]
+    jobs, keys = [], []
+    for v in radiating:
         track = tracks[v.id]
         signal = vessel_injection(v, track, env, cfg)
         if len(v.waypoints) == 1:
             position, trajectory = (float(v.waypoints[0][0]), float(v.waypoints[0][1])), None
         else:
             position, trajectory = None, (track.t, track.xy)
-        jobs.append((env, layout, cfg.fdtd, signal, position, trajectory, None if cache_dir is None else str(cache_dir)))
+        jobs.append((env, layout, cfg.fdtd, signal, position, trajectory, cache, ()))
+        keys.append(v.id)
+        for bid, body in bodies.items():
+            if bid == v.id:
+                continue
+            jobs.append((env, layout, cfg.fdtd, signal, position, trajectory, cache, (body,)))
+            keys.append(scattered_key(v.id, bid))
     if workers > 1 and len(jobs) > 1:
         with ProcessPoolExecutor(max_workers=min(workers, len(jobs))) as pool:
             results = list(pool.map(_job, jobs))
     else:
         results = [_job(j) for j in jobs]
-    return {v.id: g for v, g in zip(cfg.vessels, results)}
+    out = dict(zip(keys, results))
+    for key in list(out):
+        if ">" in key:
+            src = key.split(">")[0]
+            out[key] = Gather(traces=(out[key].traces.astype(np.float64) - out[src].traces.astype(np.float64)).astype(np.float32),
+                              fs=out[key].fs)
+    return out
 
 
 def assemble_dataset(
@@ -153,35 +196,60 @@ def assemble_dataset(
     levels: dict[str, float] | None = None,
     noise: NoiseRealisation | None = None,
     keep_clean: bool = True,
+    scatter_gain: dict[str, float] | None = None,
+    keep_components: bool = False,
 ) -> HarborDataset:
     """Mix cached unit-level gathers into a noisy dataset.
 
-    *levels* overrides ``level_pa`` per vessel (``0`` removes a vessel), which allows
-    level sweeps and ablations without re-running FDTD.  A pre-drawn *noise*
-    realisation can be passed to hold noise fixed across mixes.
+    *levels* overrides ``level_pa`` per vessel (``0`` removes a vessel as a source), which
+    allows level sweeps and ablations without re-running FDTD.  *scatter_gain* scales the
+    scattered field of each body (``0`` removes the body; default 1).  A pre-drawn *noise*
+    realisation can be passed to hold noise fixed across mixes.  With *keep_components* the
+    dataset carries every scaled component separately (see ``HarborDataset.components``).
+
+    A silent body (``level_pa == 0``) is present in the scene through its scattered gathers
+    and keeps its truth track; an AIS vessel reports only while it radiates.
     """
     levels = levels or {}
+    scatter_gain = scatter_gain or {}
     ss = np.random.SeedSequence(cfg.seed if seed is None else seed)
     rng_noise, rng_ais = (np.random.default_rng(s) for s in ss.spawn(2))
     fs, n = cfg.fdtd.fs, cfg.fdtd.n_steps
 
     clean = np.zeros((layout.n_receivers, n), dtype=np.float64)
+    comps: dict[str, np.ndarray] = {}
     used: dict[str, Track] = {}
+    bodies = [v.id for v in cfg.vessels if v.is_body and scatter_gain.get(v.id, 1.0) != 0.0]
     for v in cfg.vessels:
         level = levels.get(v.id, v.level_pa)
         tr = tracks[v.id]
         used[v.id] = Track(tr.id, tr.kind, tr.ais, tr.t, tr.xy, tr.speed, tr.active, level_pa=level, meta=tr.meta)
         if level != 0.0:
-            clean += level * gathers[v.id].traces.astype(np.float64)
+            direct = level * gathers[v.id].traces.astype(np.float64)
+            clean += direct
+            if keep_components:
+                comps["direct:" + v.id] = direct.astype(np.float32)
+            for bid in bodies:
+                key = scattered_key(v.id, bid)
+                if bid == v.id or key not in gathers:
+                    continue
+                sc = level * scatter_gain.get(bid, 1.0) * gathers[key].traces.astype(np.float64)
+                clean += sc
+                if keep_components:
+                    comps["scattered:" + key] = sc.astype(np.float32)
 
     real = noise if noise is not None else generate_noise(layout, fs, n, cfg.noise, rng_noise)
     traces = real.apply(clean)
+    if keep_components:
+        comps["noise"] = (traces.astype(np.float64) - real.gain[:, None] * clean).astype(np.float32)
     ais = generate_ais({k: t for k, t in used.items() if t.level_pa > 0}, cfg.ais, rng_ais)
     return HarborDataset(
         cfg=cfg, layout=layout, fs=fs, traces=traces, tracks=used, ais=ais,
         clean=clean.astype(np.float32) if keep_clean else None,
         gain=real.gain, dead=real.dead,
-        meta={"shipping_azimuth_deg": real.shipping_azimuth_deg.tolist()},
+        meta={"shipping_azimuth_deg": real.shipping_azimuth_deg.tolist(),
+              "bodies": bodies, "scatter_gain": {b: scatter_gain.get(b, 1.0) for b in bodies}},
+        components=comps or None,
     )
 
 
@@ -193,10 +261,11 @@ def simulate_scenario(
     workers: int = 1,
     seed: int | None = None,
     levels: dict[str, float] | None = None,
+    keep_components: bool = False,
 ) -> HarborDataset:
     """End-to-end: tracks -> FDTD gathers -> mix with noise -> AIS."""
     env = env if env is not None else build_environment(cfg)
     layout = layout if layout is not None else build_layout(cfg, env)
     tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in cfg.vessels}
     gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=cache_dir, workers=workers)
-    return assemble_dataset(cfg, layout, tracks, gathers, seed=seed, levels=levels)
+    return assemble_dataset(cfg, layout, tracks, gathers, seed=seed, levels=levels, keep_components=keep_components)

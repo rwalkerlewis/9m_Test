@@ -30,6 +30,11 @@ class NoiseConfig:
     ``shipping_azimuth_deg`` is the sector (maths convention, degrees) of
     directions *toward* the distant sources; (200, 340) is the southern
     open-sea side of the default harbor.
+
+    ``band_scale`` multiplies the fixed band edges of the coloured components
+    (ambient 5 to 120 Hz, distant shipping 8 to 70 Hz, common mode 1 to 100 Hz),
+    for scenarios on a finer grid whose band is wider; the rms values are then
+    spread over the scaled band.  Instrument noise is white at the sample rate.
     """
 
     ambient_rms: float = 0.02
@@ -42,6 +47,7 @@ class NoiseConfig:
     das_gain_sigma: float = 0.1
     das_dead_fraction: float = 0.02
     c: float = 1500.0
+    band_scale: float = 1.0
 
     def __post_init__(self) -> None:
         self.shipping_azimuth_deg = tuple(self.shipping_azimuth_deg)  # JSON round-trips tuples as lists
@@ -79,16 +85,17 @@ def generate_noise(
     n_das = layout.n_das
     pos = layout.receivers
 
+    bs = cfg.band_scale
     ambient = np.empty((n_rec, n_steps), dtype=np.float32)
     for i in range(n_rec):
-        ambient[i] = cfg.ambient_rms * shaped_noise(n_steps, fs, rng, 5.0, 120.0, slope=0.5)
+        ambient[i] = cfg.ambient_rms * shaped_noise(n_steps, fs, rng, 5.0 * bs, 120.0 * bs, slope=0.5)
 
     az = rng.uniform(*np.radians(cfg.shipping_azimuth_deg), size=cfg.n_shipping)
     if cfg.n_shipping > 0 and cfg.shipping_rms > 0:
         f = np.fft.rfftfreq(n_steps, 1.0 / fs)
         centre = pos.mean(axis=0)
         for a in az:
-            spec = np.fft.rfft(cfg.shipping_rms * shaped_noise(n_steps, fs, rng, 8.0, 70.0, slope=1.0))
+            spec = np.fft.rfft(cfg.shipping_rms * shaped_noise(n_steps, fs, rng, 8.0 * bs, 70.0 * bs, slope=1.0))
             u = np.array([np.cos(a), np.sin(a)])
             advance = (pos - centre) @ u / cfg.c  # nearer to the source -> earlier arrival
             ambient += np.fft.irfft(spec[None, :] * np.exp(2j * np.pi * f[None, :] * advance[:, None]), n_steps).astype(np.float32)
@@ -99,7 +106,7 @@ def generate_noise(
     for name, sl in layout.slices.items():
         if name == "hydrophones":
             continue
-        instrument[sl] += (cfg.das_common_mode_rms * shaped_noise(n_steps, fs, rng, 1.0, 100.0, slope=1.0)).astype(np.float32)
+        instrument[sl] += (cfg.das_common_mode_rms * shaped_noise(n_steps, fs, rng, 1.0 * bs, 100.0 * bs, slope=1.0)).astype(np.float32)
 
     gain = np.ones(n_rec)
     gain[:n_das] = np.exp(cfg.das_gain_sigma * rng.standard_normal(n_das))

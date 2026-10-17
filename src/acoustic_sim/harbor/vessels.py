@@ -37,6 +37,12 @@ class VesselConfig:
         Smooth random lateral wander: std [m] and length scale [s] (UUV-like meander).
     seed : int
         Seeds the signature and wander so a vessel is reproducible (and cacheable).
+    body_length, body_width : float
+        If ``body_length > 0`` the vessel is also a scattering body of this size [m]
+        (see :mod:`acoustic_sim.harbor.scatterer`); it then scatters every other
+        vessel's field in the FDTD.  ``0`` (default) means a point source only.
+    body_kind, body_strength, body_shape : str, float, str
+        Scatterer kind (``"soft"`` or ``"absorbing"``), absorbing strength and shape.
     """
 
     id: str
@@ -50,16 +56,28 @@ class VesselConfig:
     wander_sigma: float = 0.0
     wander_tau: float = 20.0
     seed: int = 0
+    body_length: float = 0.0
+    body_width: float = 0.0
+    body_kind: str = "soft"
+    body_strength: float = 0.5
+    body_shape: str = "rect"
 
     def __post_init__(self) -> None:
         if self.kind not in KINDS:
             raise ValueError(f"kind must be one of {KINDS}, got {self.kind!r}")
         if len(self.waypoints) > 1 and self.speed <= 0:
             raise ValueError(f"vessel {self.id!r} has a path but speed <= 0")
+        if self.body_length > 0 and self.body_width <= 0:
+            raise ValueError(f"vessel {self.id!r}: body_width must be positive when body_length is")
 
     @property
     def has_ais(self) -> bool:
         return self.kind == "ship" if self.ais is None else self.ais
+
+    @property
+    def is_body(self) -> bool:
+        """True if the vessel is a scattering body in the FDTD."""
+        return self.body_length > 0
 
 
 @dataclass

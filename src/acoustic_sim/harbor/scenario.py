@@ -18,9 +18,14 @@ from acoustic_sim.harbor.vessels import VesselConfig
 
 @dataclass
 class EnvironmentConfig:
+    """Grid spacing, sound speed, and an optional crop ``[x0, x1, y0, y1]`` of the harbor
+    (the crop becomes its own domain with the origin at ``(x0, y0)``; all other scenario
+    coordinates are then in that local frame)."""
+
     dx: float = 5.0
     c0: float = 1500.0
     shallow_c_drop: float = 10.0
+    crop: list[float] | None = None
 
 
 @dataclass
@@ -28,6 +33,8 @@ class CableConfig:
     name: str
     waypoints: list[list[float]]
     channel_spacing: float = 10.0
+    das_mode: str = "pressure"
+    gauge_length: float = 10.0
 
 
 def _default_cables() -> list[CableConfig]:
@@ -96,13 +103,15 @@ class HarborScenarioConfig:
 
 def build_environment(cfg: HarborScenarioConfig) -> HarborEnvironment:
     e = cfg.environment
-    return build_synthetic_harbor(dx=e.dx, c0=e.c0, shallow_c_drop=e.shallow_c_drop)
+    crop = None if e.crop is None else tuple(float(v) for v in e.crop)
+    return build_synthetic_harbor(dx=e.dx, c0=e.c0, shallow_c_drop=e.shallow_c_drop, crop=crop)
 
 
 def build_layout(cfg: HarborScenarioConfig, env: HarborEnvironment | None = None, margin: float = 10.0) -> SensorLayout:
     """Build the sensor layout; if *env* is given, check all sensors are in water."""
     layout = SensorLayout(
-        cables=[Cable(c.name, np.asarray(c.waypoints, float), c.channel_spacing) for c in cfg.cables],
+        cables=[Cable(c.name, np.asarray(c.waypoints, float), c.channel_spacing, c.das_mode, c.gauge_length)
+                for c in cfg.cables],
         hydrophones=np.asarray(cfg.hydrophones, float),
     )
     if env is not None:

@@ -75,12 +75,15 @@ def score_detections(
     threshold: float,
     targets: list[str] | None = None,
     gate: float = 100.0,
+    present: list[str] | None = None,
 ) -> Score:
     """Score detections with ``score >= threshold`` against the truth tracks.
 
-    Vessels with ``level_pa <= 0`` are absent from the mix and are ignored.
+    Vessels with ``level_pa <= 0`` are absent from the mix and are ignored, unless they are
+    listed in *present* (silent scattering bodies, see ``HarborDataset.meta["bodies"]``).
     """
-    tracks = {k: t for k, t in tracks.items() if t.level_pa > 0}
+    present = set(present or [])
+    tracks = {k: t for k, t in tracks.items() if t.level_pa > 0 or k in present}
     targets = targets if targets is not None else [k for k, t in tracks.items() if not t.ais]
     targets = [k for k in targets if k in tracks]
     kept = dets.above(threshold)
