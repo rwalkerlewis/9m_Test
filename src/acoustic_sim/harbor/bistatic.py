@@ -88,6 +88,11 @@ class BistaticConfig:
         spectrum), ``"coherent"`` (matched filter against the illuminator waveform,
         coherent over frequency; the demo's ``bistatic()``), ``"mvdr"`` or ``"music"``
         (adaptive, from the cross spectral matrix over ``adaptive_window`` frames).
+    coherent_norm : str
+        ``"none"``: the coherent map is ``|Z|^2`` (cells near the ship are weighted by the ship to
+        cell path gain, so the noise floor of the map peaks in a ring around the ship).  ``"snr"``:
+        ``|Z|^2`` divided by the expected noise power of the cell, ``sum_f |G(x, s)|^2 |r_f|^2 / norm``,
+        the normalised matched filter whose floor is flat over the grid.
     mvdr_loading : float
         Diagonal loading relative to the trace for MVDR and MUSIC.
     music_rank : int
@@ -123,6 +128,7 @@ class BistaticConfig:
     adaptive_window: int = 3
     exclusion_radius: float = 25.0
     method: str = "coherent"
+    coherent_norm: str = "none"
     mvdr_loading: float = 0.05
     music_rank: int = 3
     min_separation: float = 20.0
@@ -521,6 +527,7 @@ def bistatic_map(clean: Spectra, ship: ShipTrack, ref: np.ndarray, grid: np.ndar
     G, K, F = len(grid), len(clean.times), len(clean.freqs)
     B = np.zeros((G, K))
     Z = np.zeros((G, K), dtype=np.complex128) if method == "coherent" else None
+    W = np.zeros((G, K)) if method == "coherent" else None
     for i, kk in enumerate(clean.wavenumbers / bc.c):
         A = model(grid, kk)                                            # (G, N)
         norm = np.maximum(np.sum(np.abs(A) ** 2, axis=1), 1e-30)
@@ -535,6 +542,7 @@ def bistatic_map(clean: Spectra, ship: ShipTrack, ref: np.ndarray, grid: np.ndar
                     continue
                 path = model.path(grid, ship.refined[k], kk)
                 Z[:, k] += Y[:, k] * np.conj(path) * np.conj(ref[i, k]) / norm
+                W[:, k] += np.abs(path) ** 2 * np.abs(ref[i, k]) ** 2 / norm
         elif method in ("mvdr", "music"):
             for k in range(K):
                 R = _csm(Xi, k, bc.adaptive_window, bc.mvdr_loading)
@@ -549,6 +557,8 @@ def bistatic_map(clean: Spectra, ship: ShipTrack, ref: np.ndarray, grid: np.ndar
                     B[:, k] += norm / np.maximum(q, 1e-30)
     if method == "coherent":
         B = np.abs(Z) ** 2
+        if bc.coherent_norm == "snr":
+            B /= np.maximum(W, 1e-30)
     B /= max(B.max(), 1e-30)
     return B, Z
 
