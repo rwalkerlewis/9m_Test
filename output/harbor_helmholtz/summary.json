@@ -1,0 +1,272 @@
+{
+  "scenario": "examples/harbor_bistatic.scenario.json",
+  "grid_dx_m": 1.0,
+  "freqs_hz": [
+    100.0,
+    380.0,
+    20.0
+  ],
+  "stencil": "9pt",
+  "model_dx_m": 0.5,
+  "n_cells": 67626,
+  "ts_db": -20.0,
+  "snr_db": 40.0,
+  "snapshots": 11,
+  "window_s": 3.0,
+  "passive_motor_on": {
+    "helmholtz": {
+      "error_m": 0.23418795217252167,
+      "contrast_db": 1.8667296669967115
+    },
+    "free_field": {
+      "error_m": 0.23418795217252167,
+      "contrast_db": 1.8305957378135105
+    }
+  },
+  "bistatic_motor_off": {
+    "bartlett_helmholtz": {
+      "error_m": 0.23418795217252167,
+      "contrast_db": 7.13163407858093
+    },
+    "bartlett_free_field": {
+      "error_m": 0.7932997671643555,
+      "contrast_db": 7.000886563780604
+    },
+    "bartlett_helmholtz_no_noise": {
+      "error_m": 0.23418795217252167,
+      "contrast_db": 7.179506813544457
+    },
+    "sparse_helmholtz": {
+      "error_m": 0.23418795217252167,
+      "contrast_db": Infinity
+    },
+    "sparse_nonzero_cells": 10,
+    "sparse_time_s": 241.74190521240234
+  },
+  "validation": [
+    {
+      "kind": "UUV track",
+      "window": 0,
+      "t_s": 2.0,
+      "truth": [
+        236.74506611517307,
+        102.32495277487641
+      ],
+      "ferry": [
+        148.00000000000003,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.4130200861130434,
+      "bartlett_contrast_db": 5.741313447756909,
+      "sparse_error_m": 0.4130200861130434,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 11
+    },
+    {
+      "kind": "UUV track",
+      "window": 1,
+      "t_s": 5.0,
+      "truth": [
+        231.86266528793266,
+        105.812381937191
+      ],
+      "ferry": [
+        160.00000000000003,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.23251099034415476,
+      "bartlett_contrast_db": 6.938666035898052,
+      "sparse_error_m": 0.23251099034415476,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 11
+    },
+    {
+      "kind": "UUV track",
+      "window": 2,
+      "t_s": 8.0,
+      "truth": [
+        226.98026446069224,
+        109.29981109950558
+      ],
+      "ferry": [
+        172.00000000000003,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.30045995889387683,
+      "bartlett_contrast_db": 7.250102735506026,
+      "sparse_error_m": 0.30045995889387683,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 11
+    },
+    {
+      "kind": "UUV track",
+      "window": 3,
+      "t_s": 11.0,
+      "truth": [
+        222.09786363345182,
+        112.78724026182013
+      ],
+      "ferry": [
+        184.0,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.23418795217252167,
+      "bartlett_contrast_db": 7.182348168030181,
+      "sparse_error_m": 0.23418795217252167,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 10
+    },
+    {
+      "kind": "UUV track",
+      "window": 4,
+      "t_s": 14.0,
+      "truth": [
+        217.21546280621143,
+        116.27466942413471
+      ],
+      "ferry": [
+        196.00000000000006,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.3490952784198056,
+      "bartlett_contrast_db": 7.150117040037834,
+      "sparse_error_m": 0.3490952784198056,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 11
+    },
+    {
+      "kind": "UUV track",
+      "window": 5,
+      "t_s": 17.0,
+      "truth": [
+        212.333061978971,
+        119.76209858644931
+      ],
+      "ferry": [
+        208.0,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.8316997879668546,
+      "bartlett_contrast_db": 4.926699496876168,
+      "sparse_error_m": 0.8316997879668546,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 12
+    },
+    {
+      "kind": "random",
+      "window": 0,
+      "t_s": 2.0,
+      "truth": [
+        75.6947501430873,
+        124.22539510690062
+      ],
+      "ferry": [
+        148.00000000000003,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.3794475317615904,
+      "bartlett_contrast_db": 5.8638009963366855,
+      "sparse_error_m": 0.3794475317615904,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 14
+    },
+    {
+      "kind": "random",
+      "window": 1,
+      "t_s": 5.0,
+      "truth": [
+        121.04315197882991,
+        103.06795497747515
+      ],
+      "ferry": [
+        160.00000000000003,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.08049827476775971,
+      "bartlett_contrast_db": 4.684529479009697,
+      "sparse_error_m": 0.08049827476775971,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 7
+    },
+    {
+      "kind": "random",
+      "window": 2,
+      "t_s": 8.0,
+      "truth": [
+        290.382339561919,
+        124.51939869344773
+      ],
+      "ferry": [
+        172.00000000000003,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.614134477511387,
+      "bartlett_contrast_db": 6.490275747707599,
+      "sparse_error_m": 0.614134477511387,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 5
+    },
+    {
+      "kind": "random",
+      "window": 3,
+      "t_s": 11.0,
+      "truth": [
+        224.64861081931033,
+        103.32576703146916
+      ],
+      "ferry": [
+        184.0,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.7603054992301905,
+      "bartlett_contrast_db": 6.592018887395604,
+      "sparse_error_m": 0.47916439256061144,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 10
+    },
+    {
+      "kind": "random",
+      "window": 4,
+      "t_s": 14.0,
+      "truth": [
+        78.23859267211975,
+        216.82766458005068
+      ],
+      "ferry": [
+        196.00000000000006,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.8613681676610246,
+      "bartlett_contrast_db": 2.2768892906354807,
+      "sparse_error_m": 0.8613681676610246,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 12
+    },
+    {
+      "kind": "random",
+      "window": 5,
+      "t_s": 17.0,
+      "truth": [
+        179.93808207094213,
+        79.56558555539175
+      ],
+      "ferry": [
+        208.0,
+        200.00000000000003
+      ],
+      "bartlett_error_m": 0.43880489926972166,
+      "bartlett_contrast_db": 5.667223927224718,
+      "sparse_error_m": 0.43880489926972166,
+      "sparse_contrast_db": Infinity,
+      "sparse_nonzero": 6
+    }
+  ],
+  "null_run": {
+    "sparse_nonzero": 1834,
+    "max_over_typical_target_peak": 0.00014349607140121446
+  },
+  "validation_fraction_within_2m": {
+    "bartlett": 1.0,
+    "sparse": 1.0
+  }
+}

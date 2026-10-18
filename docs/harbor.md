@@ -106,6 +106,61 @@ An analytic forward model (free-field channel with a known replica, as in a simp
 demo) would make the technique work by construction; this package currently uses the FDTD only,
 by choice.
 
+## Helmholtz forward model (branch `helmholtz`)
+
+`src/acoustic_sim/harbor/helmholtz.py` is a frequency domain forward model on the same
+`HarborEnvironment` grid as the FDTD, with the same physics conventions: pressure release land,
+the FDTD shore loss and background absorption (a per step damping `sigma` at `fs` enters as the
+damping rate `sigma * fs`), and a PML at the grid edge in place of the sponge.
+
+| Item | Choice |
+|---|---|
+| Stencil | Optimal 9 point (Jo, Shin and Suh 1996), blending to 5 point inside the PML; complex symmetric |
+| Solver | Sparse LU per frequency in geometric nested dissection order, no pivoting (SuperLU's own orderings took 222 s for 160k nodes; this takes 1.4 s) |
+| Convention | Returned fields are `4 i conj(u)`, which equals `green2d` (`H0^(2)`) in open water, so they replace the free field replicas directly |
+| Replicas | By reciprocity: one solve per distinct receiver sample point (strain end points shared between channels) plus one per illuminator position; strain channels through `SensorLayout.collapse` |
+| Processors | Joint subspace projection, passive Bartlett, coherent bistatic matched filter, sparse L1 inversion (FISTA) |
+
+Accuracy against `H0^(2)` in open water (0.5 m grid): at 200 Hz, 125 m, phase error 0.09 rad
+(9 point) against 0.78 rad (5 point), amplitude within 3 %.  At 380 Hz (8 nodes per wavelength)
+the 9 point error is 0.49 rad at 125 m along the axis and -0.25 rad on the diagonal.  Inside the
+simulation this does not matter (data and replicas come from the same operator); against real
+water it is the remaining model error at the top of the band.
+
+### Demo: `examples/harbor_helmholtz_demo.py`
+
+Runs on `examples/harbor_bistatic.scenario.json` (430k water nodes, 196 strain channels, four
+hydrophones, 100 to 380 Hz in 20 Hz steps, 67,626 scan cells at 1 m).  Cold run on two CPU cores:
+replica library 12 min (5 s factorisation and 41 s for 404 solves per frequency), gathers 10 min;
+then about 4 min per sparse inversion (13 in the demo).  Results in `output/harbor_helmholtz/`.
+
+Data model per 3 s window (eleven 0.5 s snapshots, geometry frozen within the window): ferry direct
+path with random phase, UUV echo in the Born approximation (target strength -20 dB), optional
+thruster lines, white noise per channel 40 dB below the ferry direct path on that sensor type.
+Data and replicas are whitened per channel.
+
+| Product | Result |
+|---|---|
+| `h1_fields.png` | Field from the ferry at 140 and 300 Hz |
+| `h2_gathers.png` | Strain DAS gathers from a 2.5 Hz sweep: echo 32 dB below the direct path |
+| `h3_passive.png` | Motor on, ferry projected out: peak 0.2 m from the UUV with either replica |
+| `h4_bistatic.png` | Motor off: coherent bistatic 0.2 m error, 7 dB contrast; the floor is unchanged with the noise switched off, so it is the echo's own sidelobes; sparse inversion keeps 10 cells, 0.2 m error |
+| `h5_validation.png` | 6 positions on the UUV track and 6 random positions, all off grid: every peak within 1 m for both processors; Bartlett contrast 2 to 7 dB, sparse leaves nothing more than 10 m from the target; null run peak 38 dB below a typical target |
+
+Limits of this demo, stated plainly:
+
+* The ferry's direct path is projected out with its exact replica (exact position), so the
+  cancellation is ideal.  With an AIS position error the residual leaks into the map.
+* With the scenario's shore loss (R about 0.5 at 40 m width) the crop is close to anechoic, so the
+  free field replica does almost as well as the Helmholtz replica here (1 m error against 0.2 m).
+  The Helmholtz replica earns its cost with reflecting quays (`shore_loss_max = 0`) or in
+  shadowed basins, which is the next run to make.
+* The UUV is a Born point scatterer, not the FDTD soft body.
+
+Tests: `pytest tests/harbor/test_helmholtz.py` (12 tests: accuracy against `H0^(2)`, 9 point
+against 5 point, symmetry, residual, reciprocity with a breakwater, pressure release land and
+shadowing, library against direct solves, projection, Bartlett, bistatic and sparse localisation).
+
 ## Examples
 
 | Script | What it does | Time |
