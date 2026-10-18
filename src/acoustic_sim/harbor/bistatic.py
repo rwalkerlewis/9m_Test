@@ -591,6 +591,38 @@ def extract_peaks(B: np.ndarray, grid: np.ndarray, times: np.ndarray, bc: Bistat
 # Runner
 # ----------------------------------------------------------------------
 
+def eca_stage(
+    traces: np.ndarray,
+    layout: SensorLayout,
+    fs: float,
+    env: HarborEnvironment,
+    sp: Spectra,
+    ship: ShipTrack,
+    bc: BistaticConfig,
+    oracle_signal: np.ndarray | None = None,
+    components: list[np.ndarray] | tuple = (),
+) -> tuple[list[np.ndarray], np.ndarray]:
+    """Time domain direct path removal of :func:`run_bistatic`: reference, image lags, ECA.
+
+    The ship position of every ECA block is interpolated from ``ship.refined``.  The same
+    projection is applied to *traces* and to each array in *components*.  Returns the cleaned
+    arrays (``[traces] + components``) and the reference waveform.
+    """
+    nb = int(round(bc.eca_block_s * fs))
+    n_blocks = int(np.ceil(traces.shape[1] / nb))
+    t_blocks = (np.arange(n_blocks) + 0.5) * bc.eca_block_s
+    ship_b = np.column_stack([np.interp(t_blocks, sp.times, ship.refined[:, 0]), np.interp(t_blocks, sp.times, ship.refined[:, 1])])
+    if bc.ref_channels == "all":
+        chans = np.flatnonzero(sp.weights > 0)
+    else:
+        sl = layout.slices[bc.ref_channels]
+        chans = np.arange(sl.start, sl.stop)[sp.weights[sl] > 0]
+    waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, oracle_signal)
+    images = [clutter_images(env, sxy) for sxy in ship_b] if bc.eca_images else []
+    outs = eca_remove([traces] + list(components), waveform, layout, fs, ship_b, images, bc.eca_block_s, bc)
+    return outs, waveform
+
+
 @dataclass
 class Truth:
     """Optional truth for ablations and diagnostics."""
@@ -630,19 +662,8 @@ def run_bistatic(
     report = None
     waveform = None
     if bc.removal == "eca":
-        nb = int(round(bc.eca_block_s * fs))
-        n_blocks = int(np.ceil(traces.shape[1] / nb))
-        t_blocks = (np.arange(n_blocks) + 0.5) * bc.eca_block_s
-        ship_b = np.column_stack([np.interp(t_blocks, sp.times, ship.refined[:, 0]), np.interp(t_blocks, sp.times, ship.refined[:, 1])])
-        if bc.ref_channels == "all":
-            chans = np.flatnonzero(sp.weights > 0)
-        else:
-            sl = layout.slices[bc.ref_channels]
-            chans = np.arange(sl.start, sl.stop)[sp.weights[sl] > 0]
-        waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, oracle_signal)
-        images = [clutter_images(env, sxy) for sxy in ship_b] if bc.eca_images else []
         comps = list((truth.components or {}).values())
-        outs = eca_remove([traces] + comps, waveform, layout, fs, ship_b, images, bc.eca_block_s, bc)
+        outs, waveform = eca_stage(traces, layout, fs, env, sp, ship, bc, oracle_signal, comps)
         clean_traces = outs[0]
         if comps:
             names = list(truth.components)

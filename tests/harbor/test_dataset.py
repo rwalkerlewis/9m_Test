@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from acoustic_sim.harbor.scenario import default_vessels
 from acoustic_sim.harbor import (
     Cable,
     HarborDataset,
@@ -131,5 +132,5 @@ def test_scenario_config_roundtrip(tmp_path):
     cfg.save(path)
     back = HarborScenarioConfig.load(path)
     assert back.to_dict() == cfg.to_dict()
-    assert [v.id for v in back.vessels] == ["ferry", "tug", "moored", "uuv1"]
+    assert [v.id for v in back.vessels] == [v.id for v in default_vessels()]
     assert back.ais.outage_reports == (3, 6)
