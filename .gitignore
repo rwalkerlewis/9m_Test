@@ -35,3 +35,10 @@ output/*/snapshots/
 # Audio files (tracked in audio/ but ignore stray ones)
 *.wav
 !/audio/*.wav
+
+# Images and videos
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.mov
