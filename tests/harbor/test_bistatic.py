@@ -121,3 +121,33 @@ def test_run_bistatic_end_to_end_reports_eca_depth_and_finds_the_body(scene):
     est = run.grid[np.argmax(run.scan.B, axis=0)]
     err = np.hypot(*(est - BODY).T)
     assert np.median(err) < 15.0, err
+
+
+def test_doppler_eca_follows_a_moving_ship(scene):
+    """A ship at 4 m/s: the per block fixed lags leave the delay drift inside a block, the per
+    sample delays (``eca_doppler``) follow it, for both the oracle and the data reference."""
+    env, layout, _, _, _, s, _ = scene
+    n = len(s)
+    tt = np.arange(n) / FS
+    ship_t = SHIP[None, :] + np.outer(tt, [4.0, 0.0])
+    rec = layout.receivers
+    direct = np.stack([np.interp(tt - np.hypot(*(ship_t - r).T) / C, tt, s, left=0.0, right=0.0) / np.sqrt(np.hypot(*(SHIP - r)))
+                       for r in rec])
+    traces = direct + 0.002 * np.random.default_rng(5).standard_normal(direct.shape)
+    k = int(T / 0.5)
+    t_ais = np.arange(k) * 0.5
+    ais = AISReports(vessel=np.array(["ship"] * k), t=t_ais, xy=SHIP[None, :] + np.outer(t_ais, [4.0, 0.0]),
+                     sog=np.full(k, 4.0), cog=np.zeros(k))
+    depths = {}
+    for reference in ("oracle", "data"):
+        for doppler in (False, True):
+            bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=False, eca_doppler=doppler)
+            sp = stft(traces, layout, FS, bc, F_MAX)
+            model = ReplicaModel(layout, bc.c)
+            model.weights = sp.weights
+            ship = ship_positions(sp, ais, model, bc)
+            outs, _ = eca_stage(traces, layout, FS, env, sp, ship, bc, s if reference == "oracle" else None, [direct])
+            depths[reference, doppler] = float(np.median(_depth_db(direct, outs[1])))
+    assert depths["oracle", False] < 20.0, depths
+    assert depths["oracle", True] > 30.0, depths
+    assert depths["data", True] > depths["data", False] + 6.0, depths
