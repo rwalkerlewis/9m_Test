@@ -82,6 +82,11 @@ class BistaticConfig:
         lag offset.  With the default per block fixed lags the direct path delay drifts by up
         to ``v T_block / c`` (1.3 ms for 4 m/s and 0.5 s, half a cycle at 380 Hz) inside a
         block, which caps the depth near 10 dB for a moving ship (stage 0a).
+    track_smooth_s : float
+        With ``eca_doppler``, fit the refined ship track by a local straight line over this
+        window [s] before interpolating it per sample (stage 0a: the per frame refinement
+        jitters by about 1 m, which per sample delays read as velocity noise; 9 dB with the
+        jittery track against 24 dB with the exact one for the ship at 4 m/s).  0: no smoothing.
     ref_channels : str
         Channels for the data reference beam: ``"all"`` or a cable name or ``"hydrophones"``.
     patch_half, svd_rtol : float
@@ -130,6 +135,7 @@ class BistaticConfig:
     eca_halfwidth_s: float = 0.004
     eca_images: bool = True
     eca_doppler: bool = False
+    track_smooth_s: float = 0.0
     ref_channels: str = "all"
     patch_half: float = 1.0
     svd_rtol: float = 0.05
@@ -697,6 +703,23 @@ def extract_peaks(B: np.ndarray, grid: np.ndarray, times: np.ndarray, bc: Bistat
 # Runner
 # ----------------------------------------------------------------------
 
+def smooth_track(times: np.ndarray, xy: np.ndarray, present: np.ndarray, window_s: float) -> np.ndarray:
+    """Local straight line fit of *xy* (K, 2) over ``|t - t_k| <= window_s / 2`` per frame (frames
+    with *present* False are left out of the fits and returned unchanged).  ``window_s <= 0``
+    returns *xy*."""
+    if window_s <= 0:
+        return xy
+    out = np.array(xy, dtype=float, copy=True)
+    for k in np.flatnonzero(present):
+        m = present & (np.abs(times - times[k]) <= 0.5 * window_s)
+        if m.sum() < 3:
+            continue
+        A = np.column_stack([np.ones(m.sum()), times[m] - times[k]])
+        coef, *_ = np.linalg.lstsq(A, xy[m], rcond=None)
+        out[k] = coef[0]
+    return out
+
+
 def eca_stage(
     traces: np.ndarray,
     layout: SensorLayout,
@@ -722,7 +745,8 @@ def eca_stage(
     ship_t = None
     if bc.eca_doppler:
         t_s = np.arange(traces.shape[1]) / fs
-        ship_t = np.column_stack([np.interp(t_s, sp.times, ship.refined[:, 0]), np.interp(t_s, sp.times, ship.refined[:, 1])])
+        refined = smooth_track(sp.times, ship.refined, ship.present, bc.track_smooth_s)
+        ship_t = np.column_stack([np.interp(t_s, sp.times, refined[:, 0]), np.interp(t_s, sp.times, refined[:, 1])])
     if bc.ref_channels == "all":
         chans = np.flatnonzero(sp.weights > 0)
     else:

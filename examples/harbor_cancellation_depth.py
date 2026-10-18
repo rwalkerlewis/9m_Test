@@ -127,6 +127,7 @@ def main() -> None:
     ap.add_argument("--gate", type=float, default=0.0, help="exclude channels closer than this [m] to the source from the statistics")
     ap.add_argument("--cuda", action="store_true")
     ap.add_argument("--doppler", action="store_true", help="eca_doppler=True (per sample delays following the ship); outputs get a _doppler suffix")
+    ap.add_argument("--smooth", type=float, default=0.0, help="track_smooth_s for the refined track (with --doppler); adds a _smooth<s> suffix")
     ap.add_argument("--coarse", action="store_true", help="1 m grid (for quick checks only)")
     args = ap.parse_args()
     out = Path(args.out)
@@ -156,7 +157,7 @@ def main() -> None:
             v = VesselConfig(f"src_{mode}_{int(r)}", "ship", wp, speed=0.0 if mode == "stationary" else SPEED,
                              level_pa=ferry.level_pa, ais=True, seed=ferry.seed)
             cases.append((r, mode, v))
-    log = open(out / ("run.log" if not args.doppler else "run_doppler.log"), "w")
+    log = open(out / ("run.log" if not args.doppler else "run_doppler" + (f"_smooth{args.smooth:g}" if args.smooth else "") + ".log"), "w")
 
     def say(msg: str) -> None:
         print(msg, flush=True)
@@ -182,7 +183,8 @@ def main() -> None:
         gathers = list(pool.map(_run, jobs))
     say(f"{len(gathers)} FDTD runs in {time.time() - t0:.0f} s")
 
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, removal="eca", dispersion=for_scenario(env, cfg.fdtd), eca_doppler=args.doppler)
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, removal="eca", dispersion=for_scenario(env, cfg.fdtd), eca_doppler=args.doppler,
+                        track_smooth_s=args.smooth)
     sos = butter(4, [bc.f_lo, 0.95 * f_max], btype="bandpass", fs=fs, output="sos")
     noise = generate_noise(layout, fs, n, cfg.noise, np.random.default_rng(cfg.seed))
     cab = layout.slices[layout.cables[0].name]
@@ -236,8 +238,9 @@ def main() -> None:
         "eca_halfwidth_s": bc.eca_halfwidth_s, "speed_m_s": SPEED, "cases": results,
         "assumptions": ["single source alone (no echo, no other ships)", "AIS reports every interval from t = 0, no dropouts, scenario position error", "scenario noise model"],
     }
-    sfx = ("" if args.gate == 0 else f"_gate{int(args.gate)}") + ("_doppler" if args.doppler else "")
+    sfx = ("" if args.gate == 0 else f"_gate{int(args.gate)}") + ("_doppler" if args.doppler else "") + (f"_smooth{args.smooth:g}" if args.smooth else "")
     summary["eca_doppler"] = args.doppler
+    summary["track_smooth_s"] = args.smooth
     (out / f"results{sfx}.json").write_text(json.dumps(summary, indent=2))
 
     # Figure 1: depth against range.
@@ -255,7 +258,7 @@ def main() -> None:
     axes[0].set_ylabel("ECA cancellation depth, live cable channels [dB]")
     axes[1].legend(fontsize=8)
     fig.suptitle(f"Direct path cancellation by ECA, fine grid, {bc.f_lo:.0f} to {0.95 * f_max:.0f} Hz" + (f", channels within {args.gate:g} m excluded" if args.gate else "")
-                 + (", per sample delays (eca_doppler)" if args.doppler else ""))
+                 + (", per sample delays (eca_doppler)" if args.doppler else "") + (f", track smoothed over {args.smooth:g} s" if args.smooth else ""))
     fig.savefig(out / f"depth_vs_range{sfx}.png", dpi=110, bbox_inches="tight")
 
     # Figure 2: depth per channel against its range, data reference.

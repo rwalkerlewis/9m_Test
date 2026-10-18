@@ -80,7 +80,7 @@ METRIC_LABELS = {
 }
 
 
-def run_config(name: str, ds: HarborDataset, env, layout, f_max: float, doppler: bool = False) -> tuple[dict, object, np.ndarray, np.ndarray]:
+def run_config(name: str, ds: HarborDataset, env, layout, f_max: float, doppler: bool = False, smooth: float = 0.0) -> tuple[dict, object, np.ndarray, np.ndarray]:
     """One configuration on one dataset: summary dict, the run, the UUV truth and the estimates."""
     direct_in, reference, exact = CONFIGS[name]
     cfg = ds.cfg
@@ -94,7 +94,8 @@ def run_config(name: str, ds: HarborDataset, env, layout, f_max: float, doppler:
     oracle = ferry.level_pa * vessel_injection(ferry, ds.tracks["ferry"], env, cfg) if reference == "oracle" else None
     bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference=reference,
                         removal="eca" if direct_in else "none", method="coherent", coherent_norm="snr",
-                        exclusion_radius=25.0, dispersion=for_scenario(env, cfg.fdtd), eca_doppler=doppler)
+                        exclusion_radius=25.0, dispersion=for_scenario(env, cfg.fdtd), eca_doppler=doppler,
+                        track_smooth_s=smooth if doppler else 0.0)
     sp = stft(traces, layout, ds.fs, bc, f_max)
     truth = Truth(ship_xy=ds.tracks["ferry"].position_at(sp.times) if exact else None,
                   components={"direct:ferry": direct, "scattered:ferry>uuv1": echo} if direct_in else None)
@@ -114,7 +115,7 @@ def run_config(name: str, ds: HarborDataset, env, layout, f_max: float, doppler:
     ship_err = np.hypot(*(run.ship.refined - ds.tracks["ferry"].position_at(times)).T)
     live = run.sp.weights[layout.slices["cable1"]] > 0
     summary = {
-        "config": name, "doppler": doppler, "oracle_inputs": ORACLE_INPUTS[name], "frames": int(len(times)),
+        "config": name, "doppler": doppler, "track_smooth_s": smooth if doppler else 0.0, "oracle_inputs": ORACLE_INPUTS[name], "frames": int(len(times)),
         "band_hz": [bc.f_lo, 0.95 * f_max], "chain_s": elapsed,
         "median_error_m": float(np.median(err)), "p90_error_m": float(np.percentile(err, 90)),
         "within_5m": float(np.mean(err <= 5.0)), "within_10m": float(np.mean(err <= 10.0)),
@@ -137,6 +138,7 @@ def main() -> None:
     ap.add_argument("--out", default="output/harbor_bistatic/ablation")
     ap.add_argument("--configs", default=",".join(CONFIGS))
     ap.add_argument("--doppler", action="store_true", help="also run configurations 2 to 4 with eca_doppler=True")
+    ap.add_argument("--smooth", type=float, default=0.0, help="track_smooth_s of the Doppler variants (local straight line fit of the refined track)")
     ap.add_argument("--frame", type=int, default=40, help="frame index of maps_by_config.png")
     args = ap.parse_args()
     out = Path(args.out)
@@ -168,8 +170,8 @@ def main() -> None:
         results["datasets"][tag] = {"path": path, "dx": env.dx, "fs": ds.fs, "band_hz": [100.0, 0.95 * f_max]}
         results["metrics"][tag] = {}
         for name, dop in variants:
-            key = name + ("+doppler" if dop else "")
-            summary, run, uuv, est = run_config(name, ds, env, layout, f_max, doppler=dop)
+            key = name + (("+doppler" + (f"+smooth{args.smooth:g}" if args.smooth else "")) if dop else "")
+            summary, run, uuv, est = run_config(name, ds, env, layout, f_max, doppler=dop, smooth=args.smooth)
             results["metrics"][tag][key] = summary
             maps[tag, key] = (run, uuv, est, env, layout)
             eca = (f", ECA direct {summary['eca_direct_depth_db']:.1f} dB, echo loss {summary['eca_echo_loss_db']:.2f} dB"

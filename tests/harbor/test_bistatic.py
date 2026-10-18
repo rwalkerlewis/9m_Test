@@ -12,6 +12,7 @@ from acoustic_sim.harbor.ais import AISReports
 from acoustic_sim.harbor.bistatic import (
     BistaticConfig,
     ReplicaModel,
+    ShipTrack,
     Truth,
     _fractional_delay,
     clutter_images,
@@ -20,6 +21,7 @@ from acoustic_sim.harbor.bistatic import (
     make_reference,
     run_bistatic,
     ship_positions,
+    smooth_track,
     stft,
 )
 
@@ -151,3 +153,30 @@ def test_doppler_eca_follows_a_moving_ship(scene):
     assert depths["oracle", False] < 20.0, depths
     assert depths["oracle", True] > 30.0, depths
     assert depths["data", True] > depths["data", False] + 6.0, depths
+
+
+def test_track_smoothing_removes_refinement_jitter(scene):
+    """Per frame position jitter of 1 m on a 4 m/s track costs the Doppler ECA most of its depth;
+    a 2 s local straight line fit (``track_smooth_s``) recovers it."""
+    env, layout, _, _, _, s, _ = scene
+    n = len(s)
+    tt = np.arange(n) / FS
+    ship_t = SHIP[None, :] + np.outer(tt, [4.0, 0.0])
+    rec = layout.receivers
+    direct = np.stack([np.interp(tt - np.hypot(*(ship_t - r).T) / C, tt, s, left=0.0, right=0.0) / np.sqrt(np.hypot(*(SHIP - r)))
+                       for r in rec])
+    traces = direct + 0.002 * np.random.default_rng(5).standard_normal(direct.shape)
+    bc = BistaticConfig(reference="oracle", removal="eca", c=C, refine=False, eca_doppler=True)
+    sp = stft(traces, layout, FS, bc, F_MAX)
+    exact = SHIP[None, :] + np.outer(sp.times, [4.0, 0.0])
+    jitter = exact + np.random.default_rng(8).standard_normal(exact.shape)
+    present = np.ones(len(sp.times), bool)
+    depths = {}
+    for name, smooth in (("jitter", 0.0), ("smoothed", 2.0)):
+        b = BistaticConfig(**{**bc.__dict__, "track_smooth_s": smooth})
+        ship = ShipTrack("ship", jitter, jitter.copy(), present, np.ones(len(sp.times)))
+        outs, _ = eca_stage(traces, layout, FS, env, sp, ship, b, s, [direct])
+        depths[name] = float(np.median(_depth_db(direct, outs[1])))
+    assert depths["smoothed"] > depths["jitter"] + 6.0, depths
+    assert depths["smoothed"] > 15.0, depths
+    assert np.allclose(smooth_track(sp.times, exact, present, 2.0), exact, atol=1e-9)
