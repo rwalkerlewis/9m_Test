@@ -67,17 +67,25 @@ def nearest_channel_range(layout, pts: np.ndarray) -> np.ndarray:
 
 
 def pick_position(env, layout, target: float, path_len: float, edge: float = 45.0, margin: float = 20.0) -> np.ndarray:
-    """Start point whose whole path (start to start + (path_len, 0)) is in open water and whose
-    nearest channel range over the path is closest to *target*."""
+    """Start point whose whole path (start to start + (path_len, 0)) is in open water, at least
+    *edge* m from the domain boundary (outside the sponge), and whose nearest channel range over
+    the path is closest to *target*; among equally good paths the one centred on the first
+    cable leg wins (a tie break, so the sources sit over the middle of the leg, not at an edge)."""
+    from scipy.ndimage import distance_transform_edt
+
     x0, x1, y0, y1 = env.extent
+    dist = distance_transform_edt(env.water) * env.dx          # once; env.is_water(margin=...) recomputes it per call
+    leg = layout.cables[0].waypoints[:2]
+    x_mid = 0.5 * (leg[0, 0] + leg[1, 0])
     best, best_err = None, np.inf
     for x in np.arange(x0 + edge, x1 - edge - path_len, 2.0):
         for y in np.arange(y0 + edge, y1 - edge, 2.0):
             path = np.column_stack([np.linspace(x, x + path_len, 21), np.full(21, y)])
-            if not np.all(env.is_water(path, margin=margin)):
+            if not np.all(dist[env._index(path)] >= margin):
                 continue
             r = nearest_channel_range(layout, path)
             err = abs(r.min() - target) + 0.5 * (r.max() - r.min())   # prefer paths at a constant range
+            err += 1e-3 * abs(x + 0.5 * path_len - x_mid)              # tie break: centred on the first leg
             if err < best_err:
                 best, best_err = np.array([x, y]), err
     if best is None:
@@ -132,10 +140,11 @@ def main() -> None:
     f_max = f_max_for_grid(env.dx)
     ferry = next(v for v in cfg.vessels if v.kind == "ship")
     path_len = SPEED * args.time
+    edge = cfg.fdtd.damping_width * env.dx + 15.0          # the sponge is damping_width cells wide
 
     cases = []
     for r in RANGES:
-        p = pick_position(env, layout, r, path_len)
+        p = pick_position(env, layout, r, path_len, edge=edge)
         for mode in ("stationary", "moving"):
             wp = [p.tolist()] if mode == "stationary" else [p.tolist(), (p + [path_len, 0.0]).tolist()]
             v = VesselConfig(f"src_{mode}_{int(r)}", "ship", wp, speed=0.0 if mode == "stationary" else SPEED,
