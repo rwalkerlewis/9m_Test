@@ -22,6 +22,20 @@ alphabetically within each group.
 | **Steered Response Power — Phase Transform** | SRP-PHAT | Primary bearing estimator in the production pipeline.  Delay-and-sum beamforming with phase-only (PHAT) weighting over 100–2000 Hz; 360 candidate bearings at 1° spacing. |
 | **Time-Delay of Arrival** | TDOA | Difference in arrival time of a wavefront at two sensors; extracted via GCC-PHAT; basis of near-field range estimation. |
 
+## Water-Based Harbor Sensing
+
+| Term | Abbreviation | Definition |
+|------|:------------:|------------|
+| **Automatic Identification System** | AIS | Synthetic ship position, speed, and course reports used as side information for known-vessel prediction and suppression. |
+| **Distributed Acoustic Sensing** | DAS | Fiber-optic sensing represented here as a dense line of pressure or strain-like channels along a cable. This model does not simulate the optical interrogator. |
+| **Bistatic Localization** | — | Inferring a silent body's position from a signal transmitted by a separate illuminator (in this project, an AIS-reporting ship) and scattered to the receiver array. |
+| **Gauge Length** | — | Distance along a DAS cable between the outer field samples used to form one simplified strain channel. |
+| **Harbor Occupancy Grid** | — | Track-before-detect state that accumulates frame-by-frame matched-field likelihood across candidate water positions. |
+| **Pressure-Release Boundary** | — | Boundary condition with pressure set to zero; used for land cells and soft-body approximations in the harbor FDTD model. |
+| **Strain-Mode DAS** | — | Harbor cable mode that records the unnormalised second difference of pressure sampled at three points along the fiber gauge length. |
+| **Synthetic Harbor** | — | Two-dimensional plan-view water/land grid with shoreline damping. Depth is informational, not a vertical water-column coordinate. |
+| **Water Scatterer** | — | Finite-size moving mask that modifies the pressure field; supported models are soft/pressure-release and absorbing, not a rigid Neumann hull. |
+
 ## Bearing & Range Estimation
 
 | Term | Abbreviation | Definition |

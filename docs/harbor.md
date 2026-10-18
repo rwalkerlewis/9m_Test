@@ -1,10 +1,12 @@
 # Harbor: DAS + hydrophone detection of hidden submerged objects
 
-A 2-D synthetic harbor in which fiber-optic cable (modelled as a dense line of
-pressure receivers) and a few hydrophones listen for an unknown, hidden,
-slow submerged object (a small UUV) among ships that broadcast AIS.  The
-forward model is the FDTD solver of this package; everything else is in
-`src/acoustic_sim/harbor/`.
+A 2-D synthetic harbor in which fiber-optic cable (DAS) and hydrophones
+record ship and target signals. The scenario supports AIS-reporting
+vessels, multiple non-AIS targets (UUVs and a diver), and passive
+scatterers. It includes both passive matched-field detection of a
+target's own emission and bistatic localization of a silent body from
+the echo of an AIS ship. The forward model reuses this package's FDTD
+solver; harbor-specific code lives in `src/acoustic_sim/harbor/`.
 
 **Status: the simulation, sensing and processing chain work and are tested, but the UUV is
 not yet detected at the intended source level.**  See [Status and findings](#status-and-findings)
@@ -14,16 +16,36 @@ for what was measured and what is still unexplained.
 
 | Item | Default |
 |------|---------|
-| Domain | 2400 m x 1800 m, 5 m grid, c = 1490-1500 m/s (depth-dependent) |
-| Land | Pressure-release walls (opaque, thin breakwaters block sound) plus a lossy layer in the water next to the shore (`shore_loss_width`, `shore_loss_max`; R ~ 0.45 by default) |
-| Sensors | One 125-channel DAS cable (10 m spacing, two bends) and 4 hydrophones.  DAS is plain pressure at the fiber nodes (no strain directivity) |
-| Vessels | Ferry, tug and a moored ship (all AIS) and one hidden UUV `uuv1` (no AIS) |
+| Domain | 2400 m x 1800 m, 5 m grid, c is approximately 1492-1500 m/s (effective speed varies with shore distance) |
+| Land | Pressure-release walls (opaque, thin breakwaters block sound) plus a lossy layer in the water next to the shore (`shore_loss_width`, `shore_loss_max`; approximate amplitude reflection R ~ 0.5 in the default runner configuration) |
+| Sensors | One cable (10 m channel spacing, multiple bends) and 4 hydrophones. The default cable is pressure mode; scenario files can select strain mode and a gauge length. |
+| Vessels/bodies | AIS ferry, tug and moored ship; non-AIS `uuv1`, `uuv2`, and diver; stationary `static_scatter` body. See `examples/harbor.scenario.json`. |
 | Noise | Colored ambient, three distant-shipping plane waves, DAS channel noise, common-mode noise, 8.6 % gain scatter, 2 % dead channels |
 | Band | 12-78 Hz at 600 Hz sampling |
 
-Source levels are free-field rms pressure at 100 m [Pa].  The UUV is a sparse tonal
-comb (30-40 Hz plus a second harmonic) with little broadband; ships are broadband with a
-speed-dependent level and a harmonic series.
+Source levels are calibrated free-field rms pressure at 100 m [Pa]. The passive detector's
+default band is 12-78 Hz; the actual source spectrum is limited by grid spacing and sampling.
+UUV signatures are sparse tonal signals with little broadband energy; ship signatures are
+broadband with speed-dependent level and tonal components.
+
+The bistatic example uses a **different, cropped fine-grid scenario** in
+`examples/harbor_bistatic.scenario.json`: it sets a 0.5 m grid, 6 kHz sample rate, strain-mode
+DAS with 2 m channel/gauge spacing, a ferry illuminator and a silent 1 m × 3 m UUV body. Its
+`--coarse` option changes to 1 m spacing and scales the sample rate/band. Do not infer its
+settings or resource cost from the default 5 m / 600 Hz harbor scenario.
+
+## Physical and Interpretation Limits
+
+This is a **2-D plan-view scalar pressure model**, not a 3-D shallow-water solver. The depth map
+is informational; distance from shore is used to derive a small effective sound-speed drop.
+Land cells are pressure-release boundaries. Shore loss is a numerical damping ramp that limits
+ringing, not a measured seabed absorption law. The pressure-only solver has no rigid Neumann hull
+boundary; `Scatterer` bodies use smooth pressure masks (soft/pressure-release or absorbing
+approximations). Body geometry should span multiple grid cells for meaningful shape resolution.
+
+The dataset builder caches each radiating vessel's unit-level FDTD gather and then mixes levels
+and noise linearly. Scattering is represented by a run with a body minus the matching run
+without it; multiple scattering between distinct bodies is not included.
 
 ## Modules (`src/acoustic_sim/harbor/`)
 
@@ -37,8 +59,11 @@ speed-dependent level and a harmonic series.
 | `detection.py` | Whitened STFT, matched-field scan, stationary-interference projection, sidelobe-cancelling peak extraction, CFAR threshold |
 | `suppression.py` | AIS-aware suppression: per-frame position refinement, ship projection (model or data-adaptive), re-whitening |
 | `occupancy.py` | Occupancy-grid track-before-detect |
+| `bistatic.py` | Ship-illuminated echo maps, data/oracle references, direct-path removal, and Bartlett/coherent/MVDR/MUSIC processors |
+| `scatterer.py` | Smooth moving finite-size body masks used by the FDTD runner |
 | `dispersion.py` | Replica wavenumbers that follow the FDTD scheme's numerical dispersion |
-| `evaluate.py` | Association with truth, Pd / error / false alarms |
+| `localiser.py` | Optional empirical replica calibration from a simulated vessel path or survey grid |
+| `evaluate.py`, `classifier.py` | Association and detection metrics; optional harbor CNN/CVAE classifier wrapper |
 | `device.py` | CPU / GPU selection |
 
 Because the wave equation is linear, each vessel is simulated once at unit level and cached;
@@ -60,6 +85,42 @@ level sweeps and removing a vessel need no re-simulation (`assemble_dataset(leve
    accepted peak are projected out before the next candidate is scored).
 5. **Occupancy filter:** diffuse, multiply by a likelihood from each frame's map, repeat.
 
+AIS-aware ship cancellation is an optional follow-on path implemented by `run_ais_aware`: it
+predicts and refines AIS ship positions, removes ship energy using a modeled patch or an
+adaptive subspace, then re-estimates the noise floor and re-whitens. The re-whitening step is
+important: ship energy in the original floor can suppress weaker residual targets.
+
+## Bistatic Echo Localization
+
+The bistatic path treats a reporting ship as an illuminator and searches for a body from its
+scattered return at the DAS/hydrophone receivers. It is distinct from passive UUV emission
+detection: the target can be silent, and the processor must separate the ship's direct path
+from its echo.
+
+`bistatic.py` performs a band-limited STFT, refines the ship location from AIS, obtains a
+per-frame illuminator reference (`reference="data"` or the experimental `"oracle"`), optionally
+removes the direct ship signal, then forms a scan map. Supported map processors are `bartlett`,
+`bartlett_phat`, `coherent`, `mvdr`, and `music`. Direct-path removal choices include `eca`,
+`patch`, `adaptive`, `patch+adaptive`, and `none`. The method and reference options are not
+interchangeable performance guarantees; they are algorithm variants to compare in simulation.
+
+Replicas are evaluated at the layout's actual field sample points. `SensorLayout.collapse`
+converts the three samples per strain channel into the second difference measured by that
+channel, so the strain response is included in the bistatic steering model.
+
+The runnable FDTD bistatic demo intentionally uses oracle information to isolate the echo
+localization question: it subtracts the known direct ferry component, uses the known ferry
+waveform and exact track, and measures the scattered component. Its figures and output state
+these assumptions. This is a controlled upper-bound/algorithm demonstration, **not** a blind
+end-to-end detection result. For a less optimistic view, compare it with the empirical
+`reference="data"` and direct-path-removal variants in `bistatic.py`, or use the analytic
+prototype as the known-replica reference.
+
+The `harbor_bistatic_budget.py` script is analytical only (no FDTD): it compares idealized
+soft/rigid infinite-cylinder scattering with a simplified link budget before launching an
+expensive simulation. The rigid-cylinder case belongs to that theoretical budget and is not
+implemented as a rigid-body FDTD boundary.
+
 ## GPU
 
 `ProcessingConfig(use_cuda=True)`, `OccupancyConfig(use_cuda=True)` and
@@ -67,14 +128,18 @@ level sweeps and removing a vessel need no re-simulation (`assemble_dataset(leve
 `pip install cupy-cuda12x`; single precision for the processing).  CPU and GPU agree: the scan
 maps correlate at 1.000000 and the FDTD traces agree to 4e-17.  Measured on a Quadro RTX 4000:
 the chain is about 3x faster than the CPU once warm, and an FDTD vessel run takes about 1.5 min
-instead of about 8 min.
+instead of about 8 min. These are historical measurements on that specific GPU and scenario,
+not portable runtime guarantees; unavailable CUDA hardware falls back to CPU with a warning.
 
 ## Status and findings
 
-At the default UUV level (-30.5 dB re 1 Pa at 100 m, about 30 dB below the ferry) the UUV is
+In the passive-emission experiment summarized here, at the tested UUV level (-30.5 dB re 1 Pa
+at 100 m, about 30 dB below the ferry) the UUV is
 **not** detected: it is found only when it is about as loud as the ferry (a sweep of the UUV level
 with the model-projection chain found it, with a 64 m occupancy error, only at -0.9 dB).
-The source level is a first guess, not a tuned or measured value.  Every item below was a single
+This is a result for that passive-source-emission experiment, not the bistatic echo demo or a
+general guarantee about every later scenario configuration. The source level is a first guess,
+not a tuned or measured value. Every item below was a single
 bounded experiment with a pass/fail criterion fixed beforehand.
 
 | Hypothesis for the ship residual | Measurement | Result |
@@ -106,18 +171,58 @@ An analytic forward model (free-field channel with a known replica, as in a simp
 demo) would make the technique work by construction; this package currently uses the FDTD only,
 by choice.
 
-## Examples
+## Examples and Workflows
 
 | Script | What it does | Time |
 |---|---|---|
 | `examples/harbor_m1_demo.py` | Map, one FDTD source run, DAS gather, wavefield snapshots | ~15 s |
-| `examples/harbor_m2_dataset.py` | Builds the labelled 4-vessel dataset and overview figures (cached FDTD) | ~6 min on a GPU config |
-| `examples/harbor_m3_detect.py` | Baseline CFAR detection sweeps **without** AIS suppression (the loud ships hide the UUV) | ~15 min |
+| `examples/harbor_m2_dataset.py` | Builds the default multi-vessel labelled dataset and overview figures (cached FDTD) | expensive on first build; reuses cache |
+| `examples/harbor_m3_detect.py` | Baseline CFAR detection sweeps **without** AIS suppression (the loud ships hide the UUV) | processing sweep; reuses cache |
+| `examples/harbor_m4_dlc.py` | Detect–locate–classify experiment, noise-only CFAR calibration, optional AIS suppression, CNN/CVAE classification and evaluation | varies; FDTD gathers are cached |
 | `examples/harbor_mfp_demo.py` | Analytic (free-field, exact replica) reference for the whole chain: AIS refinement, ferry and pier projection, passive 400 Hz MFP (motor on), bistatic echo MFP (motor off), occupancy track, Bartlett vs MVDR under replica mismatch, Pd vs UUV level. Figures and `results.json` in `output/harbor_demo/` | ~26 min on 16 CPU cores (`--trials 0` skips the Pd sweep: ~4 min) |
 | `examples/harbor_mfp_domain.py` | The same analytic chain in the domain of `output/harbor/dataset.npz` (land, cable + hydrophones, 120 s tracks, AIS, signatures, band, noise and DAS gains from the dataset; analytic propagation with opaque land). Adds AIS-ship gain calibration, re-whitening on the cleaned residual, DAS common-mode and distant-shipping plane-wave projection. Figures and `results.json` in `output/harbor_domain/` | ~1 h on 16 CPU cores (`--pd-windows 0`: ~20 min) |
+| `examples/harbor_m1_uuv.py` | Single Ricker pulse with and without a stationary finite-size UUV; plots the difference as the scattered field | one FDTD pair |
+| `examples/harbor_m1_uuv_video.py` | Animate the pulse and predicted UUV echo on the cable | one FDTD pair |
+| `examples/harbor_bistatic_budget.py` | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
+| `examples/harbor_bistatic_dataset.py` | Fine-grid FDTD scenario; caches direct and body-scattered components separately | expensive; `--coarse` is faster but under-resolves the hull |
+| `examples/harbor_bistatic_demo.py` | Oracle-aided coherent bistatic localization figures and error summary from a saved dataset | processing run |
+| `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
+| `examples/harbor_train_classifier.py`, `examples/harbor_train_anomaly.py`, `examples/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |
+
+Runtime estimates inherited from older experiment notes are hardware- and configuration-specific; first-time FDTD cache generation is the main cost.
 
 `examples/harbor.scenario.json` is the default scenario (set `"fdtd": {"use_cuda": true}` to
-simulate on the GPU).
+simulate on the GPU). Outputs are written under `output/`; FDTD cache files can be reused between
+dataset assembly and experiments.
+
+### End-to-end examples
+
+Run the passive scenario and detection/classification workflow:
+
+```bash
+python examples/harbor_m2_dataset.py
+python examples/harbor_m4_dlc.py --config examples/harbor.scenario.json --out output/harbor
+```
+
+The M4 script can skip AIS suppression with `--no-suppress`, enable GPU processing with
+`--cuda`, and accepts `--pfa`, `--cal-seeds`, `--cnn`, and `--cvae` options. Missing classifier
+checkpoints are reported as unclassified output rather than preventing the rest of the workflow.
+Check each script's `--help` for current flags.
+
+For the cropped strain-DAS bistatic setup:
+
+```bash
+python examples/harbor_bistatic_budget.py --out output/harbor_bistatic
+python examples/harbor_bistatic_dataset.py --coarse
+python examples/harbor_bistatic_demo.py \
+    --dataset output/harbor_bistatic/coarse/dataset.npz \
+    --out output/harbor_bistatic/demo
+```
+
+`--coarse` switches from the default 0.5 m grid to 1 m and proportionally scales the sample
+rate/band. It is faster but a 1 m × 3 m body is poorly resolved at 1 m cells. A fine-grid run
+uses more compute and storage; cache and output directories are separate from the default
+`output/harbor` dataset.
 
 ```python
 from acoustic_sim.harbor import HarborDataset, build_environment
@@ -136,6 +241,27 @@ track = OccupancyGrid(run.scanner.grid, OccupancyConfig(use_cuda=True)).run(run.
 ```
 
 Use `dispersion=` only for FDTD-generated data: it models the simulator's grid, not the ocean.
+
+For bistatic processing, the corresponding API is `BistaticConfig` and `run_bistatic`:
+
+```python
+from acoustic_sim.harbor.bistatic import BistaticConfig, run_bistatic
+from acoustic_sim.harbor.dispersion import for_scenario
+from acoustic_sim.harbor.signatures import f_max_for_grid
+
+bc = BistaticConfig(
+    reference="data",       # use "oracle" only for controlled experiments
+    removal="eca",
+    method="coherent",
+    dispersion=for_scenario(env, ds.cfg.fdtd),
+)
+echo_run = run_bistatic(
+    ds.traces, ds.layout, ds.fs, env, ds.ais, bc, f_max_for_grid(env.dx)
+)
+```
+
+For FDTD data, use `dispersion=for_scenario(...)`; it compensates for the numerical dispersion
+of that specific grid/time step and should not be used as a model of real-water propagation.
 
 ## Tests
 

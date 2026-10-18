@@ -1,9 +1,10 @@
 # API Reference
 
-Complete listing of every public class, method, and function in the
-`acoustic_sim` package.  Organised by source file under
-`src/acoustic_sim/`.  Line numbers are clickable references into the
-source.
+Reference to the public classes, functions, and common entry points in
+`acoustic_sim`, organised by source file under `src/acoustic_sim/`.
+Source line references identify the implementation but can shift as code
+changes; see module docstrings for the current detailed parameter
+contracts.
 
 ---
 
@@ -516,6 +517,81 @@ Constant-velocity 3-D model.
 #### `model_3d_from_array(values, x_min, x_max, y_min, y_max, z_min, z_max)` — L447
 
 Wrap an existing 3-D numpy array as a `VelocityModel3D`.
+
+---
+
+## harbor/ — Water-Based Harbor Sensing
+
+The harbor package is a separate 2-D application. The following symbols are re-exported from
+`acoustic_sim.harbor`: `HarborScenarioConfig`, `HarborEnvironment`, `HarborFDTDConfig`,
+`HarborFDTDSolver`, `HarborDataset`, `Cable`, `SensorLayout`, `VesselConfig`, `Track`,
+`AISConfig`, `AISReports`, `NoiseConfig`, `Gather`, and the scenario/dataset helper functions.
+Processing classes are imported from their submodules as shown below.
+
+### Scenario and environment
+
+* `HarborScenarioConfig` — JSON-serializable top-level scenario. Use `.load(path)`,
+  `.from_dict(data)`, `.to_dict()`, and `.save(path)`.
+* `build_environment(cfg)` — create the synthetic harbor from environment settings.
+* `build_layout(cfg, env=None, margin=10.0)` — create the cables and hydrophones; if an
+  environment is supplied, validate that all FDTD sample points are in water and outside the
+  shore margin.
+* `default_vessels()` — default AIS, UUV, diver, and body configurations.
+* `build_synthetic_harbor(dx=5.0, c0=1500.0, shallow_c_drop=10.0, crop=None)` —
+  build the default harbor or a local-frame rectangular crop.
+* `uniform_water_environment(width=1000.0, height=750.0, dx=5.0, c0=1500.0)` —
+  open-water validation environment.
+
+### Sensors, simulation, and datasets
+
+* `Cable(name, waypoints, channel_spacing=10.0, das_mode="pressure", gauge_length=10.0)` —
+  cable channels along a polyline. Pressure mode samples one point per channel; strain mode
+  samples three points and collapses them with an unnormalised second difference.
+* `SensorLayout(cables=[], hydrophones=...)` — combined channel ordering, sample points,
+  `.validate(env, margin=...)`, `.split(traces)`, and `.collapse(sampled)`.
+* `HarborFDTDConfig` — sample rate, duration, FD stencil, outer sponge, background and shoreline
+  damping, and CUDA selection.
+* `HarborFDTDSolver(env, hcfg, source, receivers, scatterers=())` — harbor FDTD solver with
+  land mask and optional moving scatterers.
+* `simulate_source(env, layout, cfg, signal, position=None, trajectory=None, cache_dir=None,
+  verbose=False, scatterers=())` — one source gather, optionally read/written through the
+  simulation cache.
+* `HarborDataset` — scenario configuration, layout, sample rate, noisy traces, truth tracks,
+  AIS, and optional clean/gain/dead-channel/component arrays. `.save(path)` and
+  `.load(path)` use compressed NPZ.
+* `render_vessel_gathers(cfg, env, layout, tracks, cache_dir=None, workers=1,
+  include_silent=False)` — generate direct and per-body scattered unit-level gathers.
+* `assemble_dataset(cfg, layout, tracks, gathers, seed=None, levels=None, noise=None,
+  keep_clean=True, scatter_gain=None, keep_components=False)` — mix cached fields with
+  noise/AIS; `levels` and `scatter_gain` enable parameter sweeps without new FDTD solves.
+* `simulate_scenario(cfg, env=None, layout=None, cache_dir=None, workers=1, seed=None,
+  levels=None, keep_components=False)` — end-to-end convenience wrapper.
+
+### Passive detection and bistatic processing
+
+* `ProcessingConfig` — passive STFT band/window, channel QC, grid, interference rejection,
+  extraction, GPU and dispersion controls.
+* `build_grid(env, cfg, edge=150.0)` / `run_detection(traces, layout, fs, env, cfg, ...)` —
+  construct the passive scan grid and run matched-field detection.
+* `threshold_from_maxima(maxima, pfa, tail_quantile=0.7)` — estimate a CFAR score threshold
+  from noise-only per-frame map maxima.
+* `SuppressionConfig` and `run_ais_aware(...)` — refine reported ship positions, project ship
+  energy from data, re-whiten, and rerun the passive scan.
+* `BistaticConfig` — bistatic STFT, reference, direct-path removal, processor, grid, peak and
+  dispersion settings.
+* `build_grid(env, bc)` / `run_bistatic(traces, layout, fs, env, ais, bc, f_max, ...)` from
+  `acoustic_sim.harbor.bistatic` — form bistatic scan maps and extracted peaks.
+* `OccupancyConfig` / `OccupancyGrid(grid, cfg=None)` — track-before-detect over map frames;
+  `.run(B, times, snapshot_frames=())` returns `OccupancyHistory`.
+* `for_scenario(env, fdtd_cfg)` from `acoustic_sim.harbor.dispersion` — build FDTD-specific
+  numerical-dispersion correction. Use for simulated data only, not as a real-water model.
+* `score_detections(...)` from `acoustic_sim.harbor.evaluate` — associate detections to truth
+  tracks and report probability of detection, localization error, false alarms, and other-vessel
+  detections.
+
+The `run_bistatic` oracle options and the FDTD demonstration's truth-based direct-path removal
+are experimental controls, not blind-sensing inputs. See [Harbor](harbor.md) for definitions,
+workflow examples, and model limitations.
 
 ---
 
