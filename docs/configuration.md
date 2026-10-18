@@ -4,6 +4,11 @@ Two independent configuration systems exist: one for the SRP-PHAT
 engagement pipeline (`pipeline.config.json`) and one for the MFP/EKF
 library pipeline (`DetectionConfig` dataclass).
 
+The separate harbor application uses a third configuration model,
+`HarborScenarioConfig`, typically loaded from
+`examples/harbor.scenario.json`. Its FDTD/data-processing settings are
+described below and in [Harbor](harbor.md).
+
 ---
 
 ## Pipeline Configuration (`pipeline.config.json`)
@@ -122,6 +127,41 @@ python examples/run_pipeline.py SIM_DIR \
     [--classification-threshold FLOAT]  # override ml.classification_confidence_threshold
     [--maneuver-window INT]      # override ml.maneuver_window_size
 ```
+
+---
+
+## Harbor Scenario (`HarborScenarioConfig`)
+
+The harbor scenario JSON has top-level `environment`, `fdtd`, `cables`, `hydrophones`, `vessels`,
+`ais`, `noise`, and `seed` fields. Load/save it with
+`HarborScenarioConfig.load(path)` / `.save(path)`. Coordinates are metres in the scenario's
+local frame; when `environment.crop` is set to `[x0, x1, y0, y1]`, the crop becomes a new domain
+whose origin is `(x0, y0)`, and sensor/vessel coordinates must be expressed in that local frame.
+
+| Section | Main fields | Purpose |
+|---------|-------------|---------|
+| `environment` | `dx`, `c0`, `shallow_c_drop`, `crop` | Plan-view grid spacing, base sound speed, shallow-water effective-speed variation, and optional crop |
+| `fdtd` | `fs`, `total_time`, `fd_order`, `damping_width`, `damping_max`, `background_absorption`, `shore_loss_width`, `shore_loss_max`, `use_cuda` | Sampling rate/duration, stencil, outer sponge, background damping, shoreline damping, and GPU selection |
+| `cables` | `name`, `waypoints`, `channel_spacing`, `das_mode`, `gauge_length` | Polyline cable layout; `das_mode` is `pressure` or `strain` |
+| `hydrophones` | array of `[x, y]` points | Discrete sensor positions |
+| `vessels` | `id`, `kind`, `waypoints`, `speed`, `t_start`, `t_end`, `level_pa`, `ais`, `wander_sigma`, `seed`, body fields | Source/target trajectories, radiated level, AIS status and optional scattering body |
+| `ais` | report intervals, error, jitter, dropout/outage probabilities | Synthetic AIS reporting behaviour |
+| `noise` | ambient/shipping levels, receiver noise, gain scatter, dead channels, seed-related settings | Acoustic background and sensor imperfections |
+
+`HarborFDTDConfig` uses `dt = 1 / fs`; the runner validates stability against the FDTD CFL
+limit. The default 5 m grid is suitable for the low-frequency harbor scenario, not for resolving
+a metre-scale hull. The bistatic example uses a separate 0.5 m scenario (or 1 m with
+`--coarse`) and changes `fs`/analysis bandwidth with grid spacing; even the coarse grid only
+crudely represents its 1 m × 3 m body.
+
+For detector settings, `ProcessingConfig` controls STFT duration/hop, frequency band, scan grid,
+channel QC, common-mode removal, interference projection, peak extraction, optional CUDA, and
+FDTD dispersion correction. `SuppressionConfig` controls AIS ship refinement and model/adaptive
+projection. Bistatic-specific controls are in `BistaticConfig`: `reference` (`data` or
+`oracle`), `removal` (`eca`, `patch`, `adaptive`, `patch+adaptive`, `none`), `method` (`bartlett`,
+`bartlett_phat`, `coherent`, `mvdr`, `music`), scan-grid resolution and dispersion. These
+dataclasses and their defaults are documented in their module docstrings and summarized in
+[Harbor](harbor.md).
 
 ---
 

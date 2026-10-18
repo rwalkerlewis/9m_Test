@@ -1,23 +1,28 @@
-# Passive Acoustic Drone Detection and Engagement System
+# Acoustic Simulation, Detection, and Localization
 
 Full technical documentation: [docs/](docs/index.md)
 
-> **Branch `harbor_sim`: harbor DAS + hydrophone detection of a hidden UUV.**
-> This branch adds a second, independent application of the same FDTD solver: a 2-D synthetic
-> harbor in which a fiber-optic cable (DAS) and a few hydrophones listen for a small submerged
-> vehicle that does not broadcast AIS, among ships that do.  It lives in
-> `src/acoustic_sim/harbor/`, `examples/harbor_*.py` and `tests/harbor/`, and is documented in
-> [docs/harbor.md](docs/harbor.md), including its current status (the processing chain works and is
-> tested; the UUV is not yet detected at the intended source level, and the measured reasons are
-> listed there).  The rest of this README describes the original drone detection project.
+This repository contains two related but independent applications of acoustic modeling:
 
-## What I Chose To Work On
+* **Airborne acoustic sensing:** 2-D/3-D wave simulation, microphone-array bearing/range
+  estimation, tracking, optional machine learning, and a simulated engagement pipeline.
+* **Water-based harbor sensing:** a 2-D plan-view harbor FDTD model with pressure or strain-mode
+  distributed acoustic sensing (DAS), hydrophones, AIS-equipped vessels, hidden targets,
+  moving-body scattering, passive detection, and bistatic localization using an AIS ship as an
+  illuminator.
+
+The harbor implementation and experimental status are documented in
+[docs/harbor.md](docs/harbor.md). The passive matched-field chain does not reliably detect the
+default weak UUV. The bistatic echo demo is idealized: it uses truth components and an oracle
+reference and is not an operational performance claim.
+
+## Airborne Acoustic Pipeline
 
 I chose all four directions and integrated them into a unified system.
 
 The prompt offered signal enhancement, realistic simulation, advanced DOA, and array geometry as separate options. My first observation was that these are not independent problems. You cannot evaluate a DOA algorithm without a realistic simulation to test it against, and you cannot evaluate a simulation without a detection pipeline to consume its output. Rather than pick one piece, I built the end-to-end chain: a physics-based forward model that generates synthetic microphone traces, and a real-time detection and engagement pipeline that turns those traces into fire-control solutions.
 
-The system has two decoupled stages:
+The airborne system has two decoupled stages:
 
 1. A 2D/3D FDTD acoustic wave propagation solver that produces synthetic pressure traces at configurable receiver locations. This replaces the clean simulation in the provided code with physics-based propagation through heterogeneous media including terrain, vegetation, and wind.
 
@@ -63,6 +68,44 @@ All detections default to hostile. Engagement is scored by computed miss distanc
 - Known array geometry. Receiver positions are assumed perfectly known (position-error noise can be injected for robustness testing).
 - Synthetic sources only. The pipeline consumes FDTD output rather than raw recordings.
 - Shotgun engagement model. Fire control assumes a shotgun-class effector with modeled pattern spread.
+
+## Water-Based Harbor Pipeline
+
+The separate harbor package (`src/acoustic_sim/harbor/`) synthesizes a harbor environment,
+sensor layout, vessel tracks, noisy AIS reports, and sensor traces. Its FDTD model includes a
+water mask, pressure-release land boundaries, shoreline damping, optional finite-size moving
+scatterers, and pressure or strain-like DAS observations. It does **not** solve a 3-D water-column
+or ocean-acoustics problem: depth is informational and only affects a small effective
+sound-speed variation in the 2-D plan-view model.
+
+Two processing paths are available:
+
+1. **Passive target-emission detection:** whitened STFT, matched-field scan, stationary
+   interference suppression, CFAR thresholding, optional AIS-aware ship cancellation, and an
+   occupancy-grid tracker. See [docs/harbor.md](docs/harbor.md) and the
+   [passive detection example](examples/harbor_m4_dlc.py).
+2. **Bistatic echo localization:** an AIS ship illuminates a silent body; its scattered field is
+   processed with Bartlett, PHAT-Bartlett, coherent matched filtering, MVDR, or MUSIC maps.
+   See [bistatic echo localization](docs/harbor.md#bistatic-echo-localization) and the
+   [bistatic demo](examples/harbor_bistatic_demo.py).
+
+Quick examples:
+
+```bash
+# Build the default multi-vessel dataset; FDTD source gathers are cached.
+python examples/harbor_m2_dataset.py
+
+# Run the detect–locate–classify experiment.
+python examples/harbor_m4_dlc.py
+
+# Build a cropped, finer-grid bistatic dataset, then make localization figures.
+python examples/harbor_bistatic_dataset.py --coarse
+python examples/harbor_bistatic_demo.py
+```
+
+The bistatic commands are compute-intensive and use their own dataset/output paths. See
+[Harbor usage and examples](docs/harbor.md#examples-and-workflows) for assumptions, outputs,
+complete workflows, and other demos.
 
 ## What Worked
 
@@ -267,4 +310,5 @@ The `docs/` folder contains extensive documentation of the code, algorithms, and
 | [API Reference](docs/api.md) | Every public class, method, and function |
 | [Usage](docs/usage.md) | Installation, CLI commands, running examples |
 | [Studies](docs/studies.md) | Nine parametric robustness studies |
+| [Harbor](docs/harbor.md) | Water-based 2-D harbor, DAS/hydrophone sensing, passive and bistatic examples, assumptions and validation status |
 | [Glossary](docs/glossary.md) | Definitions of terms, acronyms, and concepts |

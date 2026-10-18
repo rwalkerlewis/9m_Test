@@ -6,12 +6,13 @@ those traces into fire-control solutions against airborne targets.
 
 ## For the Non-Specialist
 
-This software listens to sounds made by drones using an array of
-microphones, figures out which direction (and how far away) the drone is,
-tracks it as it moves, then aims a shotgun and decides when to fire.
-Everything is simulated — the sound propagation through the atmosphere is
-computed on a 3-D grid, and the entire detection-to-engagement chain
-runs in real time on commodity hardware.
+The repository contains an airborne acoustic simulation and engagement
+pipeline and a separate water-based harbor sensing research pipeline.
+The airborne pipeline estimates direction and range, tracks simulated
+sources, and evaluates a modeled engagement. The harbor pipeline uses a
+2-D synthetic harbor, DAS cables, and hydrophones to study passive
+detection and bistatic localization of hidden objects. Both are
+simulations, not real-world sensing or weapon-control systems.
 
 ## What It Does
 

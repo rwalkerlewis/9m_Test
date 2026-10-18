@@ -65,6 +65,29 @@ pluggable framework with abstract base classes and factory functions.
 | `anomaly_integration.py` | `AnomalyDetector` wrapper: loads model + threshold, provides `process_frame()` and `process_mel_spectrogram()` returning `AnomalyResult` dataclass. |
 | `anomaly_training.py` | Training script for the CVAE: synthetic data generation, training loop, threshold calibration. |
 
+#### Harbor sensing application (`harbor/`)
+
+This is a separate 2-D application built on the shared FDTD solver. It models a plan-view
+harbor with water/land geometry, shoreline absorption, cable DAS and hydrophone receivers,
+moving vessel sources and scatterers, synthetic AIS, measurement noise, and two distinct
+processing pipelines. It is not part of `examples/run_pipeline.py` and does not model a 3-D
+ocean water column.
+
+| Module | Responsibility |
+|--------|----------------|
+| `environment.py`, `scenario.py` | Water/land mask, informational depth, effective sound-speed map, crop support, JSON scenario configuration and builders |
+| `sensors.py` | Polyline cable geometry; pressure or gauge-length strain-like DAS output; hydrophones; layout validation and channel splitting |
+| `vessels.py`, `signatures.py`, `ais.py` | Source/target tracks, acoustic signatures and injection calibration, noisy AIS reports and prediction |
+| `fdtd_runner.py`, `scatterer.py` | Harbor-specific FDTD boundaries, cached single-source gathers, and moving soft/absorbing finite-size bodies |
+| `noise.py`, `dataset.py` | Ambient/shipping/instrument noise, channel gains/faults, source mixture and labelled `HarborDataset` serialization |
+| `detection.py`, `suppression.py`, `occupancy.py` | Passive matched-field detection, CFAR, AIS-guided position refinement and ship suppression, and track-before-detect |
+| `bistatic.py` | AIS-ship-illuminated echo processing, direct-path removal, and Bartlett/coherent/MVDR/MUSIC localization maps |
+| `dispersion.py`, `localiser.py` | FDTD numerical-dispersion-aware replicas and optional empirical propagation calibration |
+| `evaluate.py`, `classifier.py`, `plotting.py`, `device.py` | Detection scoring, optional harbor CNN/CVAE wrapper, visualizations, and CPU/CuPy dispatch |
+
+For implementation status, interpretation caveats, and complete scenario and example workflows,
+see [Harbor](harbor.md).
+
 #### FNO surrogate (`ml/fno*.py`)
 
 | Module | Purpose |

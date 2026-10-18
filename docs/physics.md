@@ -229,6 +229,48 @@ modulation.
 
 ---
 
+## Water-Based Harbor Model (2-D)
+
+The harbor package reuses the scalar pressure FDTD solver in a **2-D
+plan-view** approximation. A boolean mask identifies land cells, which
+are held at zero pressure (pressure-release boundaries); water cells
+carry the effective sound-speed field. The default depth map is
+informational, while its distance-to-shore estimate produces a modest
+shallow-water sound-speed drop. It does not add a vertical coordinate,
+free surface, seabed, stratified water column, bathymetry-dependent
+boundary condition, or elastic sediment model.
+
+The solver adds a quadratic damping ramp in water near shore to limit
+long-lived harbor reverberation and retains the ordinary sponge at the
+outer grid edge. `HarborFDTDConfig.shore_loss_max = 0` gives reflecting
+quays; increasing it absorbs more energy near land. This parameter is
+per-step numerical damping, not a calibrated physical bottom-loss
+coefficient.
+
+Harbor sensors are sampled from the same pressure field. A pressure-mode
+cable records pressure at each channel. A strain-mode cable samples at
+three points along its gauge length and records the unnormalised second
+difference, which introduces axial, frequency- and direction-dependent
+response. This is a simplified DAS observation model, not a full optical
+interrogator or elastic-fiber simulation.
+
+Finite-size scatterers are represented by a smoothly moving mask that
+multiplies the pressure field. Soft/hard mask kinds are pressure-release
+approximations; the absorbing kind removes a configurable fraction of
+pressure. These are numerical body models, not a validated rigid-hull
+boundary solver. The separate bistatic-budget script includes idealized
+rigid-cylinder theory for comparison, but that is not the boundary
+condition used by FDTD harbor runs.
+
+The FDTD wave equation is linear, so source-only runs can be cached and
+added to form a noisy multi-vessel dataset. Scattered components are
+computed by subtracting the matching run without the body. This
+superposition assumes one body at a time; the dataset builder does not
+model multiple scattering between bodies. See [Harbor](harbor.md) for
+the processing chains and validation limits.
+
+---
+
 ## Noise Models
 
 | Type | Function | Physics |
