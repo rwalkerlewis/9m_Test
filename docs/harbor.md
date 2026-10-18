@@ -45,7 +45,10 @@ approximations). Body geometry should span multiple grid cells for meaningful sh
 
 The dataset builder caches each radiating vessel's unit-level FDTD gather and then mixes levels
 and noise linearly. Scattering is represented by a run with a body minus the matching run
-without it; multiple scattering between distinct bodies is not included.
+without it; by default each body is run on its own, so multiple scattering between distinct
+bodies is not included. `render_vessel_gathers(combined_bodies=True)` (the multistatic dataset)
+instead runs every radiating vessel once with all the bodies present and once with none, which
+keeps the multiple scattering but loses the per body split.
 
 ## Modules (`src/acoustic_sim/harbor/`)
 
@@ -156,6 +159,46 @@ bounded experiment with a pass/fail criterion fixed beforehand.
 | Dispersion-corrected replica (`dispersion.py`) | Same stationary map | **Fixed**: <= 0.102 rad at 400-800 m, both directions |
 | ... and the moving ferry | Ferry-only cancellation depth with the corrected replica | Only 5.5 dB (1 s frames), 11.6 dB (2 s, open water): **the criterion (20 dB) was not met** |
 
+### Stage 0 of the multistatic work (branch `multistatic`)
+
+Goal of the long term work: locate every object in the harbor (radiating vessels, silent moving
+bodies, static structures) by passive sensing with ship noise as the illuminator. Stage 0 asks
+whether the bistatic chain works **without** oracle inputs and builds the multi illuminator,
+multi body scenario for the later stages. Every result states its oracle inputs; every
+experiment had its pass/fail criterion in the script docstring and `results.json` before it ran.
+
+**Stage 0a, direct path cancellation against range** (`examples/harbor_cancellation_depth.py`,
+fine 0.5 m grid, 10 s, the ferry signature alone at nearest channel ranges of 193, 99 and 29 m,
+stationary and at 4 m/s parallel to the first cable leg; ECA depth over the live cable channels
+in 100 to 760 Hz; `output/harbor_cancel/`). References: `data` (delay and sum beam at the AIS
+refined position, blind), `oracle` (true waveform, AIS refined position), `oracle_exact` (true
+waveform, exact position). Criterion: median depth with the `data` reference at least 20 dB.
+
+{{0A_TABLE}}
+
+**Stage 0b, the bistatic demo without its oracles** (`examples/harbor_bistatic_ablation.py`,
+coarse and fine datasets, `output/harbor_bistatic/ablation/`). Configurations: 1 `oracle`
+(truth direct removal, oracle waveform, exact track: the demo), 2 `eca_oracle` (direct path in
+the traces, removed by ECA; oracle waveform; exact track), 3 `eca_data` (data reference, exact
+track), 4 `blind` (data reference, AIS track with refinement). Criterion for `blind` on the
+fine dataset: median echo contrast at least 10 dB and at least half the frames within 5 m.
+
+{{0B_TABLE}}
+
+**Stage 0c, multistatic scenario and dataset** (`examples/harbor_multistatic.scenario.json`,
+`examples/harbor_multistatic_dataset.py`, `output/harbor_multistatic/`). Same 0.5 m crop and
+sensors as the bistatic scenario with three illuminators (the AIS ferry; an AIS tug crossing
+the ferry's geometry from the north east; a small radiating boat without AIS), three silent
+moving bodies (`uuv1` and `uuv2`, 1 m x 3 m soft hulls on different headings at 2 and 1.5 m/s;
+a diver, 0.5 m x 1 m at 0.5 m/s with 2 m of wander) and seven static soft bodies (a row of six
+1 m pilings 5 m apart at y = 250 m, `kind: "static"`; a moored 6 m x 30 m hull by the north
+quay). All tracks are at least 15 m from land and outside the 30 m sponge. Each illuminator is
+rendered with all ten bodies present and with none (`combined_bodies=True`), so the dataset
+carries `direct:<id>` and `scattered:<id>>bodies` per illuminator plus the noise, and
+`truth.json` gives every object's type, body, AIS status, position and velocity per frame.
+
+{{0C_TEXT}}
+
 ### Open
 
 The dispersion fix makes a stationary source's replica accurate to <= 0.1 rad, yet the moving
@@ -186,6 +229,9 @@ by choice.
 | `examples/harbor_bistatic_budget.py` | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
 | `examples/harbor_bistatic_dataset.py` | Fine-grid FDTD scenario; caches direct and body-scattered components separately | expensive; `--coarse` is faster but under-resolves the hull |
 | `examples/harbor_bistatic_demo.py` | Oracle-aided coherent bistatic localization figures and error summary from a saved dataset | processing run |
+| `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler` and `--gate` variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
+| `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the oracle inputs removed one at a time (`--doppler` adds the per sample delay ECA variants) | about 1.5 h of processing for both datasets |
+| `examples/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and an oracle ferry-only check map | 6 FDTD runs (fine: about 1 h on the GPU) |
 | `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
 | `examples/harbor_train_classifier.py`, `examples/harbor_train_anomaly.py`, `examples/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |
 
