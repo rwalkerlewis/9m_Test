@@ -234,7 +234,7 @@ def fig_fields(sc, out):
         ax.plot([x0 + w, x1 - w, x1 - w, x0 + w, x0 + w], [y0 + w, y0 + w, y1 - w, y1 - w, y0 + w], "k:", lw=0.8)
         ax.set_title(f"Re p at {f:.0f} Hz from the ferry (square); UUV circled; dotted: PML edge", fontsize=10)
         ax.get_legend().remove()
-    fig.suptitle("Helmholtz field in the bistatic harbor crop: quay and pier reflections, shore loss, pier shadow "
+    fig.suptitle("Helmholtz field in the bistatic harbor crop: the scenario's shore loss absorbs most of the quay and pier reflection "
                  f"({sc.hcfg.stencil} stencil, {sc.env.dx} m grid)", fontsize=11)
     fig.savefig(out / "h1_fields.png", dpi=110, bbox_inches="tight"); plt.close(fig)
 
@@ -321,8 +321,11 @@ def main() -> None:
     if not args.no_gathers:
         gathers(sc, out)
 
-    Gh = sc.white(sc.lib.G)
-    Gff = sc.white(free_field_replicas(sc.layout, sc.grid, sc.freqs, sc.c))
+    # Whiten in place (single precision): the library is the largest array in the run.
+    sc.lib.G /= sc.noise_std.astype(np.float32)
+    Gh = sc.lib.G
+    Gff = free_field_replicas(sc.layout, sc.grid, sc.freqs, sc.c)
+    Gff /= sc.noise_std.astype(np.float32)
     kmid = sc.n_win // 2
     tu = sc.i_uuv(kmid)
     truth = sc.uuv_xy[kmid]
@@ -364,6 +367,7 @@ def main() -> None:
     Bh = bistatic_coherent(d_res, ref, Gin, G); Bh[~valid] = 0
     d_ff, ref_ff, Gin_ff, G_ff = bistatic_run(kmid, tu, 2, use_ff=True)
     Bf = bistatic_coherent(d_ff, ref_ff, Gin_ff, G_ff); Bf[~valid] = 0
+    del Gff, G_ff, d_ff, Gin_ff
     d_nn, ref_nn, _, _ = bistatic_run(kmid, tu, 2, noise=False)
     Bn = bistatic_coherent(d_nn, ref_nn, Gin, G); Bn[~valid] = 0
     t0 = time.time()

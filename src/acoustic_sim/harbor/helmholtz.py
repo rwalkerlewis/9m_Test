@@ -556,28 +556,29 @@ def sparse_image(d_res: np.ndarray, ref: np.ndarray, Gin: np.ndarray, G: np.ndar
     """
     n_snap, n_f, n_ch = d_res.shape
     nc = G.shape[1]
-    mask = np.ones(nc, bool) if mask is None else mask
-    Gm = G[:, mask, :]
-    Gi = Gin[:, mask]
-    # Normalise columns so lambda acts evenly over the grid.
+    mask = np.ones(nc, bool) if mask is None else np.asarray(mask, bool)
+    # Masked cells get zero weight instead of being cut out, so G (often > 1 GB) is never copied.
     pw = np.sum(np.abs(ref) ** 2, axis=0)                                     # (n_f,)
-    col = np.sqrt(np.einsum("f,fx,fx->x", pw, np.abs(Gi) ** 2, np.sum(np.abs(Gm) ** 2, axis=2))) + 1e-30
+    col2 = np.zeros(nc)
+    for fi in range(n_f):
+        col2 += pw[fi] * np.abs(Gin[fi]) ** 2 * np.sum(np.abs(G[fi]) ** 2, axis=1)
+    wcol = np.where(mask, 1.0 / (np.sqrt(col2) + 1e-30), 0.0)
 
     def A(m):
         out = np.empty((n_snap, n_f, n_ch), complex)
-        mm = m / col
+        mm = m * wcol
         for fi in range(n_f):
-            out[:, fi, :] = ref[:, fi][:, None] * ((mm * Gi[fi]) @ Gm[fi])[None, :]
+            out[:, fi, :] = ref[:, fi][:, None] * ((mm * Gin[fi]) @ G[fi])[None, :]
         return out
 
     def AH(r):
-        g = np.zeros(Gm.shape[1], complex)
+        g = np.zeros(nc, complex)
         for fi in range(n_f):
-            g += np.conj(Gi[fi]) * (Gm[fi].conj() @ (r[:, fi, :].T @ np.conj(ref[:, fi])))
-        return g / col
+            g += np.conj(Gin[fi]) * (G[fi].conj() @ (r[:, fi, :].T @ np.conj(ref[:, fi])))
+        return g * wcol
 
     # Lipschitz constant by power iteration.
-    v = np.random.default_rng(0).standard_normal(Gm.shape[1]) + 0j
+    v = np.random.default_rng(0).standard_normal(nc) * mask + 0j
     for _ in range(20):
         v = AH(A(v)); L = np.linalg.norm(v); v /= L
     b = AH(d_res)
@@ -590,6 +591,4 @@ def sparse_image(d_res: np.ndarray, ref: np.ndarray, Gin: np.ndarray, G: np.ndar
         t_new = 0.5 * (1 + np.sqrt(1 + 4 * t * t))
         y = m_new + (t - 1) / t_new * (m_new - m)
         m, t = m_new, t_new
-    out = np.zeros(nc)
-    out[mask] = np.abs(m)
-    return out
+    return np.where(mask, np.abs(m), 0.0)
