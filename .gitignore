@@ -42,3 +42,4 @@ output/*/snapshots/
 *.jpeg
 *.mp4
 *.mov
+*.pt

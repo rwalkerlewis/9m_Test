@@ -26,6 +26,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.signal import butter, sosfiltfilt
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -151,7 +152,6 @@ def main() -> None:
     # Figure 3: echo and noise on the cable (what the processor sees).
     sl = layout.slices["cable1"]
     fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
-    from scipy.signal import butter, sosfiltfilt
     sos = butter(4, [bc.f_lo, 0.95 * f_max], btype="bandpass", fs=ds.fs, output="sos")
     for ax, (key, x) in zip(axes, (("echo of the ferry from the UUV alone (truth component)", gain * comps["scattered:ferry>uuv1"].astype(float)),
                                    ("echo + noise: what the processor sees", traces))):

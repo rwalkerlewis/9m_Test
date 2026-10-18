@@ -144,6 +144,27 @@ def uuv_reference(speed: np.ndarray, fs: float, rng: np.random.Generator, f_max:
     return gain * base / np.sqrt(np.mean(base ** 2))
 
 
+def diver_reference(speed: np.ndarray, fs: float, rng: np.random.Generator, f_max: float = F_MAX) -> np.ndarray:
+    """Diver signature: broadband bubble noise with a faint kick-rate tonal.
+
+    Dominated by shaped broadband noise with a slightly rising spectral slope
+    (bubble noise), plus a very faint tonal around 5–8 Hz (fin kick rate).
+    No strong tonal lines — purely stochastic broadband character.
+    Level is nearly zero when stopped; rises linearly to full level at 0.8 m/s.
+    """
+    n = len(speed)
+    # Broadband bubble noise: rising spectral slope (slope = -0.5 → more energy at high f)
+    broad = shaped_noise(n, fs, rng, F_MIN, f_max, slope=-0.5)
+    # Faint kick-rate tonal (5-8 Hz fin rate), ~20 dB below the broadband noise floor
+    f_kick = rng.uniform(5.0, 8.0)
+    f_inst = np.full(n, f_kick)
+    kick = tonal_stack(f_inst, fs, [-20.0], rng, am_depth=0.0, f_limit=f_max - 5.0)
+    base = np.sqrt(0.99) * broad + np.sqrt(0.01) * kick
+    # Nearly silent when stopped; ramps up to full level at 0.8 m/s
+    gain = 0.2 + 0.8 * np.minimum(speed / 0.8, 1.0)
+    return gain * base / np.sqrt(np.mean(base ** 2))
+
+
 def activity_gate(active: np.ndarray, fs: float, ramp_s: float = 1.0) -> np.ndarray:
     """Smooth 0/1 gate from a boolean activity mask (moving-average edge of *ramp_s* seconds)."""
     w = max(int(ramp_s * fs), 1)
@@ -159,6 +180,8 @@ def make_reference_signal(
         sig = ship_reference(speed, fs, rng, f_max)
     elif kind == "uuv":
         sig = uuv_reference(speed, fs, rng, f_max)
+    elif kind == "diver":
+        sig = diver_reference(speed, fs, rng, f_max)
     else:
         raise ValueError(f"unknown vessel kind {kind!r}")
     return sig * activity_gate(active, fs)

@@ -2,11 +2,12 @@
   "environment": {
     "dx": 5.0,
     "c0": 1500.0,
-    "shallow_c_drop": 10.0
+    "shallow_c_drop": 10.0,
+    "crop": null
   },
   "fdtd": {
     "fs": 600.0,
-    "total_time": 3.0,
+    "total_time": 4.0,
     "fd_order": 4,
     "damping_width": 30,
     "damping_max": 0.15,
@@ -40,7 +41,9 @@
           300
         ]
       ],
-      "channel_spacing": 10.0
+      "channel_spacing": 10.0,
+      "das_mode": "pressure",
+      "gauge_length": 10.0
     }
   ],
   "hydrophones": [
@@ -60,5 +63,276 @@
       1500.0,
       380.0
     ]
-  ]
+  ],
+  "vessels": [
+    {
+      "id": "ferry",
+      "kind": "ship",
+      "waypoints": [
+        [
+          1380,
+          260
+        ],
+        [
+          1380,
+          500
+        ],
+        [
+          1380,
+          700
+        ],
+        [
+          1500,
+          800
+        ],
+        [
+          1700,
+          1000
+        ]
+      ],
+      "speed": 6.0,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 1.0,
+      "ais": null,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 11,
+      "body_length": 0.0,
+      "body_width": 0.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "tug",
+      "kind": "ship",
+      "waypoints": [
+        [
+          600,
+          1000
+        ],
+        [
+          1000,
+          900
+        ],
+        [
+          1250,
+          720
+        ],
+        [
+          1300,
+          600
+        ],
+        [
+          1310,
+          300
+        ]
+      ],
+      "speed": 4.0,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.7,
+      "ais": null,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 12,
+      "body_length": 0.0,
+      "body_width": 0.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "moored",
+      "kind": "ship",
+      "waypoints": [
+        [
+          1650,
+          1300
+        ]
+      ],
+      "speed": 0.0,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.3,
+      "ais": null,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 13,
+      "body_length": 0.0,
+      "body_width": 0.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "uuv1",
+      "kind": "uuv",
+      "waypoints": [
+        [
+          1600,
+          700
+        ],
+        [
+          1500,
+          850
+        ],
+        [
+          1450,
+          1000
+        ],
+        [
+          1300,
+          1100
+        ],
+        [
+          1150,
+          1250
+        ]
+      ],
+      "speed": 2.5,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.03,
+      "ais": null,
+      "wander_sigma": 10.0,
+      "wander_tau": 20.0,
+      "seed": 21,
+      "body_length": 0.0,
+      "body_width": 0.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "uuv2",
+      "kind": "uuv",
+      "waypoints": [
+        [
+          400,
+          800
+        ],
+        [
+          500,
+          650
+        ],
+        [
+          650,
+          500
+        ],
+        [
+          800,
+          400
+        ],
+        [
+          950,
+          300
+        ]
+      ],
+      "speed": 3.5,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.05,
+      "ais": null,
+      "wander_sigma": 8.0,
+      "wander_tau": 20.0,
+      "seed": 31,
+      "body_length": 0.0,
+      "body_width": 0.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "diver",
+      "kind": "diver",
+      "waypoints": [
+        [
+          1000,
+          1200
+        ],
+        [
+          1050,
+          1100
+        ],
+        [
+          1100,
+          1000
+        ],
+        [
+          1150,
+          950
+        ]
+      ],
+      "speed": 0.8,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.01,
+      "ais": null,
+      "wander_sigma": 5.0,
+      "wander_tau": 20.0,
+      "seed": 41,
+      "body_length": 0.0,
+      "body_width": 0.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "static_scatter",
+      "kind": "uuv",
+      "waypoints": [
+        [
+          1200,
+          600
+        ]
+      ],
+      "speed": 0.0,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.0,
+      "ais": null,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 51,
+      "body_length": 10.0,
+      "body_width": 5.0,
+      "body_kind": "hard",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    }
+  ],
+  "ais": {
+    "interval_moving": 5.0,
+    "interval_stationary": 20.0,
+    "stationary_speed": 0.5,
+    "pos_sigma": 8.0,
+    "sog_sigma": 0.2,
+    "cog_sigma": 0.035,
+    "time_jitter": 0.3,
+    "dropout_prob": 0.05,
+    "outage_prob": 0.01,
+    "outage_reports": [
+      3,
+      6
+    ]
+  },
+  "noise": {
+    "ambient_rms": 0.02,
+    "shipping_rms": 0.02,
+    "n_shipping": 3,
+    "shipping_azimuth_deg": [
+      200.0,
+      340.0
+    ],
+    "hydrophone_self_rms": 0.005,
+    "das_noise_rms": 0.05,
+    "das_common_mode_rms": 0.03,
+    "das_gain_sigma": 0.1,
+    "das_dead_fraction": 0.02,
+    "c": 1500.0,
+    "band_scale": 1.0
+  },
+  "seed": 0
 }

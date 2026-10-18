@@ -9,7 +9,7 @@ from scipy.ndimage import gaussian_filter1d
 
 from acoustic_sim.harbor.environment import HarborEnvironment
 
-KINDS = ("ship", "uuv")
+KINDS = ("ship", "uuv", "diver")
 
 
 @dataclass

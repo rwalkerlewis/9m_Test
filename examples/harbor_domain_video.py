@@ -22,17 +22,28 @@ Usage::
     python examples/harbor_domain_video.py [--t0 40] [--duration 15] [--every 10] [--scenario passive]
         [--out output/harbor_domain_video] [--process]
 """
-import argparse, json, os, shutil, subprocess, sys, time
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+
 import numpy as np
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib import patheffects
 from matplotlib.colors import ListedColormap
-
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "src"))
 from acoustic_sim.harbor import HarborDataset, build_environment  # noqa: E402
 from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.harbor.signatures import R_REF, f_max_for_grid, make_reference_signal  # noqa: E402

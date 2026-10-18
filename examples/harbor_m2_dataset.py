@@ -48,6 +48,8 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--time", type=float, default=None, help="override simulated duration [s]")
+    ap.add_argument("--cuda", action="store_true", default=False,
+                    help="Run FDTD solver on the GPU (requires CuPy)")
     args = ap.parse_args()
 
     out = Path(args.out)
@@ -55,6 +57,8 @@ def main() -> None:
     cfg = HarborScenarioConfig.load(args.config)
     if args.time is not None:
         cfg.fdtd.total_time = args.time
+    if args.cuda:
+        cfg.fdtd.use_cuda = True
     env = build_environment(cfg)
     layout = build_layout(cfg, env)
 
@@ -78,12 +82,16 @@ def main() -> None:
     print("\nband-limited (15-75 Hz) rms pressure [Pa] at the sensors")
     print(f"  {'source':10s} " + " ".join(f"{n:>12s}" for n in groups))
     for vid, tr in ds.tracks.items():
+        if tr.level_pa <= 0 or vid not in gathers:
+            continue  # passive scatterers have no direct-path gather
         row = [band_rms(tr.level_pa * gathers[vid].traces[idx].astype(float) * ds.gain[idx, None], sos) for idx in groups.values()]
         print(f"  {vid:10s} " + " ".join(f"{r:12.4f}" for r in row))
     print(f"  {'noise':10s} " + " ".join(f"{band_rms(noise_only[idx], sos):12.4f}" for idx in groups.values()))
     print()
 
-    # 1. Map with truth tracks and AIS reports
+    # 1. Map with truth tracks and AIS reports.
+    # The loop iterates ds.tracks.items() dynamically, so all vessels (including the new
+    # uuv2, diver, and static_scatter entries from Sub-Task 1) are plotted automatically.
     fig, ax = plt.subplots(figsize=(10, 7.5))
     plot_harbor(env, layout, ax=ax)
     for vid, tr in ds.tracks.items():

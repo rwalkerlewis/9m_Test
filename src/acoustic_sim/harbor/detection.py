@@ -122,6 +122,7 @@ class ProcessingConfig:
     use_cuda: bool = False
     line_halfwidth: int = 0
     dispersion: DispersionModel | None = None
+    empirical_localiser: object | None = field(default=None, repr=False)
 
 
 # ----------------------------------------------------------------------
@@ -473,11 +474,15 @@ def extract_detections(
             mf = scanner.match_frame(wh, scan, cand, k, bins[strong], deflate)
             best = int(np.argmax(np.sum(np.maximum(mf - tau, 0.0), axis=0)))
             order = np.argsort(mf[:, best])[::-1][: cfg.n_lines]
-            accepted.append(cand[best])
+            best_xy = cand[best]
+            if cfg.empirical_localiser is not None:
+                refined = cfg.empirical_localiser.refine(best_xy[None], wh, k)
+                best_xy = refined[0]
+            accepted.append(best_xy)
             frame_idx.append(k)
             rank_idx.append(len(accepted) - 1)
             scores.append(score)
-            xys.append(cand[best])
+            xys.append(best_xy)
             xy_coarse.append(xy0)
             lines.append(np.column_stack([wh.freqs[bins[strong][order]], mf[order, best]]))
     if not frame_idx:

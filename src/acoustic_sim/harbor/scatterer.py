@@ -32,7 +32,7 @@ import numpy as np
 
 from acoustic_sim.harbor.vessels import Track
 
-KINDS = ("soft", "absorbing")
+KINDS = ("soft", "absorbing", "hard")
 SHAPES = ("rect", "ellipse")
 
 
@@ -152,6 +152,6 @@ def body_factor(
         ramp = np.clip(sdf / dx + 0.5, 0.0, 1.0)             # 0 inside, 1 outside, one cell wide ramp
     else:
         ramp = (sdf > 0.0).astype(float)                     # hard cell mask
-    strength = 1.0 if scat.kind == "soft" else scat.strength
+    strength = 1.0 if scat.kind in ("soft", "hard") else scat.strength
     factor = 1.0 - strength * (1.0 - ramp)
     return slice(iy0, iy1), slice(ix0, ix1), factor

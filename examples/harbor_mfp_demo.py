@@ -20,15 +20,26 @@ Usage::
 
     python examples/harbor_mfp_demo.py [--out output/harbor_demo] [--trials 20] [--windows 40]
 """
-import argparse, json, os, time
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import time
+from pathlib import Path
+
 import numpy as np
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from scipy.ndimage import gaussian_filter
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+ROOT = Path(__file__).parent.parent
 
 # ---------------- geometry ----------------
 C = 1500.0                       # m/s
@@ -309,7 +320,7 @@ def dedup_legend(ax, **kw):
     ax.legend(seen.values(), seen.keys(), frameon=False, fontsize=8, **kw)
 
 def save(fig, out, name):
-    fig.savefig(os.path.join(out, name), bbox_inches="tight"); plt.close(fig); print("wrote", name)
+    fig.savefig(Path(out) / name, bbox_inches="tight"); plt.close(fig); print("wrote", name)
 
 # ---------------- scene ----------------
 ferry0 = np.array([600.0, 150.0]); ferry_v = np.array([4.0, 0.0])      # 8 kn down channel
@@ -624,12 +635,13 @@ def run_pd(out, ntrial, rng, pfa=0.05, gate=15.0):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default=os.path.join(ROOT, "output", "harbor_demo"))
+    ap.add_argument("--out", default=str(ROOT / "output" / "harbor_demo"))
     ap.add_argument("--windows", type=int, default=40, help="windows in the track run (0.5 s hop)")
     ap.add_argument("--trials", type=int, default=20, help="random scenes per level in the Pd sweep (0 skips it)")
     ap.add_argument("--seed", type=int, default=7)
     args = ap.parse_args()
-    out = os.path.abspath(args.out); os.makedirs(out, exist_ok=True)
+    out = Path(args.out).resolve()
+    out.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(args.seed); t0 = time.time()
     dt = 0.5
     res = {"scene": {"channel_m": [LX, LY], "depth_m": DEPTH, "c_m_s": C, "channels": nch, "band_hz": [float(freqs[0]), float(freqs[-1])],
@@ -647,7 +659,7 @@ def main():
         print("Pd sweep")
         res["pd"] = run_pd(out, args.trials, rng)
     res["runtime_s"] = round(time.time() - t0, 1)
-    with open(os.path.join(out, "results.json"), "w") as fh: json.dump(res, fh, indent=2)
+    (out / "results.json").write_text(json.dumps(res, indent=2))
     print(json.dumps({k: res[k] for k in ("single_window", "track")}, indent=2))
     print(f"done in {res['runtime_s']:.0f} s ->", out)
 

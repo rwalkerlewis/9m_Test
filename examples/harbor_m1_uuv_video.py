@@ -36,11 +36,38 @@ import numpy as np
 from scipy.signal import hilbert
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-sys.path.insert(0, str(Path(__file__).parent))
 
-from acoustic_sim.harbor import HarborScenarioConfig, build_environment, build_layout  # noqa: E402
+from acoustic_sim.harbor import (  # noqa: E402
+    HarborFDTDSolver,
+    HarborScenarioConfig,
+    build_environment,
+    build_layout,
+)
+from acoustic_sim.harbor.scatterer import Scatterer  # noqa: E402
+from acoustic_sim.harbor.vessels import Track  # noqa: E402
 from acoustic_sim.sources import StaticSource  # noqa: E402
-from harbor_m1_uuv import F0, T_PULSE, UUV_C, run, static_uuv  # noqa: E402
+
+# Constants shared with harbor_m1_uuv.py (inlined to avoid sibling-file import).
+F0, T_PULSE = 40.0, 0.1                     # Ricker peak frequency [Hz] and emission time [s]
+UUV_C = "#f97316"
+
+
+def static_uuv(xy, length, width, total_time):
+    """A stationary soft body at *xy* (heading +x)."""
+    t = np.array([0.0, total_time])
+    p = np.array([xy, xy], dtype=float)
+    track = Track(id="uuv", kind="uuv", ais=False, t=t, xy=p,
+                  speed=np.zeros(2), active=np.ones(2, bool), level_pa=0.0)
+    return Scatterer("uuv", track, length, width, kind="soft", shape="rect")
+
+
+def run(env, cfg, src, receivers, scatterers=()):
+    """Run the FDTD solver and return traces."""
+    solver = HarborFDTDSolver(env, cfg.fdtd, src, receivers, scatterers=scatterers)
+    t0 = time.time()
+    res = solver.run()
+    print(f"FDTD ({'with' if scatterers else 'no'} UUV): {solver.n_steps} steps, {time.time() - t0:.1f} s")
+    return res["traces"]
 
 INK, MUTED = "#111827", "#6b7280"
 

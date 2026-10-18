@@ -52,7 +52,7 @@ def _default_hydrophones() -> list[list[float]]:
 
 
 def default_vessels() -> list[VesselConfig]:
-    """Three AIS ships (ferry, tug, moored vessel) and one hidden slow UUV."""
+    """AIS ships (ferry, tug, moored) plus hidden unknowns: uuv1, uuv2, diver, static_scatter."""
     return [
         VesselConfig("ferry", "ship", [[1380, 260], [1380, 500], [1380, 700], [1500, 800], [1700, 1000]],
                      speed=6.0, level_pa=1.0, seed=11),
@@ -61,6 +61,18 @@ def default_vessels() -> list[VesselConfig]:
         VesselConfig("moored", "ship", [[1650, 1300]], level_pa=0.3, seed=13),
         VesselConfig("uuv1", "uuv", [[1600, 700], [1500, 850], [1450, 1000], [1300, 1100], [1150, 1250]],
                      speed=2.5, level_pa=0.03, wander_sigma=10.0, seed=21),
+        # --- unknown-class objects added for Sub-Task 1 ---
+        # uuv2: second UUV on the opposite (west) side of the basin, faster, different path
+        # Waypoints chosen to clear peninsula at y≈520 (x=530-700); path stays y≥600 through that region
+        VesselConfig("uuv2", "uuv", [[400, 820], [480, 700], [620, 650], [800, 560], [950, 420]],
+                     speed=3.5, level_pa=0.05, wander_sigma=0.0, seed=31),
+        # diver: slow swimmer near the north quay, nearly silent broadband profile
+        VesselConfig("diver", "diver", [[1000, 1200], [1050, 1100], [1100, 1000], [1150, 950]],
+                     speed=0.8, level_pa=0.01, wander_sigma=5.0, seed=41),
+        # static_scatter: stationary hard-body reflector (mine-like); level_pa=0 → passive reflector only
+        VesselConfig("static_scatter", "uuv", [[1200, 600]],
+                     speed=0.0, level_pa=0.0, seed=51,
+                     body_kind="hard", body_length=10.0, body_width=5.0, body_shape="rect"),
     ]
 
 
