@@ -14,9 +14,19 @@
       ],
       "settings": {
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "explorer.excludeGitIgnore": false,
+        "files.exclude": {
+          "**/.git": false
+        },
         "python.testing.pytestEnabled": true,
         "python.testing.pytestArgs": ["tests"]
       }
     }
-  }
+  },
+  "postCreateCommand": "python -m pip install -e '.[cuda,dev]' && git config --global --add safe.directory /workspace && git config --global core.autocrlf input",
+  "containerUser": "devuser",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "overrideCommand": true
 }

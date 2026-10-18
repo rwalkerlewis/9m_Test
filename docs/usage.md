@@ -61,6 +61,69 @@ docker compose exec dev bash
 Generated data (`output/`, caches, `.npz`) lives in the repository folder on the host and is not
 in git; on a new machine regenerate it, e.g. `./dev.sh run python examples/harbor_m2_dataset.py`.
 
+### VS Code Dev Container
+
+Prerequisites: Docker with NVIDIA GPU support, VS Code, and the Dev Containers
+extension. Open the **repository root** in VS Code, then run **Dev Containers:
+Reopen in Container**. After changing the container configuration or Dockerfile,
+run **Dev Containers: Rebuild and Reopen in Container**.
+
+The Explorer opens `/workspace`, the complete read-write host checkout, including
+`.git`, `docs/`, `examples/`, `tests/`, and tracked data. Git-ignored files are not
+hidden by the Explorer, and the `.git` directory is visible. Changes and commits
+persist on the host; rebuilding the container does not remove them.
+The build image excludes some data and Git metadata to keep the image small;
+those exclusions do **not** apply to the live repository bind mount.
+
+The container installs the editable package with the `cuda` and `dev` extras.
+Python and package-build tools live in `/opt/venv`; no writable host `.venv` is
+required. From the integrated terminal:
+
+```bash
+# Reinstall after changing dependencies.
+python -m pip install -e ".[cuda,dev]"
+
+# Build the source distribution and wheel into dist/.
+python -m build
+
+# Inspect changes, then stage only the intended files.
+git status
+git diff
+git add <files>
+git commit -m "Describe your change"
+git push
+```
+
+VS Code copies your host Git configuration and forwards its Git credential helper
+into the Dev Container. Configure your author identity and authenticate to the
+remote on the **host** before opening/rebuilding the container. Verify inside:
+
+```bash
+git config --get user.name
+git config --get user.email
+```
+
+If either is missing, set your identity for this checkout inside the container:
+
+```bash
+git config --local user.name "Your Name"
+git config --local user.email "you@example.com"
+```
+
+For HTTPS remotes, use the host credential manager. For SSH remotes, load your key
+into the host SSH agent; VS Code forwards the agent automatically. Do not copy
+tokens or private keys into the repository or image. Commit operations work
+without network access; pushing requires network access and permission to write
+to the remote.
+
+For a terminal-only session outside VS Code, use
+`docker compose run --rm --no-deps dev`. This mounts the same full checkout, but
+does not provide VS Code's automatic credential forwarding or lifecycle setup.
+If Git reports dubious ownership in that session, trust only this checkout with
+`git config --global --add safe.directory /workspace`. Use the repository-local
+identity commands above if needed, and configure authentication separately before
+pushing.
+
 ---
 
 ## Helmholtz Solver (Frequency-Domain)

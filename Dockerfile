@@ -53,6 +53,7 @@ RUN python -m venv $VIRTUAL_ENV && chown -R ${USERNAME}:${USERNAME} $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 WORKDIR /workspace
+RUN chown ${USERNAME}:${USERNAME} /workspace
 
 # Install the dependencies against an empty stub package so this layer only depends on
 # pyproject.toml.  The editable install points at /workspace/src, which is where the real
