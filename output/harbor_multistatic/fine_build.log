@@ -1,0 +1,18 @@
+[fine] grid 801 x 601 at 0.5 m, fs 6000 Hz, band to 800 Hz, 200 channels (592 sample points), 120000 steps, 3 illuminators, 10 bodies
+[fine] 6 gathers (ferry, ferry>bodies, tug, tug>bodies, boat, boat>bodies) in 2257 s
+
+[fine] band limited (200 to 760 Hz) rms at the sensors, whole run, live channels
+  component                          cable1  hydrophones     best DAS
+  direct:ferry                       0.1537       0.1359        0.298
+  scattered:ferry>bodies            0.06017      0.02987       0.1521
+  direct:tug                         0.1606      0.06119       0.3821
+  scattered:tug>bodies              0.03011      0.02303      0.05797
+  direct:boat                       0.06527      0.05598       0.1196
+  scattered:boat>bodies             0.01828     0.009661      0.03317
+  noise                             0.03131      0.02326      0.03685
+  ferry: echo_to_direct_db_median_das -8.1, echo_to_noise_db_median_das +5.7, echo_to_noise_db_best_das +13.7
+  tug: echo_to_direct_db_median_das -14.5, echo_to_noise_db_median_das -0.3, echo_to_noise_db_best_das +5.4
+  boat: echo_to_direct_db_median_das -11.1, echo_to_noise_db_median_das -4.7, echo_to_noise_db_best_das +0.5
+wrote output/harbor_multistatic/fine
+[fine] ferry only oracle chain: 426 s, 16983 cells, 79 frames
+[ferry only] map value within 4 m of each body over the map median, summed map: uuv1 +6.4 dB, uuv2 +8.0 dB, diver +7.0 dB, piling1 +5.5 dB, piling2 +7.3 dB, piling3 +7.3 dB, piling4 +7.6 dB, piling5 +7.6 dB, piling6 +6.4 dB, moored +15.1 dB
