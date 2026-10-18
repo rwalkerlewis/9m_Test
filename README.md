@@ -2,6 +2,15 @@
 
 Full technical documentation: [docs/](docs/index.md)
 
+> **Branch `harbor_sim`: harbor DAS + hydrophone detection of a hidden UUV.**
+> This branch adds a second, independent application of the same FDTD solver: a 2-D synthetic
+> harbor in which a fiber-optic cable (DAS) and a few hydrophones listen for a small submerged
+> vehicle that does not broadcast AIS, among ships that do.  It lives in
+> `src/acoustic_sim/harbor/`, `examples/harbor_*.py` and `tests/harbor/`, and is documented in
+> [docs/harbor.md](docs/harbor.md), including its current status (the processing chain works and is
+> tested; the UUV is not yet detected at the intended source level, and the measured reasons are
+> listed there).  The rest of this README describes the original drone detection project.
+
 ## What I Chose To Work On
 
 I chose all four directions and integrated them into a unified system.
@@ -99,24 +108,29 @@ All detections default to hostile. Engagement is scored by computed miss distanc
 pip install -e .
 ```
 
-MPI (for parallel FDTD):
+Optional extras:
+
+```bash
+pip install -e ".[cuda]"   # GPU acceleration (cupy-cuda12x)
+pip install -e ".[ml]"     # ML classifiers, FNO surrogate, anomaly detection (torch)
+pip install -e ".[dev]"   # pytest
+```
+
+MPI, only for multi-process FDTD (the solver runs single-process without it):
 
 ```bash
 sudo apt-get install libopenmpi-dev openmpi-bin
-pip install mpi4py
+pip install -e ".[mpi]"
 ```
 
-GPU acceleration:
+Docker (works on any machine, GPU optional; the repository is bind-mounted, so edits need no rebuild):
 
 ```bash
-pip install -e ".[cuda]"
+./dev.sh shell        # build if needed, then open a shell in the dev container
+./dev.sh test         # pytest tests/harbor inside the container
 ```
 
-Docker:
-
-```bash
-docker compose up dev
-```
+See [Usage](docs/usage.md#docker) for VS Code Dev Containers, GPU control and PyTorch.
 
 For editing, building, committing, and pushing from VS Code, open the repository
 root and run **Dev Containers: Reopen in Container** (or **Rebuild and Reopen in
@@ -219,13 +233,16 @@ Python ≥ 3.10.
 | numpy | yes |
 | scipy | yes |
 | matplotlib | yes |
-| mpi4py | yes (single-process fallback) |
+| mpi4py | optional — multi-process FDTD (`pip install -e ".[mpi]"`); single-process without it |
 | cupy-cuda12x | optional — GPU acceleration (`pip install -e ".[cuda]"`) |
-| torch | optional — ML classifiers, FNO surrogate, anomaly detection |
+| torch | optional — ML classifiers, FNO surrogate, anomaly detection (`pip install -e ".[ml]"`) |
 
 ## Pre-computed Datasets
 
-Five datasets ship in `output/`:
+The repository tracks the *metadata and results* of five reference runs under `output/`
+(`metadata.json`, `results_*.json`, a `README.md` per run) and the trained ML weights in
+`output/models/`.  The traces, snapshots and figures are not tracked (see `.gitignore`); regenerate
+a dataset with the `examples/run_*.sh` script of the same name.
 
 | Directory | Dimension | Domain | Source | Duration |
 |-----------|-----------|--------|--------|----------|
@@ -235,7 +252,7 @@ Five datasets ship in `output/`:
 | `erratic_quadcopter` | 3-D | isotropic | erratic trajectory (8 m/s mean) | 3.0 s |
 | `coupled_moving_3d` | 3-D | coupled elastic | moving propeller | — |
 
-Each directory (except `coupled_moving_3d`) contains `traces.npy`, `metadata.json`, and FDTD `snapshots/`. Pre-trained ML weights are in `output/models/`.
+Once regenerated, each directory (except `coupled_moving_3d`) contains `traces.npy`, `metadata.json`, and FDTD `snapshots/`.
 
 ## Documentation
 

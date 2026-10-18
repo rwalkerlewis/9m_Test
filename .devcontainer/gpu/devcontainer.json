@@ -1,0 +1,22 @@
+{
+  "name": "Acoustic Sim (NVIDIA GPU)",
+  "dockerComposeFile": ["../../docker-compose.yml", "../../docker-compose.gpu.yml"],
+  "service": "dev",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "devuser",
+  "updateRemoteUserUID": true,
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.pylint"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"]
+      }
+    }
+  }
+}

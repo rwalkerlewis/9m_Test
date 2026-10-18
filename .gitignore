@@ -26,12 +26,20 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Generated output
+# Generated output: figures, JSON and logs are committed; datasets and FDTD caches are not.
+output/**/cache/
 output/*/snapshots/
-output/comparison/
 *.npy
 *.npz
 
 # Audio files (tracked in audio/ but ignore stray ones)
 *.wav
 !/audio/*.wav
+
+# Images and videos
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.mov
+*.pt

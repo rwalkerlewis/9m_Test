@@ -1,0 +1,224 @@
+{
+  "scene": {
+    "channel_m": [
+      1500.0,
+      300.0
+    ],
+    "depth_m": 16.0,
+    "c_m_s": 1500.0,
+    "channels": 441,
+    "band_hz": [
+      40.0,
+      780.0
+    ],
+    "bins": 38,
+    "snapshots": 11,
+    "snapshot_s": 0.5,
+    "grid_m": 10.0,
+    "noise_db_per_hz": 65.0,
+    "uuv_ts_db": -20.0,
+    "uuv_line_db": 135.0,
+    "ais_sigma_m": 6.0
+  },
+  "assumptions": [
+    "analytic forward model: the replica is exact (constant c, no multipath, known DAS directivity)",
+    "geometry frozen inside each 3 s window (11 x 0.5 s snapshots)",
+    "pier scatterer positions known (stored clutter map) and projected out",
+    "ferry position from AIS (6 m rms per axis) refined by a Bartlett search on the data",
+    "ferry waveform estimated by beamforming at the refined ferry position (no oracle)"
+  ],
+  "levels": {
+    "echo_below_noise_db_median_channel": 4.305803816799894,
+    "echo_below_ferry_db_median_channel": 58.80577183383796,
+    "thruster_vs_noise_db_median_channel": 3.882278488624735
+  },
+  "single_window": {
+    "ais_error_m": 1.7924884213032726,
+    "refined_error_m": 0.04310977648287619,
+    "passive": {
+      "error_m": 0.0,
+      "contrast_db": 30.93282850590966
+    },
+    "bistatic": {
+      "error_m": 0.0,
+      "contrast_db": 30.47942819954709,
+      "peak_before_pier_removal_xy": [
+        1198.75,
+        298.75
+      ]
+    }
+  },
+  "resolution": {
+    "mismatch_c_m_s": 1490.0,
+    "bartlett": {
+      "area_3db_m2": 1002.75,
+      "peak_error_m": 0.0,
+      "peak_loss_db": 0.0
+    },
+    "mvdr": {
+      "area_3db_m2": 0.25,
+      "peak_error_m": 0.0,
+      "peak_loss_db": 0.0
+    },
+    "bartlett_mismatch": {
+      "area_3db_m2": 922.25,
+      "peak_error_m": 4.031128874149275,
+      "peak_loss_db": -0.9933765087372528
+    },
+    "mvdr_mismatch": {
+      "area_3db_m2": 36.25,
+      "peak_error_m": 4.47213595499958,
+      "peak_loss_db": -18.2737477732516
+    }
+  },
+  "track": {
+    "windows": 40,
+    "hop_s": 0.5,
+    "passive": {
+      "median_m": 0.0,
+      "p90_m": 0.0,
+      "within_10m": 1.0,
+      "rmse_m": 0.0
+    },
+    "bistatic": {
+      "median_m": 0.0,
+      "p90_m": 0.0,
+      "within_10m": 1.0,
+      "rmse_m": 0.06846531968814576
+    },
+    "occupancy_map": {
+      "median_m": 5.830951894845301,
+      "p90_m": 8.24078128678979,
+      "within_10m": 1.0,
+      "rmse_m": 6.354132513569417
+    },
+    "occupancy_final_error_m": 6.726812023536855,
+    "ferry_refined_error_median_m": 0.16041788412816788,
+    "contrast_db_median": {
+      "passive": 29.639192710518177,
+      "bistatic": 29.728279258228085
+    }
+  },
+  "pd": {
+    "pfa": 0.05,
+    "gate_m": 15.0,
+    "trials_per_level": 20,
+    "noise_trials": 40,
+    "bistatic": {
+      "threshold_contrast_db": 8.887650729608975,
+      "noise_contrast_db_median": 8.025651712227077,
+      "levels": [
+        -60.0,
+        -55.0,
+        -50.0,
+        -45.0,
+        -40.0,
+        -35.0,
+        -30.0,
+        -25.0,
+        -20.0,
+        -15.0,
+        -10.0
+      ],
+      "pd": [
+        0.0,
+        0.0,
+        0.15,
+        0.5,
+        0.55,
+        0.75,
+        0.85,
+        0.85,
+        0.85,
+        0.85,
+        0.85
+      ],
+      "median_error_detected_m": [
+        null,
+        null,
+        0.3194960540936945,
+        0.6219339547953298,
+        0.4009314788252152,
+        0.22229196915147945,
+        0.22229196915147945,
+        0.19556851533191255,
+        0.19556851533191255,
+        0.19556851533191255,
+        0.19556851533191255
+      ],
+      "default_level": -20.0,
+      "missed_at_default_uuv_xy": [
+        [
+          411.33597648639835,
+          20.656040273546946
+        ],
+        [
+          635.1399948789549,
+          268.3726813271709
+        ],
+        [
+          918.5088376922646,
+          282.03699836924244
+        ]
+      ]
+    },
+    "passive": {
+      "threshold_contrast_db": 6.857521033645391,
+      "noise_contrast_db_median": 6.4921264761956206,
+      "levels": [
+        85.0,
+        90.0,
+        95.0,
+        100.0,
+        105.0,
+        110.0,
+        115.0,
+        120.0,
+        125.0,
+        130.0,
+        135.0,
+        140.0
+      ],
+      "pd": [
+        0.1,
+        0.65,
+        0.85,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9
+      ],
+      "median_error_detected_m": [
+        1.1956056395366332,
+        0.42438917754728067,
+        0.42438917754728067,
+        0.29183136628659995,
+        0.24373664296988246,
+        0.25027738644564834,
+        0.25027738644564834,
+        0.2760064053952622,
+        0.25027738644564834,
+        0.25027738644564834,
+        0.23451618902253707,
+        0.23451618902253707
+      ],
+      "default_level": 135.0,
+      "missed_at_default_uuv_xy": [
+        [
+          411.33597648639835,
+          20.656040273546946
+        ],
+        [
+          635.1399948789549,
+          268.3726813271709
+        ]
+      ]
+    }
+  },
+  "runtime_s": 1583.2
+}

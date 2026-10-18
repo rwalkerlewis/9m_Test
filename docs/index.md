@@ -39,6 +39,7 @@ parametric studies but is not used by the production pipeline.
 | [API Reference](api.md) | Every public class, method, and function with signatures |
 | [Usage](usage.md) | Installation, CLI commands, running examples |
 | [Studies](studies.md) | Nine parametric robustness studies |
+| [Harbor](harbor.md) | 2-D harbor DAS + hydrophone detection of hidden submerged objects (separate from the drone pipeline): scenario, processing chain, GPU, findings |
 | [Glossary](glossary.md) | Definitions of terms, acronyms, and concepts |
 
 ## Repository Layout
@@ -117,7 +118,10 @@ acoustic-sim/
 ├── pyproject.toml
 ├── requirements.txt
 ├── Dockerfile
-└── docker-compose.yml
+├── docker-compose.yml          # dev container (no GPU needed)
+├── docker-compose.gpu.yml      # adds NVIDIA GPU access
+├── dev.sh                      # shell / test / run helper for the container
+└── .devcontainer/              # VS Code Dev Containers (CPU default, gpu/ variant)
 ```
 
 ## Dependencies

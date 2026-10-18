@@ -11,12 +11,13 @@ dependencies = [
     "numpy",
     "scipy",
     "matplotlib",
-    "mpi4py",
 ]
 
 [project.optional-dependencies]
 cuda = ["cupy-cuda12x"]
-dev = ["build"]
+dev = ["pytest", "build"]
+ml = ["torch"]
+mpi = ["mpi4py"]
 
 [project.scripts]
 acoustic-sim = "acoustic_sim.cli:main"

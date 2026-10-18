@@ -1,0 +1,109 @@
+28767 water cells, 129 receivers, 67 bins, 39 windows
+wrote map.png
+wrote analytic_vs_fdtd.png
+  calibrated passive: gain error 0.012 rms, interference at [204.5 276. ] deg
+  calibrated bistatic: gain error 0.012 rms, interference at [204.5 276. ] deg
+wrote calibration.png
+wrote maps.png
+  window 1/39 t   1.5: passive 1132.0 m   8.9 dB, bistatic  942.9 m  20.8 dB
+  window 2/39 t   4.5: passive    2.2 m   6.7 dB, bistatic  967.7 m  14.5 dB
+  window 3/39 t   7.5: passive    4.4 m   7.3 dB, bistatic  718.8 m  10.8 dB
+  window 4/39 t  10.5: passive    4.7 m   6.8 dB, bistatic  767.9 m  10.3 dB
+  window 5/39 t  13.5: passive    2.3 m   7.0 dB, bistatic  582.5 m  10.4 dB
+  window 6/39 t  16.5: passive    2.0 m   6.7 dB, bistatic  721.3 m  11.0 dB
+  window 7/39 t  19.5: passive    2.5 m   7.2 dB, bistatic  614.8 m  10.2 dB
+  window 8/39 t  22.5: passive    3.3 m   6.9 dB, bistatic  676.6 m  10.5 dB
+  window 9/39 t  25.5: passive    1.0 m   7.5 dB, bistatic  896.4 m  10.0 dB
+  window 10/39 t  28.5: passive    1.0 m   7.2 dB, bistatic    0.3 m  14.9 dB
+  window 11/39 t  31.5: passive    0.6 m   6.9 dB, bistatic    0.6 m  14.4 dB
+  window 12/39 t  34.5: passive    0.6 m   6.9 dB, bistatic    0.6 m  13.7 dB
+  window 13/39 t  37.5: passive    1.2 m   6.9 dB, bistatic    0.4 m  13.2 dB
+  window 14/39 t  40.5: passive    0.7 m   6.7 dB, bistatic    0.2 m  13.9 dB
+  window 15/39 t  43.5: passive    2.2 m   6.7 dB, bistatic    1.1 m  14.2 dB
+  window 16/39 t  46.5: passive    2.8 m   6.6 dB, bistatic    0.9 m  15.0 dB
+  window 17/39 t  49.5: passive    4.6 m   6.1 dB, bistatic    0.4 m  13.6 dB
+  window 18/39 t  52.5: passive    3.5 m   6.1 dB, bistatic  381.1 m  16.4 dB
+  window 19/39 t  55.5: passive    1.3 m   5.8 dB, bistatic    0.3 m  14.7 dB
+  window 20/39 t  58.5: passive  771.2 m   6.5 dB, bistatic    0.7 m  15.2 dB
+  window 21/39 t  61.5: passive    1.6 m   6.3 dB, bistatic    0.8 m  15.6 dB
+  window 22/39 t  64.5: passive    1.2 m   6.3 dB, bistatic    0.7 m  16.9 dB
+  window 23/39 t  67.5: passive    2.1 m   7.1 dB, bistatic    0.7 m  17.0 dB
+  window 24/39 t  70.5: passive    0.6 m   7.9 dB, bistatic    0.5 m  17.9 dB
+  window 25/39 t  73.5: passive    0.5 m   8.4 dB, bistatic    0.6 m  17.8 dB
+  window 26/39 t  76.5: passive    1.0 m   7.4 dB, bistatic    0.6 m  18.4 dB
+  window 27/39 t  79.5: passive    0.8 m   7.1 dB, bistatic    0.3 m  16.6 dB
+  window 28/39 t  82.5: passive    1.4 m   7.2 dB, bistatic    1.0 m  18.4 dB
+  window 29/39 t  85.5: passive    2.8 m   6.7 dB, bistatic    0.7 m  17.6 dB
+  window 30/39 t  88.5: passive  826.7 m   7.0 dB, bistatic    0.7 m  19.4 dB
+  window 31/39 t  91.5: passive    1.8 m   6.6 dB, bistatic    1.3 m  18.6 dB
+  window 32/39 t  94.5: passive  834.3 m   6.9 dB, bistatic    0.3 m  19.9 dB
+  window 33/39 t  97.5: passive    0.7 m   6.8 dB, bistatic    0.8 m  19.5 dB
+  window 34/39 t 100.5: passive    2.8 m   6.8 dB, bistatic    0.6 m  19.7 dB
+  window 35/39 t 103.5: passive    3.5 m   7.1 dB, bistatic    0.9 m  19.3 dB
+  window 36/39 t 106.5: passive    4.1 m   6.5 dB, bistatic    0.2 m  19.2 dB
+  window 37/39 t 109.5: passive    4.5 m   5.9 dB, bistatic    2.4 m  17.3 dB
+  window 38/39 t 112.5: passive    4.0 m   5.1 dB, bistatic    1.3 m  18.1 dB
+  window 39/39 t 115.5: passive 1269.5 m   5.0 dB, bistatic    0.0 m  17.2 dB
+wrote tracks.png
+  passive: threshold 7.5 dB, Pd [0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.9, 1.0] (668 s)
+  bistatic: threshold 17.1 dB, Pd [0.0, 0.0, 0.0, 0.0, 0.4, 0.7, 0.7, 0.9, 0.9] (1969 s)
+wrote pd_vs_level.png
+{
+  "analytic_minus_fdtd_db": {
+    "median": -0.2744477706016788,
+    "iqr": 1.1106166157931394
+  },
+  "single_window": {
+    "passive": {
+      "t_s": 40.51,
+      "error_m": 0.6515709539262905,
+      "contrast_db": 6.69290742509528,
+      "ship_refined_error_m": [
+        0.22363116209583808,
+        0.5968557718466057,
+        26.188775753937524
+      ],
+      "ship_ais_error_m": [
+        1.8614825602585943,
+        11.472281323618525,
+        7.322850431105182
+      ]
+    },
+    "bistatic": {
+      "t_s": 40.51,
+      "error_m": 0.16720000477485739,
+      "contrast_db": 13.926412785559288,
+      "ship_refined_error_m": [
+        0.22363116209583808,
+        1.0367613279447438,
+        26.188775753937524
+      ],
+      "ship_ais_error_m": [
+        1.8614825602585943,
+        11.472281323618525,
+        7.322850431105182
+      ]
+    }
+  },
+  "track": {
+    "passive": {
+      "median_m": 2.2173492421159393,
+      "p90_m": 782.2901648844341,
+      "within_20m": 0.8717948717948718,
+      "contrast_db_median": 6.8339757556019
+    },
+    "bistatic": {
+      "median_m": 0.7496901339804686,
+      "p90_m": 730.6103999467518,
+      "within_20m": 0.7435897435897436,
+      "contrast_db_median": 16.445069596459444
+    },
+    "ship_refined_error_median_m": {
+      "ferry": 0.22846345913194246,
+      "tug": 0.4198339207821746,
+      "moored": 2.7164988118834295
+    }
+  }
+}
+done in 3813 s -> /home/dockimble/Projects/9m_Test/output/harbor_domain
+EXIT 0

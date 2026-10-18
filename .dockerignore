@@ -1,12 +1,4 @@
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-.git/
-.gitignore
-*.wav
-*.png
-*.npy
-.venv/
-.env
-audio/
+# The image needs only pyproject.toml (the repository is bind-mounted at run time), so send
+# nothing else to the daemon: builds stay fast no matter how large output/ or the caches grow.
+*
+!pyproject.toml

@@ -1,7 +1,11 @@
 {
-  "name": "Acoustic Sim",
-  "dockerComposeFile": "../docker-compose.yml",
+  "name": "Acoustic Sim (CPU)",
+  "dockerComposeFile": ["../docker-compose.yml"],
   "service": "dev",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "devuser",
+  "updateRemoteUserUID": true,
+  "shutdownAction": "stopCompose",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -13,16 +17,16 @@
         "explorer.excludeGitIgnore": false,
         "files.exclude": {
           "**/.git": false
-        }
+        },
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"]
       }
     }
   },
   "postCreateCommand": "python -m pip install -e '.[cuda,dev]' && git config --global --add safe.directory /workspace && git config --global core.autocrlf input",
-  "remoteUser": "devuser",
   "containerUser": "devuser",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {}
   },
-  "workspaceFolder": "/workspace",
   "overrideCommand": true
 }

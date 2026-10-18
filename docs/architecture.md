@@ -221,12 +221,12 @@ everything runs on rank 0 transparently.
 ### Docker
 
 ```bash
-docker compose up dev        # interactive shell with GPU
-docker compose run simulate  # batch run
+./dev.sh shell                                                  # interactive shell (GPU auto-detected)
+docker compose run --rm simulate --model-preset gradient --frequency 40   # Helmholtz CLI
 ```
 
-The container is built from `nvidia/cuda:12.6.3-devel-ubuntu24.04` with
-Python 3.12, OpenMPI, and CuPy pre-installed.
+The image is built on `ubuntu:24.04` with Python 3.12, OpenMPI, and CuPy (CUDA toolkit from
+pip); the repository is bind-mounted.  See [Usage](usage.md#docker).
 
 ---
 

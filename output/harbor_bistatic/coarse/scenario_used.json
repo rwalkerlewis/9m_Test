@@ -1,0 +1,152 @@
+{
+  "environment": {
+    "dx": 1.0,
+    "c0": 1500.0,
+    "shallow_c_drop": 10.0,
+    "crop": [
+      1150.0,
+      1550.0,
+      1200.0,
+      1500.0
+    ]
+  },
+  "fdtd": {
+    "fs": 3000.0,
+    "total_time": 20.0,
+    "fd_order": 4,
+    "damping_width": 60,
+    "damping_max": 0.15,
+    "background_absorption": 0.0001,
+    "shore_loss_width": 40.0,
+    "shore_loss_max": 0.15,
+    "use_cuda": false
+  },
+  "cables": [
+    {
+      "name": "cable1",
+      "waypoints": [
+        [
+          20.0,
+          60.0
+        ],
+        [
+          300.0,
+          60.0
+        ],
+        [
+          300.0,
+          170.0
+        ]
+      ],
+      "channel_spacing": 2.0,
+      "das_mode": "strain",
+      "gauge_length": 2.0
+    }
+  ],
+  "hydrophones": [
+    [
+      30.0,
+      30.0
+    ],
+    [
+      330.0,
+      20.0
+    ],
+    [
+      30.0,
+      250.0
+    ],
+    [
+      200.0,
+      20.0
+    ]
+  ],
+  "vessels": [
+    {
+      "id": "ferry",
+      "kind": "ship",
+      "waypoints": [
+        [
+          140.0,
+          200.0
+        ],
+        [
+          260.0,
+          200.0
+        ]
+      ],
+      "speed": 4.0,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 1.0,
+      "ais": null,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 11,
+      "body_length": 0.0,
+      "body_width": 0.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "uuv1",
+      "kind": "uuv",
+      "waypoints": [
+        [
+          240.0,
+          100.0
+        ],
+        [
+          170.0,
+          150.0
+        ]
+      ],
+      "speed": 2.0,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.0,
+      "ais": null,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 21,
+      "body_length": 3.0,
+      "body_width": 1.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    }
+  ],
+  "ais": {
+    "interval_moving": 5.0,
+    "interval_stationary": 20.0,
+    "stationary_speed": 0.5,
+    "pos_sigma": 8.0,
+    "sog_sigma": 0.2,
+    "cog_sigma": 0.035,
+    "time_jitter": 0.3,
+    "dropout_prob": 0.05,
+    "outage_prob": 0.01,
+    "outage_reports": [
+      3,
+      6
+    ]
+  },
+  "noise": {
+    "ambient_rms": 0.02,
+    "shipping_rms": 0.02,
+    "n_shipping": 3,
+    "shipping_azimuth_deg": [
+      200.0,
+      340.0
+    ],
+    "hydrophone_self_rms": 0.005,
+    "das_noise_rms": 0.05,
+    "das_common_mode_rms": 0.03,
+    "das_gain_sigma": 0.1,
+    "das_dead_fraction": 0.02,
+    "c": 1500.0,
+    "band_scale": 5.0
+  },
+  "seed": 0
+}
