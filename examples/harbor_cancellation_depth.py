@@ -25,6 +25,11 @@ harbor).
 Usage::
 
     python examples/harbor_cancellation_depth.py [--time 10] [--workers 2] [--out output/harbor_cancel]
+        [--cuda] [--gate 50] [--doppler]
+
+``--gate`` excludes channels closer than that to the source from the statistics; ``--doppler``
+switches the ECA to per sample delays (``BistaticConfig.eca_doppler``).  Both write their
+outputs with a suffix next to the baseline, which keeps its criterion and results.
 """
 
 from __future__ import annotations
@@ -121,6 +126,7 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--gate", type=float, default=0.0, help="exclude channels closer than this [m] to the source from the statistics")
     ap.add_argument("--cuda", action="store_true")
+    ap.add_argument("--doppler", action="store_true", help="eca_doppler=True (per sample delays following the ship); outputs get a _doppler suffix")
     ap.add_argument("--coarse", action="store_true", help="1 m grid (for quick checks only)")
     args = ap.parse_args()
     out = Path(args.out)
@@ -150,7 +156,7 @@ def main() -> None:
             v = VesselConfig(f"src_{mode}_{int(r)}", "ship", wp, speed=0.0 if mode == "stationary" else SPEED,
                              level_pa=ferry.level_pa, ais=True, seed=ferry.seed)
             cases.append((r, mode, v))
-    log = open(out / "run.log", "w")
+    log = open(out / ("run.log" if not args.doppler else "run_doppler.log"), "w")
 
     def say(msg: str) -> None:
         print(msg, flush=True)
@@ -176,7 +182,7 @@ def main() -> None:
         gathers = list(pool.map(_run, jobs))
     say(f"{len(gathers)} FDTD runs in {time.time() - t0:.0f} s")
 
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, removal="eca", dispersion=for_scenario(env, cfg.fdtd))
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, removal="eca", dispersion=for_scenario(env, cfg.fdtd), eca_doppler=args.doppler)
     sos = butter(4, [bc.f_lo, 0.95 * f_max], btype="bandpass", fs=fs, output="sos")
     noise = generate_noise(layout, fs, n, cfg.noise, np.random.default_rng(cfg.seed))
     cab = layout.slices[layout.cables[0].name]
@@ -230,10 +236,11 @@ def main() -> None:
         "eca_halfwidth_s": bc.eca_halfwidth_s, "speed_m_s": SPEED, "cases": results,
         "assumptions": ["single source alone (no echo, no other ships)", "AIS reports every interval from t = 0, no dropouts, scenario position error", "scenario noise model"],
     }
-    (out / ("results.json" if args.gate == 0 else f"results_gate{int(args.gate)}.json")).write_text(json.dumps(summary, indent=2))
+    sfx = ("" if args.gate == 0 else f"_gate{int(args.gate)}") + ("_doppler" if args.doppler else "")
+    summary["eca_doppler"] = args.doppler
+    (out / f"results{sfx}.json").write_text(json.dumps(summary, indent=2))
 
     # Figure 1: depth against range.
-    sfx = "" if args.gate == 0 else f"_gate{int(args.gate)}"
     fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
     for ax, mode in zip(axes, ("stationary", "moving")):
         for ref, c in zip(REFERENCES, ("C0", "C1", "C2")):
@@ -247,7 +254,8 @@ def main() -> None:
         ax.grid(alpha=0.3)
     axes[0].set_ylabel("ECA cancellation depth, live cable channels [dB]")
     axes[1].legend(fontsize=8)
-    fig.suptitle(f"Direct path cancellation by ECA, fine grid, {bc.f_lo:.0f} to {0.95 * f_max:.0f} Hz" + (f", channels within {args.gate:g} m excluded" if args.gate else ""))
+    fig.suptitle(f"Direct path cancellation by ECA, fine grid, {bc.f_lo:.0f} to {0.95 * f_max:.0f} Hz" + (f", channels within {args.gate:g} m excluded" if args.gate else "")
+                 + (", per sample delays (eca_doppler)" if args.doppler else ""))
     fig.savefig(out / f"depth_vs_range{sfx}.png", dpi=110, bbox_inches="tight")
 
     # Figure 2: depth per channel against its range, data reference.

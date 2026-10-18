@@ -28,6 +28,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+from scipy.linalg import cho_factor, cho_solve
 from scipy.ndimage import map_coordinates
 from scipy.signal import get_window, resample
 
@@ -222,15 +223,28 @@ class ReplicaModel:
         self.samples = layout.sample_points
         self.weights = None
         self.dispersion = dispersion
+        self._cache: tuple | None = None
 
-    def _kr(self, pts: np.ndarray, targets: np.ndarray, k: float) -> np.ndarray:
+    def _geometry(self, pts: np.ndarray, targets: np.ndarray) -> tuple[np.ndarray, np.ndarray | None]:
+        """Ranges (P, M) and, with dispersion, propagation angles for *pts* to *targets*; the last
+        geometry is cached because the replicas of every bin share it (the AIS refinement and the
+        scan map call this once per bin for the same points)."""
+        key = (pts.shape, targets.shape, pts.tobytes(), targets.tobytes())      # exact; a 17000 point grid is 270 kB, cheap to compare
+        if self._cache is not None and self._cache[0] == key:
+            return self._cache[1]
         dx = pts[:, None, 0] - targets[None, :, 0]
         dy = pts[:, None, 1] - targets[None, :, 1]
         r = np.maximum(np.hypot(dx, dy), self.min_range)
+        theta = np.arctan2(np.abs(dy), np.abs(dx)) if self.dispersion is not None else None
+        self._cache = (key, (r, theta))
+        return r, theta
+
+    def _kr(self, pts: np.ndarray, targets: np.ndarray, k: float) -> np.ndarray:
+        r, theta = self._geometry(pts, targets)
         if self.dispersion is None:
             return k * r
         f = k * self.c / (2.0 * np.pi)
-        kk = replica_wavenumbers(self.dispersion, [f], self.c, np.arctan2(np.abs(dy), np.abs(dx)))[0]
+        kk = replica_wavenumbers(self.dispersion, [f], self.c, theta)[0]
         return kk * r
 
     def __call__(self, pts: np.ndarray, k: float) -> np.ndarray:
@@ -401,6 +415,24 @@ class ECAReport:
     echo_lost_db: np.ndarray        # (N,) energy of the scattered component removed [dB]
 
 
+def _project_out(S: np.ndarray, segs: list[np.ndarray], loading: float = 1e-9) -> list[np.ndarray]:
+    """Each segment minus its least squares projection on the columns of *S* (block, L).
+
+    Normal equations with a Cholesky solve: ``S^T S`` is (L, L) with L of order 100 and costs one
+    BLAS3 product, against a QR of the (block, L) matrix (85 ms per channel and block on the fine
+    grid, 4000 of them per pass).  Adjacent lags of a band limited reference are nearly
+    collinear, so a relative diagonal *loading* keeps the solve stable (1e-9 is 90 dB below the
+    regressor power and does not limit the depth)."""
+    G = S.T @ S
+    G[np.diag_indices_from(G)] += loading * max(np.trace(G) / G.shape[0], 1e-300)
+    try:
+        c, low = cho_factor(G, lower=True, check_finite=False)
+    except np.linalg.LinAlgError:
+        Q, _ = np.linalg.qr(S)
+        return [seg - Q @ (Q.T @ seg) for seg in segs]
+    return [seg - S @ cho_solve((c, low), S.T @ seg, check_finite=False) for seg in segs]
+
+
 def eca_remove(
     traces: list[np.ndarray],
     reference: np.ndarray,
@@ -475,10 +507,9 @@ def eca_remove(
                         col[s0 - src_lo:s1 - src_lo] = bases[p][s0:s1]
                     cols.append(col)
                 S = np.stack(cols, axis=1)
-            Q, _ = np.linalg.qr(S)
-            for out in outs:
-                seg = out[i, lo:hi]
-                out[i, lo:hi] = seg - Q @ (Q.T @ seg)
+            cleaned = _project_out(S, [out[i, lo:hi] for out in outs])
+            for out, seg in zip(outs, cleaned):
+                out[i, lo:hi] = seg
     return outs
 
 
