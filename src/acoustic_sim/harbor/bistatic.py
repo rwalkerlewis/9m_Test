@@ -25,7 +25,7 @@ function itself.  Convention: STFT ``exp(-i w t)``, outgoing ``H0^(2)(kr)`` (as 
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
@@ -634,6 +634,13 @@ def eca_remove(
     """
     if bc.impl == "reference":
         return _eca_remove_reference(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t)
+    xp = _xp(bc)
+    if xp is not np and bc.reference == "oracle" and ship_t is not None:
+        # Oracle-driven per-sample-delay normal equations can be ill-conditioned enough that
+        # cuSOLVER and LAPACK produce materially different projections. Keep this rare path
+        # on the CPU so the GPU implementation meets the reference accuracy contract.
+        cpu_bc = replace(bc, use_cuda=False)
+        return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, cpu_bc, ship_t)
     return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t)
 
 
