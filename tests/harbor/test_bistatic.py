@@ -81,7 +81,7 @@ def _old_inline(traces, layout, fs, env, sp, ship, bc, oracle_signal, comps):
 @pytest.mark.parametrize("reference", ["oracle", "data"])
 def test_eca_stage_matches_old_inline_code(scene, reference):
     env, layout, traces, direct, echo, s, ais = scene
-    bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=False)
+    bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=False, track_filter="none")
     sp = stft(traces, layout, FS, bc, F_MAX)
     model = ReplicaModel(layout, bc.c)
     model.weights = sp.weights
@@ -173,7 +173,7 @@ def test_track_smoothing_removes_refinement_jitter(scene):
     present = np.ones(len(sp.times), bool)
     depths = {}
     for name, smooth in (("jitter", 0.0), ("smoothed", 2.0)):
-        b = BistaticConfig(**{**bc.__dict__, "track_smooth_s": smooth})
+        b = BistaticConfig(**{**bc.__dict__, "track_smooth_s": smooth, "track_filter": "line" if smooth else "none"})
         ship = ShipTrack("ship", jitter, jitter.copy(), present, np.ones(len(sp.times)))
         outs, _ = eca_stage(traces, layout, FS, env, sp, ship, b, s, [direct])
         depths[name] = float(np.median(_depth_db(direct, outs[1])))

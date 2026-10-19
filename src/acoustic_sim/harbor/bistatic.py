@@ -35,13 +35,18 @@ from scipy.signal import get_window, resample
 from acoustic_sim.harbor.ais import AISReports
 from acoustic_sim.harbor.detection import DetectionSet, ScanResult, _nms, channel_weights, green2d, remove_common_mode
 from acoustic_sim.harbor.detection import ProcessingConfig
+from acoustic_sim.harbor.device import CPU, Device, get_device
 from acoustic_sim.harbor.dispersion import DispersionModel, replica_wavenumbers
 from acoustic_sim.harbor.environment import HarborEnvironment
 from acoustic_sim.harbor.sensors import SensorLayout
+from acoustic_sim.harbor.track import TrackConfig, kalman_track
 
 METHODS = ("bartlett", "bartlett_phat", "coherent", "mvdr", "music")
 REMOVALS = ("none", "eca", "patch", "adaptive", "patch+adaptive")
 REFERENCES = ("data", "oracle")
+REF_MODES = ("beam", "equalised", "snr", "iterated")
+TRACK_FILTERS = ("none", "line", "kalman")
+MAP_NORMS = ("max", "none")
 
 
 @dataclass
@@ -89,6 +94,38 @@ class BistaticConfig:
         jittery track against 24 dB with the exact one for the ship at 4 m/s).  0: no smoothing.
     ref_channels : str
         Channels for the data reference beam: ``"all"`` or a cable name or ``"hydrophones"``.
+    ref_mode : str
+        How the data reference is built from the channels (stage 1a).  ``"beam"``: plain delay
+        and sum (stage 0).  ``"equalised"``: every channel is first divided, in the frequency
+        domain, by its modelled response to the ship (the collapsed Green's function of
+        :class:`ReplicaModel`: the second difference along the cable for strain channels),
+        floored at ``ref_floor`` times the largest response over the channels at that frequency
+        so the strain nulls are not amplified.  ``"snr"``: a maximum ratio combiner, every
+        channel and frequency weighted by ``sqrt(S) / N`` with ``S`` the power of the direct path
+        fitted by a first ECA pass with the plain beam and ``N`` the power of its residual.
+        ``"iterated"``: plain beam, ECA, coherent map, the modelled echo of the strongest map
+        peak is fitted and subtracted from the traces, and the beam is rebuilt (one iteration).
+    ref_floor : float
+        Floor of the equaliser relative to the largest modelled response at each frequency.
+    ref_taper_hz : float
+        The equalised and SNR weighted references are limited to the band, with a cosine taper
+        of this width [Hz] outside ``f_lo`` and ``f_hi``.
+    track_filter : str
+        Track used for the ECA lags, the per sample delays and the map (stage 1b).
+        ``"kalman"`` (default): constant velocity Kalman filter and smoother over the AIS reports
+        and the refined positions (:func:`acoustic_sim.harbor.track.kalman_track`, process noise
+        ``track_accel``, refinement error ``track_meas_sigma``, gate ``track_gate_sigma``, AIS
+        errors ``ais_pos_sigma``, ``ais_sog_sigma``, ``ais_cog_sigma``).  ``"line"``: the local
+        straight line fit over ``track_smooth_s`` (stage 0).  ``"none"``: the refined positions.
+    fallback_speed : float
+        With ``eca_doppler``, blocks in which the smoothed speed is below this [m/s] use fixed
+        lags at the smoothed position instead of per sample delays (a stationary ship's
+        residual jitter must not be read as velocity).
+    map_norm : str
+        ``"max"``: every map is divided by its largest value (stage 0; a threshold is then
+        relative to that dataset).  ``"none"``: the map is left in its own units (with
+        ``coherent_norm="snr"`` the floor is the noise power, flat over the grid), which a
+        threshold set on body free runs needs.
     patch_half, svd_rtol : float
         Patch half width [m] (3 x 3 points) and singular value cut of the patch replicas.
     adaptive_rank, adaptive_window : int
@@ -115,6 +152,9 @@ class BistaticConfig:
     dispersion : DispersionModel | None
         Numerical dispersion of the FDTD scheme that produced the data (``dispersion.for_scenario``);
         ``None`` for real data.
+    use_cuda : bool
+        Evaluate the replicas (AIS refinement, map) on the GPU (CuPy, single precision; falls
+        back to the CPU with a warning).  The ECA stays on the CPU.
     """
 
     win_s: float = 0.5
@@ -137,6 +177,18 @@ class BistaticConfig:
     eca_doppler: bool = False
     track_smooth_s: float = 0.0
     ref_channels: str = "all"
+    ref_mode: str = "beam"
+    ref_floor: float = 0.1
+    ref_taper_hz: float = 20.0
+    track_filter: str = "kalman"
+    track_accel: float = 0.05
+    track_meas_sigma: float = 1.0
+    track_gate_sigma: float = 5.0
+    ais_pos_sigma: float = 8.0
+    ais_sog_sigma: float = 0.2
+    ais_cog_sigma: float = 0.035
+    fallback_speed: float = 0.3
+    map_norm: str = "max"
     patch_half: float = 1.0
     svd_rtol: float = 0.05
     adaptive_rank: int = 2
@@ -149,6 +201,7 @@ class BistaticConfig:
     min_separation: float = 20.0
     max_peaks: int = 3
     dispersion: DispersionModel | None = None
+    use_cuda: bool = False
 
     def __post_init__(self) -> None:
         if self.method not in METHODS:
@@ -157,6 +210,17 @@ class BistaticConfig:
             raise ValueError(f"removal must be one of {REMOVALS}, got {self.removal!r}")
         if self.reference not in REFERENCES:
             raise ValueError(f"reference must be one of {REFERENCES}, got {self.reference!r}")
+        if self.ref_mode not in REF_MODES:
+            raise ValueError(f"ref_mode must be one of {REF_MODES}, got {self.ref_mode!r}")
+        if self.track_filter not in TRACK_FILTERS:
+            raise ValueError(f"track_filter must be one of {TRACK_FILTERS}, got {self.track_filter!r}")
+        if self.map_norm not in MAP_NORMS:
+            raise ValueError(f"map_norm must be one of {MAP_NORMS}, got {self.map_norm!r}")
+
+    @property
+    def track_config(self) -> TrackConfig:
+        return TrackConfig(accel=self.track_accel, meas_sigma=self.track_meas_sigma, gate_sigma=self.track_gate_sigma,
+                           ais_pos_sigma=self.ais_pos_sigma, ais_sog_sigma=self.ais_sog_sigma, ais_cog_sigma=self.ais_cog_sigma)
 
 
 # ----------------------------------------------------------------------
@@ -221,49 +285,67 @@ class ReplicaModel:
     value instead of ``w / c``; on a coarse grid (4 cells per wavelength) the numerical phase
     speed is 1 to 2 percent off and direction dependent, which shifts a bistatic fix by metres.
     Leave it ``None`` for real data.  *k* passed to the calls is the free field ``w / c``.
+
+    With *device* (:func:`acoustic_sim.harbor.device.get_device`) on the GPU, the replicas are
+    evaluated and returned as CuPy arrays in the device's precision (complex64); the callers
+    work with ``model.xp`` and bring results back with :meth:`asnumpy`.  Measured on the fine
+    bistatic dataset: the Green's function evaluation is 75 percent of the chain on the CPU.
     """
 
     def __init__(self, layout: SensorLayout, c: float, min_range: float = 1.0,
-                 dispersion: DispersionModel | None = None) -> None:
+                 dispersion: DispersionModel | None = None, device: Device | None = None) -> None:
         self.layout, self.c, self.min_range = layout, c, min_range
         self.samples = layout.sample_points
         self.weights = None
         self.dispersion = dispersion
+        self.device = device or CPU
+        self.xp = self.device.xp
+        self._samples_dev = self.xp.asarray(self.samples, dtype=self.device.fdtype)
         self._cache: tuple | None = None
 
-    def _geometry(self, pts: np.ndarray, targets: np.ndarray) -> tuple[np.ndarray, np.ndarray | None]:
-        """Ranges (P, M) and, with dispersion, propagation angles for *pts* to *targets*; the last
-        geometry is cached because the replicas of every bin share it (the AIS refinement and the
-        scan map call this once per bin for the same points)."""
+    def asnumpy(self, a):
+        return self.device.asnumpy(a)
+
+    def _geometry(self, pts: np.ndarray, targets: np.ndarray) -> tuple:
+        """Ranges (P, M) and, with dispersion, propagation angles for *pts* to *targets* (device
+        arrays); the last geometry is cached because the replicas of every bin share it (the AIS
+        refinement and the scan map call this once per bin for the same points)."""
         key = (pts.shape, targets.shape, pts.tobytes(), targets.tobytes())      # exact; a 17000 point grid is 270 kB, cheap to compare
         if self._cache is not None and self._cache[0] == key:
             return self._cache[1]
-        dx = pts[:, None, 0] - targets[None, :, 0]
-        dy = pts[:, None, 1] - targets[None, :, 1]
-        r = np.maximum(np.hypot(dx, dy), self.min_range)
-        theta = np.arctan2(np.abs(dy), np.abs(dx)) if self.dispersion is not None else None
+        xp = self.xp
+        p = xp.asarray(pts, dtype=self.device.fdtype)
+        t = self._samples_dev if targets is self.samples else xp.asarray(targets, dtype=self.device.fdtype)
+        dx = p[:, None, 0] - t[None, :, 0]
+        dy = p[:, None, 1] - t[None, :, 1]
+        r = xp.maximum(xp.hypot(dx, dy), self.min_range)
+        theta = xp.arctan2(xp.abs(dy), xp.abs(dx)) if self.dispersion is not None else None
         self._cache = (key, (r, theta))
         return r, theta
 
-    def _kr(self, pts: np.ndarray, targets: np.ndarray, k: float) -> np.ndarray:
+    def _kr(self, pts: np.ndarray, targets: np.ndarray, k: float):
         r, theta = self._geometry(pts, targets)
         if self.dispersion is None:
             return k * r
         f = k * self.c / (2.0 * np.pi)
-        kk = replica_wavenumbers(self.dispersion, [f], self.c, theta)[0]
+        kk = replica_wavenumbers(self.dispersion, [f], self.c, theta, xp=self.xp, dtype=self.device.fdtype)[0]
         return kk * r
 
-    def __call__(self, pts: np.ndarray, k: float) -> np.ndarray:
+    def __call__(self, pts: np.ndarray, k: float):
+        """Replicas (P, N) for *pts* (P, 2) at wavenumber *k* (a device array)."""
         pts = np.atleast_2d(np.asarray(pts, dtype=float))
-        a = self.layout.collapse(green2d(self._kr(pts, self.samples, k)))
+        a = self.layout.collapse(green2d(self._kr(pts, self.samples, k), xp=self.xp), xp=self.xp)
         if self.weights is not None:
-            a = a * self.weights[None, :]
+            a = a * self.xp.asarray(self.weights, dtype=self.device.fdtype)[None, :]
         return a
 
-    def path(self, pts: np.ndarray, src: np.ndarray, k: float) -> np.ndarray:
-        """Free field path factor ``H0^(2)(k |x - s|)`` (P,) from *src* to *pts*."""
+    def path(self, pts: np.ndarray, src: np.ndarray, k: float):
+        """Free field path factor ``H0^(2)(k |x - s|)`` from *src* to *pts*: (P,) for one source,
+        (P, M) for *src* (M, 2) (a device array)."""
         pts = np.atleast_2d(np.asarray(pts, dtype=float))
-        return green2d(self._kr(pts, np.atleast_2d(np.asarray(src, dtype=float)), k))[:, 0]
+        src = np.asarray(src, dtype=float)
+        out = green2d(self._kr(pts, np.atleast_2d(src), k), xp=self.xp)
+        return out[:, 0] if src.ndim == 1 else out
 
 
 replicas = ReplicaModel  # alias used in the docs
@@ -289,6 +371,37 @@ class ShipTrack:
     refined: np.ndarray       # (K, 2)
     present: np.ndarray       # (K,) bool
     score: np.ndarray         # (K,) refinement peak / mean
+    smoothed: np.ndarray | None = None    # (K, 2) track used by the ECA and the map (fit_track)
+    velocity: np.ndarray | None = None    # (K, 2) its velocity [m/s]
+    exact: bool = False                   # refined is the truth (ablations): never filtered
+
+    @property
+    def xy(self) -> np.ndarray:
+        """Positions used by the processing: the smoothed track when fitted, else the refined one."""
+        return self.refined if self.smoothed is None else self.smoothed
+
+
+def fit_track(ship: ShipTrack, times: np.ndarray, ais: AISReports | None, bc: BistaticConfig) -> ShipTrack:
+    """Fill ``ship.smoothed`` and ``ship.velocity`` per ``bc.track_filter`` (stage 1b).
+
+    An exact track (``ship.exact``) is kept as it is.  ``"kalman"`` fuses the AIS reports of the
+    ship (when *ais* is given) with the refined positions; ``"line"`` is the stage 0 local straight
+    line fit over ``bc.track_smooth_s``; ``"none"`` keeps the refined positions.  The velocity of
+    the last two is the time derivative of the fitted track.
+    """
+    times = np.asarray(times, dtype=float)
+    if ship.exact or bc.track_filter == "none":
+        xy = np.array(ship.refined, dtype=float, copy=True)
+    elif bc.track_filter == "line":
+        xy = smooth_track(times, ship.refined, ship.present, bc.track_smooth_s)
+    else:
+        present = ship.present if ship.present.any() else np.ones(len(times), bool)
+        fit = kalman_track(times, ship.refined, present, ais, ship.id, bc.track_config)
+        ship.smoothed, ship.velocity = fit.xy, fit.v
+        return ship
+    ship.smoothed = xy
+    ship.velocity = np.gradient(xy, times, axis=0) if len(times) > 1 else np.zeros_like(xy)
+    return ship
 
 
 def _phat(X: np.ndarray) -> np.ndarray:
@@ -308,22 +421,24 @@ def ship_positions(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: Bistat
     refined = pred.copy()
     score = np.ones(len(sp.times))
     if not bc.refine or truth is not None:
-        return ShipTrack(vid, pred, refined, present, score)
+        return ShipTrack(vid, pred, refined, present, score, exact=truth is not None)
     h = np.arange(-bc.refine_half, bc.refine_half + 1e-6, bc.refine_step)
     off = np.array([(a, b) for a in h for b in h])
     bins = np.arange(0, len(sp.freqs), 3)
+    xp = model.xp
+    Yw = xp.asarray(_phat(sp.X[:, bins, :]) * sp.weights[:, None, None], dtype=model.device.cdtype)   # (N, n_bins, K)
     for k in range(len(sp.times)):
         if not present[k]:
             continue
         pts = pred[k] + off
-        power = np.zeros(len(pts))
-        for i in bins:
+        power = xp.zeros(len(pts), dtype=model.device.fdtype)
+        for j, i in enumerate(bins):
             a = model(pts, sp.wavenumbers[i] / bc.c)
-            y = _phat(sp.X[:, i, k]) * sp.weights
-            power += np.abs(a.conj() @ y) ** 2 / np.maximum(np.sum(np.abs(a) ** 2, axis=1), 1e-30)
+            power += xp.abs(a.conj() @ Yw[:, j, k]) ** 2 / xp.maximum(xp.sum(xp.abs(a) ** 2, axis=1), 1e-30)
+        power = model.asnumpy(power)
         best = int(np.argmax(power))
         refined[k] = pts[best]
-        score[k] = power[best] / max(power.mean(), 1e-30)
+        score[k] = float(power[best] / max(power.mean(), 1e-30))
     return ShipTrack(vid, pred, refined, present, score)
 
 
@@ -368,9 +483,34 @@ def _resample_at(x: np.ndarray, positions: np.ndarray, factor: int = UPSAMPLE) -
     return np.interp(positions * factor, np.arange(n * factor, dtype=float), up, left=0.0, right=0.0)
 
 
+def _apply_weights(seg: np.ndarray, freqs_w: np.ndarray, W: np.ndarray, fs: float) -> np.ndarray:
+    """Filter each row of *seg* (N, n) by the complex frequency weights ``W`` (N, F_w) given on
+    *freqs_w* (linear interpolation onto the segment's bins; zero outside the table)."""
+    n = seg.shape[1]
+    f = np.fft.rfftfreq(n, 1.0 / fs)
+    Wi = np.empty((W.shape[0], len(f)), dtype=np.complex128)
+    for i in range(W.shape[0]):
+        Wi[i] = np.interp(f, freqs_w, W[i].real, left=0.0, right=0.0) + 1j * np.interp(f, freqs_w, W[i].imag, left=0.0, right=0.0)
+    return np.fft.irfft(np.fft.rfft(seg, axis=1) * Wi, n, axis=1)
+
+
+def _filtered_traces(x: np.ndarray, equaliser: tuple[np.ndarray, np.ndarray], nb: int, fs: float) -> np.ndarray:
+    """*x* (N, n) filtered block by block (blocks of *nb* samples, weights per block, overlap of
+    0.5 s on each side against the circular wrap) by the equaliser table ``(freqs_w, W (B, N, F_w))``."""
+    freqs_w, W = equaliser
+    n = x.shape[1]
+    out = np.zeros_like(x)
+    pad = int(0.5 * fs)
+    for b in range(int(np.ceil(n / nb))):
+        lo, hi = b * nb, min((b + 1) * nb, n)
+        a, z = max(lo - pad, 0), min(hi + pad, n)
+        out[:, lo:hi] = _apply_weights(x[:, a:z], freqs_w, W[min(b, W.shape[0] - 1)], fs)[:, lo - a:hi - a]
+    return out
+
+
 def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy: np.ndarray, block_s: float,
                    bc: BistaticConfig, channels: np.ndarray | None = None, oracle_signal: np.ndarray | None = None,
-                   ship_t: np.ndarray | None = None) -> np.ndarray:
+                   ship_t: np.ndarray | None = None, equaliser: tuple[np.ndarray, np.ndarray] | None = None) -> np.ndarray:
     """Illuminator waveform aligned to the emission time, shape ``(n,)``.
 
     ``bc.reference == "oracle"``: the true ship waveform.  ``"data"``: delay and sum of the
@@ -380,6 +520,12 @@ def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy:
     every sample, each channel is instead advanced by its per sample range (a moving ship;
     ``bc.eca_doppler``).  The data reference also contains the echo and the multipath, as in
     every passive radar; that is accepted.
+
+    *equaliser* ``(freqs_w, W)`` with ``W`` (B, N_sel, F_w) complex applies a per block, per
+    channel frequency weight (interpolated onto the FFT bins, zero outside the table) to each
+    selected channel before the alignment; the channels are then **summed**, so the weights
+    carry the normalisation (:func:`equaliser_weights`, :func:`snr_weights`).  Without it the
+    live channels are averaged (stage 0).
     """
     n = traces.shape[1]
     if bc.reference == "oracle":
@@ -389,15 +535,17 @@ def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy:
     idx = np.arange(layout.n_receivers) if channels is None else np.asarray(channels)
     x = np.asarray(traces, dtype=np.float64)[idx]
     rec = layout.receivers[idx]
+    nb = int(round(block_s * fs))
     if ship_t is not None:
+        if equaliser is not None:
+            x = _filtered_traces(x, equaliser, nb, fs)
         j = np.arange(n, dtype=float)
         live = np.sum(np.abs(x) ** 2, axis=1) > 0
         out = np.zeros(n)
         for i in np.flatnonzero(live):
             adv = np.hypot(ship_t[:, 0] - rec[i, 0], ship_t[:, 1] - rec[i, 1]) / bc.c * fs
             out += _resample_at(x[i], j + adv)
-        return out / max(live.sum(), 1)
-    nb = int(round(block_s * fs))
+        return out if equaliser is not None else out / max(live.sum(), 1)
     out = np.zeros(n)
     for b in range(len(ship_xy)):
         lo, hi = b * nb, min((b + 1) * nb, n)
@@ -407,10 +555,90 @@ def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy:
         pad = int(0.5 * fs)
         a, z = max(lo - pad, 0), min(hi + pad, n)
         delays = -np.hypot(*(rec - ship_xy[b]).T) / bc.c
-        seg = _fractional_delay(x[:, a:z], delays, fs)
-        w = np.sum(np.abs(seg) ** 2, axis=1) > 0
-        out[lo:hi] = seg[w, lo - a:hi - a].mean(axis=0)
+        seg = x[:, a:z]
+        if equaliser is not None:
+            seg = _apply_weights(seg, equaliser[0], equaliser[1][min(b, equaliser[1].shape[0] - 1)], fs)
+        seg = _fractional_delay(seg, delays, fs)
+        if equaliser is not None:
+            out[lo:hi] = seg[:, lo - a:hi - a].sum(axis=0)
+        else:
+            w = np.sum(np.abs(seg) ** 2, axis=1) > 0
+            out[lo:hi] = seg[w, lo - a:hi - a].mean(axis=0)
     return out
+
+
+def _band_taper(freqs: np.ndarray, f_lo: float, f_hi: float, taper: float) -> np.ndarray:
+    """1 inside ``[f_lo, f_hi]``, cosine to 0 over *taper* Hz outside, 0 beyond."""
+    t = np.ones(len(freqs))
+    lo = (freqs < f_lo) & (freqs >= f_lo - taper)
+    hi = (freqs > f_hi) & (freqs <= f_hi + taper)
+    t[lo] = 0.5 * (1.0 + np.cos(np.pi * (f_lo - freqs[lo]) / taper))
+    t[hi] = 0.5 * (1.0 + np.cos(np.pi * (freqs[hi] - f_hi) / taper))
+    t[(freqs < f_lo - taper) | (freqs > f_hi + taper)] = 0.0
+    return t
+
+
+def equaliser_weights(model: ReplicaModel, layout: SensorLayout, channels: np.ndarray, ship_xy: np.ndarray,
+                      bc: BistaticConfig, f_hi: float, df: float = 2.0) -> tuple[np.ndarray, np.ndarray]:
+    """Strain equalisation table ``(freqs, W (B, N_sel, F))`` for :func:`make_reference` (``ref_mode="equalised"``).
+
+    For every block position *ship_xy* (B, 2), channel ``i`` and frequency the weight is
+    ``exp(-i k r_i) / a_i(f)``: the inverse of the modelled response ``a_i`` (the collapsed
+    Green's function of *model*, i.e. the second difference along the cable for a strain
+    channel, with the dispersion correction when the model has one) with the plain range delay
+    ``exp(-i k r_i)`` factored out, because :func:`make_reference` applies that delay itself.
+    ``|a_i|`` is floored at ``bc.ref_floor`` times the largest ``|a_j|`` over the selected
+    channels at that frequency, the table is tapered to the band and divided by the number of
+    channels (so the plain beam is the special case ``a_i = exp(-i k r_i)``).
+    """
+    channels = np.asarray(channels)
+    freqs = np.arange(max(bc.f_lo - bc.ref_taper_hz, df), f_hi + bc.ref_taper_hz + 1e-9, df)
+    taper = _band_taper(freqs, bc.f_lo, f_hi, bc.ref_taper_hz)
+    rec = layout.receivers[channels]
+    ship_xy = np.atleast_2d(ship_xy)
+    r = np.hypot(rec[None, :, 0] - ship_xy[:, None, 0], rec[None, :, 1] - ship_xy[:, None, 1])    # (B, N_sel)
+    saved = model.weights
+    model.weights = None
+    W = np.zeros((len(ship_xy), len(channels), len(freqs)), dtype=np.complex128)
+    try:
+        for j, f in enumerate(freqs):
+            k = 2.0 * np.pi * f / bc.c
+            a = model.asnumpy(model(ship_xy, k))[:, channels].astype(np.complex128)             # (B, N_sel)
+            mag = np.abs(a)
+            floor = bc.ref_floor * mag.max(axis=1, keepdims=True)
+            a_eff = np.where(mag < floor, a * (floor / np.maximum(mag, 1e-300)), a)
+            a_eff = np.where(mag < 1e-300, floor, a_eff)
+            W[:, :, j] = taper[j] * np.exp(-1j * k * r) / a_eff
+    finally:
+        model.weights = saved
+    return freqs, W / len(channels)
+
+
+def snr_weights(sp_x: Spectra, sp_res: Spectra, channels: np.ndarray, t_blocks: np.ndarray, bc: BistaticConfig,
+                window_s: float = 2.0) -> tuple[np.ndarray, np.ndarray]:
+    """Maximum ratio combiner table ``(freqs, W (B, N_sel, F))`` (``ref_mode="snr"``).
+
+    *sp_x* is the STFT of the direct path fitted by a first ECA pass (the traces minus the
+    residual) and *sp_res* that of the residual; per block (frames within ``window_s`` of the
+    block centre), channel and bin the signal power ``S`` and noise power ``N`` are their mean
+    powers and the weight is ``sqrt(S) / N`` divided by ``sum_i S_i / N_i`` (unit gain on the
+    signal), tapered to the band.  A dead channel has ``S = 0`` and weight 0.
+    """
+    channels = np.asarray(channels)
+    freqs = np.concatenate([[max(bc.f_lo - bc.ref_taper_hz, 1.0)], sp_x.freqs, [sp_x.freqs[-1] + bc.ref_taper_hz]])
+    W = np.zeros((len(t_blocks), len(channels), len(freqs)))
+    Px = np.abs(sp_x.X[channels]) ** 2
+    Pr = np.abs(sp_res.X[channels]) ** 2
+    for b, tb in enumerate(t_blocks):
+        m = np.abs(sp_x.times - tb) <= window_s
+        if not m.any():
+            m = np.ones(len(sp_x.times), bool)
+        S = Px[:, :, m].mean(axis=2)
+        N = np.maximum(Pr[:, :, m].mean(axis=2), 1e-30)
+        w = np.sqrt(S) / N
+        norm = np.maximum((S / N).sum(axis=0, keepdims=True), 1e-30)
+        W[b, :, 1:-1] = w / norm
+    return freqs, W.astype(np.complex128)
 
 
 @dataclass
@@ -458,6 +686,8 @@ def eca_remove(
     block_s: float,
     bc: BistaticConfig,
     ship_t: np.ndarray | None = None,
+    scatterers: list[np.ndarray] | tuple = (),
+    include_direct: bool = True,
 ) -> list[np.ndarray]:
     """Extensive cancellation (least squares projection on delayed copies of the reference).
 
@@ -472,6 +702,10 @@ def eca_remove(
     resampled at the **per sample** delay of its path (direct, or an image whose wall is fixed
     per block) plus a fixed lag offset, so the delay drift of a moving ship inside a block is
     followed instead of fitted by a time invariant filter.
+
+    *scatterers* (per block, (M, 2) points) add the bistatic paths ship -> point -> channel
+    (``ref_mode="iterated"`` fits the echo of the strongest map peak this way); with
+    ``include_direct=False`` only the image and scatterer lags are used.
     """
     n = traces[0].shape[1]
     nb = int(round(block_s * fs))
@@ -486,16 +720,33 @@ def eca_remove(
         lo, hi = b * nb, min((b + 1) * nb, n)
         if hi <= lo:
             break
-        srcs = [ship_xy[b]] + ([images[b]] if len(images) and len(images[b]) else [])
-        pts = np.vstack([np.atleast_2d(p) for p in srcs])
+        s_b = np.asarray(ship_xy[b], dtype=float)
+        kinds: list[tuple[str, np.ndarray]] = [("direct", s_b)] if include_direct else []
+        if len(images) and len(images[b]):
+            kinds += [("image", np.asarray(im, dtype=float)) for im in np.atleast_2d(images[b])]
+        if len(scatterers) and len(scatterers[b]):
+            kinds += [("scatter", np.asarray(p, dtype=float)) for p in np.atleast_2d(scatterers[b])]
+        if not kinds:
+            continue
         if ship_t is not None:
-            # Per sample positions of every path over the block plus the lag margin.
             a, z = max(lo - half, 0), min(hi + half, n)
-            s_blk = ship_t[a:z]
-            walls = 0.5 * (pts[1:] + ship_xy[b][None, :])                 # image = 2 wall - ship
-            paths = [s_blk] + [2.0 * w[None, :] - s_blk for w in walls]
+            s_blk = ship_t[a:z]                                            # per sample ship position over the block plus margin
+
+        def nominal_delay(kind: str, p: np.ndarray, r: np.ndarray) -> float:
+            if kind == "scatter":
+                return (np.hypot(*(s_b - p)) + np.hypot(*(p - r))) / bc.c * fs
+            return np.hypot(*(p - r)) / bc.c * fs
+
+        def sample_delay(kind: str, p: np.ndarray, r: np.ndarray) -> np.ndarray:
+            if kind == "direct":
+                return np.hypot(s_blk[:, 0] - r[0], s_blk[:, 1] - r[1]) / bc.c * fs
+            if kind == "image":
+                img = 2.0 * (0.5 * (p + s_b))[None, :] - s_blk                 # image = 2 wall - ship, the wall fixed per block
+                return np.hypot(img[:, 0] - r[0], img[:, 1] - r[1]) / bc.c * fs
+            return (np.hypot(s_blk[:, 0] - p[0], s_blk[:, 1] - p[1]) + np.hypot(*(p - r))) / bc.c * fs
+
         for i in range(rec.shape[0]):
-            nominal = np.array([int(round(np.hypot(*(p - rec[i])) / bc.c * fs)) for p in pts])
+            nominal = np.array([int(round(nominal_delay(kd, p, rec[i]))) for kd, p in kinds])
             lags = np.unique(np.concatenate([np.arange(L0 - half, L0 + half + 1) for L0 in nominal]))
             lags = lags[(lags >= 0) & (lags < hi)]
             if len(lags) == 0:
@@ -511,7 +762,7 @@ def eca_remove(
                 cols = []
                 for L, p in zip(lags, owner):
                     if p not in bases:
-                        d = np.hypot(paths[p][:, 0] - rec[i, 0], paths[p][:, 1] - rec[i, 1]) / bc.c * fs
+                        d = sample_delay(kinds[p][0], kinds[p][1], rec[i])
                         bases[p] = np.interp((j_all[a:z] - d) * UPSAMPLE, j_up, ref_up, left=0.0, right=0.0)   # (z - a,)
                     off = int(L - nominal[p])
                     # column[j] = base[j - off] for j in [lo, hi); base index 0 is sample a.
@@ -547,7 +798,7 @@ def reference_spectrum(sp: Spectra, ship: ShipTrack, model: ReplicaModel, bc: Bi
         if not ship.present[k]:
             continue
         for i, kk in enumerate(sp.wavenumbers / bc.c):
-            a = model(ship.refined[k][None], kk)[0]
+            a = model.asnumpy(model(ship.xy[k][None], kk)[0])
             r[i, k] = np.vdot(a, sp.X[:, i, k]) / max(np.vdot(a, a).real, 1e-30)
     return r
 
@@ -576,9 +827,9 @@ def remove_direct(sp: Spectra, ship: ShipTrack, model: ReplicaModel, bc: Bistati
         for k in range(K):
             if not ship.present[k]:
                 continue
-            pts = ship.refined[k] + patch
+            pts = ship.xy[k] + patch
             for i, kk in enumerate(sp.wavenumbers / bc.c):
-                A = model(pts, kk).T                                   # (N, 9)
+                A = model.asnumpy(model(pts, kk)).T                    # (N, 9)
                 u, s, _ = np.linalg.svd(A, full_matrices=False)
                 u = u[:, s > bc.svd_rtol * s[0]]
                 z = out.X[:, i, k]
@@ -637,48 +888,56 @@ def bistatic_map(clean: Spectra, ship: ShipTrack, ref: np.ndarray, grid: np.ndar
     """
     method = method or bc.method
     G, K, F = len(grid), len(clean.times), len(clean.freqs)
-    B = np.zeros((G, K))
-    Z = np.zeros((G, K), dtype=np.complex128) if method == "coherent" else None
-    W = np.zeros((G, K)) if method == "coherent" else None
+    xp, dev = model.xp, model.device
+    B = xp.zeros((G, K), dtype=dev.fdtype)
+    Z = xp.zeros((G, K), dtype=dev.cdtype) if method == "coherent" else None
+    W = xp.zeros((G, K), dtype=dev.fdtype) if method == "coherent" else None
+    present = xp.asarray(ship.present.astype(dev.fdtype))
+    ship_xy = ship.xy
     for i, kk in enumerate(clean.wavenumbers / bc.c):
         A = model(grid, kk)                                            # (G, N)
-        norm = np.maximum(np.sum(np.abs(A) ** 2, axis=1), 1e-30)
+        norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=1), 1e-30)
         Xi = clean.X[:, i, :]                                          # (N, K)
         if method in ("bartlett", "bartlett_phat"):
             Y = _phat(Xi) * clean.weights[:, None] if method == "bartlett_phat" else Xi
-            B += np.abs(A.conj() @ Y) ** 2 / norm[:, None]
+            B += xp.abs(A.conj() @ xp.asarray(Y, dtype=dev.cdtype)) ** 2 / norm[:, None]
         elif method == "coherent":
-            Y = A.conj() @ Xi                                          # (G, K)
-            for k in range(K):
-                if not ship.present[k]:
-                    continue
-                path = model.path(grid, ship.refined[k], kk)
-                Z[:, k] += Y[:, k] * np.conj(path) * np.conj(ref[i, k]) / norm
-                W[:, k] += np.abs(path) ** 2 * np.abs(ref[i, k]) ** 2 / norm
+            Y = A.conj() @ xp.asarray(Xi, dtype=dev.cdtype)            # (G, K)
+            path = model.path(grid, ship_xy, kk)                       # (G, K): ship of every frame to every cell
+            r = xp.asarray(ref[i], dtype=dev.cdtype) * present         # (K,)
+            Z += Y * xp.conj(path) * xp.conj(r)[None, :] / norm[:, None]
+            W += xp.abs(path) ** 2 * (xp.abs(r) ** 2)[None, :] / norm[:, None]
         elif method in ("mvdr", "music"):
+            A_h = model.asnumpy(A)
+            norm_h = model.asnumpy(norm)
+            Bk = np.zeros((G, K))
             for k in range(K):
                 R = _csm(Xi, k, bc.adaptive_window, bc.mvdr_loading)
                 if method == "mvdr":
                     Ri = np.linalg.inv(R)
-                    q = np.einsum("gn,nm,gm->g", A.conj(), Ri, A).real
-                    B[:, k] += norm / np.maximum(q, 1e-30)
+                    q = np.einsum("gn,nm,gm->g", A_h.conj(), Ri, A_h).real
+                    Bk[:, k] += norm_h / np.maximum(q, 1e-30)
                 else:
                     lam, vec = np.linalg.eigh(R)
                     En = vec[:, : max(R.shape[0] - bc.music_rank, 1)]
-                    q = np.sum(np.abs(A.conj() @ En) ** 2, axis=1)
-                    B[:, k] += norm / np.maximum(q, 1e-30)
+                    q = np.sum(np.abs(A_h.conj() @ En) ** 2, axis=1)
+                    Bk[:, k] += norm_h / np.maximum(q, 1e-30)
+            B += xp.asarray(Bk, dtype=dev.fdtype)
     if method == "coherent":
-        B = np.abs(Z) ** 2
+        B = xp.abs(Z) ** 2
         if bc.coherent_norm == "snr":
-            B /= np.maximum(W, 1e-30)
-    B /= max(B.max(), 1e-30)
+            B /= xp.maximum(W, 1e-30)
+    B = model.asnumpy(B).astype(np.float64)
+    Z = model.asnumpy(Z).astype(np.complex128) if Z is not None else None
+    if bc.map_norm == "max":
+        B /= max(B.max(), 1e-30)
     return B, Z
 
 
 def exclusion(grid: np.ndarray, ship: ShipTrack, radius: float) -> np.ndarray:
     mask = np.zeros((len(grid), len(ship.present)), dtype=bool)
     for k in np.flatnonzero(ship.present):
-        mask[:, k] = np.hypot(*(grid - ship.refined[k]).T) < radius
+        mask[:, k] = np.hypot(*(grid - ship.xy[k]).T) < radius
     return mask
 
 
@@ -730,31 +989,81 @@ def eca_stage(
     bc: BistaticConfig,
     oracle_signal: np.ndarray | None = None,
     components: list[np.ndarray] | tuple = (),
+    ais: AISReports | None = None,
+    grid: np.ndarray | None = None,
+    model: ReplicaModel | None = None,
+    f_max: float | None = None,
 ) -> tuple[list[np.ndarray], np.ndarray]:
-    """Time domain direct path removal of :func:`run_bistatic`: reference, image lags, ECA.
+    """Time domain direct path removal of :func:`run_bistatic`: track, reference, image lags, ECA.
 
-    The ship position of every ECA block is interpolated from ``ship.refined`` (and, with
-    ``bc.eca_doppler``, the position of every sample).  The same projection is applied to
-    *traces* and to each array in *components*.  Returns the cleaned arrays
+    The track of the ship (``ship.smoothed``, fitted here by :func:`fit_track` from *ais* and
+    the refined positions if the caller has not) gives the ship position of every ECA block
+    and, with ``bc.eca_doppler``, of every sample; blocks whose smoothed speed is below
+    ``bc.fallback_speed`` keep a fixed position (fixed lags).  The reference follows
+    ``bc.reference`` and ``bc.ref_mode`` (the ``"iterated"`` mode forms a coherent map and needs
+    *grid*, *model* and *f_max*; they are built when missing).  The same projection is applied
+    to *traces* and to each array in *components*.  Returns the cleaned arrays
     (``[traces] + components``) and the reference waveform.
     """
+    if ship.smoothed is None:
+        ship = fit_track(ship, sp.times, ais, bc)
+    xy = ship.xy
+    n = traces.shape[1]
     nb = int(round(bc.eca_block_s * fs))
-    n_blocks = int(np.ceil(traces.shape[1] / nb))
+    n_blocks = int(np.ceil(n / nb))
     t_blocks = (np.arange(n_blocks) + 0.5) * bc.eca_block_s
-    ship_b = np.column_stack([np.interp(t_blocks, sp.times, ship.refined[:, 0]), np.interp(t_blocks, sp.times, ship.refined[:, 1])])
+    ship_b = np.column_stack([np.interp(t_blocks, sp.times, xy[:, 0]), np.interp(t_blocks, sp.times, xy[:, 1])])
     ship_t = None
     if bc.eca_doppler:
-        t_s = np.arange(traces.shape[1]) / fs
-        refined = smooth_track(sp.times, ship.refined, ship.present, bc.track_smooth_s)
-        ship_t = np.column_stack([np.interp(t_s, sp.times, refined[:, 0]), np.interp(t_s, sp.times, refined[:, 1])])
+        t_s = np.arange(n) / fs
+        ship_t = np.column_stack([np.interp(t_s, sp.times, xy[:, 0]), np.interp(t_s, sp.times, xy[:, 1])])
+        speed_b = np.interp(t_blocks, sp.times, np.hypot(ship.velocity[:, 0], ship.velocity[:, 1]))
+        slow = speed_b < bc.fallback_speed
+        if slow.all():
+            ship_t = None                                        # fixed lags everywhere
+        else:
+            for b in np.flatnonzero(slow):                       # fixed lags in the slow blocks
+                ship_t[b * nb:min((b + 1) * nb, n)] = ship_b[b]
     if bc.ref_channels == "all":
         chans = np.flatnonzero(sp.weights > 0)
     else:
         sl = layout.slices[bc.ref_channels]
         chans = np.arange(sl.start, sl.stop)[sp.weights[sl] > 0]
-    waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, oracle_signal, ship_t=ship_t)
     images = [clutter_images(env, sxy) for sxy in ship_b] if bc.eca_images else []
-    outs = eca_remove([traces] + list(components), waveform, layout, fs, ship_b, images, bc.eca_block_s, bc, ship_t=ship_t)
+    f_hi = bc.f_hi if bc.f_hi is not None else (0.95 * f_max if f_max is not None else float(sp.freqs[-1]))
+
+    def beam(x: np.ndarray, equaliser=None) -> np.ndarray:
+        return make_reference(x, layout, fs, ship_b, bc.eca_block_s, bc, chans, oracle_signal, ship_t=ship_t, equaliser=equaliser)
+
+    def eca(arrays: list[np.ndarray], waveform: np.ndarray) -> list[np.ndarray]:
+        return eca_remove(arrays, waveform, layout, fs, ship_b, images, bc.eca_block_s, bc, ship_t=ship_t)
+
+    if bc.reference == "oracle" or bc.ref_mode == "beam":
+        waveform = beam(traces)
+    elif bc.ref_mode == "equalised":
+        model = model or ReplicaModel(layout, bc.c, dispersion=bc.dispersion, device=get_device(bc.use_cuda))
+        waveform = beam(traces, equaliser_weights(model, layout, chans, ship_b, bc, f_hi))
+    elif bc.ref_mode == "snr":
+        residual = eca([traces], beam(traces))[0]
+        sp_fit = stft(np.asarray(traces, dtype=np.float64) - residual, layout, fs, bc, f_hi / 0.95)
+        sp_res = stft(residual, layout, fs, bc, f_hi / 0.95)
+        waveform = beam(traces, snr_weights(sp_fit, sp_res, chans, t_blocks, bc))
+    else:                                                        # "iterated"
+        model = model or ReplicaModel(layout, bc.c, dispersion=bc.dispersion, device=get_device(bc.use_cuda))
+        model.weights = sp.weights
+        grid = grid if grid is not None else build_grid(env, bc)
+        first = beam(traces)
+        clean = stft(eca([traces], first)[0], layout, fs, bc, f_hi / 0.95)
+        clean.weights = sp.weights
+        ref = reference_spectrum(sp, ship, model, bc, waveform=first, fs=fs)
+        B, _ = bistatic_map(clean, ship, ref, grid, model, bc, method="coherent")
+        B[exclusion(grid, ship, bc.exclusion_radius)] = 0.0
+        k_b = np.clip(np.searchsorted(sp.times, t_blocks), 0, len(sp.times) - 1)
+        peaks = [grid[np.argmax(B[:, k])][None, :] for k in k_b]       # strongest cell of the frame nearest each block
+        echo = np.asarray(traces, dtype=np.float64) - eca_remove([traces], first, layout, fs, ship_b, [], bc.eca_block_s, bc,
+                                                                 ship_t=ship_t, scatterers=peaks, include_direct=False)[0]
+        waveform = beam(np.asarray(traces, dtype=np.float64) - echo)
+    outs = eca([traces] + list(components), waveform)
     return outs, waveform
 
 
@@ -789,16 +1098,17 @@ def run_bistatic(
     """
     truth = truth or Truth()
     sp = stft(traces, layout, fs, bc, f_max)
-    model = ReplicaModel(layout, bc.c, dispersion=bc.dispersion)
+    model = ReplicaModel(layout, bc.c, dispersion=bc.dispersion, device=get_device(bc.use_cuda))
     model.weights = sp.weights
     ship = ship_positions(sp, ais, model, bc, truth=truth.ship_xy)
+    ship = fit_track(ship, sp.times, ais, bc)
     grid = grid if grid is not None else build_grid(env, bc)
 
     report = None
     waveform = None
     if bc.removal == "eca":
         comps = list((truth.components or {}).values())
-        outs, waveform = eca_stage(traces, layout, fs, env, sp, ship, bc, oracle_signal, comps)
+        outs, waveform = eca_stage(traces, layout, fs, env, sp, ship, bc, oracle_signal, comps, ais=ais, grid=grid, model=model, f_max=f_max)
         clean_traces = outs[0]
         if comps:
             names = list(truth.components)
