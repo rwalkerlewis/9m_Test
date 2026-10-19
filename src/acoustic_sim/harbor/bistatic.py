@@ -419,7 +419,15 @@ def ship_positions(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: Bistat
     """
     vid = vessel or ais.vessels[0]
     tr = ais.for_vessel(vid)
-    pred = tr.predict(sp.times) if truth is None else np.asarray(truth, dtype=float)
+    if truth is not None:
+        pred = np.asarray(truth, dtype=float)
+    elif bc.track_filter == "kalman":
+        # The AIS only Kalman smoother as the prediction: before the first report the plain
+        # predictor clamps to it (up to 15 m off for a ship at 4 m/s reporting every 5 s, outside
+        # the refinement window), the smoother dead reckons backwards with the reported velocity.
+        pred = kalman_track(sp.times, None, None, ais, vid, bc.track_config).xy
+    else:
+        pred = tr.predict(sp.times)
     present = (sp.times >= tr.t[0] - 60.0) & (tr.age(sp.times) <= 60.0) if truth is None else np.ones(len(sp.times), bool)
     refined = pred.copy()
     score = np.ones(len(sp.times))

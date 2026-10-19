@@ -15,6 +15,8 @@ All runs use the **oracle waveform**, so the track is isolated from the referenc
 ``oracle_exact``   exact track (stationary: fixed lags; moving: per sample delays) - the target
 ``oracle``         AIS refined positions, fixed lags, no Doppler (stage 0a; the stationary target)
 ``kalman``         AIS refined track, Kalman smoother and fallback, ``eca_doppler`` in every case
+``kalman_a0.3``    the same with a process noise of 0.3 m/s^2 (post hoc variant, outside the criterion: the stage
+                   0a moving tracks decelerate from 4 to 2 m/s over their last 6 s, which 0.05 m/s^2 cannot follow)
 ``line4``          AIS refined track, 4 s line fit, ``eca_doppler`` (stage 0)
 ``raw``            AIS refined track unfiltered, ``eca_doppler`` (stage 0 finding 6)
 
@@ -27,6 +29,11 @@ Usage::
 """
 
 from __future__ import annotations
+
+import os
+
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_v, "4")          # the ECA is BLAS bound; several runs share the cores
 
 import argparse
 import json
@@ -61,6 +68,7 @@ TRACKS = {
     "oracle_exact": (True, dict()),
     "oracle": (False, dict(eca_doppler=False, track_filter="none")),
     "kalman": (False, dict(eca_doppler=True, track_filter="kalman")),
+    "kalman_a0.3": (False, dict(eca_doppler=True, track_filter="kalman", track_accel=0.3)),
     "line4": (False, dict(eca_doppler=True, track_filter="line", track_smooth_s=4.0)),
     "raw": (False, dict(eca_doppler=True, track_filter="none", fallback_speed=0.0)),
 }
@@ -176,7 +184,7 @@ def main() -> None:
             e = errors[(r, mode)]
             ax.plot(e["t"], e["ais"], color="0.6", lw=1, label="AIS prediction")
             ax.plot(e["t"], e["refined"], color="C0", lw=1, label="refined (per frame)")
-            for name, c in (("line4", "C2"), ("kalman", "C3")):
+            for name, c in (("line4", "C2"), ("kalman", "C3"), ("kalman_a0.3", "C4")):
                 ax.plot(e["t"], e[name], color=c, lw=1.5, label=name)
             row = next(c for c in results["cases"] if c["mode"] == mode and c["range_target_m"] == r)
             ax.set_title(f"{mode}, {row['range_min_m']:.0f} m: kalman {row['kalman']['cable_median_db']:.1f} dB, target {row['target_db']:.1f} dB")

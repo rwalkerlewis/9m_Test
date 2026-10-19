@@ -252,3 +252,23 @@ def test_classify_misses():
     seg = ship + 0.5 * (np.array([280.0, 100.0]) - ship)
     cls2 = classify_misses(seg[None], np.array([80.0]), ship[None], env, layout, live, exclusion_radius=25.0)
     assert cls2[0] == "direct_path"
+
+
+def test_kalman_prediction_covers_the_frames_before_the_first_ais_report(scene):
+    """A ship at 4 m/s whose first AIS report arrives at 3.7 s: the plain predictor clamps to
+    that report (15 m off at t = 0), the AIS only Kalman smoother dead reckons backwards."""
+    env, layout, traces, *_ = scene
+    bc = BistaticConfig(c=C, refine=False)
+    sp = stft(traces, layout, FS, bc, F_MAX)
+    v = np.array([4.0, 0.0])
+    truth = SHIP[None, :] + np.outer(sp.times, v)
+    t_rep = np.array([3.7, 8.7])
+    rng = np.random.default_rng(0)
+    ais = AISReports(vessel=np.array(["ship"] * 2), t=t_rep, xy=SHIP[None, :] + np.outer(t_rep, v) + 2.0 * rng.standard_normal((2, 2)),
+                     sog=np.full(2, 4.0), cog=np.zeros(2))
+    plain = ship_positions(sp, ais, ReplicaModel(layout, C), BistaticConfig(c=C, refine=False, track_filter="none"))
+    kal = ship_positions(sp, ais, ReplicaModel(layout, C), bc)
+    early = sp.times < 3.0
+    assert np.max(np.hypot(*(plain.predicted[early] - truth[early]).T)) > 8.0
+    assert np.max(np.hypot(*(kal.predicted[early] - truth[early]).T)) < 4.0
+    assert np.all(np.hypot(*(kal.predicted - truth).T) < 4.0)

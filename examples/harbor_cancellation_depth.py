@@ -107,8 +107,8 @@ def ais_from_start(vid: str, tr, mode: str, ais_cfg: AISConfig, rng: np.random.G
     interval = ais_cfg.interval_moving if mode == "moving" else ais_cfg.interval_stationary
     t = np.arange(0.0, tr.t[-1] + 1e-9, interval)
     xy = tr.position_at(t) + ais_cfg.pos_sigma * rng.standard_normal((len(t), 2))
-    vel = tr.position_at(t + 0.5) - tr.position_at(t - 0.5)
-    sog = np.hypot(*vel.T) + (ais_cfg.sog_sigma * rng.standard_normal(len(t)) if mode == "moving" else 0.0)
+    vel = tr.position_at(t + 0.5) - tr.position_at(t - 0.5)                 # direction only (clamped at the ends)
+    sog = tr.speed_at(t) + (ais_cfg.sog_sigma * rng.standard_normal(len(t)) if mode == "moving" else 0.0)
     cog = np.arctan2(vel[:, 1], vel[:, 0]) + ais_cfg.cog_sigma * rng.standard_normal(len(t))
     return AISReports(vessel=np.array([vid] * len(t)), t=t, xy=xy, sog=sog, cog=cog)
 
