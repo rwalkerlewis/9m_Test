@@ -256,8 +256,8 @@ remaining frames by jumping to a sidelobe (p90 error about 200 m), not by a smal
 What limits the blind configuration, in order: the direct path residual (8 dB of ECA depth
 against the 16 to 18 dB the echo sits below the direct path on the median cable channel,
 `levels.json`), set by the blind reference's signal to noise ratio (stage 0a); then the AIS
-refined track, whose jitter the per sample delays read as velocity noise (track smoothing,
-below); the echo loss in the ECA is small throughout (0.3 to 1.9 dB).
+refined track, whose jitter the per sample delays read as velocity noise (track smoothing
+recovers most of it); the echo loss in the ECA is small throughout (0.3 to 1.9 dB).
 
 **Stage 0c, multistatic scenario and dataset** (`examples/harbor_multistatic.scenario.json`,
 `examples/harbor_multistatic_dataset.py`, `output/harbor_multistatic/`). Same 0.5 m crop and
