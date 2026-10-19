@@ -272,3 +272,4 @@ def test_kalman_prediction_covers_the_frames_before_the_first_ais_report(scene):
     assert np.max(np.hypot(*(plain.predicted[early] - truth[early]).T)) > 8.0
     assert np.max(np.hypot(*(kal.predicted[early] - truth[early]).T)) < 4.0
     assert np.all(np.hypot(*(kal.predicted - truth).T) < 4.0)
+    assert not plain.present[early].any() and kal.present.all()

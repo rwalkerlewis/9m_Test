@@ -1,0 +1,159 @@
+criterion: configuration 'blind' reaches Pd >= 0.5 at a frame false alarm rate of 0.05 (threshold set on the body free development run) averaged over the held out noise seeds, and Pd >= 0.5 averaged over the held out geometry runs
+blind reference mode: mrc {'reference': 'data', 'ref_mode': 'mrc'}
+72 chains (9 sets x 4 configurations x with / without the body), 2 workers
+[dev      ] oracle               body: 9 s, ship err 0.0 m
+[dev      ] oracle               free: 9 s, ship err 0.0 m
+[dev      ] eca_oracle+doppler   body: 165 s, ship err 0.0 m, ECA direct 21.3 dB, echo loss 0.62 dB
+[dev      ] eca_oracle+doppler   free: 159 s, ship err 0.0 m, ECA direct 21.4 dB
+[dev      ] blind                body: 322 s, ship err 0.5 m, ECA direct 17.9 dB, echo loss 0.54 dB
+[dev      ] blind                free: 301 s, ship err 0.5 m, ECA direct 17.4 dB
+[dev      ] blind_stage0         body: 176 s, ship err 0.7 m, ECA direct 11.0 dB, echo loss 0.32 dB
+[dev      ] blind_stage0         free: 163 s, ship err 0.7 m, ECA direct 10.8 dB
+[noise1   ] oracle               body: 5 s, ship err 0.0 m
+[noise1   ] oracle               free: 5 s, ship err 0.0 m
+[noise1   ] eca_oracle+doppler   body: 157 s, ship err 0.0 m, ECA direct 21.4 dB, echo loss 0.59 dB
+[noise1   ] eca_oracle+doppler   free: 151 s, ship err 0.0 m, ECA direct 21.4 dB
+[noise1   ] blind                body: 303 s, ship err 0.6 m, ECA direct 18.0 dB, echo loss 0.53 dB
+[noise1   ] blind                free: 297 s, ship err 0.6 m, ECA direct 17.8 dB
+[noise1   ] blind_stage0         body: 172 s, ship err 0.6 m, ECA direct 11.3 dB, echo loss 0.32 dB
+[noise1   ] blind_stage0         free: 161 s, ship err 0.6 m, ECA direct 11.3 dB
+[noise2   ] oracle               body: 10 s, ship err 0.0 m
+[noise2   ] oracle               free: 5 s, ship err 0.0 m
+[noise2   ] eca_oracle+doppler   body: 164 s, ship err 0.0 m, ECA direct 21.5 dB, echo loss 0.66 dB
+[noise2   ] eca_oracle+doppler   free: 150 s, ship err 0.0 m, ECA direct 21.4 dB
+[noise2   ] blind                body: 310 s, ship err 0.6 m, ECA direct 16.4 dB, echo loss 0.57 dB
+[noise2   ] blind                free: 303 s, ship err 0.6 m, ECA direct 15.6 dB
+[noise2   ] blind_stage0         body: 108 s, ship err 1.3 m, ECA direct 9.0 dB, echo loss 0.32 dB
+[noise2   ] blind_stage0         free: 100 s, ship err 1.3 m, ECA direct 9.0 dB
+[noise3   ] oracle               body: 10 s, ship err 0.0 m
+[noise3   ] oracle               free: 4 s, ship err 0.0 m
+[noise3   ] eca_oracle+doppler   body: 89 s, ship err 0.0 m, ECA direct 21.4 dB, echo loss 0.62 dB
+[noise3   ] eca_oracle+doppler   free: 86 s, ship err 0.0 m, ECA direct 21.4 dB
+[noise3   ] blind                body: 195 s, ship err 0.6 m, ECA direct 17.4 dB, echo loss 0.54 dB
+[noise3   ] blind                free: 175 s, ship err 0.6 m, ECA direct 17.1 dB
+[noise3   ] blind_stage0         body: 116 s, ship err 0.6 m, ECA direct 10.0 dB, echo loss 0.33 dB
+[noise3   ] blind_stage0         free: 99 s, ship err 0.6 m, ECA direct 10.1 dB
+[noise4   ] oracle               body: 5 s, ship err 0.0 m
+[noise4   ] oracle               free: 5 s, ship err 0.0 m
+[noise4   ] eca_oracle+doppler   body: 104 s, ship err 0.0 m, ECA direct 21.5 dB, echo loss 0.59 dB
+[noise4   ] eca_oracle+doppler   free: 92 s, ship err 0.0 m, ECA direct 21.4 dB
+[noise4   ] blind                body: 187 s, ship err 0.9 m, ECA direct 17.2 dB, echo loss 0.51 dB
+[noise4   ] blind                free: 187 s, ship err 0.9 m, ECA direct 16.9 dB
+[noise4   ] blind_stage0         body: 108 s, ship err 1.2 m, ECA direct 8.9 dB, echo loss 0.33 dB
+[noise4   ] blind_stage0         free: 106 s, ship err 1.0 m, ECA direct 9.0 dB
+[noise5   ] oracle               body: 6 s, ship err 0.0 m
+[noise5   ] oracle               free: 6 s, ship err 0.0 m
+[noise5   ] eca_oracle+doppler   body: 65 s, ship err 0.0 m, ECA direct 21.4 dB, echo loss 0.59 dB
+[noise5   ] eca_oracle+doppler   free: 74 s, ship err 0.0 m, ECA direct 21.3 dB
+[noise5   ] blind                body: 213 s, ship err 0.6 m, ECA direct 18.1 dB, echo loss 0.53 dB
+[noise5   ] blind                free: 218 s, ship err 0.6 m, ECA direct 17.9 dB
+[noise5   ] blind_stage0         body: 84 s, ship err 0.8 m, ECA direct 12.8 dB, echo loss 0.32 dB
+[noise5   ] blind_stage0         free: 85 s, ship err 0.8 m, ECA direct 12.8 dB
+[geometry0] oracle               body: 6 s, ship err 0.0 m
+[geometry0] oracle               free: 4 s, ship err 0.0 m
+[geometry0] eca_oracle+doppler   body: 46 s, ship err 0.0 m, ECA direct 22.6 dB, echo loss 0.26 dB
+[geometry0] eca_oracle+doppler   free: 38 s, ship err 0.0 m, ECA direct 22.7 dB
+[geometry0] blind                body: 99 s, ship err 0.3 m, ECA direct 18.7 dB, echo loss 0.24 dB
+[geometry0] blind                free: 95 s, ship err 0.3 m, ECA direct 18.7 dB
+[geometry0] blind_stage0         body: 64 s, ship err 0.3 m, ECA direct 9.5 dB, echo loss 0.23 dB
+[geometry0] blind_stage0         free: 63 s, ship err 0.3 m, ECA direct 9.7 dB
+[geometry1] oracle               body: 8 s, ship err 0.0 m
+[geometry1] oracle               free: 8 s, ship err 0.0 m
+[geometry1] eca_oracle+doppler   body: 48 s, ship err 0.0 m, ECA direct 22.8 dB, echo loss 0.26 dB
+[geometry1] eca_oracle+doppler   free: 45 s, ship err 0.0 m, ECA direct 22.7 dB
+[geometry1] blind                body: 98 s, ship err 0.4 m, ECA direct 18.8 dB, echo loss 0.25 dB
+[geometry1] blind                free: 104 s, ship err 0.4 m, ECA direct 18.9 dB
+[geometry1] blind_stage0         body: 62 s, ship err 0.2 m, ECA direct 9.3 dB, echo loss 0.21 dB
+[geometry1] blind_stage0         free: 58 s, ship err 0.2 m, ECA direct 9.4 dB
+[geometry2] oracle               body: 6 s, ship err 0.0 m
+[geometry2] oracle               free: 6 s, ship err 0.0 m
+[geometry2] eca_oracle+doppler   body: 45 s, ship err 0.0 m, ECA direct 22.7 dB, echo loss 0.26 dB
+[geometry2] eca_oracle+doppler   free: 42 s, ship err 0.0 m, ECA direct 22.7 dB
+[geometry2] blind                body: 101 s, ship err 0.4 m, ECA direct 18.6 dB, echo loss 0.28 dB
+[geometry2] blind                free: 100 s, ship err 0.4 m, ECA direct 18.6 dB
+[geometry2] blind_stage0         body: 75 s, ship err 1.5 m, ECA direct 7.8 dB, echo loss 0.25 dB
+[geometry2] blind_stage0         free: 73 s, ship err 1.6 m, ECA direct 7.7 dB
+all chains in 68 min
+threshold oracle              : 1245 (frame), 2542 (1.5 s integrated)
+threshold eca_oracle+doppler  : 2085 (frame), 4870 (1.5 s integrated)
+threshold blind               : 887.8 (frame), 1491 (1.5 s integrated)
+threshold blind_stage0        : 1659 (frame), 3661 (1.5 s integrated)
+[dev      ] oracle               body: Pd 0.80 (declared 0.81), within 5 m 0.92, median err 2.3 m, p90 4 m; 1.5 s: Pd 0.96, within 5 m 1.00; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 0, 'elsewhere': 4, 'total': 4}
+[dev      ] oracle               free: Pd 0.00 (declared 0.04), within 5 m 0.00, median err 86.5 m, p90 104 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[dev      ] eca_oracle+doppler   body: Pd 0.11 (declared 0.16), within 5 m 0.48, median err 6.0 m, p90 228 m; 1.5 s: Pd 0.16, within 5 m 0.53; misses {'ship_edge': 7, 'quay_image': 0, 'direct_path': 0, 'elsewhere': 30, 'total': 37}
+[dev      ] eca_oracle+doppler   free: Pd 0.00 (declared 0.04), within 5 m 0.00, median err 156.6 m, p90 240 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[dev      ] blind                body: Pd 0.49 (declared 0.53), within 5 m 0.70, median err 2.8 m, p90 206 m; 1.5 s: Pd 0.76, within 5 m 0.82; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 6, 'elsewhere': 17, 'total': 23}
+[dev      ] blind                free: Pd 0.00 (declared 0.04), within 5 m 0.00, median err 100.3 m, p90 206 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[dev      ] blind_stage0         body: Pd 0.47 (declared 0.66), within 5 m 0.59, median err 3.6 m, p90 207 m; 1.5 s: Pd 0.54, within 5 m 0.61; misses {'ship_edge': 1, 'quay_image': 0, 'direct_path': 0, 'elsewhere': 18, 'total': 19}
+[dev      ] blind_stage0         free: Pd 0.00 (declared 0.04), within 5 m 0.00, median err 167.3 m, p90 208 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise1   ] oracle               body: Pd 0.82 (declared 0.86), within 5 m 0.91, median err 2.3 m, p90 4 m; 1.5 s: Pd 0.99, within 5 m 1.00; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 4, 'elsewhere': 3, 'total': 7}
+[noise1   ] oracle               free: Pd 0.00 (declared 0.13), within 5 m 0.00, median err 84.0 m, p90 101 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise1   ] eca_oracle+doppler   body: Pd 0.14 (declared 0.18), within 5 m 0.49, median err 5.2 m, p90 231 m; 1.5 s: Pd 0.23, within 5 m 0.57; misses {'ship_edge': 4, 'quay_image': 0, 'direct_path': 4, 'elsewhere': 29, 'total': 37}
+[noise1   ] eca_oracle+doppler   free: Pd 0.00 (declared 0.04), within 5 m 0.00, median err 153.0 m, p90 245 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise1   ] blind                body: Pd 0.49 (declared 0.61), within 5 m 0.61, median err 3.1 m, p90 206 m; 1.5 s: Pd 0.76, within 5 m 0.80; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 9, 'elsewhere': 20, 'total': 29}
+[noise1   ] blind                free: Pd 0.00 (declared 0.19), within 5 m 0.00, median err 90.0 m, p90 206 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise1   ] blind_stage0         body: Pd 0.49 (declared 0.70), within 5 m 0.59, median err 3.8 m, p90 206 m; 1.5 s: Pd 0.57, within 5 m 0.66; misses {'ship_edge': 1, 'quay_image': 0, 'direct_path': 3, 'elsewhere': 13, 'total': 17}
+[noise1   ] blind_stage0         free: Pd 0.00 (declared 0.05), within 5 m 0.00, median err 146.7 m, p90 208 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise2   ] oracle               body: Pd 0.87 (declared 0.89), within 5 m 0.95, median err 2.1 m, p90 4 m; 1.5 s: Pd 0.99, within 5 m 1.00; misses {'ship_edge': 1, 'quay_image': 0, 'direct_path': 0, 'elsewhere': 2, 'total': 3}
+[noise2   ] oracle               free: Pd 0.00 (declared 0.01), within 5 m 0.00, median err 129.1 m, p90 184 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise2   ] eca_oracle+doppler   body: Pd 0.16 (declared 0.22), within 5 m 0.51, median err 4.9 m, p90 223 m; 1.5 s: Pd 0.27, within 5 m 0.58; misses {'ship_edge': 5, 'quay_image': 0, 'direct_path': 2, 'elsewhere': 27, 'total': 34}
+[noise2   ] eca_oracle+doppler   free: Pd 0.00 (declared 0.05), within 5 m 0.00, median err 151.9 m, p90 231 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise2   ] blind                body: Pd 0.56 (declared 0.63), within 5 m 0.61, median err 3.0 m, p90 206 m; 1.5 s: Pd 0.71, within 5 m 0.73; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 5, 'elsewhere': 26, 'total': 31}
+[noise2   ] blind                free: Pd 0.00 (declared 0.15), within 5 m 0.00, median err 166.5 m, p90 206 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise2   ] blind_stage0         body: Pd 0.43 (declared 0.61), within 5 m 0.58, median err 4.3 m, p90 206 m; 1.5 s: Pd 0.56, within 5 m 0.59; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 1, 'elsewhere': 20, 'total': 21}
+[noise2   ] blind_stage0         free: Pd 0.00 (declared 0.10), within 5 m 0.00, median err 160.9 m, p90 207 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise3   ] oracle               body: Pd 0.85 (declared 0.90), within 5 m 0.90, median err 2.3 m, p90 5 m; 1.5 s: Pd 0.95, within 5 m 0.96; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 5, 'elsewhere': 0, 'total': 5}
+[noise3   ] oracle               free: Pd 0.00 (declared 0.03), within 5 m 0.00, median err 86.3 m, p90 129 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise3   ] eca_oracle+doppler   body: Pd 0.18 (declared 0.22), within 5 m 0.46, median err 6.5 m, p90 222 m; 1.5 s: Pd 0.24, within 5 m 0.52; misses {'ship_edge': 2, 'quay_image': 0, 'direct_path': 2, 'elsewhere': 32, 'total': 36}
+[noise3   ] eca_oracle+doppler   free: Pd 0.00 (declared 0.01), within 5 m 0.00, median err 172.5 m, p90 222 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise3   ] blind                body: Pd 0.54 (declared 0.62), within 5 m 0.72, median err 2.9 m, p90 89 m; 1.5 s: Pd 0.86, within 5 m 0.95; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 11, 'elsewhere': 9, 'total': 20}
+[noise3   ] blind                free: Pd 0.00 (declared 0.14), within 5 m 0.00, median err 80.7 m, p90 139 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise3   ] blind_stage0         body: Pd 0.42 (declared 0.71), within 5 m 0.53, median err 4.3 m, p90 193 m; 1.5 s: Pd 0.52, within 5 m 0.66; misses {'ship_edge': 8, 'quay_image': 0, 'direct_path': 4, 'elsewhere': 13, 'total': 25}
+[noise3   ] blind_stage0         free: Pd 0.00 (declared 0.24), within 5 m 0.00, median err 140.6 m, p90 222 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise4   ] oracle               body: Pd 0.85 (declared 0.91), within 5 m 0.92, median err 2.2 m, p90 4 m; 1.5 s: Pd 0.96, within 5 m 0.97; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 3, 'elsewhere': 0, 'total': 3}
+[noise4   ] oracle               free: Pd 0.00 (declared 0.00), within 5 m 0.00, median err 108.0 m, p90 178 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise4   ] eca_oracle+doppler   body: Pd 0.18 (declared 0.19), within 5 m 0.54, median err 4.4 m, p90 218 m; 1.5 s: Pd 0.22, within 5 m 0.61; misses {'ship_edge': 3, 'quay_image': 0, 'direct_path': 6, 'elsewhere': 23, 'total': 32}
+[noise4   ] eca_oracle+doppler   free: Pd 0.00 (declared 0.00), within 5 m 0.00, median err 177.2 m, p90 230 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise4   ] blind                body: Pd 0.43 (declared 0.58), within 5 m 0.51, median err 4.9 m, p90 206 m; 1.5 s: Pd 0.73, within 5 m 0.75; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 5, 'elsewhere': 33, 'total': 38}
+[noise4   ] blind                free: Pd 0.00 (declared 0.24), within 5 m 0.00, median err 164.3 m, p90 206 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise4   ] blind_stage0         body: Pd 0.43 (declared 0.70), within 5 m 0.46, median err 6.2 m, p90 206 m; 1.5 s: Pd 0.49, within 5 m 0.52; misses {'ship_edge': 6, 'quay_image': 0, 'direct_path': 0, 'elsewhere': 24, 'total': 30}
+[noise4   ] blind_stage0         free: Pd 0.00 (declared 0.13), within 5 m 0.00, median err 151.9 m, p90 206 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise5   ] oracle               body: Pd 0.86 (declared 0.89), within 5 m 0.91, median err 2.2 m, p90 5 m; 1.5 s: Pd 0.99, within 5 m 1.00; misses {'ship_edge': 1, 'quay_image': 0, 'direct_path': 4, 'elsewhere': 0, 'total': 5}
+[noise5   ] oracle               free: Pd 0.00 (declared 0.05), within 5 m 0.00, median err 90.6 m, p90 110 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise5   ] eca_oracle+doppler   body: Pd 0.14 (declared 0.16), within 5 m 0.54, median err 4.7 m, p90 240 m; 1.5 s: Pd 0.23, within 5 m 0.58; misses {'ship_edge': 9, 'quay_image': 0, 'direct_path': 4, 'elsewhere': 19, 'total': 32}
+[noise5   ] eca_oracle+doppler   free: Pd 0.00 (declared 0.01), within 5 m 0.00, median err 134.3 m, p90 245 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise5   ] blind                body: Pd 0.51 (declared 0.62), within 5 m 0.67, median err 3.2 m, p90 100 m; 1.5 s: Pd 0.84, within 5 m 0.90; misses {'ship_edge': 0, 'quay_image': 0, 'direct_path': 13, 'elsewhere': 12, 'total': 25}
+[noise5   ] blind                free: Pd 0.00 (declared 0.18), within 5 m 0.00, median err 92.3 m, p90 118 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[noise5   ] blind_stage0         body: Pd 0.49 (declared 0.65), within 5 m 0.68, median err 3.7 m, p90 183 m; 1.5 s: Pd 0.53, within 5 m 0.70; misses {'ship_edge': 1, 'quay_image': 0, 'direct_path': 3, 'elsewhere': 10, 'total': 14}
+[noise5   ] blind_stage0         free: Pd 0.00 (declared 0.06), within 5 m 0.00, median err 119.2 m, p90 209 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry0] oracle               body: Pd 0.14 (declared 0.15), within 5 m 0.46, median err 62.9 m, p90 102 m; 1.5 s: Pd 0.29, within 5 m 0.73; misses {'ship_edge': 1, 'quay_image': 0, 'direct_path': 30, 'elsewhere': 12, 'total': 43}
+[geometry0] oracle               free: Pd 0.00 (declared 0.01), within 5 m 0.00, median err 87.1 m, p90 117 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry0] eca_oracle+doppler   body: Pd 0.00 (declared 0.70), within 5 m 0.00, median err 222.4 m, p90 237 m; 1.5 s: Pd 0.00, within 5 m 0.00; misses {'ship_edge': 3, 'quay_image': 0, 'direct_path': 1, 'elsewhere': 75, 'total': 79}
+[geometry0] eca_oracle+doppler   free: Pd 0.00 (declared 0.71), within 5 m 0.00, median err 222.4 m, p90 240 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry0] blind                body: Pd 0.04 (declared 0.46), within 5 m 0.08, median err 113.0 m, p90 206 m; 1.5 s: Pd 0.06, within 5 m 0.09; misses {'ship_edge': 2, 'quay_image': 0, 'direct_path': 29, 'elsewhere': 42, 'total': 73}
+[geometry0] blind                free: Pd 0.00 (declared 0.42), within 5 m 0.00, median err 115.2 m, p90 207 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry0] blind_stage0         body: Pd 0.01 (declared 0.57), within 5 m 0.05, median err 214.2 m, p90 230 m; 1.5 s: Pd 0.00, within 5 m 0.05; misses {'ship_edge': 4, 'quay_image': 0, 'direct_path': 2, 'elsewhere': 69, 'total': 75}
+[geometry0] blind_stage0         free: Pd 0.00 (declared 0.54), within 5 m 0.00, median err 214.6 m, p90 231 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry1] oracle               body: Pd 0.18 (declared 0.23), within 5 m 0.41, median err 73.0 m, p90 113 m; 1.5 s: Pd 0.39, within 5 m 0.72; misses {'ship_edge': 2, 'quay_image': 0, 'direct_path': 25, 'elsewhere': 20, 'total': 47}
+[geometry1] oracle               free: Pd 0.00 (declared 0.06), within 5 m 0.00, median err 91.0 m, p90 115 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry1] eca_oracle+doppler   body: Pd 0.00 (declared 0.66), within 5 m 0.00, median err 224.5 m, p90 243 m; 1.5 s: Pd 0.00, within 5 m 0.00; misses {'ship_edge': 4, 'quay_image': 0, 'direct_path': 4, 'elsewhere': 71, 'total': 79}
+[geometry1] eca_oracle+doppler   free: Pd 0.00 (declared 0.67), within 5 m 0.00, median err 224.6 m, p90 243 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry1] blind                body: Pd 0.01 (declared 0.32), within 5 m 0.03, median err 103.0 m, p90 206 m; 1.5 s: Pd 0.04, within 5 m 0.13; misses {'ship_edge': 5, 'quay_image': 0, 'direct_path': 29, 'elsewhere': 43, 'total': 77}
+[geometry1] blind                free: Pd 0.00 (declared 0.28), within 5 m 0.00, median err 104.7 m, p90 206 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry1] blind_stage0         body: Pd 0.01 (declared 0.63), within 5 m 0.05, median err 214.2 m, p90 230 m; 1.5 s: Pd 0.00, within 5 m 0.01; misses {'ship_edge': 9, 'quay_image': 0, 'direct_path': 1, 'elsewhere': 65, 'total': 75}
+[geometry1] blind_stage0         free: Pd 0.00 (declared 0.65), within 5 m 0.00, median err 215.5 m, p90 231 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry2] oracle               body: Pd 0.16 (declared 0.18), within 5 m 0.59, median err 2.1 m, p90 174 m; 1.5 s: Pd 0.33, within 5 m 0.86; misses {'ship_edge': 3, 'quay_image': 0, 'direct_path': 16, 'elsewhere': 12, 'total': 31}
+[geometry2] oracle               free: Pd 0.00 (declared 0.01), within 5 m 0.00, median err 125.5 m, p90 189 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry2] eca_oracle+doppler   body: Pd 0.00 (declared 0.71), within 5 m 0.00, median err 220.3 m, p90 237 m; 1.5 s: Pd 0.00, within 5 m 0.00; misses {'ship_edge': 6, 'quay_image': 0, 'direct_path': 4, 'elsewhere': 68, 'total': 78}
+[geometry2] eca_oracle+doppler   free: Pd 0.00 (declared 0.71), within 5 m 0.00, median err 220.3 m, p90 237 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry2] blind                body: Pd 0.01 (declared 0.59), within 5 m 0.01, median err 173.7 m, p90 206 m; 1.5 s: Pd 0.01, within 5 m 0.03; misses {'ship_edge': 10, 'quay_image': 0, 'direct_path': 22, 'elsewhere': 46, 'total': 78}
+[geometry2] blind                free: Pd 0.00 (declared 0.59), within 5 m 0.00, median err 172.0 m, p90 206 m; 1.5 s: Pd 0.00, within 5 m 0.00
+[geometry2] blind_stage0         body: Pd 0.00 (declared 0.51), within 5 m 0.03, median err 208.2 m, p90 227 m; 1.5 s: Pd 0.00, within 5 m 0.00; misses {'ship_edge': 4, 'quay_image': 0, 'direct_path': 8, 'elsewhere': 65, 'total': 77}
+[geometry2] blind_stage0         free: Pd 0.00 (declared 0.58), within 5 m 0.00, median err 211.1 m, p90 231 m; 1.5 s: Pd 0.00, within 5 m 0.00
+oracle              : dev Pd 0.80 (free 0.04, within 5 m 0.92, 1.5 s Pd 0.96)  noise Pd 0.85 (free 0.04, within 5 m 0.92, 1.5 s Pd 0.97)  geometry Pd 0.16 (free 0.03, within 5 m 0.49, 1.5 s Pd 0.34)
+eca_oracle+doppler  : dev Pd 0.11 (free 0.04, within 5 m 0.48, 1.5 s Pd 0.16)  noise Pd 0.16 (free 0.02, within 5 m 0.51, 1.5 s Pd 0.24)  geometry Pd 0.00 (free 0.70, within 5 m 0.00, 1.5 s Pd 0.00)
+blind               : dev Pd 0.49 (free 0.04, within 5 m 0.70, 1.5 s Pd 0.76)  noise Pd 0.51 (free 0.18, within 5 m 0.62, 1.5 s Pd 0.78)  geometry Pd 0.02 (free 0.43, within 5 m 0.04, 1.5 s Pd 0.04)
+blind_stage0        : dev Pd 0.47 (free 0.04, within 5 m 0.59, 1.5 s Pd 0.54)  noise Pd 0.45 (free 0.12, within 5 m 0.57, 1.5 s Pd 0.53)  geometry Pd 0.01 (free 0.59, within 5 m 0.04, 1.5 s Pd 0.00)
+criterion: blind Pd held out noise 0.5063291139240507, held out geometry 0.021097046413502112 -> FAIL
+blind misses by class (all sets): {'ship_edge': 17, 'quay_image': 0, 'direct_path': 129, 'elsewhere': 248} -> dominant: elsewhere
+wrote output/harbor_bistatic/eval

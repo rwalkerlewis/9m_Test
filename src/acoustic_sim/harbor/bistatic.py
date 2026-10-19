@@ -428,7 +428,14 @@ def ship_positions(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: Bistat
         pred = kalman_track(sp.times, None, None, ais, vid, bc.track_config).xy
     else:
         pred = tr.predict(sp.times)
-    present = (sp.times >= tr.t[0] - 60.0) & (tr.age(sp.times) <= 60.0) if truth is None else np.ones(len(sp.times), bool)
+    if truth is not None:
+        present = np.ones(len(sp.times), bool)
+    elif bc.track_filter == "kalman":
+        # The smoother covers the frames before the first report (stage 1c: the plain rule below
+        # dropped the first 3.5 s of every record, whose zero map put the peak on an arbitrary cell).
+        present = (sp.times >= tr.t[0] - 60.0) & (sp.times <= tr.t[-1] + 60.0)
+    else:
+        present = (sp.times >= tr.t[0] - 60.0) & (tr.age(sp.times) <= 60.0)
     refined = pred.copy()
     score = np.ones(len(sp.times))
     if not bc.refine or truth is not None:

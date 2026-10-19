@@ -166,6 +166,9 @@ def main() -> None:
     ap.add_argument("--configs", default=",".join(CONFIGS))
     ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--cuda", action="store_true")
+    ap.add_argument("--cable-exclusion", type=float, default=10.0,
+                    help="variant reported next to the main result: map cells within this distance [m] of a live cable channel zeroed (0: off)")
+    ap.add_argument("--save-maps", action="store_true", help="save every run's map to <out>/maps_<set>_<config>_<body>.npz (gitignored)")
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -216,60 +219,83 @@ def main() -> None:
                 + (f", ECA direct {res['eca_direct_depth_db']:.1f} dB" if res["eca_direct_depth_db"] is not None else "")
                 + (f", echo loss {res['eca_echo_loss_db']:.2f} dB" if res["eca_echo_loss_db"] is not None else ""))
     say(f"all chains in {(time.time() - t0) / 60:.0f} min")
+    if args.save_maps:
+        for (name, c, body), res in runs.items():
+            np.savez_compressed(out / f"maps_{name}_{c}_{'body' if body else 'free'}.npz", B=res["B"], grid=res["grid"], times=res["times"],
+                                uuv=res["uuv"], ship_used=res["ship_used"], live=res["live"])
+    envs = {}
+    for res in runs.values():
+        if res["path"] not in envs:
+            cfg_ = HarborScenarioConfig.from_dict(res["cfg"])
+            env_ = build_environment(cfg_)
+            envs[res["path"]] = (env_, build_layout(cfg_, env_))
+    if args.cable_exclusion > 0:
+        # The variant: the same maps with the cells near the cable zeroed, everything else recomputed below.
+        for res in runs.values():
+            layout_ = envs[res["path"]][1]
+            rec = layout_.receivers[: layout_.n_das][res["live"][: layout_.n_das]]
+            d = np.min(np.hypot(res["grid"][:, None, 0] - rec[None, :, 0], res["grid"][:, None, 1] - rec[None, :, 1]), axis=1)
+            res["B_excl"] = np.where((d < args.cable_exclusion)[:, None], 0.0, res["B"])
 
     # Thresholds on the development body free runs, then the statistics of every run.
-    thresholds = {}
-    for c in configs:
-        free = runs[("dev", c, False)]
-        B3 = integrate_frames(free["B"], 3)
-        thresholds[c] = {"frame": frame_threshold(free["B"].max(axis=0), PFA), "integrated": frame_threshold(B3.max(axis=0), PFA)}
-        say(f"threshold {c:20s}: {thresholds[c]['frame']:.4g} (frame), {thresholds[c]['integrated']:.4g} (1.5 s integrated)")
-    results["thresholds"] = thresholds
-    misses = {}
-    for (name, c, body), res in runs.items():
-        T = thresholds[c]
-        st = detection_stats(res["B"], res["grid"], res["uuv"], T["frame"], RADIUS)
-        st3 = detection_stats(integrate_frames(res["B"], 3), res["grid"], res["uuv"], T["integrated"], RADIUS)
-        row = {"set": name, "config": c, "body": body, "seconds": res["seconds"], "ship_error_median_m": res["ship_error_median_m"],
-               "eca_direct_depth_db": res["eca_direct_depth_db"], "eca_echo_loss_db": res["eca_echo_loss_db"],
-               "frame": st.summary(), "integrated": st3.summary()}
-        if body:
-            if ("env", res["path"]) not in misses:
-                cfg_ = HarborScenarioConfig.from_dict(res["cfg"])
-                env_ = build_environment(cfg_)
-                misses[("env", res["path"])] = (env_, build_layout(cfg_, env_))
-            env, layout = misses[("env", res["path"])]
-            cls = classify_misses(st.est, st.err, res["ship_used"], env, layout, res["live"], 25.0, MISS_ERR, 10.0)
-            row["misses"] = miss_counts(cls)
-            row["misses"]["total"] = int(np.sum(st.err > MISS_ERR))
-            misses[(name, c)] = (st, cls, res)
-        results["runs"][f"{name}/{c}/{'body' if body else 'free'}"] = row
-        kind = "body" if body else "free"
-        say(f"[{name:9s}] {c:20s} {kind}: Pd {st.pd:.2f} (declared {st.declared:.2f}), within 5 m {st.summary()['within_radius']:.2f}, "
-            f"median err {st.summary()['median_error_m']:.1f} m, p90 {st.summary()['p90_error_m']:.0f} m; 1.5 s: Pd {st3.pd:.2f}, within 5 m {st3.summary()['within_radius']:.2f}"
-            + (f"; misses {row['misses']}" if body else ""))
-
-    # Summary per configuration: development, held out noise (mean over seeds), held out geometry (mean over seeds).
     groups = {"dev": ["dev"], "noise": [s[0] for s in sets if s[0].startswith("noise")], "geometry": [s[0] for s in sets if s[0].startswith("geometry")]}
-    for c in configs:
-        results["summary"][c] = {}
-        for g, names in groups.items():
-            if not names:
-                continue
-            rows = [results["runs"][f"{n}/{c}/body"] for n in names]
-            frees = [results["runs"][f"{n}/{c}/free"] for n in names]
-            results["summary"][c][g] = {
-                "pd": float(np.mean([r["frame"]["pd"] for r in rows])), "pd_by_set": {n: r["frame"]["pd"] for n, r in zip(names, rows)},
-                "declared_free": float(np.mean([r["frame"]["declared"] for r in frees])),
-                "within_5m": float(np.mean([r["frame"]["within_radius"] for r in rows])),
-                "median_error_m": float(np.mean([r["frame"]["median_error_m"] for r in rows])),
-                "integrated_pd": float(np.mean([r["integrated"]["pd"] for r in rows])),
-                "integrated_within_5m": float(np.mean([r["integrated"]["within_radius"] for r in rows])),
-                "eca_direct_depth_db": float(np.mean([r["eca_direct_depth_db"] for r in rows])) if rows[0]["eca_direct_depth_db"] is not None else None,
-                "misses": {k: int(sum(r["misses"][k] for r in rows)) for k in list(MISS_CLASSES) + ["total"]},
-            }
-        say(f"{c:20s}: " + "  ".join(f"{g} Pd {v['pd']:.2f} (free {v['declared_free']:.2f}, within 5 m {v['within_5m']:.2f}, 1.5 s Pd {v['integrated_pd']:.2f})"
-                                     for g, v in results["summary"][c].items()))
+
+    def evaluate(key: str, run_key: str, summary_key: str) -> dict:
+        """Thresholds, per run statistics and the summary for the maps stored under *key* in every run."""
+        thresholds = {}
+        for c in configs:
+            free = runs[("dev", c, False)]
+            B3 = integrate_frames(free[key], 3)
+            thresholds[c] = {"frame": frame_threshold(free[key].max(axis=0), PFA), "integrated": frame_threshold(B3.max(axis=0), PFA)}
+            say(f"threshold {c:20s}: {thresholds[c]['frame']:.4g} (frame), {thresholds[c]['integrated']:.4g} (1.5 s integrated)")
+        results["thresholds" if key == "B" else "thresholds_cable_exclusion"] = thresholds
+        results[run_key] = {}
+        results[summary_key] = {}
+        misses = {}
+        for (name, c, body), res in runs.items():
+            T = thresholds[c]
+            st = detection_stats(res[key], res["grid"], res["uuv"], T["frame"], RADIUS)
+            st3 = detection_stats(integrate_frames(res[key], 3), res["grid"], res["uuv"], T["integrated"], RADIUS)
+            row = {"set": name, "config": c, "body": body, "seconds": res["seconds"], "ship_error_median_m": res["ship_error_median_m"],
+                   "eca_direct_depth_db": res["eca_direct_depth_db"], "eca_echo_loss_db": res["eca_echo_loss_db"],
+                   "frame": st.summary(), "integrated": st3.summary()}
+            if body:
+                env, layout = envs[res["path"]]
+                cls = classify_misses(st.est, st.err, res["ship_used"], env, layout, res["live"], 25.0, MISS_ERR, 10.0)
+                row["misses"] = miss_counts(cls)
+                row["misses"]["total"] = int(np.sum(st.err > MISS_ERR))
+                misses[(name, c)] = (st, cls, res)
+            results[run_key][f"{name}/{c}/{'body' if body else 'free'}"] = row
+            kind = "body" if body else "free"
+            say(f"[{name:9s}] {c:20s} {kind}: Pd {st.pd:.2f} (declared {st.declared:.2f}), within 5 m {st.summary()['within_radius']:.2f}, "
+                f"median err {st.summary()['median_error_m']:.1f} m, p90 {st.summary()['p90_error_m']:.0f} m; 1.5 s: Pd {st3.pd:.2f}, within 5 m {st3.summary()['within_radius']:.2f}"
+                + (f"; misses {row['misses']}" if body else ""))
+        for c in configs:
+            results[summary_key][c] = {}
+            for g, names in groups.items():
+                if not names:
+                    continue
+                rows = [results[run_key][f"{n}/{c}/body"] for n in names]
+                frees = [results[run_key][f"{n}/{c}/free"] for n in names]
+                results[summary_key][c][g] = {
+                    "pd": float(np.mean([r["frame"]["pd"] for r in rows])), "pd_by_set": {n: r["frame"]["pd"] for n, r in zip(names, rows)},
+                    "declared_free": float(np.mean([r["frame"]["declared"] for r in frees])),
+                    "within_5m": float(np.mean([r["frame"]["within_radius"] for r in rows])),
+                    "median_error_m": float(np.mean([r["frame"]["median_error_m"] for r in rows])),
+                    "integrated_pd": float(np.mean([r["integrated"]["pd"] for r in rows])),
+                    "integrated_within_5m": float(np.mean([r["integrated"]["within_radius"] for r in rows])),
+                    "eca_direct_depth_db": float(np.mean([r["eca_direct_depth_db"] for r in rows])) if rows[0]["eca_direct_depth_db"] is not None else None,
+                    "misses": {k: int(sum(r["misses"][k] for r in rows)) for k in list(MISS_CLASSES) + ["total"]},
+                }
+            say(f"{c:20s}: " + "  ".join(f"{g} Pd {v['pd']:.2f} (free {v['declared_free']:.2f}, within 5 m {v['within_5m']:.2f}, 1.5 s Pd {v['integrated_pd']:.2f})"
+                                         for g, v in results[summary_key][c].items()))
+        return misses
+
+    misses = evaluate("B", "runs", "summary")
+    if args.cable_exclusion > 0:
+        say(f"--- variant: cells within {args.cable_exclusion:g} m of a live cable channel excluded (reported next to the main result, not part of the criterion)")
+        results["cable_exclusion_m"] = args.cable_exclusion
+        evaluate("B_excl", "runs_cable_exclusion", "summary_cable_exclusion")
     crit = results["summary"].get("blind", {})
     ok_noise = crit.get("noise", {}).get("pd", 0.0) >= 0.5 if "noise" in crit else None
     ok_geom = crit.get("geometry", {}).get("pd", 0.0) >= 0.5 if "geometry" in crit else None
@@ -284,27 +310,31 @@ def main() -> None:
         say(f"blind misses by class (all sets): {pooled} -> dominant: {results['dominant_miss_class_blind']}")
     (out / "results.json").write_text(json.dumps(results, indent=2))
 
-    # Figure 1: Pd by configuration and data group.
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    # Figure 1: Pd by configuration and data group (and the cable exclusion variant).
     gnames = [g for g in groups if groups[g]]
-    w = 0.8 / len(gnames)
-    for ax, key, label in ((axes[0], "pd", f"Pd at frame false alarm rate {PFA:g} (5 m)"), (axes[1], "integrated_pd", "Pd, 1.5 s integrated")):
-        for j, g in enumerate(gnames):
-            vals = [results["summary"][c].get(g, {}).get(key, np.nan) for c in configs]
-            x = np.arange(len(configs)) + (j - 0.5 * (len(gnames) - 1)) * w
-            ax.bar(x, vals, w, label={"dev": "development", "noise": "held out noise (mean)", "geometry": "held out geometry (mean)"}[g])
-            for i, c in enumerate(configs):
-                pts = [results["runs"][f"{n}/{c}/body"]["frame" if key == "pd" else "integrated"]["pd"] for n in groups[g]]
-                ax.plot(np.full(len(pts), x[i]), pts, "k.", ms=4)
-        ax.axhline(0.5, color="r", ls="--", label="criterion")
-        ax.set_xticks(np.arange(len(configs)))
-        ax.set_xticklabels(configs, rotation=20, ha="right", fontsize=9)
-        ax.set_ylim(0, 1.05)
-        ax.set_ylabel(label)
-        ax.grid(alpha=0.3, axis="y")
-    axes[0].legend(fontsize=8)
-    fig.suptitle(f"Stage 1c: detection probability (blind reference mode: {ref_mode}; dots: individual runs)")
-    fig.savefig(out / "pd_by_config.png", dpi=110, bbox_inches="tight")
+    variants = [("summary", "runs", "pd_by_config.png", "")]
+    if args.cable_exclusion > 0:
+        variants.append(("summary_cable_exclusion", "runs_cable_exclusion", "pd_by_config_cable_exclusion.png", f"; cells within {args.cable_exclusion:g} m of the cable excluded"))
+    for summary_key, run_key, fname, note in variants:
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        w = 0.8 / len(gnames)
+        for ax, key, label in ((axes[0], "pd", f"Pd at frame false alarm rate {PFA:g} (5 m)"), (axes[1], "integrated_pd", "Pd, 1.5 s integrated")):
+            for j, g in enumerate(gnames):
+                vals = [results[summary_key][c].get(g, {}).get(key, np.nan) for c in configs]
+                x = np.arange(len(configs)) + (j - 0.5 * (len(gnames) - 1)) * w
+                ax.bar(x, vals, w, label={"dev": "development", "noise": "held out noise (mean)", "geometry": "held out geometry (mean)"}[g])
+                for i, c in enumerate(configs):
+                    pts = [results[run_key][f"{n}/{c}/body"]["frame" if key == "pd" else "integrated"]["pd"] for n in groups[g]]
+                    ax.plot(np.full(len(pts), x[i]), pts, "k.", ms=4)
+            ax.axhline(0.5, color="r", ls="--", label="criterion")
+            ax.set_xticks(np.arange(len(configs)))
+            ax.set_xticklabels(configs, rotation=20, ha="right", fontsize=9)
+            ax.set_ylim(0, 1.05)
+            ax.set_ylabel(label)
+            ax.grid(alpha=0.3, axis="y")
+        axes[0].legend(fontsize=8)
+        fig.suptitle(f"Stage 1c: detection probability (blind reference mode: {ref_mode}; dots: individual runs{note})")
+        fig.savefig(out / fname, dpi=110, bbox_inches="tight")
 
     # Figure 2: miss locations of the blind configuration, coloured by class.
     if "blind" in configs:
@@ -312,7 +342,7 @@ def main() -> None:
         colors = dict(zip(MISS_CLASSES, ("C3", "C1", "C0", "0.4")))
         for ax, g in zip(axes[0], gnames):
             first = misses[(groups[g][0], "blind")][2]
-            env, layout = misses[("env", first["path"])]
+            env, layout = envs[first["path"]]
             plot_harbor(env, layout, ax=ax, show_depth=False)
             ax.plot(*first["ship_exact"].T, "-", color="deepskyblue", lw=2, label="ferry track")
             ax.plot(*first["uuv"].T, "-", color="lime", lw=2, label="UUV track")
