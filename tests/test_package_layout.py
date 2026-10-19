@@ -85,3 +85,16 @@ def test_detection_main_runs_as_module_without_runpy_warning():
     )
     assert "usage" in result.stdout.lower()
     assert "RuntimeWarning" not in result.stderr
+
+
+def test_moved_functions_keep_their_old_import_paths():
+    bistatic = import_module("acoustic_sim.water.bistatic")
+    motion = import_module("acoustic_sim.water.motion")
+    plotting = import_module("acoustic_sim.air.plotting")
+    pipeline_plots = import_module("acoustic_sim.air.pipeline_plots")
+
+    for name in ("motion_integrate", "_motion_integrate_reference", "_motion_integrate_vectorized"):
+        assert getattr(bistatic, name) is getattr(motion, name), name
+    assert import_module("acoustic_sim.harbor.bistatic").motion_integrate is motion.motion_integrate
+    for name in ("plot_radial_engagement", "plot_pipeline_summary", "plot_beamformer_diagnostic"):
+        assert getattr(plotting, name) is getattr(pipeline_plots, name), name
