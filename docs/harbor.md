@@ -308,6 +308,97 @@ reference, a constant velocity track fit across the whole run instead of per fra
 and gating the near field channels. Multistatic fusion, CLEAN extraction and tracking were
 deliberately not started.
 
+### Stage 1: the blind bistatic chain (branch `blind_bistatic`)
+
+Stage 1 makes the single illuminator, single target chain work without oracle inputs and
+measures it against held out data.  Every criterion below was in the script docstring and in
+`results.json` before the run.  Processing changes shared by the three stages: the replicas
+(AIS refinement, map) run on the GPU (`BistaticConfig.use_cuda`; the Green's function was 75
+percent of a chain on the CPU, the oracle chain on the fine dataset went from 550 s to 18 s), the
+scripts cap the BLAS threads at 4 so several runs can share the cores, and the stage 0a AIS
+helper `ais_from_start` now reports the true speed at its first and last report (it differenced
+a clamped interpolation and reported half the speed there, which biased any tracker that used it).
+
+**Stage 1a, blind reference modes** (`examples/harbor_reference_modes.py`, the six cached stage 0a
+cases, `output/harbor_reference/`).  `BistaticConfig.ref_mode` adds to the stage 0 delay and sum
+beam (`data`): `hydrophones` (the beam of the four pressure sensors, `ref_channels`), `equalised`
+(each strain channel divided by its modelled response, the second difference of the Green's
+function along the cable, floored at 0.1 of the largest response), `snr` (a maximum ratio
+combiner with the channel and frequency weights `sqrt(S) / N` estimated from a first ECA pass),
+`mrc` (the model based maximum ratio combiner, `sum conj(a_i) X_i / N_i` with the modelled
+response `a_i` and the residual power `N_i` of a first pass; added because the equaliser amplifies
+the strain nulls up to its floor while the optimum weights them down) and `iterated` (beam, ECA,
+map, the modelled echo of each frame's strongest peak fitted on lags outside the direct path and
+image windows and subtracted, beam again).  Stationary cases without Doppler, moving cases with
+`eca_doppler` and the stage 1b Kalman track.  Criterion: a blind mode reaches a median depth of
+20 dB for the stationary source at 193 m and 99 m; the best mode is the highest mean over the six
+cases (rule fixed before the run).
+
+| Source | Range | `data` | `hydrophones` | `equalised` | `snr` | `mrc` | `iterated` | `oracle` |
+|---|---|---|---|---|---|---|---|---|
+| stationary | 193 m | 8.8 dB (2.9) | 7.5 dB (1.8) | 15.6 dB (12.9) | 14.4 dB (4.4) | **20.5 dB** (12.2) | 8.2 dB (2.9) | 34.4 dB (21.2) |
+| moving | 193 m | 9.2 dB (3.5) | 6.1 dB (2.0) | 18.0 dB (15.5) | 14.8 dB (4.7) | 18.5 dB (15.3) | 8.6 dB (3.5) | 23.3 dB (16.2) |
+| stationary | 99 m | 18.7 dB (8.0) | 8.5 dB (4.2) | 16.7 dB (14.6) | 16.3 dB (11.8) | **21.3 dB** (17.2) | 16.0 dB (7.7) | 47.1 dB (21.3) |
+| moving | 99 m | 10.6 dB (8.0) | 8.9 dB (8.4) | 15.8 dB (14.2) | 9.4 dB (7.7) | 12.2 dB (11.2) | 9.1 dB (7.1) | 21.1 dB (17.1) |
+| stationary | 29 m | 11.8 dB (1.5) | 3.9 dB (2.6) | 10.6 dB (2.4) | 15.3 dB (3.7) | 21.7 dB (2.3) | 10.8 dB (1.4) | 37.5 dB (26.1) |
+| moving | 29 m | 10.2 dB (9.1) | 10.7 dB (9.5) | 14.5 dB (13.5) | 9.3 dB (8.4) | 9.9 dB (9.0) | 9.2 dB (8.2) | 18.7 dB (17.4) |
+| mean of the six | | 11.5 dB | 7.6 dB | 15.2 dB | 13.3 dB | **17.4 dB** | 10.3 dB | |
+
+Median (10th percentile) ECA depth over the live cable channels, 100 to 760 Hz.  **Criterion
+passed by `mrc`** (20.5 and 21.3 dB), which is also the best mode by the rule and is used in the
+rest of stage 1.  Its coherence with the true waveform on the stationary 193 m case is 0.98
+against 0.90 for the plain beam (`coherence_by_mode.png`); the gain comes from weighting the
+channels by their modelled strain response over their noise instead of averaging the broadside
+channels, which see nothing of the direct path, with the oblique ones.  What did not work: the
+hydrophone beam (four sensors, worse than the cable everywhere); the `equalised` mode (a
+floored inverse amplifies the weak channels: 15.6 dB at 193 m, and 10.6 dB at 29 m where the
+floor dominates); the data driven `snr` weights (the fitted direct power of a weak channel is
+noisy, 13.3 dB mean); and `iterated`, which in this framework has no echo to remove and
+reproduces the plain beam (its first version, without the lag exclusion, removed the direct
+path itself and fell to 3 dB).  On the moving cases every blind reference loses coherence above
+400 Hz (0.4 to 0.6 at 700 Hz, the oracle stays at 1.0): the track error of 0.5 to 0.8 m
+misaligns the channels at the short wavelengths where the strain response is strongest, so the
+moving source stays 3 to 9 dB below the stationary one for every mode.
+
+**Stage 1b, the track for the Doppler ECA** (`examples/harbor_track_eval.py`, same cases, oracle
+waveform throughout, `output/harbor_track/`).  `acoustic_sim/harbor/track.py` is a constant
+velocity Kalman filter with a Rauch Tung Striebel smoother over the AIS reports (position at
+8 m, velocity from speed and course at 0.2 m/s and 0.035 rad) and the acoustically refined
+position of every frame (1 m, the stage 0 jitter, gated at 5 sigma); process noise a white
+acceleration of 0.05 m/s^2, fixed before the run.  `BistaticConfig.track_filter="kalman"` is the
+default (`"line"` keeps the stage 0 fit over `track_smooth_s`, `"none"` the refined positions),
+and the AIS only fit is also the refinement centre: the plain AIS predictor clamps to the first
+report, up to 15 m off for a ship at 4 m/s, outside the 10 m refinement window, which is why the
+stage 0 blind chain lost the first 3.5 s of every record.  Low speed fallback: ECA blocks whose
+smoothed speed is below 0.3 m/s use fixed lags at the smoothed position.  Criterion: the Kalman
+track within 3 dB of `oracle_exact` (per sample delays) for every moving case and within 3 dB
+of `oracle` (fixed lags at the refined positions) for every stationary case.
+
+| Source | Range | `oracle_exact` | `oracle` | `kalman` | `kalman_a0.3` | `line4` | `raw` | target | pass |
+|---|---|---|---|---|---|---|---|---|---|
+| stationary | 193 m | 32.9 dB | 34.4 dB (0.6 m) | 34.4 dB (0.6 m) | 34.4 dB (0.6 m) | 34.4 dB (0.6 m) | 33.2 dB (0.6 m) | 34.4 dB | yes |
+| moving | 193 m | 24.4 dB | 5.5 dB (0.9 m) | 23.3 dB (0.8 m) | 24.2 dB (0.7 m) | 21.9 dB (0.8 m) | 6.7 dB (0.9 m) | 24.4 dB | yes |
+| stationary | 99 m | 45.1 dB | 47.3 dB (0.7 m) | 47.1 dB (0.7 m) | 47.1 dB (0.7 m) | 47.3 dB (0.7 m) | 44.2 dB (0.7 m) | 47.3 dB | yes |
+| moving | 99 m | 24.6 dB | 3.6 dB (0.4 m) | 21.1 dB (0.5 m) | 24.5 dB (0.4 m) | 23.9 dB (0.5 m) | 12.2 dB (0.4 m) | 24.6 dB | **no (-3.5 dB)** |
+| stationary | 29 m | 51.0 dB | 37.4 dB (5.6 m) | 37.5 dB (5.9 m) | 37.4 dB (5.8 m) | 37.4 dB (5.8 m) | 6.2 dB (5.6 m) | 37.4 dB | yes |
+| moving | 29 m | 21.5 dB | 2.3 dB (0.5 m) | 18.7 dB (0.5 m) | 21.5 dB (0.4 m) | 20.3 dB (0.4 m) | 12.4 dB (0.5 m) | 21.5 dB | yes |
+
+Cable median depth (median track error).  `kalman` and the stationary cases run with
+`eca_doppler` so the fallback is exercised; `raw` is the unfiltered refined track with per
+sample delays (stage 0 finding 6: 6 dB on the stationary 29 m case, 37.5 dB with the fallback).
+**Criterion failed at one case of six**: the moving 99 m case is 3.5 dB short.  The cause is
+in `track_error.png`: the stage 0a moving sources run a 40 m path that the track builder
+rounds off, so they decelerate from 4 to 2 m/s over the last 6 s, and a 0.05 m/s^2 process noise
+(chosen for a ferry at constant speed) lags that by a bow of up to 1 m.  `kalman_a0.3`, the
+same filter with 0.3 m/s^2, is within 1 dB of the exact track in every case (24.2, 24.5 and
+21.5 dB); it was run after the result was seen and is reported as a variant, not as a pass.
+Stage 1c keeps the pre registered 0.05 m/s^2 (its ferry tracks are at constant speed).  The
+4 s line fit of stage 0 (`line4`) is within 2.5 dB of the exact track on these straight cases;
+the Kalman track's advantages are the fallback, the prediction before the first AIS report and
+no tuned window.
+
+STAGE1C_PLACEHOLDER
+
 ## Examples and Workflows
 
 | Script | What it does | Time |
@@ -326,6 +417,10 @@ deliberately not started.
 | `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler` and `--gate` variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
 | `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the oracle inputs removed one at a time (`--doppler` adds the per sample delay ECA variants) | about 1.5 h of processing for both datasets |
 | `examples/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and an oracle ferry-only check map | 6 FDTD runs (fine: about 1 h on the GPU) |
+| `examples/harbor_reference_modes.py` | Stage 1a: the blind reference modes (`ref_mode`, `ref_channels`) scored by ECA depth and coherence on the six cached stage 0a cases | about 45 min of processing (cached FDTD) |
+| `examples/harbor_track_eval.py` | Stage 1b: Kalman track with the low speed fallback against the exact track, the stage 0 line fit and the raw refinement, oracle waveform | about 30 min of processing (cached FDTD) |
+| `examples/harbor_bistatic_detect_eval.py` | Stage 1c: Pd at a fixed frame false alarm rate (threshold from body free runs) on the development, held out noise and held out geometry sets, miss classes; `--ref-mode` defaults to the stage 1a best mode | 72 chains, about 1.5 h with 2 workers on the GPU |
+| `examples/harbor_bistatic_dataset.py --config examples/harbor_bistatic_track2.scenario.json --tag fine_track2` | The held out geometry dataset of stage 1c (ferry heading south at x = 100 m, same UUV) | 2 fine FDTD runs (25 min on the GPU) |
 | `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
 | `examples/harbor_train_classifier.py`, `examples/harbor_train_anomaly.py`, `examples/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |
 
@@ -405,11 +500,14 @@ of that specific grid/time step and should not be used as a model of real-water 
 
 ## Tests
 
-`pytest tests/harbor` (116 tests; the GPU variants skip automatically without CuPy / a GPU).
+`pytest tests/harbor` (135 tests; the GPU variants skip automatically without CuPy / a GPU).
 They cover the environment and sensors, the FDTD runner (amplitude against the analytic
 Green's function, moveout, linearity, cache, shoreline), signatures, AIS, noise, the dataset
 mixer, detection and scoring, ship refinement and projection (including a synthetic scene in
 which only the data-adaptive projection removes a multipath ship), the occupancy filter,
 dispersion, GPU / CPU parity, the bistatic ECA on an analytic free field case (`eca_stage`
 against the inline code it replaced, depth and echo preservation, the Doppler variant on a
-moving ship, track smoothing, `run_bistatic` end to end) and the combined body gathers.
+moving ship, track smoothing, `run_bistatic` end to end) and the combined body gathers.  Stage 1 adds
+the reference modes, the equaliser and combiner weights, the low speed fallback, the track fit modes, the
+unnormalised map, the GPU replica parity, the AIS only prediction, the Kalman smoother on a synthetic
+straight track with known noise and gating, and the detection statistics (threshold, Pd, miss classes).

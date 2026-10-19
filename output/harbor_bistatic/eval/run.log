@@ -1,0 +1,15 @@
+criterion: configuration 'blind' reaches Pd >= 0.5 at a frame false alarm rate of 0.05 (threshold set on the body free development run) averaged over the held out noise seeds, and Pd >= 0.5 averaged over the held out geometry runs
+blind reference mode: mrc {'reference': 'data', 'ref_mode': 'mrc'}
+72 chains (9 sets x 4 configurations x with / without the body), 3 workers
+[dev      ] oracle               body: 9 s, ship err 0.0 m
+[dev      ] oracle               free: 9 s, ship err 0.0 m
+[dev      ] eca_oracle+doppler   body: 71 s, ship err 0.0 m, ECA direct 21.3 dB, echo loss 0.62 dB
+[dev      ] eca_oracle+doppler   free: 78 s, ship err 0.0 m, ECA direct 21.4 dB
+[dev      ] blind                body: 178 s, ship err 0.6 m, ECA direct 17.4 dB, echo loss 0.54 dB
+[dev      ] blind                free: 165 s, ship err 0.6 m, ECA direct 17.0 dB
+[dev      ] blind_stage0         body: 105 s, ship err 0.7 m, ECA direct 11.0 dB, echo loss 0.32 dB
+[dev      ] blind_stage0         free: 85 s, ship err 0.7 m, ECA direct 10.8 dB
+[noise1   ] oracle               body: 5 s, ship err 0.0 m
+[noise1   ] oracle               free: 5 s, ship err 0.0 m
+[noise1   ] eca_oracle+doppler   body: 85 s, ship err 0.0 m, ECA direct 21.4 dB, echo loss 0.59 dB
+[noise1   ] eca_oracle+doppler   free: 81 s, ship err 0.0 m, ECA direct 21.4 dB

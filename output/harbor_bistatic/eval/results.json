@@ -1,0 +1,84 @@
+{
+  "criterion": {
+    "text": "configuration 'blind' reaches Pd >= 0.5 at a frame false alarm rate of 0.05 (threshold set on the body free development run) averaged over the held out noise seeds, and Pd >= 0.5 averaged over the held out geometry runs",
+    "pd_min": 0.5,
+    "pfa": 0.05,
+    "radius_m": 5.0
+  },
+  "blind_reference_mode": "mrc",
+  "blind_reference_config": {
+    "reference": "data",
+    "ref_mode": "mrc"
+  },
+  "configs": {
+    "oracle": {
+      "oracle_inputs": [
+        "direct path removed with the truth component",
+        "oracle ferry waveform",
+        "exact ferry track"
+      ]
+    },
+    "eca_oracle+doppler": {
+      "oracle_inputs": [
+        "oracle ferry waveform",
+        "exact ferry track"
+      ]
+    },
+    "blind": {
+      "oracle_inputs": []
+    },
+    "blind_stage0": {
+      "oracle_inputs": []
+    }
+  },
+  "sets": {
+    "dev": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": null
+    },
+    "noise1": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 1
+    },
+    "noise2": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 2
+    },
+    "noise3": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 3
+    },
+    "noise4": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 4
+    },
+    "noise5": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 5
+    },
+    "geometry0": {
+      "path": "output/harbor_bistatic/fine_track2/dataset.npz",
+      "seed": null
+    },
+    "geometry1": {
+      "path": "output/harbor_bistatic/fine_track2/dataset.npz",
+      "seed": 1
+    },
+    "geometry2": {
+      "path": "output/harbor_bistatic/fine_track2/dataset.npz",
+      "seed": 2
+    }
+  },
+  "miss_classes": {
+    "error_min_m": 20.0,
+    "near_m": 10.0,
+    "classes": [
+      "ship_edge",
+      "quay_image",
+      "direct_path",
+      "elsewhere"
+    ]
+  },
+  "runs": {},
+  "summary": {}
+}
