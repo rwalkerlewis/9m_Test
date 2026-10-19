@@ -273,3 +273,68 @@ def test_simulate_sources_runs_sequentially_on_cpu(scene, tmp_path):
     ref = simulate_source(env, layout, cfg, sig, position=(30.0, 50.0))
     assert np.array_equal(g[0].traces, ref.traces) and np.allclose(g[1].traces, -ref.traces)
     assert len(list(tmp_path.glob("gather_*.npz"))) == 2
+
+
+# ----------------------------------------------------------------------
+# CPML boundary
+# ----------------------------------------------------------------------
+
+def _reflection_db(env_small, env_big, shift, src, rec, cfg_small, cfg_big):
+    """Peak of (small domain trace - large domain trace) over the peak of the large domain trace, per receiver [dB]."""
+    sig = _ricker(cfg_small.n_steps, 150.0, 0.03)
+    small = HarborFDTDSolver(env_small, cfg_small, StaticSource(src[0], src[1], sig), rec).run(verbose=False)["traces"]
+    big = HarborFDTDSolver(env_big, cfg_big, StaticSource(src[0] + shift, src[1] + shift, sig), rec + shift).run(verbose=False)["traces"]
+    return 20 * np.log10(np.abs(small - big).max(axis=1) / np.abs(big).max(axis=1))
+
+
+@pytest.fixture(scope="module")
+def cpml_scene():
+    """1 m grid: a 160 m x 320 m box with the source 40 m from the right edge and 160 m from the
+    others (whose reflections arrive after the 0.15 s window), and a domain large enough that no
+    reflection reaches the receivers at all."""
+    dx, fs, c = 1.0, 3000.0, 1500.0
+    small = uniform_water_environment(160.0, 320.0, dx, c)
+    shift = 320.0
+    big = uniform_water_environment(160.0 + 2 * shift, 320.0 + 2 * shift, dx, c)
+    src = np.array([120.0, 160.0])
+    rec = np.array([[120.0, 160.0 + o] for o in (0.0, 20.0, 50.0)])      # 0, 14 and 32 degrees from normal
+    base = dict(fs=fs, total_time=0.15, fd_order=4, background_absorption=0.0, shore_loss_max=0.0, use_cuda=False)
+    return small, big, shift, src, rec, base
+
+
+def test_cpml_reflection_well_below_the_sponge(cpml_scene):
+    """12 CPML cells reflect at least 10 dB less than the 30 cell sponge at every tested angle, and below -45 dB."""
+    small, big, shift, src, rec, base = cpml_scene
+    ref_cfg = HarborFDTDConfig(**{**base, "damping_width": 40})
+    sponge = _reflection_db(small, big, shift, src, rec, HarborFDTDConfig(**{**base, "damping_width": 30, "damping_max": 0.15}), ref_cfg)
+    cpml = _reflection_db(small, big, shift, src, rec, HarborFDTDConfig(**{**base, "boundary": "cpml", "cpml_width": 12}), ref_cfg)
+    assert np.all(cpml < sponge - 10.0), (sponge, cpml)
+    assert np.all(cpml < -45.0), cpml
+    assert np.all(sponge < -15.0), sponge          # the sponge does absorb; the test geometry is sane
+
+
+def test_cpml_config_and_damping():
+    with pytest.raises(ValueError, match="boundary"):
+        FDTDConfig(boundary="pml")
+    with pytest.raises(ValueError, match="boundary"):
+        HarborFDTDConfig(boundary="pml")
+    env = uniform_water_environment(60.0, 50.0, 1.0)
+    cfg = HarborFDTDConfig(fs=3000.0, total_time=0.01, boundary="cpml", cpml_width=8, shore_loss_max=0.0, use_cuda=False)
+    solver = HarborFDTDSolver(env, cfg, StaticSource(30.0, 25.0, np.zeros(cfg.n_steps)), np.array([[40.0, 25.0]]))
+    sigma = np.asarray(solver.sigma)
+    assert np.allclose(sigma, cfg.background_absorption)              # no sponge ramp
+    assert solver._cpml is not None and np.count_nonzero(np.asarray(solver._cpml["mx"])) == 16
+    with pytest.raises(ValueError, match="cpml_width"):
+        HarborFDTDSolver(env, HarborFDTDConfig(fs=3000.0, total_time=0.01, boundary="cpml", cpml_width=40, use_cuda=False),
+                         StaticSource(30.0, 25.0, np.zeros(30)), np.array([[40.0, 25.0]]))
+
+
+@gpu
+def test_fused_cpml_matches_reference_cpml(scene):
+    env, src, body, layout = scene
+    for order in (4, 8):
+        kw = dict(boundary="cpml", cpml_width=12, cpml_alpha_max=200.0, fd_order=order)
+        ref, _ = _run(env, HarborFDTDConfig(**{**_cfg().__dict__, **kw}), src, layout, [body])
+        fused, s = _run(env, HarborFDTDConfig(**{**_cfg().__dict__, **kw, "kernel": "fused"}), src, layout, [body])
+        assert s.kernel == "fused" and s.boundary == "cpml"
+        assert _rel_l2(fused, ref).max() < 1e-12, order

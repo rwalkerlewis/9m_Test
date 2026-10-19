@@ -43,6 +43,10 @@ void fdtd_step(const {T}* __restrict__ p, {T}* __restrict__ pp,
                const int* __restrict__ r_iy, const int* __restrict__ r_ix,
                const {T}* __restrict__ r_wx, const {T}* __restrict__ r_wy,
                {T}* __restrict__ trace, const int n_recv, const int trace_col, const int chunk,
+               const {T}* __restrict__ psix, const {T}* __restrict__ psiy,
+               {T}* __restrict__ zetax, {T}* __restrict__ zetay,
+               const {T}* __restrict__ bx, const {T}* __restrict__ ax, const {T}* __restrict__ mx,
+               const {T}* __restrict__ by, const {T}* __restrict__ ay, const {T}* __restrict__ my,
                const int n, const int n_steps, const int ny, const int nx)
 {{
     const int ix = blockIdx.x * blockDim.x + threadIdx.x;
@@ -73,8 +77,7 @@ void fdtd_step(const {T}* __restrict__ p, {T}* __restrict__ pp,
     }} else {{
         const {T} pc = p[i];
         const {T} ppc = pp[i];
-        {T} lap = ({T}){C0X2} * pc;
-{LAP_TERMS}
+{LAPLACIAN}
         out = ((({T})2.0 * pc - ppc) + c2[g] * lap) - sigma[g] * (pc - ppc);
     }}
     // Source injection: the four bilinear cells of this step (the table holds weight x amplitude).
@@ -90,6 +93,32 @@ void fdtd_step(const {T}* __restrict__ p, {T}* __restrict__ pp,
     }}
 {MASK}
     pp[i] = out;
+}}
+
+extern "C" __global__
+void cpml_psi(const {T}* __restrict__ p, {T}* __restrict__ psix, {T}* __restrict__ psiy,
+              const {T}* __restrict__ bx, const {T}* __restrict__ ax, const {T}* __restrict__ mx,
+              const {T}* __restrict__ by, const {T}* __restrict__ ay, const {T}* __restrict__ my,
+              const int ny, const int nx)
+{{
+    const int ix = blockIdx.x * blockDim.x + threadIdx.x;
+    const int iy = blockIdx.y * blockDim.y + threadIdx.y;
+    const int b = blockIdx.z;
+    if (ix < {M} || ix >= nx - {M} || iy < {M} || iy >= ny - {M}) return;
+    const bool in_x = mx[ix] != ({T})0.0;
+    const bool in_y = my[iy] != ({T})0.0;
+    if (!in_x && !in_y) return;
+    const size_t i = (size_t)b * ny * nx + (size_t)iy * nx + ix;
+    if (in_x) {{
+        {T} dpx = ({T}){D1_1} * (p[i + 1] - p[i - 1]);
+{DPX_TERMS}
+        psix[i] = bx[ix] * psix[i] + ax[ix] * dpx;
+    }}
+    if (in_y) {{
+        {T} dpy = ({T}){D1_1} * (p[i + nx] - p[i - nx]);
+{DPY_TERMS}
+        psiy[i] = by[iy] * psiy[i] + ay[iy] * dpy;
+    }}
 }}
 
 extern "C" __global__
@@ -123,29 +152,67 @@ def _lit(x: float) -> str:
     return repr(float(x))
 
 
-def step_kernel_source(coeffs: np.ndarray, dtype, has_mask: bool) -> str:
-    """CUDA source of the fused step for the stencil *coeffs* (``fd2_coefficients``)."""
+def step_kernel_source(coeffs: np.ndarray, dtype, has_mask: bool, cpml: bool = False, d1: np.ndarray | None = None) -> str:
+    """CUDA source of the fused step for the stencil *coeffs* (``fd2_coefficients``); with *cpml* the
+    Laplacian carries the layer terms of ``FDTDSolver._cpml_laplacian`` (*d1*: ``fd1_coefficients``)."""
     T = _CTYPE[np.dtype(dtype)]
     M = len(coeffs) - 1
-    terms = []
-    for k in range(1, M + 1):
-        # Reference order: lap += ck * (down + up + right + left) with ((down + up) + right) + left.
-        terms.append(f"        lap += ({T}){_lit(coeffs[k])} * (((p[i + {k} * nx] + p[i - {k} * nx]) + p[i + {k}]) + p[i - {k}]);")
+    if d1 is None:
+        d1 = np.zeros(M + 1)
+        d1[1] = 0.5
+    lines = []
+    if not cpml:
+        lines.append(f"        {T} lap = ({T}){_lit(coeffs[0] * 2.0)} * pc;")
+        for k in range(1, M + 1):
+            # Reference order: lap += ck * (down + up + right + left) with ((down + up) + right) + left.
+            lines.append(f"        lap += ({T}){_lit(coeffs[k])} * (((p[i + {k} * nx] + p[i - {k} * nx]) + p[i + {k}]) + p[i - {k}]);")
+    else:
+        # Reference order of _cpml_laplacian: lapx, lapy accumulated per k; dqx, dqy likewise; then
+        # ((lapx + dqx) + zetax) + ((lapy + dqy) + zetay).
+        lines.append(f"        {T} lapx = ({T}){_lit(coeffs[0])} * pc;")
+        lines.append(f"        {T} lapy = ({T}){_lit(coeffs[0])} * pc;")
+        for k in range(1, M + 1):
+            lines.append(f"        lapx = lapx + ({T}){_lit(coeffs[k])} * (p[i + {k}] + p[i - {k}]);")
+            lines.append(f"        lapy = lapy + ({T}){_lit(coeffs[k])} * (p[i + {k} * nx] + p[i - {k} * nx]);")
+        lines.append(f"        {T} tx = lapx, ty = lapy;")
+        lines.append(f"        if (mx[ix] != ({T})0.0) {{")
+        lines.append(f"            {T} dqx = ({T}){_lit(d1[1])} * (psix[i + 1] - psix[i - 1]);")
+        for k in range(2, M + 1):
+            lines.append(f"            dqx = dqx + ({T}){_lit(d1[k])} * (psix[i + {k}] - psix[i - {k}]);")
+        lines.append("            dqx = dqx * mx[ix];")
+        lines.append("            const {T} zx = bx[ix] * zetax[i] + ax[ix] * (lapx + dqx);".replace("{T}", T))
+        lines.append("            zetax[i] = zx;")
+        lines.append("            tx = (lapx + dqx) + zx;")
+        lines.append("        }")
+        lines.append(f"        if (my[iy] != ({T})0.0) {{")
+        lines.append(f"            {T} dqy = ({T}){_lit(d1[1])} * (psiy[i + nx] - psiy[i - nx]);")
+        for k in range(2, M + 1):
+            lines.append(f"            dqy = dqy + ({T}){_lit(d1[k])} * (psiy[i + {k} * nx] - psiy[i - {k} * nx]);")
+        lines.append("            dqy = dqy * my[iy];")
+        lines.append("            const {T} zy = by[iy] * zetay[i] + ay[iy] * (lapy + dqy);".replace("{T}", T))
+        lines.append("            zetay[i] = zy;")
+        lines.append("            ty = (lapy + dqy) + zy;")
+        lines.append("        }")
+        lines.append(f"        const {T} lap = tx + ty;")
+    dpx = [f"        dpx = dpx + ({T}){_lit(d1[k])} * (p[i + {k}] - p[i - {k}]);" for k in range(2, M + 1)]
+    dpy = [f"        dpy = dpy + ({T}){_lit(d1[k])} * (p[i + {k} * nx] - p[i - {k} * nx]);" for k in range(2, M + 1)]
     mask = "    out *= mask[g];" if has_mask else ""
-    return _STEP_SRC.format(T=T, M=M, C0X2=_lit(coeffs[0] * 2.0), LAP_TERMS="\n".join(terms), MASK=mask)
+    return _STEP_SRC.format(T=T, M=M, LAPLACIAN="\n".join(lines), MASK=mask, D1_1=_lit(d1[1]),
+                            DPX_TERMS="\n".join(dpx), DPY_TERMS="\n".join(dpy))
 
 
 _MODULE_CACHE: dict[tuple, Any] = {}
 
 
-def compile_step(coeffs: np.ndarray, dtype, has_mask: bool):
-    """``(step_kernel, sample_kernel)`` compiled once per (stencil, dtype, mask)."""
+def compile_step(coeffs: np.ndarray, dtype, has_mask: bool, cpml: bool = False, d1: np.ndarray | None = None):
+    """``(step_kernel, sample_kernel, psi_kernel)`` compiled once per (stencil, dtype, mask, cpml)."""
     import cupy as cp
 
-    key = (tuple(float(c) for c in coeffs), np.dtype(dtype).str, bool(has_mask))
+    key = (tuple(float(c) for c in coeffs), np.dtype(dtype).str, bool(has_mask), bool(cpml),
+           None if d1 is None else tuple(float(c) for c in d1))
     if key not in _MODULE_CACHE:
-        mod = cp.RawModule(code=step_kernel_source(coeffs, dtype, has_mask), options=("--fmad=false", "--std=c++11"))
-        _MODULE_CACHE[key] = (mod.get_function("fdtd_step"), mod.get_function("fdtd_sample"))
+        mod = cp.RawModule(code=step_kernel_source(coeffs, dtype, has_mask, cpml, d1), options=("--fmad=false", "--std=c++11"))
+        _MODULE_CACHE[key] = (mod.get_function("fdtd_step"), mod.get_function("fdtd_sample"), mod.get_function("cpml_psi"))
     return _MODULE_CACHE[key]
 
 
@@ -211,7 +278,8 @@ class FusedFDTD:
     """
 
     def __init__(self, coeffs: np.ndarray, fields, c2, sigma, mask, sources: list, receivers, traces: np.ndarray,
-                 n_steps: int, dt: float, x0: float, y0: float, dx: float, amplitude: float, dtype) -> None:
+                 n_steps: int, dt: float, x0: float, y0: float, dx: float, amplitude: float, dtype,
+                 cpml: dict | None = None) -> None:
         import cupy as cp
 
         self.xp = cp
@@ -222,10 +290,19 @@ class FusedFDTD:
         self.ny, self.nx = p.shape[-2], p.shape[-1]
         if len(sources) != self.B:
             raise ValueError(f"{len(sources)} sources for a batch of {self.B}")
-        self.step_kernel, self.sample_kernel = compile_step(coeffs, self.dtype, mask is not None)
+        self.cpml = cpml
+        self.step_kernel, self.sample_kernel, self.psi_kernel = compile_step(
+            coeffs, self.dtype, mask is not None, cpml is not None, None if cpml is None else cpml["d1"])
         self.c2 = cp.ascontiguousarray(c2, dtype=self.dtype)
         self.sigma = cp.ascontiguousarray(sigma, dtype=self.dtype)
         self.mask = cp.ascontiguousarray(mask, dtype=self.dtype) if mask is not None else self.c2   # unused when absent
+        if cpml is not None:
+            shape = p.shape
+            self.psix, self.psiy, self.zetax, self.zetay = (cp.zeros(shape, dtype=self.dtype) for _ in range(4))
+            self.cp_prof = tuple(cp.ascontiguousarray(cpml[k], dtype=self.dtype) for k in ("bx", "ax", "mx", "by", "ay", "my"))
+        else:
+            self.psix = self.psiy = self.zetax = self.zetay = self.c2          # unused
+            self.cp_prof = (self.c2,) * 6
         iy, ix, w = source_table(sources, n_steps, dt, x0, y0, dx, self.ny, self.nx, amplitude, self.dtype)
         self.src_iy, self.src_ix, self.src_w = cp.asarray(iy), cp.asarray(ix), cp.asarray(w)
         r_iy, r_ix, r_wx, r_wy = receivers
@@ -264,11 +341,14 @@ class FusedFDTD:
     def step(self, p, pp, n: int):
         """Advance from ``(p, pp)`` at step *n*; returns ``(p_new, p_old)`` = the swapped buffers."""
         col = n - 1 - self.col0 if n >= 1 and self.sampled_to == n - 1 else -1
+        if self.cpml is not None:
+            self.psi_kernel(self.grid, _BLOCK, (p, self.psix, self.psiy, *self.cp_prof, np.int32(self.ny), np.int32(self.nx)))
         self.step_kernel(
             self.grid, _BLOCK,
             (p, pp, self.c2, self.sigma, self.mask, self.src_iy, self.src_ix, self.src_w,
              self.r_iy, self.r_ix, self.r_wx, self.r_wy, self.trace_buf,
              np.int32(self.n_recv), np.int32(col), np.int32(self.chunk),
+             self.psix, self.psiy, self.zetax, self.zetay, *self.cp_prof,
              np.int32(n), np.int32(self.n_steps), np.int32(self.ny), np.int32(self.nx)),
         )
         if col >= 0:

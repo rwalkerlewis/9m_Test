@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 from scipy.ndimage import distance_transform_edt
 
-from acoustic_sim.fdtd import FDTDConfig, FDTDSolver, fd2_coefficients, fd2_cfl_factor
+from acoustic_sim.fdtd import BOUNDARIES, FDTDConfig, FDTDSolver, fd2_coefficients, fd2_cfl_factor
 from acoustic_sim.harbor.environment import HarborEnvironment
 from acoustic_sim.harbor.scatterer import Scatterer, body_factor
 from acoustic_sim.harbor.sensors import SensorLayout
@@ -28,7 +28,7 @@ BODY_MASKS = ("auto", "host", "device")
 # Fields that do not change the result (excluded from the cache key) and fields added after the
 # caches of the existing datasets were built (excluded while at their default, so those keys stay valid).
 _KEY_EXCLUDE = ("use_cuda", "kernel", "body_masks")
-_KEY_DEFAULTS = {"precision": "float64"}
+_KEY_DEFAULTS = {"precision": "float64", "boundary": "sponge", "cpml_width": 15, "cpml_order": 2, "cpml_r0": 1e-6, "cpml_alpha_max": 0.0}
 
 
 @dataclass
@@ -64,6 +64,10 @@ class HarborFDTDConfig:
         ``"reference"`` (the array code), ``"fused"`` (one CUDA kernel per step, GPU only) or
         ``"auto"``.  Not part of the cache key: both kernels compute the same traces (to 1e-13
         relative in float64).
+    boundary, cpml_width, cpml_order, cpml_r0, cpml_alpha_max
+        Edge boundary: ``"sponge"`` (default, the ramp above) or ``"cpml"`` (a convolutional PML of
+        ``cpml_width`` cells; see :class:`~acoustic_sim.fdtd.FDTDConfig`).  Part of the cache key
+        when not at the defaults.
     body_masks : str
         How moving bodies are imposed with the fused kernel: ``"host"`` evaluates
         :func:`~acoustic_sim.harbor.scatterer.body_factor` on the CPU every step (the reference),
@@ -83,10 +87,17 @@ class HarborFDTDConfig:
     precision: str = "float64"
     kernel: str = "reference"
     body_masks: str = "auto"
+    boundary: str = "sponge"
+    cpml_width: int = 15
+    cpml_order: int = 2
+    cpml_r0: float = 1e-6
+    cpml_alpha_max: float = 0.0
 
     def __post_init__(self) -> None:
         if self.body_masks not in BODY_MASKS:
             raise ValueError(f"body_masks must be one of {BODY_MASKS}, got {self.body_masks!r}")
+        if self.boundary not in BOUNDARIES:
+            raise ValueError(f"boundary must be one of {BOUNDARIES}, got {self.boundary!r}")
 
     @property
     def dt(self) -> float:
@@ -154,6 +165,11 @@ class HarborFDTDSolver(FDTDSolver):
             fd_order=hcfg.fd_order,
             precision=hcfg.precision,
             kernel=hcfg.kernel,
+            boundary=hcfg.boundary,
+            cpml_width=hcfg.cpml_width,
+            cpml_order=hcfg.cpml_order,
+            cpml_r0=hcfg.cpml_r0,
+            cpml_alpha_max=hcfg.cpml_alpha_max,
         )
         super().__init__(env.model, fcfg, source, receivers)
         assert self.n_steps == hcfg.n_steps
@@ -292,6 +308,7 @@ class HarborFDTDBatch(HarborFDTDSolver):
             [src for src, _ in self._jobs], (self._recv_iy, self._recv_ix, self._recv_wx, self._recv_wy), self.traces,
             self.n_steps, self.dt, float(self.model.x[0]), float(self.model.y[0]), float(self.model.dx),
             self.cfg.source_amplitude, self._dtype,
+            cpml=self._cpml,
         )
         fk.post_hooks = list(self._fused_hooks())
         return fk

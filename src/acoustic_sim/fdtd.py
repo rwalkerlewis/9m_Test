@@ -118,12 +118,29 @@ def fd2_cfl_factor(coeffs: np.ndarray) -> float:
     return abs(val)
 
 
+def fd1_coefficients(order: int) -> np.ndarray:
+    """Central FD coefficients for df/dx at accuracy *order*: ``coeffs[k]`` (k >= 1) weights
+    ``f[i+k] - f[i-k]``; ``coeffs[0]`` is 0.  Multiply by ``1/dx``."""
+    M = order // 2
+    if M < 1:
+        raise ValueError(f"fd_order must be >= 2, got {order}")
+    # sum_k 2 c_k k^(2j+1) = delta_{j,0} for j = 0..M-1
+    A = np.zeros((M, M))
+    b = np.zeros(M)
+    for j in range(M):
+        for i in range(M):
+            A[j, i] = 2.0 * (i + 1) ** (2 * j + 1)
+    b[0] = 1.0
+    return np.concatenate([[0.0], np.linalg.solve(A, b)])
+
+
 # -----------------------------------------------------------------------
 # Configuration
 # -----------------------------------------------------------------------
 
 PRECISIONS = ("float64", "float32")
 KERNELS = ("reference", "fused", "auto")
+BOUNDARIES = ("sponge", "cpml")
 
 
 @dataclass
@@ -162,6 +179,22 @@ class FDTDConfig:
         ``"fused"``: one ``cupy.RawKernel`` launch per step (:mod:`acoustic_sim.fdtd_cuda`;
         single process on the GPU; falls back to the reference path elsewhere).
         ``"auto"``: fused whenever it is available.
+    boundary : str
+        ``"sponge"`` (default): the damping ramp of ``damping_width`` cells and ``damping_max``.
+        ``"cpml"``: a convolutional perfectly matched layer of ``cpml_width`` cells on the four
+        edges (auxiliary memory variables for the second order wave equation, Pasalic & McGarry
+        2010); the sponge ramp is then off and ``sigma`` holds only ``air_absorption`` (plus any
+        subclass damping).  Single process only.
+    cpml_width : int
+        Layer thickness in cells.
+    cpml_order : int
+        Power of the damping profile ``sigma(l) = sigma_max l ** cpml_order``.
+    cpml_r0 : float
+        Theoretical normal incidence reflection the profile is scaled for:
+        ``sigma_max = -(order + 1) c_max ln(r0) / (2 width dx)``.
+    cpml_alpha_max : float
+        Complex frequency shift [1/s] at the inner edge of the layer (``alpha(l) = alpha_max (1 - l)``),
+        which helps grazing incidence and low frequencies; 0 is the classical PML.
     """
 
     total_time: float = 0.3
@@ -176,12 +209,21 @@ class FDTDConfig:
     fd_order: int = 2
     precision: str = "float64"
     kernel: str = "reference"
+    boundary: str = "sponge"
+    cpml_width: int = 15
+    cpml_order: int = 2
+    cpml_r0: float = 1e-6
+    cpml_alpha_max: float = 0.0
 
     def __post_init__(self) -> None:
         if self.precision not in PRECISIONS:
             raise ValueError(f"precision must be one of {PRECISIONS}, got {self.precision!r}")
         if self.kernel not in KERNELS:
             raise ValueError(f"kernel must be one of {KERNELS}, got {self.kernel!r}")
+        if self.boundary not in BOUNDARIES:
+            raise ValueError(f"boundary must be one of {BOUNDARIES}, got {self.boundary!r}")
+        if self.boundary == "cpml" and self.cpml_width < 1:
+            raise ValueError("cpml_width must be at least 1 cell")
 
     @property
     def dtype(self):
@@ -312,6 +354,14 @@ class FDTDSolver:
         self.p_now = xp.zeros((self._pad_ny, nx), dtype=self._dtype)
         self.p_prev = xp.zeros((self._pad_ny, nx), dtype=self._dtype)
 
+        # -- CPML memory variables and profiles ------------------------------
+        self.boundary = config.boundary
+        self._cpml = None
+        if self.boundary == "cpml":
+            if self.use_mpi:
+                raise NotImplementedError("boundary='cpml' runs in a single process only")
+            self._cpml = self._build_cpml(ny, nx, c_max)
+
         # -- Receiver pre-computation (global indices → local) -------------
         self._precompute_receivers(model, dx)
 
@@ -332,7 +382,9 @@ class FDTDSolver:
     # ------------------------------------------------------------------
 
     def _build_damping_global(self, ny: int, nx: int) -> np.ndarray:
-        """Build the full (ny, nx) damping array on host."""
+        """Build the full (ny, nx) damping array on host (only the background with the CPML boundary)."""
+        if self.cfg.boundary == "cpml":
+            return np.full((ny, nx), self.cfg.air_absorption)
         dx_edge = np.minimum(np.arange(nx), nx - 1 - np.arange(nx))
         dy_edge = np.minimum(np.arange(ny), ny - 1 - np.arange(ny))
         dist = np.minimum(dy_edge[:, np.newaxis], dx_edge[np.newaxis, :])
@@ -526,18 +578,21 @@ class FDTDSolver:
         cs, ce = M, nx_loc - M
         s = (slice(rs, re), slice(cs, ce))
 
-        # Laplacian: centre weight (×2 for x + y contributions)
-        lap = coeffs[0] * 2.0 * p[s]
+        if self._cpml is not None:
+            lap = self._cpml_laplacian(p, s, rs, re, cs, ce)
+        else:
+            # Laplacian: centre weight (×2 for x + y contributions)
+            lap = coeffs[0] * 2.0 * p[s]
 
-        # Off-centre weights (±k in both dimensions)
-        for k in range(1, M + 1):
-            ck = coeffs[k]
-            lap += ck * (
-                p[rs + k : re + k, cs : ce]    # down
-              + p[rs - k : re - k, cs : ce]    # up
-              + p[rs : re, cs + k : ce + k]    # right
-              + p[rs : re, cs - k : ce - k]    # left
-            )
+            # Off-centre weights (±k in both dimensions)
+            for k in range(1, M + 1):
+                ck = coeffs[k]
+                lap += ck * (
+                    p[rs + k : re + k, cs : ce]    # down
+                  + p[rs - k : re - k, cs : ce]    # up
+                  + p[rs : re, cs + k : ce + k]    # right
+                  + p[rs : re, cs - k : ce - k]    # left
+                )
 
         p_next = (
             2.0 * p[s] - pp[s]
@@ -566,6 +621,78 @@ class FDTDSolver:
         self._sample_receivers(n)
 
     # ------------------------------------------------------------------
+    # CPML boundary (boundary="cpml")
+    # ------------------------------------------------------------------
+
+    def _cpml_profiles(self, n: int, c_max: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Recursive convolution coefficients ``b`` and ``a`` along one axis of *n* cells, and the
+        0/1 mask of the layer cells.  The layer is the ``cpml_width`` cells inside each Dirichlet
+        edge band; ``l`` runs from 1/width at the inner edge to 1 at the outer edge."""
+        cfg = self.cfg
+        M, W = self._M, cfg.cpml_width
+        if 2 * (M + W) >= n:
+            raise ValueError(f"cpml_width {W} too large for {n} cells")
+        sigma_max = -(cfg.cpml_order + 1) * c_max * math.log(cfg.cpml_r0) / (2.0 * W * self.model.dx)
+        idx = np.arange(n)
+        d_left = (M + W - idx) / W                 # >0 inside the left layer
+        d_right = (idx - (n - 1 - M - W)) / W      # >0 inside the right layer
+        ell = np.where(idx < M + W, d_left, np.where(idx >= n - M - W, d_right, 0.0))
+        ell = np.clip(ell, 0.0, 1.0)
+        in_layer = (ell > 0) & (idx >= M) & (idx < n - M)
+        sigma = np.where(in_layer, sigma_max * ell ** cfg.cpml_order, 0.0)
+        alpha = np.where(in_layer, cfg.cpml_alpha_max * (1.0 - ell), 0.0)
+        b = np.exp(-(sigma + alpha) * self.dt)
+        a = np.where(in_layer, sigma / np.maximum(sigma + alpha, 1e-300) * (b - 1.0), 0.0)
+        return b, a, in_layer.astype(np.float64)
+
+    def _build_cpml(self, ny: int, nx: int, c_max: float) -> dict[str, Any]:
+        xp = self.xp
+        dt_ = self._dtype
+        bx, ax, mx = self._cpml_profiles(nx, c_max)
+        by, ay, my = self._cpml_profiles(ny, c_max)
+        d1 = fd1_coefficients(self.cfg.fd_order)
+        shape = (self._pad_ny, nx)
+        return {
+            "bx": xp.asarray(bx.astype(dt_)), "ax": xp.asarray(ax.astype(dt_)), "mx": xp.asarray(mx.astype(dt_)),
+            "by": xp.asarray(by.astype(dt_)), "ay": xp.asarray(ay.astype(dt_)), "my": xp.asarray(my.astype(dt_)),
+            "d1": d1,
+            "psix": xp.zeros(shape, dtype=dt_), "psiy": xp.zeros(shape, dtype=dt_),
+            "zetax": xp.zeros(shape, dtype=dt_), "zetay": xp.zeros(shape, dtype=dt_),
+        }
+
+    def _cpml_laplacian(self, p, s, rs, re, cs, ce):
+        """Interior Laplacian with the CPML terms (array path): updates the memory variables in place."""
+        c = self._cpml
+        coeffs, d1, M = self._fd_coeffs, c["d1"], self._M
+        bx, ax, mx = c["bx"][None, cs:ce], c["ax"][None, cs:ce], c["mx"][None, cs:ce]
+        by, ay, my = c["by"][rs:re, None], c["ay"][rs:re, None], c["my"][rs:re, None]
+        psix, psiy, zetax, zetay = c["psix"], c["psiy"], c["zetax"], c["zetay"]
+        # First derivatives of p, memory variables psi (zero outside the layers: a = 0 there).
+        dpx = d1[1] * (p[rs:re, cs + 1:ce + 1] - p[rs:re, cs - 1:ce - 1])
+        dpy = d1[1] * (p[rs + 1:re + 1, cs:ce] - p[rs - 1:re - 1, cs:ce])
+        for k in range(2, M + 1):
+            dpx = dpx + d1[k] * (p[rs:re, cs + k:ce + k] - p[rs:re, cs - k:ce - k])
+            dpy = dpy + d1[k] * (p[rs + k:re + k, cs:ce] - p[rs - k:re - k, cs:ce])
+        psix[s] = bx * psix[s] + ax * dpx
+        psiy[s] = by * psiy[s] + ay * dpy
+        # Second derivatives of p, first derivatives of psi (in the layer cells), memory variables zeta.
+        lapx = coeffs[0] * p[s]
+        lapy = coeffs[0] * p[s]
+        dqx = d1[1] * (psix[rs:re, cs + 1:ce + 1] - psix[rs:re, cs - 1:ce - 1])
+        dqy = d1[1] * (psiy[rs + 1:re + 1, cs:ce] - psiy[rs - 1:re - 1, cs:ce])
+        for k in range(1, M + 1):
+            lapx = lapx + coeffs[k] * (p[rs:re, cs + k:ce + k] + p[rs:re, cs - k:ce - k])
+            lapy = lapy + coeffs[k] * (p[rs + k:re + k, cs:ce] + p[rs - k:re - k, cs:ce])
+            if k >= 2:
+                dqx = dqx + d1[k] * (psix[rs:re, cs + k:ce + k] - psix[rs:re, cs - k:ce - k])
+                dqy = dqy + d1[k] * (psiy[rs + k:re + k, cs:ce] - psiy[rs - k:re - k, cs:ce])
+        dqx = dqx * mx
+        dqy = dqy * my
+        zetax[s] = bx * zetax[s] + ax * (lapx + dqx)
+        zetay[s] = by * zetay[s] + ay * (lapy + dqy)
+        return (lapx + dqx + zetax[s]) + (lapy + dqy + zetay[s])
+
+    # ------------------------------------------------------------------
     # Fused CUDA step (kernel="fused")
     # ------------------------------------------------------------------
 
@@ -584,6 +711,7 @@ class FDTDSolver:
             self._fd_coeffs, (self.p_now, self.p_prev), self.C2, self.sigma, self._fused_mask(), [self.source],
             (self._recv_iy, self._recv_ix, self._recv_wx, self._recv_wy), self.traces, self.n_steps, self.dt,
             float(self.model.x[0]), float(self.model.y[0]), float(self.model.dx), self.cfg.source_amplitude, self._dtype,
+            cpml=self._cpml,
         )
         fk.post_hooks = list(self._fused_hooks())
         return fk
