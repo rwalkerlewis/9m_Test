@@ -843,7 +843,7 @@ class FDTDSolver:
         Returns (on rank 0) a dict with traces, dt, n_steps, path_slices.
         Other ranks return a dict with empty traces.
         """
-        from acoustic_sim.air.plotting import save_snapshot
+        from acoustic_sim.solver.snapshots import save_snapshot
 
         is_root = self.rank == 0
 
@@ -1361,7 +1361,7 @@ class FDTD3DSolver:
         ``field_plane``, ``field_plane_x``, ``field_plane_y``,
         ``field_plane_z``.
         """
-        from acoustic_sim.air.plotting import save_snapshot_3d
+        from acoustic_sim.solver.snapshots import save_snapshot_3d
 
         is_root = self.rank == 0
 
