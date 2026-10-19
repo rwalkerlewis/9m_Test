@@ -223,3 +223,53 @@ def test_device_masks_reproduce_host_masks_in_traces(scene):
     assert _rel_l2(dev, host).max() < 1e-10
     none, _ = _run(env, _cfg(kernel="fused"), src, layout)
     assert np.linalg.norm(dev - none) > 1e-6 * np.linalg.norm(none)   # the body does scatter
+
+
+# ----------------------------------------------------------------------
+# Batched runs
+# ----------------------------------------------------------------------
+
+@gpu
+def test_batched_runs_match_single_runs(scene, tmp_path):
+    """Four jobs (static and moving sources, zero to two bodies) in one batch: each equals its single run to 1e-12."""
+    from acoustic_sim.harbor import simulate_source, simulate_sources
+    from acoustic_sim.harbor.fdtd_runner import HarborFDTDBatch, batch_size
+
+    env, moving, body, layout = scene
+    cfg = _cfg(kernel="fused")
+    n = cfg.n_steps
+    other = Scatterer("e", _track("e", [40.0, 30.0], [40.0, 30.0]), 2.0, 2.0, "soft", shape="ellipse")
+    jobs = [(StaticSource(30.0, 50.0, _ricker(n)), []),
+            (moving, [body]),
+            (StaticSource(50.0, 30.0, 0.5 * _ricker(n, 300.0, 0.02)), [other, body]),
+            (StaticSource(30.0, 50.0, _ricker(n)), [body])]
+    out = HarborFDTDBatch(env, cfg, jobs, layout.sample_points).run(verbose=False)["traces"]
+    assert out.shape == (4, layout.n_samples, n)
+    for b, (src, sc) in enumerate(jobs):
+        single, _ = _run(env, cfg, src, layout, sc)
+        assert _rel_l2(out[b], single).max() < 1e-12, b
+    assert np.linalg.norm(out[0] - out[3]) > 0            # the body changes job 3 relative to job 0
+    assert batch_size(6, env, cfg, layout.n_samples) >= 1
+    # simulate_sources: cached and uncached jobs mixed; the cached gathers equal simulate_source's.
+    traj = (np.array([0.0, TOTAL]), np.array([[30.0, 40.0], [31.0, 40.5]]))
+    jd = [dict(signal=_ricker(n), position=(30.0, 50.0)), dict(signal=_ricker(n, 300.0, 0.02), trajectory=traj, scatterers=[body])]
+    g1 = simulate_sources(env, layout, cfg, jd, cache_dir=tmp_path)
+    assert len(list(tmp_path.glob("gather_*.npz"))) == 2
+    g2 = simulate_sources(env, layout, cfg, jd + [dict(signal=0.5 * _ricker(n), position=(50.0, 30.0))], cache_dir=tmp_path)
+    assert len(list(tmp_path.glob("gather_*.npz"))) == 3
+    assert all(np.array_equal(a.traces, b.traces) for a, b in zip(g1, g2))
+    single = simulate_source(env, layout, cfg, jd[1]["signal"], trajectory=traj, scatterers=[body])
+    assert np.array_equal(single.traces, g1[1].traces)
+
+
+def test_simulate_sources_runs_sequentially_on_cpu(scene, tmp_path):
+    from acoustic_sim.harbor import simulate_source, simulate_sources
+
+    env, moving, body, layout = scene
+    cfg = _cfg(use_cuda=False, total_time=0.05)
+    sig = _ricker(cfg.n_steps)
+    jobs = [dict(signal=sig, position=(30.0, 50.0)), dict(signal=-sig, position=(30.0, 50.0))]
+    g = simulate_sources(env, layout, cfg, jobs, cache_dir=tmp_path)
+    ref = simulate_source(env, layout, cfg, sig, position=(30.0, 50.0))
+    assert np.array_equal(g[0].traces, ref.traces) and np.allclose(g[1].traces, -ref.traces)
+    assert len(list(tmp_path.glob("gather_*.npz"))) == 2

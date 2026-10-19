@@ -18,6 +18,7 @@ from acoustic_sim.harbor.fdtd_runner import (
     HarborFDTDSolver,
     cfl_dt,
     simulate_source,
+    simulate_sources,
 )
 from acoustic_sim.harbor.noise import NoiseConfig, NoiseRealisation, generate_noise
 from acoustic_sim.harbor.scenario import (
@@ -57,5 +58,6 @@ __all__ = [
     "render_vessel_gathers",
     "simulate_scenario",
     "simulate_source",
+    "simulate_sources",
     "uniform_water_environment",
 ]

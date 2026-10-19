@@ -54,7 +54,7 @@ from acoustic_sim.harbor.ais import AISConfig, AISReports  # noqa: E402
 from acoustic_sim.harbor.bistatic import BistaticConfig, ReplicaModel, eca_stage, ship_positions, stft  # noqa: E402
 from acoustic_sim.harbor.dataset import vessel_injection  # noqa: E402
 from acoustic_sim.harbor.dispersion import for_scenario  # noqa: E402
-from acoustic_sim.harbor.fdtd_runner import simulate_source  # noqa: E402
+from acoustic_sim.harbor.fdtd_runner import _fused_available, simulate_source, simulate_sources  # noqa: E402
 from acoustic_sim.harbor.noise import generate_noise  # noqa: E402
 from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.harbor.signatures import f_max_for_grid  # noqa: E402
@@ -179,8 +179,12 @@ def main() -> None:
         traj = None if mode == "stationary" else (tr.t, tr.xy)
         jobs.append(dict(env=env, layout=layout, cfg=cfg.fdtd, signal=sig, position=pos, trajectory=traj, cache_dir=args.cache))
     t0 = time.time()
-    with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        gathers = list(pool.map(_run, jobs))
+    if _fused_available(cfg.fdtd):
+        # All six runs in one batched GPU pass (stage 3 of the performance work); cached runs are loaded.
+        gathers = simulate_sources(env, layout, cfg.fdtd, jobs, cache_dir=args.cache)
+    else:
+        with ProcessPoolExecutor(max_workers=args.workers) as pool:
+            gathers = list(pool.map(_run, jobs))
     say(f"{len(gathers)} FDTD runs in {time.time() - t0:.0f} s")
 
     bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, removal="eca", dispersion=for_scenario(env, cfg.fdtd), eca_doppler=args.doppler,

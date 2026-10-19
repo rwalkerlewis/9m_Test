@@ -115,6 +115,7 @@ void fdtd_sample(const {T}* __restrict__ p,
 _CTYPE = {np.dtype(np.float64): "double", np.dtype(np.float32): "float"}
 _BLOCK = (32, 8, 1)
 TRACE_CHUNK = 4096          # steps held on the device before a copy to the host trace array
+TRACE_BUDGET = 64 * 2 ** 20  # bytes of device trace buffer (shrinks the chunk for large batches)
 
 
 def _lit(x: float) -> str:
@@ -237,7 +238,9 @@ class FusedFDTD:
             raise ValueError("more receivers than grid cells")
         self.n_steps = n_steps
         self.traces = traces
-        self.chunk = int(min(TRACE_CHUNK, max(n_steps, 1)))
+        # Steps held on the device before a copy to the host: at most TRACE_CHUNK, within TRACE_BUDGET bytes.
+        budget = max(16, TRACE_BUDGET // max(self.B * self.n_recv * self.dtype.itemsize, 1))
+        self.chunk = int(min(TRACE_CHUNK, budget, max(n_steps, 1)))
         self.trace_buf = cp.zeros((self.B, self.n_recv, self.chunk), dtype=self.dtype)
         self.col0 = 0                       # step index of the first column held in trace_buf
         self.sampled_to = 0                 # steps whose receivers have been sampled

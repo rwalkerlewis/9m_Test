@@ -259,6 +259,95 @@ class HarborFDTDSolver(FDTDSolver):
         return out, fields
 
 
+class HarborFDTDBatch(HarborFDTDSolver):
+    """``B`` independent harbor runs on the same grid, advanced in the same CUDA launches.
+
+    *jobs* is a list of ``(source, scatterers)``; the runs share the environment, the FDTD
+    settings and the receivers and differ in their source signal and trajectory and in the set
+    of bodies.  Needs the fused kernel on the GPU (``kernel = "fused"`` or ``"auto"``,
+    ``use_cuda = True``); bodies use the device masks.  ``run()`` returns traces of shape
+    ``(B, n_receivers, n_steps)``, each identical to the single run of that job (to 1e-12).
+    """
+
+    def __init__(self, env: HarborEnvironment, hcfg: HarborFDTDConfig, jobs: list[tuple], receivers: np.ndarray) -> None:
+        if not jobs:
+            raise ValueError("a batch needs at least one job")
+        source0, scatterers0 = jobs[0]
+        super().__init__(env, hcfg, source0, receivers, scatterers=scatterers0)
+        if self.kernel != "fused":
+            raise ValueError("batched runs need the fused kernel on the GPU (use_cuda=True, kernel='fused' or 'auto')")
+        self._jobs = [(src, list(sc)) for src, sc in jobs]
+        self.B = len(jobs)
+        xp = self.xp
+        self.p_now = xp.zeros((self.B, self._pad_ny, self.global_nx), dtype=self._dtype)
+        self.p_prev = xp.zeros((self.B, self._pad_ny, self.global_nx), dtype=self._dtype)
+        self.traces = np.zeros((self.B, receivers.shape[0], self.n_steps))
+        self.body_masks = "device" if any(sc for _, sc in self._jobs) else "host"
+
+    def _make_fused(self):
+        from acoustic_sim.fdtd_cuda import FusedFDTD
+
+        fk = FusedFDTD(
+            self._fd_coeffs, (self.p_now, self.p_prev), self.C2, self.sigma, self._fused_mask(),
+            [src for src, _ in self._jobs], (self._recv_iy, self._recv_ix, self._recv_wx, self._recv_wy), self.traces,
+            self.n_steps, self.dt, float(self.model.x[0]), float(self.model.y[0]), float(self.model.dx),
+            self.cfg.source_amplitude, self._dtype,
+        )
+        fk.post_hooks = list(self._fused_hooks())
+        return fk
+
+    def _fused_hooks(self) -> list:
+        if not any(sc for _, sc in self._jobs):
+            return []
+        from acoustic_sim.harbor.fdtd_cuda_bodies import DeviceBodyMasks
+
+        self._device_bodies = DeviceBodyMasks([sc for _, sc in self._jobs], self.model.x, self.model.y, self._env.dx,
+                                              self.n_steps, self.dt, self._dtype)
+        return [self._device_bodies.apply]
+
+    def _gather_field(self):
+        return self.xp.asnumpy(self.p_now[:, self._ghost_top:self._ghost_top + self.local_ny, :])
+
+
+def batch_size(n_jobs: int, env: HarborEnvironment, hcfg: HarborFDTDConfig, n_receivers: int, max_batch: int = 64,
+               device_fraction: float = 0.6, host_bytes: int | None = None) -> int:
+    """How many jobs to run in one :class:`HarborFDTDBatch`: as many as fit in *device_fraction* of the
+    free device memory (two fields per run plus the trace buffer) and in *host_bytes* of host memory
+    for the float64 traces (default: a quarter of the available host memory), at most *max_batch*."""
+    if n_jobs <= 1:
+        return max(n_jobs, 1)
+    itemsize = np.dtype(hcfg.precision).itemsize
+    per_run_device = 2 * env.ny * env.nx * itemsize + n_receivers * 4096 * itemsize + 64 * 2 ** 20 // max(n_jobs, 1)
+    per_run_host = n_receivers * hcfg.n_steps * 8
+    try:
+        import cupy as cp
+
+        free_dev, _ = cp.cuda.runtime.memGetInfo()
+    except Exception:
+        free_dev = 2 ** 30
+    if host_bytes is None:
+        try:
+            import os
+
+            host_bytes = os.sysconf("SC_AVPHYS_PAGES") * os.sysconf("SC_PAGE_SIZE") // 4
+        except (ValueError, OSError, AttributeError):
+            host_bytes = 8 * 2 ** 30
+    b_dev = int(device_fraction * free_dev // per_run_device)
+    b_host = int(host_bytes // per_run_host)
+    return int(max(1, min(n_jobs, max_batch, b_dev, b_host)))
+
+
+def _fused_available(hcfg: HarborFDTDConfig) -> bool:
+    """Would :class:`HarborFDTDSolver` use the fused kernel for *hcfg* (GPU present, single process)?"""
+    if not hcfg.use_cuda or hcfg.kernel not in ("fused", "auto"):
+        return False
+    from acoustic_sim.backend import get_backend
+    from acoustic_sim.fdtd import _get_comm
+
+    _, is_cuda = get_backend(True)
+    return is_cuda and _get_comm()[2] == 1
+
+
 # ----------------------------------------------------------------------
 # Cache + top-level runner
 # ----------------------------------------------------------------------
@@ -353,8 +442,85 @@ def simulate_source(
 
     solver = HarborFDTDSolver(env, cfg, source, layout.sample_points, scatterers=scatterers)
     out = solver.run(verbose=verbose)
-    traces = layout.collapse(out["traces"].T).T if layout.has_strain else out["traces"]
-    gather = Gather(traces=np.ascontiguousarray(traces, dtype=np.float32), fs=cfg.fs)
+    gather = _to_gather(out["traces"], layout, cfg)
     if path is not None:
         gather.save(path)
     return gather
+
+
+def _to_gather(traces: np.ndarray, layout: SensorLayout, cfg: HarborFDTDConfig) -> Gather:
+    traces = layout.collapse(traces.T).T if layout.has_strain else traces
+    return Gather(traces=np.ascontiguousarray(traces, dtype=np.float32), fs=cfg.fs)
+
+
+def _make_source(signal: np.ndarray, position, trajectory):
+    if position is not None:
+        return StaticSource(x=float(position[0]), y=float(position[1]), signal=signal)
+    times, xy = trajectory
+    return CustomTrajectorySource(times=np.asarray(times, float), positions=np.asarray(xy, float), signal=signal)
+
+
+def simulate_sources(
+    env: HarborEnvironment,
+    layout: SensorLayout,
+    cfg: HarborFDTDConfig,
+    jobs: list[dict],
+    *,
+    cache_dir: str | Path | None = None,
+    verbose: bool = False,
+    batch: int | None = None,
+) -> list[Gather]:
+    """Several sources through the same harbor, batched on the GPU when the fused kernel is available.
+
+    Each job is a dict with the keyword arguments of :func:`simulate_source` (``signal`` and one of
+    ``position`` / ``trajectory``; optional ``scatterers``).  Cached jobs are loaded; the others
+    run together in batches of *batch* (default: :func:`batch_size`, from the free device memory)
+    through :class:`HarborFDTDBatch`, and each result is cached as if :func:`simulate_source` had
+    produced it (same key, same float32 traces to rounding).  Without the fused kernel (CPU,
+    ``kernel = "reference"``, MPI) the jobs run one after the other.
+    """
+    results: list[Gather | None] = [None] * len(jobs)
+    pending: list[int] = []
+    paths: list[Path | None] = [None] * len(jobs)
+    for i, job in enumerate(jobs):
+        signal = np.asarray(job["signal"], dtype=np.float64)
+        position, trajectory = job.get("position"), job.get("trajectory")
+        scatterers = tuple(job.get("scatterers", ()))
+        if (position is None) == (trajectory is None):
+            raise ValueError("provide exactly one of position or trajectory")
+        if signal.shape != (cfg.n_steps,):
+            raise ValueError(f"signal must have shape ({cfg.n_steps},), got {signal.shape}")
+        if cache_dir is not None:
+            Path(cache_dir).mkdir(parents=True, exist_ok=True)
+            key = _cache_key(env, layout, cfg, signal, None if position is None else np.asarray(position), trajectory, scatterers)
+            paths[i] = Path(cache_dir) / f"gather_{key}.npz"
+            if paths[i].exists():
+                results[i] = Gather.load(paths[i])
+                continue
+        pending.append(i)
+    if not pending:
+        return results  # type: ignore[return-value]
+    if not _fused_available(cfg):
+        for i in pending:
+            job = jobs[i]
+            results[i] = simulate_source(env, layout, cfg, job["signal"], position=job.get("position"), trajectory=job.get("trajectory"),
+                                         cache_dir=cache_dir, verbose=verbose, scatterers=tuple(job.get("scatterers", ())))
+        return results  # type: ignore[return-value]
+    for i in pending:
+        start_xy = np.asarray(jobs[i]["position"] if jobs[i].get("position") is not None else jobs[i]["trajectory"][1], dtype=float)
+        if not np.all(env.is_water(start_xy.reshape(-1, 2))):
+            raise ValueError("source position(s) must lie in water")
+    B = batch if batch is not None else batch_size(len(pending), env, cfg, layout.n_samples)
+    for k in range(0, len(pending), B):
+        chunk = pending[k:k + B]
+        solver = HarborFDTDBatch(env, cfg, [(_make_source(np.asarray(jobs[i]["signal"], dtype=np.float64), jobs[i].get("position"),
+                                                          jobs[i].get("trajectory")), tuple(jobs[i].get("scatterers", ()))) for i in chunk],
+                                 layout.sample_points)
+        if verbose:
+            print(f"  batch of {len(chunk)} runs, {cfg.n_steps} steps")
+        out = solver.run(verbose=verbose)
+        for b, i in enumerate(chunk):
+            results[i] = _to_gather(out["traces"][b], layout, cfg)
+            if paths[i] is not None:
+                results[i].save(paths[i])
+    return results  # type: ignore[return-value]

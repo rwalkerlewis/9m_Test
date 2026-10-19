@@ -11,7 +11,7 @@ import numpy as np
 
 from acoustic_sim.harbor.ais import AISReports, generate_ais
 from acoustic_sim.harbor.environment import HarborEnvironment
-from acoustic_sim.harbor.fdtd_runner import Gather, simulate_source
+from acoustic_sim.harbor.fdtd_runner import Gather, _fused_available, simulate_source, simulate_sources
 from acoustic_sim.harbor.noise import NoiseRealisation, generate_noise
 from acoustic_sim.harbor.scatterer import Scatterer
 from acoustic_sim.harbor.scenario import HarborScenarioConfig, build_environment, build_layout
@@ -187,7 +187,12 @@ def render_vessel_gathers(
             for body in others:
                 jobs.append((env, layout, cfg.fdtd, signal, position, trajectory, cache, (body,)))
                 keys.append(scattered_key(v.id, body.id))
-    if workers > 1 and len(jobs) > 1:
+    if _fused_available(cfg.fdtd):
+        # One batched GPU pass over every job that shares the grid (stage 3); cached jobs are loaded.
+        results = simulate_sources(env, layout, cfg.fdtd, [
+            dict(signal=signal, position=position, trajectory=trajectory, scatterers=scatterers)
+            for (_, _, _, signal, position, trajectory, _, scatterers) in jobs], cache_dir=cache)
+    elif workers > 1 and len(jobs) > 1:
         with ProcessPoolExecutor(max_workers=min(workers, len(jobs))) as pool:
             results = list(pool.map(_job, jobs))
     else:
