@@ -43,7 +43,7 @@ The default sound speed is computed from air temperature:
 $$c = 331.3\,\sqrt{1 + \frac{T}{273.15}} \quad [\text{m/s}]$$
 
 where $T$ is the temperature in °C.  Implemented in
-`config.sound_speed_from_temperature()`.
+`air/config.py: sound_speed_from_temperature()`.
 
 ---
 
@@ -65,11 +65,24 @@ Stencil weights are computed analytically in `fd2_coefficients(order)`.
 
 ### Time stepping
 
-Second-order leapfrog:
+The default (`FDTDConfig.time_scheme="leapfrog"`) is second-order leapfrog
+with a damping term:
 
-$$p^{n+1} = 2p^n - p^{n-1} + c^2 \Delta t^2 \, L[p^n]$$
+$$p^{n+1} = 2p^n - p^{n-1} + c^2 \Delta t^2 \, L[p^n] - \sigma\,(p^n - p^{n-1})$$
 
-where $L$ is the spatial Laplacian operator.
+where $L$ is the spatial Laplacian operator and $\sigma$ is the per-cell
+damping (background `air_absorption` plus the sponge ramp, see below).
+
+Two prototype schemes are available for single-process runs with the sponge
+boundary: `"lw4"` (fourth order in time by the modified equation, stable up
+to $\sqrt{3}$ times the leapfrog limit) and `"kspace"` (pseudospectral
+Laplacian with the k-space temporal correction, exact for a homogeneous
+medium and unconditionally stable).
+
+Fields are `float64` by default; `precision="float32"` halves memory and is
+much faster on consumer GPUs.  On a single GPU process the default
+`kernel="auto"` runs each step as one fused CUDA kernel
+(`solver/fdtd_cuda.py`); `kernel="reference"` keeps the array code.
 
 ### CFL stability condition
 
@@ -89,9 +102,11 @@ $\rho$ is the 1-D spectral radius of the FD stencil at Nyquist:
 
 $$\rho = \left|c_0 + 2\sum_{k=1}^{M} c_k\,(-1)^k\right|$$
 
-with $c_k$ being the stencil coefficients.  `fd2_cfl_factor(order)`
-returns $\rho$.  The solver applies a safety factor (default 0.9):
-$\Delta t_\text{sim} = 0.9\,\Delta t_\text{CFL}$.
+with $c_k$ being the stencil coefficients.  `fd2_cfl_factor(coefficients)`
+returns $\rho$ (pass it `fd2_coefficients(order)`).  The solver applies a
+safety factor (`cfl_safety`, default 0.9):
+$\Delta t_\text{sim} = 0.9\,\Delta t_\text{CFL}$.  A user-supplied `dt`
+above the limit of the chosen time scheme raises `ValueError`.
 
 The simple CFL check in `sampling.check_cfl()` uses the 2nd-order
 formula $C = c_\text{max}\,\Delta t / \Delta x \leq 1/\sqrt{2}$ for
@@ -115,23 +130,33 @@ PPW requirement for a given frequency.
 
 ## Absorbing Boundaries
 
-### Sponge layer (FDTD)
+### Sponge layer (FDTD default)
 
-The FDTD solver uses a damping zone (sponge layer) of width $W$ cells
-at each boundary.  After each timestep, pressure in the sponge is
-multiplied by a decay factor:
+With `boundary="sponge"` (default) the FDTD solver uses a damping zone of
+`damping_width` = $W$ cells at each boundary.  The damping enters the update
+as the $-\sigma\,(p^n - p^{n-1})$ term above, with
 
-$$p \leftarrow p \cdot (1 - \alpha(r))$$
+$$\sigma(r) = \sigma_\text{air} + (\sigma_\text{max} - \sigma_\text{air})\,r^2$$
 
 where $r \in [0, 1]$ is the fractional distance into the sponge
-(0 = interior edge, 1 = domain boundary) and
-$\alpha(r) = \alpha_\text{max}\,r^2$ is a quadratic ramp.  The smooth
-onset avoids the spurious reflections that a hard truncation would
-produce.
+(0 = interior edge, 1 = domain boundary), $\sigma_\text{max}$ is
+`damping_max` (default 0.15) and $\sigma_\text{air}$ is `air_absorption`.
+The quadratic onset avoids the spurious reflections that a hard truncation
+would produce.
 
-This is **not** a PML — it is a simpler mechanism that works well in
-practice for the FDTD time-domain solver but does not provide the
-theoretically reflectionless absorption of a true PML.
+This is **not** a PML: it is simple and robust but needs a wide layer
+(default 40 cells) and is not theoretically reflectionless.
+
+### CPML (FDTD option)
+
+`boundary="cpml"` replaces the sponge with a convolutional perfectly matched
+layer of `cpml_width` cells (default 15) on the domain edges, using auxiliary
+memory variables for the second-order wave equation (Pasalic & McGarry 2010).
+The profile is $\sigma(l) = \sigma_\text{max}\,l^{\,\text{cpml\_order}}$ with
+$\sigma_\text{max} = -(\text{order}+1)\,c_\text{max}\ln(r_0) / (2W\Delta x)$
+for a target normal-incidence reflection `cpml_r0`; `cpml_alpha_max` adds a
+complex frequency shift for grazing incidence.  CPML is single-process only
+(not under MPI) and not combined with the `lw4`/`kspace` schemes.
 
 ### PML (Helmholtz)
 
@@ -163,11 +188,9 @@ Default drone source level: 90 dB SPL at 1 m = 0.632 Pa.
 
 In the far field, pressure decays as $1/r$ (3-D spherical) or
 $1/\sqrt{r}$ (2-D cylindrical).  The RMS range estimator in the
-pipeline uses the 3-D inverse-square law:
-
-$$p_\text{rms} \propto \frac{1}{r}$$
-
-calibrated at the closest point of approach.
+pipeline calibrates with $p_\text{rms} \propto 1/r$ at the closest point
+of approach but inverts with $\hat{R} = R_\text{ref}\sqrt{A_\text{ref}/A}$
+(i.e. $1/r^2$); see [Algorithms §2.1](algorithms.md#21--rms-inverse-square-law).
 
 ---
 
@@ -177,8 +200,9 @@ Exponential attenuation with propagation distance:
 
 $$p(r) = p_0 \cdot e^{-\alpha_\text{air}\, r}$$
 
-In the FDTD solver, `air_absorption` is applied per timestep as a
-uniform damping coefficient.  The analytical forward model
+In the FDTD solver, `air_absorption` is the uniform background
+$\sigma$ in the damping term of the update (per-step numerical damping,
+not a frequency-dependent atmospheric absorption model).  The analytical forward model
 (`simulate_3d_traces`) applies it explicitly per source–receiver path.
 
 ---
@@ -201,16 +225,20 @@ components.
 
 ## Ground Reflection
 
-The analytical 3-D forward model supports a ground plane at $z = 0$
-via the image-source method.  An image source is placed at
-$(x_s, y_s, -z_s)$ and the ground-reflected path is:
+The analytical 3-D forward model (`simulate_3d_traces`) optionally adds a
+ground reflection via the image-source method
+(`enable_ground_reflection=False` by default; plane at `ground_z`, default 0).
+An image source is placed at $(x_s, y_s, 2z_g - z_s)$ and the
+ground-reflected path is:
 
 $$p_\text{total} = \frac{p_0}{r_d}\,e^{-\alpha r_d} + R_g\,\frac{p_0}{r_r}\,e^{-\alpha r_r}$$
 
 where $r_d$ is the direct path length, $r_r$ is the reflected path
-length, and $R_g$ is the ground reflection coefficient (typically
-$R_g \approx -0.9$ for rigid ground, frequency-dependent for porous
-surfaces).
+length, and $R_g$ is `ground_reflection_coeff` (default $-0.9$, a
+single frequency-independent value).
+
+In FDTD, ground reflections come from the velocity model itself, e.g. the
+3-D `ground_layer` domain (air over a high-velocity ground half-space).
 
 ---
 
@@ -221,11 +249,12 @@ representative of multi-rotor UAVs:
 
 $$s(t) = \sum_{k=1}^{N_h} a_k \sin(2\pi k f_0 t)$$
 
-Default: $f_0 = 150$ Hz, $N_h = 6$, amplitudes
-$[1.0,\; 0.6,\; 0.35,\; 0.2,\; 0.12,\; 0.08]$.
+Default: $f_0 = 150$ Hz, $N_h = 4$, amplitudes
+$[1.0,\; 0.6,\; 0.3,\; 0.15]$, scaled to 90 dB SPL at 1 m.
 
-`make_source_propeller()` generates blade-pass noise with beat
-modulation.
+`make_source_propeller()` generates blade-pass-frequency harmonics
+(default 3 blades at 3600 RPM, 14 harmonics) with amplitude modulation at
+the rotor rate plus broadband turbulent noise.
 
 ---
 

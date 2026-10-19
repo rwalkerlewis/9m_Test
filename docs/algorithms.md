@@ -5,8 +5,9 @@
 This system listens to a drone with a ring of microphones, works out
 which direction the sound is coming from and how far away it is, tracks
 the drone's path, then computes a shotgun aim point that leads the
-target.  All of this happens in real time, using only past data — the
-system never peeks ahead.
+target.  The per-window processing uses only past data; one set-up step
+(range calibration, see §2.1) currently looks at the whole recording and
+the true trajectory, so the pipeline is not yet fully blind.
 
 The direction-finding works like "acoustic triangulation": every
 microphone pair sees the sound arrive at slightly different times, and
@@ -179,9 +180,13 @@ $$
 \hat{R} = R_\text{ref}\,\sqrt{\frac{A_\text{ref}}{A_\text{obs}}}
 $$
 
-The calibration is obtained from the peak-RMS window and its
-corresponding ground-truth CPA distance.  The estimate is clamped to
-$[R_\text{min},\, R_\text{max}]$.
+In `run_pipeline.py` the calibration is set once, before the window
+loop, from the peak-RMS window of the **whole** recording and the
+**ground-truth** distance at that time: `calibrate(peak_rms, cpa_distance)`
+scales the peak RMS to `ref_range` (default 10 m) assuming $1/r$ decay,
+while the estimate above inverts with a square root ($1/r^2$).  This is an
+oracle calibration, not a causal one.  The estimate is clamped to
+$[R_\text{min},\, R_\text{max}]$ (pipeline defaults 5 and 100 m).
 
 **Strengths:** Fast, one scalar per window.  Works well at medium to
 long range where propagation is approximately spherical.
@@ -280,17 +285,19 @@ engagement).
 
 ### 2.4  Auto Range Selection
 
-The pipeline (`run_pipeline.py`) supports automatic switching between
-range methods based on the current range estimate.  When configured with
-`auto_cpa_threshold_m`, the engine uses TDOA when the estimated range
-falls below the threshold and RMS otherwise:
+With `ranging.method = "auto"` (the default), `run_pipeline.py` picks one
+range method for the whole run before the window loop, from the
+ground-truth distance $R_\text{CPA}$ at the time of the peak-RMS window:
 
 $$
 \text{method} = \begin{cases}
-\text{TDOA} & \text{if } \hat{R} \leq R_\text{threshold} \\
+\text{TDOA} & \text{if } R_\text{CPA} \leq \texttt{auto\_cpa\_threshold\_m}\ (3\ \text{m}) \\
 \text{RMS}  & \text{otherwise}
 \end{cases}
 $$
+
+There is no per-window switching.  `"rms"`, `"tdoa"` and
+`"bearing_rate"` can also be set explicitly.
 
 ---
 
@@ -379,15 +386,15 @@ deceleration rate (default 1.5 (m/s)/m).
 
 #### Time of flight
 
-The range–time relation under linear drag is
+`time_of_flight(range_m)` uses the mean of the muzzle velocity and the
+velocity at the target:
 
 $$
-R = v_0\,t - \tfrac{1}{2}\,a\,t^2, \qquad a = d \cdot v_\text{avg}
+v_\text{avg} = \tfrac{1}{2}\bigl(v_0 + (v_0 - d \cdot R)\bigr), \qquad t = R / v_\text{avg}
 $$
 
-where $v_\text{avg}$ is iteratively refined as
-$v_\text{avg} = \tfrac{1}{2}(v_0 + v_0 - d \cdot R)$.  The time of
-flight is then $t = R / v_\text{avg}$.
+It returns $\infty$ when the pellet stops before reaching $R$
+($v_0 - d\,R \le 0$).
 
 #### Pattern spread
 
@@ -399,8 +406,9 @@ $$
 
 where $s$ is the spread rate.  The function `pattern_diameter(range_m,
 spread_rate)` returns this value.  The default `spread_rate` in the
-function signature is 0.025; the pipeline configuration
-(`pipeline.config.json`) overrides this to 0.3.
+function signature is 0.025; `examples/run_pipeline.py` uses
+`pattern_spread_rate` = 0.2 from its built-in defaults, and
+`examples/pipeline.config.json` sets 0.3.
 
 ### 4.2  Lead Computation (`compute_lead_3d`)
 
@@ -438,31 +446,37 @@ Returns: `aim_bearing`, `aim_elevation`, `tof`, `intercept_pos`,
 **Module:** `acoustic_sim.air.fire_control.compute_bearing_rate`
 
 Before firing, the pipeline evaluates the bearing rate
-$\dot{\theta}$ over a short history window (default 0.15 s):
+$\dot{\theta}$ over a short history window (0.15 s in
+`run_pipeline.py`).  A window is only eligible to fire if it has a
+detection, an active track, and an RMS of at least `rms_fire_gate_frac`
+(0.20) of the peak window RMS.
 
-- **High bearing rate** (target crossing): the lead computation from
-  §4.2 is used directly.
-- **Low bearing rate** (target radial / receding): the shot is aimed
-  at the current bearing with no or minimal lead.
+- **Bearing rate ≥ 15°/s** (target crossing): lead shot — the lead from
+  §4.2, gated by `compute_engagement_3d` (§4.4).
+- **Bearing rate < 15°/s** (target radial / receding): radial shot aimed
+  at the current bearing (and elevation in 3-D) with no lead, at the
+  estimated range (20 m if unknown).
 
 This prevents the lead algorithm from computing wild aim points when the
 target is moving directly toward or away from the weapon.
 
 ### 4.4  Engagement Gating (`compute_engagement_3d`)
 
-A shot is authorised when all conditions are met:
+A lead shot is authorised when all conditions are met (reason code in
+brackets when it is not):
 
-| Condition | Parameter | Default |
-|-----------|-----------|---------|
-| Range to target ≤ max | `max_engagement_range_m` | 0 (disabled) |
-| Position uncertainty ≤ max | `max_position_uncertainty_m` | 0 (disabled) |
-| Class label not suppressed | `class_label` / `confidence_threshold` | "unknown" / 0.7 |
-| Maneuver state check | `maneuver_class` | "steady" |
+| Condition | Parameter | Function default | `run_pipeline.py` |
+|-----------|-----------|------------------|-------------------|
+| Class is a threat (`bird`, `ground_vehicle`, `unknown` never fire) [`NON_THREAT`] | `class_label` | `"unknown"` | `"quadcopter"` |
+| Confidence ≥ threshold (for labels other than `unknown`) [`LOW_CONFIDENCE`] | `class_confidence` / `confidence_threshold` | 0.0 / 0.7 | 0.9 / 0.7 |
+| Evasive targets: position uncertainty ≤ 3 × pattern diameter [`EVASIVE_UNCERTAINTY`] | `maneuver_class` | `"steady"` | not passed |
+| Pellet reaches the target [`OUT_OF_RANGE`] | — | | |
+| Range ≤ max, if max > 0 [`TOO_FAR`] | `max_engagement_range` | 0 (disabled) | 500 m |
+| Position uncertainty ≤ max, if max > 0, and ≤ pattern diameter [`UNCERTAINTY_TOO_HIGH`] | `max_position_uncertainty` | 0 (disabled) | 0 |
 
-The class-based gating suppresses fire on labels "unknown" and "bird"
-when the classifier confidence exceeds the threshold.  Maneuver-adaptive
-thresholds are applied when a maneuver classifier is present (evasive
-targets get tighter uncertainty gates).
+With the defaults the pipeline's own class label (`quadcopter`, 0.9)
+always passes the class gate; the ML classifier gates engagement
+separately (`CLASS_REJECT`, §6.4).
 
 ### 4.5  CPA Evaluation and Hit Scoring
 
@@ -483,13 +497,16 @@ After fire is authorised, the pipeline simulates the shot:
 4. **Effective hit threshold**:
 
 $$
-\tau_\text{eff} = \max\!\bigl(r_\text{pattern},\; \tau_\text{hit}\bigr)
+\tau_\text{eff} = m_\text{man}\,\max\!\bigl(r_\text{pattern},\; \tau_\text{hit}\bigr)
 $$
 
-   where $\tau_\text{hit}$ is the raw `hit_threshold` parameter
-   (default 2.0 m for 3-D, 1.0 m for 2-D).
+   where $\tau_\text{hit}$ is `hit_threshold_m` (default 2.0 m, 2-D and
+   3-D) and $m_\text{man}$ is 1 unless maneuver-aware tracking is on
+   (§6.4: evasive 2.0, hovering 1.5, steady 1.3).
 
-5. **Hit decision**: $\text{hit} = (d_\text{CPA} \leq \tau_\text{eff})$.
+5. **Hit decision**: the CPA must lie on the reachable part of the
+   projectile path (`find_cpa(...)["in_range"]`, otherwise the shot is
+   logged as `BEHIND`) and $d_\text{CPA} < \tau_\text{eff}$.
 
 The pipeline stops firing after `max_hits` (default 3) scored hits.
 
@@ -497,9 +514,12 @@ The pipeline stops firing after `max_hits` (default 3) scored hits.
 
 ## 5  MFP / EKF Pipeline (Library)
 
-An alternative detection path using matched field processing.
-Implemented in `air/detection_main.py`; not used by the production
-SRP-PHAT pipeline.
+An alternative detection path using matched field processing:
+`air/processor.py` (CSDM, MVDR/conventional polar-grid MFP) and
+`air/tracker.py` (EKF), orchestrated by `air/detection_main.py`
+(`run_detection`, `run_detection_3d`) and used by the parametric studies.
+The production pipeline does not use it by default; its `mvdr` bearing
+option (`MVDRBeamformer`, §1.3) wraps the same MFP code.
 
 ### 5.1  Cross-Spectral Density Matrix
 
@@ -567,10 +587,10 @@ and training loops in `examples/train_all_ml.py`.
 Three-layer 2-D CNN on log-mel spectrograms:
 
 ```
-Conv2d(1, 16, 3×3, pad=1) → BatchNorm2d(16) → ReLU → MaxPool2d(2)
+Conv2d(1, 16, 3×3, pad=1)  → BatchNorm2d(16) → ReLU
 Conv2d(16, 32, 3×3, pad=1) → BatchNorm2d(32) → ReLU → MaxPool2d(2)
-Conv2d(32, 64, 3×3, pad=1) → BatchNorm2d(64) → ReLU → AdaptiveAvgPool2d(1)
-Flatten → Linear(64, 6)
+Conv2d(32, 64, 3×3, pad=1) → BatchNorm2d(64) → ReLU → global mean over (mel, time)
+Linear(64, 6)
 ```
 
 Input: $(B, 1, n_\text{mels}, T)$.  Output: logits over 6 source
@@ -591,7 +611,7 @@ Two-branch architecture:
 The 14-dim kinematic vector (from `compute_kinematic_features()`)
 includes: mean/std/min speed, heading rate mean/std, curvature
 mean/std, altitude mean/std/rate-std/is-zero, hover fraction, heading
-rate autocorrelation.
+rate autocorrelation, plus one reserved slot (always 0).
 
 ### 6.3  Maneuver Classifier
 
@@ -600,9 +620,9 @@ rate autocorrelation.
 Two-layer 1-D CNN on kinematic state history:
 
 ```
-Conv1d(6, 32, kernel=5, pad=2) → ReLU → AdaptiveAvgPool1d
-Conv1d(32, 64, kernel=5, pad=2) → ReLU → AdaptiveAvgPool1d(1)
-Flatten → Linear(64, 6)
+Conv1d(6, 32, kernel=5, pad=2)  → ReLU
+Conv1d(32, 64, kernel=5, pad=2) → ReLU → global mean over time
+Linear(64, 6)
 ```
 
 Input: $(B, 6, N)$ where 6 channels = $(x, y, z, v_x, v_y, v_z)$ and
@@ -617,16 +637,19 @@ a mel spectrogram, passed through the AcousticClassifier, and the
 resulting P(non-drone) gates fire control decisions.  Maneuver
 classification runs when sufficient kinematic history is available: a
 rolling 20-step buffer of $(x, y, z, v_x, v_y, v_z)$ is passed through
-the ManeuverClassifier, and the predicted maneuver class scales the
-tracker covariance cap (evasive: $2.5\times$, hovering: $0.5\times$,
-turning: $1.3\times$, diving: $1.5\times$).  Fusion classification
+the ManeuverClassifier.  With `maneuver_aware_tracking` (default on) and
+confidence above 0.6 (0.5 for steady), the predicted class scales the
+tracker covariance cap (evasive $2.5\times$, diving $1.5\times$,
+turning $1.3\times$, hovering $0.5\times$) and the effective hit
+threshold (evasive $2.0\times$, hovering $1.5\times$, steady $1.3\times$;
+§4.5).  Fusion classification
 enriches the source type prediction when both acoustic and kinematic
 features are available.  CVAE anomaly detection flags acoustically
 novel targets via reconstruction error.
 
 The MFP/EKF library path (`air/detection_main.py`) also contains
-integration scaffolding via `_classify_source()` and
-`_detect_maneuvers()`.
+integration scaffolding via `_classify_detections()` and
+`_detect_maneuvers()` (3-D path).
 
 ### 6.5  Anomaly Detection (CVAE)
 

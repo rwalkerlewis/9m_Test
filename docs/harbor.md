@@ -54,20 +54,28 @@ keeps the multiple scattering but loses the per body split.
 
 | Module | Role |
 |--------|------|
+| `scenario.py` | `HarborScenarioConfig` (the JSON scenario), `build_environment`, `build_layout`, `default_vessels` |
 | `environment.py` | Land mask, depth, sound speed; `build_synthetic_harbor` |
-| `sensors.py` | `Cable`, `SensorLayout` |
-| `fdtd_runner.py` | `HarborFDTDSolver` (land + shore loss on top of `FDTDSolver`), per-source runs with an on-disk cache, GPU sampling |
+| `sensors.py` | `Cable`, `SensorLayout` (including `collapse` of strain sample points) |
+| `fdtd_runner.py` | `HarborFDTDConfig`, `HarborFDTDSolver` (land + shore loss on top of the shared `FDTDSolver`), `HarborFDTDBatch`, `simulate_source(s)` with an on-disk cache |
+| `fdtd_cuda_bodies.py` | Moving body masks evaluated on the GPU (`HarborFDTDConfig.body_masks="device"`) |
 | `signatures.py`, `vessels.py`, `ais.py`, `noise.py` | Signatures and level calibration, trajectories, AIS reports and a predictor, noise and sensor imperfections |
 | `dataset.py` | One cached FDTD job per vessel, mixed linearly with noise and AIS into a labelled `HarborDataset` |
 | `detection.py` | Whitened STFT, matched-field scan, stationary-interference projection, sidelobe-cancelling peak extraction, CFAR threshold |
 | `suppression.py` | AIS-aware suppression: per-frame position refinement, ship projection (model or data-adaptive), re-whitening |
 | `occupancy.py` | Occupancy-grid track-before-detect |
-| `bistatic.py` | Ship-illuminated echo maps, data/oracle references, direct-path removal, and Bartlett/coherent/MVDR/MUSIC processors |
+| `bistatic.py` | `BistaticConfig`, `run_bistatic`, `eca_stage`: ship-illuminated echo maps, data/oracle references, direct-path removal, and Bartlett/coherent/MVDR/MUSIC processors |
+| `motion.py` | `motion_integrate`: motion compensated (synthetic aperture) integration of the per frame maps (re-exported by `bistatic.py`) |
+| `cylinder.py` | Analytic 2-D cylinder scattering (partial wave series) used by the bistatic link budget |
 | `scatterer.py` | Smooth moving finite-size body masks used by the FDTD runner |
 | `dispersion.py` | Replica wavenumbers that follow the FDTD scheme's numerical dispersion |
 | `localiser.py` | Optional empirical replica calibration from a simulated vessel path or survey grid |
-| `evaluate.py`, `classifier.py` | Association and detection metrics; optional harbor CNN/CVAE classifier wrapper |
+| `evaluate.py`, `classifier.py` | Association and detection metrics; optional harbor CNN/CVAE classifier wrapper (`classifier.py` needs the `[ml]` extra) |
+| `plotting.py` | Harbor figures |
 | `device.py` | CPU / GPU selection |
+
+`acoustic_sim.harbor` is a compatibility alias: `acoustic_sim.harbor.<module>` is the same module object
+as `acoustic_sim.water.<module>`.  New code should import from `acoustic_sim.water`.
 
 Because the wave equation is linear, each vessel is simulated once at unit level and cached;
 level sweeps and removing a vessel need no re-simulation (`assemble_dataset(levels=...)`).
@@ -76,7 +84,7 @@ level sweeps and removing a vessel need no re-simulation (`assemble_dataset(leve
 
 1. **Pre-process:** channel QC, per-cable common-mode removal, Hann STFT, per-channel noise floor
    (time median, then a running median across frequency) and whitening.
-2. **AIS-aware suppression** (`run_ais_aware`): predict each reporting ship, refine its position
+2. **AIS-aware suppression** (optional, `run_ais_aware`): predict each reporting ship, refine its position
    with a fine Bartlett search, project its replica patch (or the data-adaptive subspace) out,
    and **re-estimate the noise floor from the cleaned data and re-whiten**.  Skipping the
    re-whitening leaves the floor inflated by ship energy and hides the target (it cost a factor
@@ -88,10 +96,8 @@ level sweeps and removing a vessel need no re-simulation (`assemble_dataset(leve
    accepted peak are projected out before the next candidate is scored).
 5. **Occupancy filter:** diffuse, multiply by a likelihood from each frame's map, repeat.
 
-AIS-aware ship cancellation is an optional follow-on path implemented by `run_ais_aware`: it
-predicts and refines AIS ship positions, removes ship energy using a modeled patch or an
-adaptive subspace, then re-estimates the noise floor and re-whitens. The re-whitening step is
-important: ship energy in the original floor can suppress weaker residual targets.
+Without step 2 (`harbor_m3_detect.py`, or `harbor_m4_dlc.py --no-suppress`) the loud ships hide
+the UUV.
 
 ## Bistatic Echo Localization
 
@@ -136,8 +142,9 @@ are identical to the array code to the last bit, and the bistatic maps agree to 
 1/32 of the float32 rate) with the fused kernel (the default on the GPU since the performance work):
 a 20 s fine grid vessel run (0.5 m, 6 kHz, 120 000 steps, 481 000 cells) takes 11 s alone and 17 s
 with ten bodies, against 3 min and 8 min with the array code and about 8 min on the CPU; the
-`blind+doppler+smooth4` bistatic configuration on the fine dataset takes 47 s on the GPU against
-522 s for the original CPU code.  These are measurements on that specific GPU and scenario, not
+`blind+doppler+smooth4` bistatic configuration on the fine dataset takes 54 s on the GPU in the
+final benchmark run (`final.json`; 47 s in the separate `stage5_gpu.json` run) against 522 s for
+the original CPU code.  These are measurements on that specific GPU and scenario, not
 portable runtime guarantees; unavailable CUDA hardware falls back to the CPU with a warning.
 
 ## Performance
@@ -159,7 +166,7 @@ moving case with fixed lags and with per sample delays (4 s track fit).
 
 Forward model (one run; `ms/step` in brackets):
 
-| Case | original (array code, GPU) | stage 1 fused float64, host masks | stage 2 device masks (default) | fused float32 |
+| Case | original (array code, GPU; `baseline.json`) | fused float64, host masks (`stage1_fused64.json`) | defaults now: fused float64, device masks (`final.json`) | fused float32, host masks (`stage1_fused32.json`) |
 |---|---|---|---|---|
 | ferry alone, 2 s | 20.7 s (1.72) | 1.26 s (0.105) | 1.81 s (0.151) | 0.64 s (0.053) |
 | ferry alone, 10 s | 93.2 s (1.55) | 5.6 s (0.093) | 8.62 s (0.144) | 2.3 s (0.038) |
@@ -168,7 +175,9 @@ Forward model (one run; `ms/step` in brackets):
 | multistatic, 10 bodies, 2 s | 49.1 s (4.09) | 32.2 s (2.68) | 2.60 s (0.217) | 31.8 s (2.65) |
 
 The float32 column still uses the host masks for the bodies, which is why its body cases are no
-faster.  Time per step against body count (`fdtd_sweeps.json`, 2 s runs): array code 1.82 / 1.54 /
+faster.  The stage 2 run itself (`stage2_device.json`) measured the device masks faster than the
+final run on four of five cases (for example 1.21 s and 1.68 s for the 2 s ferry and multistatic
+cases); the table reports the final run.  Time per step against body count (`fdtd_sweeps.json`, 2 s runs): array code 1.82 / 1.54 /
 4.57 ms for 0 / 1 / 10 bodies, fused kernel with host masks 0.10 / 0.25 / 2.82 ms, fused kernel with
 device masks 0.10 / 0.10 (one outlier run at 0.60) / 0.14 ms.  The fused float64 step on the fine
 grid moves about 23 MB through memory in 0.1 ms, close to the card's bandwidth; the remaining cost
@@ -257,7 +266,8 @@ quarter of the cells, if the scenario were laid out for it.  The complex frequen
 (`cpml_alpha_max`) made no difference here.  The sponge stays the default: switching changes the
 forward model's output (the spurious reflections it removes are in every existing dataset and
 cache), so the change belongs to a scenario revision, with `HarborFDTDConfig(boundary="cpml",
-cpml_width=15, cpml_order=3)` recommended for new scenarios.
+cpml_width=15, cpml_order=3)` recommended for new scenarios (the defaults when `boundary="cpml"` is
+set alone are `cpml_width=15`, `cpml_order=2`).
 
 Time stepping (`timestep_schemes.json`, `scripts/bench_timestep.py`; stationary source in open
 water, receivers on grid nodes at 100 to 600 m on the axis and the diagonal, time gated, phase of
@@ -484,7 +494,9 @@ deliberately not started.
 |---|---|---|
 | `examples/harbor_m1_demo.py` | Map, one FDTD source run, DAS gather, wavefield snapshots | ~15 s |
 | `examples/harbor_m2_dataset.py` | Builds the default multi-vessel labelled dataset and overview figures (cached FDTD) | expensive on first build; reuses cache |
-| `examples/harbor_m3_detect.py` | Baseline CFAR detection sweeps **without** AIS suppression (the loud ships hide the UUV) | processing sweep; reuses cache |
+| `examples/harbor_m1_scatterer_compare.py` | Three FDTD runs (no body, "hard" and "soft" body) to isolate the scattered field of a static reflector | three FDTD runs |
+| `examples/harbor_m3_detect.py` | Baseline CFAR detection sweeps **without** AIS suppression (the loud ships hide the UUV); `--empirical-refine` uses the `localiser.py` calibration | processing sweep; reuses cache |
+| `examples/harbor_survey_grid.py` | Pre-computes per-cell FDTD transfer functions for `harbor_m3_detect.py --empirical-refine grid_survey` (resume-safe cache) | one FDTD run per water cell of the scan grid |
 | `examples/harbor_m4_dlc.py` | Detect–locate–classify experiment, noise-only CFAR calibration, optional AIS suppression, CNN/CVAE classification and evaluation | varies; FDTD gathers are cached |
 | `examples/harbor_mfp_demo.py` | Analytic (free-field, exact replica) reference for the whole chain: AIS refinement, ferry and pier projection, passive 400 Hz MFP (motor on), bistatic echo MFP (motor off), occupancy track, Bartlett vs MVDR under replica mismatch, Pd vs UUV level. Figures and `results.json` in `output/harbor_demo/` | ~26 min on 16 CPU cores (`--trials 0` skips the Pd sweep: ~4 min) |
 | `examples/harbor_mfp_domain.py` | The same analytic chain in the domain of `output/harbor/dataset.npz` (land, cable + hydrophones, 120 s tracks, AIS, signatures, band, noise and DAS gains from the dataset; analytic propagation with opaque land). Adds AIS-ship gain calibration, re-whitening on the cleaned residual, DAS common-mode and distant-shipping plane-wave projection. Figures and `results.json` in `output/harbor_domain/` | ~1 h on 16 CPU cores (`--pd-windows 0`: ~20 min) |
@@ -493,13 +505,13 @@ deliberately not started.
 | `examples/harbor_bistatic_budget.py` | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
 | `examples/harbor_bistatic_dataset.py` | Fine-grid FDTD scenario; caches direct and body-scattered components separately | expensive; `--coarse` is faster but under-resolves the hull |
 | `examples/harbor_bistatic_demo.py` | Oracle-aided coherent bistatic localization figures and error summary from a saved dataset | processing run |
-| `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler` and `--gate` variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
-| `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the oracle inputs removed one at a time (`--doppler` adds the per sample delay ECA variants) | about 1.5 h of processing for both datasets |
+| `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth` and `--gate` variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
+| `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the oracle inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit) | about 1.5 h of processing for both datasets |
 | `examples/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and an oracle ferry-only check map | 6 FDTD runs (fine: about 1 h on the GPU) |
 | `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
 | `examples/harbor_train_classifier.py`, `examples/harbor_train_anomaly.py`, `examples/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |
 
-Runtime estimates inherited from older experiment notes are hardware- and configuration-specific; first-time FDTD cache generation is the main cost.
+Run times are from the original experiments and are hardware and configuration specific; the first FDTD cache build is the main cost.  [Generated outputs](outputs.md) lists what each script writes and what is committed.
 
 `examples/harbor.scenario.json` is the default scenario (set `"fdtd": {"use_cuda": true}` to
 simulate on the GPU). Outputs are written under `output/`; FDTD cache files can be reused between

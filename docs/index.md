@@ -18,12 +18,13 @@ simulations, not real-world sensing or weapon-control systems.
 
 | Stage | Method | Module |
 |-------|--------|--------|
-| **Wave propagation** | 2-D / 3-D FDTD (MPI + CUDA) or Helmholtz | `fdtd`, `solver` |
-| **Bearing estimation** | SRP-PHAT beamformer (primary), MUSIC, MVDR | `detection.bearing` |
-| **Range estimation** | RMS inverse-square, GCC-PHAT TDOA, bearing-rate | `detection.ranging` |
-| **Tracking** | Causal weighted-least-squares constant-velocity fit | `detection.tracking` |
-| **Fire control** | 3-D iterative ballistic lead, CPA evaluation, pattern spread | `fire_control` |
-| **Classification** | CNN / fusion / maneuver / anomaly classifiers (optional, PyTorch, pre-trained weights shipped) | `ml` |
+| **Wave propagation** | 2-D / 3-D FDTD (MPI + CUDA) or Helmholtz | `solver.fdtd`, `solver.helmholtz` |
+| **Bearing estimation** | SRP-PHAT beamformer (primary), MUSIC, MVDR | `air.detection.bearing` |
+| **Range estimation** | RMS inverse-square, GCC-PHAT TDOA, bearing-rate | `air.detection.ranging` |
+| **Tracking** | Causal weighted-least-squares constant-velocity fit | `air.detection.tracking` |
+| **Fire control** | 3-D iterative ballistic lead, CPA evaluation, pattern spread | `air.fire_control` |
+| **Classification** | CNN / fusion / maneuver / anomaly classifiers (optional, PyTorch; classifier weights shipped) | `ml` |
+| **Harbor sensing** | 2-D harbor FDTD, DAS/hydrophone passive detection, bistatic localization | `water` |
 | **FNO surrogate** | Fourier Neural Operator to replace FDTD (optional) | `ml.fno` |
 
 An older MFP/EKF path (`air/detection_main.py`) remains in the library for
@@ -41,6 +42,7 @@ parametric studies but is not used by the production pipeline.
 | [Usage](usage.md) | Installation, CLI commands, running examples |
 | [Studies](studies.md) | Nine parametric robustness studies |
 | [Harbor](harbor.md) | 2-D harbor DAS + hydrophone detection of hidden submerged objects (separate from the drone pipeline): scenario, processing chain, GPU, findings |
+| [Generated outputs](outputs.md) | What is tracked under `output/`, how to regenerate it, cleanup |
 | [Glossary](glossary.md) | Definitions of terms, acronyms, and concepts |
 
 ## Repository Layout
@@ -74,7 +76,8 @@ acoustic-sim/
 │   │   ├── tracker.py          # EKF tracker (single + multi-target)
 │   │   ├── fire_control.py     # ballistics, lead, CPA, engagement
 │   │   ├── detection_main.py   # MFP/EKF pipeline orchestrator
-│   │   ├── plotting.py         # all visualisation
+│   │   ├── plotting.py         # visualisation (re-exports pipeline_plots, solver.snapshots)
+│   │   ├── pipeline_plots.py   # engagement pipeline summary / radial / beamformer figures
 │   │   ├── validate.py         # automated sanity checks
 │   │   ├── setup.py            # high-level simulation builders
 │   │   ├── studies.py          # parametric robustness studies
@@ -108,29 +111,36 @@ acoustic-sim/
 │   ├── run_pipeline.py         # SRP-PHAT engagement pipeline (with optional ML)
 │   ├── run_comparison.py       # baseline vs ML pipeline comparison
 │   ├── run_ml_demo.py          # ML classification demo + confusion matrices
-│   ├── train_all_ml.py         # train all ML classifiers
-│   ├── generate_traces.py      # generate synthetic trace datasets
+│   ├── train_all_ml.py         # train the source / maneuver / fusion classifiers
+│   ├── generate_traces.py      # regenerate the drone datasets' traces (analytic model)
 │   ├── run_fno.py              # FNO surrogate demo
 │   ├── pipeline.config.json    # pipeline configuration (incl. optional ML section)
 │   ├── extract_array_traces.py # post-process field plane to traces
 │   ├── run_valley.sh           # 2-D valley demo (FDTD → pipeline)
-│   ├── run_valley_3d.sh        # 3-D valley demo
-│   └── run_wind_circular.sh    # wind + circular orbit demo
+│   ├── run_valley_3d.sh        # 3-D valley FDTD
+│   ├── run_wind_circular.sh    # 2-D wind-domain FDTD (moving source, circular array)
+│   ├── run_pipeline_*.sh       # pipeline on each pre-computed dataset
+│   ├── harbor_*.py             # water-domain workflows (see harbor.md)
+│   └── *.scenario.json, *.example.json  # harbor scenarios, velocity-model configs
 │
-├── tests/                      # unit tests & diagnostics
-├── output/                     # simulation outputs
-│   └── models/                 # pre-trained ML checkpoints
+├── scripts/                    # benchmarks, diagnostics, clean_outputs.py (see scripts/README.md)
+├── tests/                      # pytest suite (tests/harbor: water domain)
+├── docs/                       # this documentation
+├── output/                     # simulation outputs (mostly gitignored; see outputs.md)
+│   └── models/                 # pre-trained ML checkpoints (tracked)
 │       ├── acoustic_classifier.pt
 │       ├── maneuver_classifier.pt
 │       └── fusion_classifier.pt
 ├── audio/                      # WAV source files
+├── simulate_array.py           # thin wrapper around the Helmholtz CLI (acoustic-sim)
 ├── pyproject.toml
-├── requirements.txt         # shim: installs the package from pyproject.toml
+├── requirements.txt            # shim: installs the package from pyproject.toml
 ├── Dockerfile
 ├── docker-compose.yml          # dev container (no GPU needed)
 ├── docker-compose.gpu.yml      # adds NVIDIA GPU access
 ├── dev.sh                      # shell / test / run helper for the container
-└── .devcontainer/              # VS Code Dev Containers (CPU default, gpu/ variant)
+├── .devcontainer/              # VS Code Dev Containers (CPU default, gpu/ variant)
+└── .github/workflows/tests.yml # CI: fast CPU-only test subset
 ```
 
 ## Dependencies
@@ -149,9 +159,10 @@ Dependencies are declared in `pyproject.toml`; `requirements.txt` is a compatibi
 ## ML Module
 
 Nine classifier/anomaly files plus four FNO files under
-`src/acoustic_sim/ml/`.  Requires `torch` (not a project dependency).
+`src/acoustic_sim/ml/`.  Requires `torch` (the optional `[ml]` extra).
 Pre-trained weights for the acoustic, maneuver, and fusion classifiers
-are shipped in `output/models/`.
+are shipped in `output/models/`; the CVAE anomaly detector is trained
+locally with `python src/acoustic_sim/ml/anomaly_training.py`.
 
 ### Classifiers
 
@@ -184,5 +195,5 @@ ML classifiers are integrated into the production SRP-PHAT pipeline
 (`--enable-classification`, `--enable-maneuver`, `--enable-fusion`,
 `--enable-anomaly`).  Pre-trained weights are shipped in
 `output/models/`.  The MFP/EKF library path (`air/detection_main.py`) also
-contains ML integration scaffolding via `_classify_source()` and
+contains ML integration scaffolding via `_classify_detections()` and
 `_detect_maneuvers()`.
