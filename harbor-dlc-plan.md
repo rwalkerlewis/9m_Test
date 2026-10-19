@@ -1,3 +1,8 @@
+> **Historical plan — not current instructions.** This plan was written against the former
+> `src/acoustic_sim/harbor/` layout. That code now lives in `src/acoustic_sim/water/`
+> (`acoustic_sim.harbor` remains only as a compatibility import alias); the paths below are
+> kept as originally written. See `docs/harbor.md` for the current pipeline.
+
 # Harbor DAS Detect–Locate–Classify Improvement Plan
 
 ## Overview

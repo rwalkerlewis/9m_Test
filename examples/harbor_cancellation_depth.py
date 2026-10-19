@@ -4,7 +4,7 @@
 One broadband ship source (the ferry's signature) runs alone through the fine bistatic harbor
 (0.5 m grid, strain DAS, quays) at three ranges from the nearest cable channel, first
 stationary and then moving at 4 m/s parallel to the first cable leg.  Each gather is mixed
-with the scenario noise and processed by the ECA stage of ``harbor/bistatic.py``; the
+with the scenario noise and processed by the ECA stage of ``water/bistatic.py``; the
 noise free direct component goes through the same projection, so the energy it loses is the
 cancellation depth of each channel.  Three references are compared:
 

@@ -1,7 +1,11 @@
 # API Reference
 
 Reference to the public classes, functions, and common entry points in
-`acoustic_sim`, organised by source file under `src/acoustic_sim/`.
+`acoustic_sim`, organised by source file under `src/acoustic_sim/` (shared solvers in
+`solver/`, the drone pipeline in `air/`, the harbor pipeline in `water/`).  New code should import
+from `acoustic_sim.air`, `acoustic_sim.water` and `acoustic_sim.solver` or their submodules; the
+former top-level module paths (e.g. `acoustic_sim.processor`, `acoustic_sim.fdtd`) and
+`acoustic_sim.harbor.*` remain importable as compatibility aliases.
 Source line references identify the implementation but can shift as code
 changes; see module docstrings for the current detailed parameter
 contracts.
@@ -36,7 +40,7 @@ Helmholtz solver, FDTD forward model, or detection pipeline depending on
 
 ---
 
-## config.py
+## air/config.py
 
 *Detection pipeline configuration.*
 
@@ -68,7 +72,7 @@ pipeline.  A plain dataclass with ~60 fields grouped into:
 
 ---
 
-## detection_main.py
+## air/detection_main.py
 
 *End-to-end passive acoustic drone detection, tracking, and fire
 control.*  This is the **legacy MFP/EKF pipeline**; the current
@@ -117,7 +121,7 @@ Compare 3-D detection output to ground truth.
 
 ---
 
-## domains.py
+## air/domains.py
 
 *Domain builders for FDTD simulations.*  Each builder returns
 `(VelocityModel, DomainMeta)` or `(VelocityModel3D, DomainMeta3D)`.
@@ -190,7 +194,7 @@ Uniform velocity with a constant 3-D wind field.
 
 ---
 
-## fdtd.py
+## solver/fdtd.py
 
 *2-D and 3-D FDTD acoustic wave-equation solver with MPI + CUDA
 support.*
@@ -270,7 +274,7 @@ Extra parameters:
 
 ---
 
-## fire_control.py
+## air/fire_control.py
 
 *Fire-control solution for a 12-gauge shotgun engagement.*
 
@@ -358,7 +362,7 @@ bearing-rate fire gating.
 
 ---
 
-## forward.py
+## air/forward.py
 
 *Analytical 3-D forward model for generating synthetic microphone
 traces.*  Implements spherical spreading ($1/r$), frequency-dependent
@@ -520,9 +524,10 @@ Wrap an existing 3-D numpy array as a `VelocityModel3D`.
 
 ---
 
-## harbor/ — Water-Based Harbor Sensing
+## water/ — Water-Based Harbor Sensing
 
-The harbor package is a separate 2-D application. The following symbols are re-exported from
+The water package (`acoustic_sim.water`; legacy alias `acoustic_sim.harbor`) is a separate
+2-D harbor application. The following symbols are re-exported from
 `acoustic_sim.water`: `HarborScenarioConfig`, `HarborEnvironment`, `HarborFDTDConfig`,
 `HarborFDTDSolver`, `HarborDataset`, `Cable`, `SensorLayout`, `VesselConfig`, `Track`,
 `AISConfig`, `AISReports`, `NoiseConfig`, `Gather`, and the scenario/dataset helper functions.
@@ -595,7 +600,7 @@ workflow examples, and model limitations.
 
 ---
 
-## noise.py
+## air/noise.py
 
 *Post-hoc noise generators for microphone traces.*
 
@@ -639,7 +644,7 @@ perturbed copy; the original is not modified.
 
 ---
 
-## plotting.py
+## air/plotting.py
 
 *Plotting utilities for velocity models and wavefields.*  All functions
 write PNG files to `output_path`; none display interactively.
@@ -651,7 +656,7 @@ write PNG files to `output_path`; none display interactively.
 | `plot_velocity_model(model, output_path, receivers, source_xy, title)` | 17 | Velocity field with optional mic/source overlays |
 | `plot_wavefield(model, field, output_path, receivers, source_xy, title)` | 59 | Helmholtz pressure magnitude (dB) |
 | `plot_gather(traces, dt, output_path, title, db_range, cmap)` | 120 | Receiver traces as dB SPL gather (time vs channel) |
-| `save_snapshot(model, field, step, output_dir, receivers, source_xy, db_range, title)` | 171 | Single numbered wavefield snapshot (PNG) |
+| `save_snapshot(model, field, step, output_dir, receivers, source_xy, db_range, title)` | — | Single numbered wavefield snapshot (PNG); defined in `solver/snapshots.py`, re-exported here |
 | `plot_domain(model, output_path, receivers, source_xy, source_path, attenuation, wind_vx, wind_vy, title)` | 227 | Velocity model with source trajectory, attenuation, and wind overlays |
 
 ### Detection pipeline plots
@@ -675,7 +680,7 @@ write PNG files to `output_path`; none display interactively.
 | `plot_altitude_vs_time(times, true_z, estimated_z, estimated_times, title, output_path)` | 927 | Altitude over time for true and estimated |
 | `plot_tracking_3d(track, true_positions, true_times, fire_control, weapon_pos, output_path, maneuver_labels, class_label, class_confidence)` | 954 | Six-panel 3-D tracking + fire-control display with altitude and maneuver state |
 | `plot_kinematic_scatter(features_by_class, feature_names, title, output_path)` | 1087 | 2-D scatter of kinematic features coloured by class |
-| `save_snapshot_3d(field_3d, step, output_dir)` | 1132 | Two-panel (x-y + x-z) wavefield snapshot |
+| `save_snapshot_3d(field_3d, step, output_dir)` | — | Two-panel (x-y + x-z) wavefield snapshot; defined in `solver/snapshots.py`, re-exported here |
 
 ### Pipeline engagement plots
 
@@ -687,7 +692,7 @@ write PNG files to `output_path`; none display interactively.
 
 ---
 
-## processor.py
+## air/processor.py
 
 *Frequency-domain matched field processor (MFP) with MVDR beamforming.*
 
@@ -879,7 +884,7 @@ $$\Delta x \le \frac{c_\min}{f \cdot \text{ppw}}$$
 
 ---
 
-## setup.py
+## air/setup.py
 
 *Simulation setup helpers.*  High-level convenience builders used by the
 CLI and detection pipeline.
@@ -909,7 +914,7 @@ trajectory class (`static`, `moving`, `circular`, `figure_eight`,
 
 ---
 
-## solver.py
+## solver/helmholtz.py
 
 *2-D Helmholtz (frequency-domain) solver.*
 
@@ -1045,7 +1050,7 @@ Compute instantaneous 3-D velocity via central finite differences.
 
 ---
 
-## studies.py
+## air/studies.py
 
 *Systematic parameter-sweep studies for the detection pipeline.*  Each
 function runs a sweep over one variable and records detection/tracking
@@ -1094,7 +1099,7 @@ Execute all nine studies and return combined results.
 
 ---
 
-## tracker.py
+## air/tracker.py
 
 *Extended Kalman Filter tracker for bearing-primary measurements.*
 
@@ -1239,7 +1244,7 @@ Run multi-target 3-D EKF tracker on multi-peak detections.
 
 ---
 
-## validate.py
+## air/validate.py
 
 *Automated sanity checks for the detection pipeline.*  Each check
 returns `(passed: bool, message: str)`.
@@ -1441,7 +1446,7 @@ Evaluate the fusion classifier.  Same metrics as `evaluate_classifier`.
 
 ---
 
-## detection/bearing.py
+## air/detection/bearing.py
 
 *Pluggable bearing (DOA) estimation algorithms.*
 
@@ -1495,7 +1500,7 @@ MVDR (Capon) beamformer on a polar grid with harmonic selection.
 
 ---
 
-## detection/engine.py
+## air/detection/engine.py
 
 *Streaming detection engine that chains bearing, range, and tracking.*
 
@@ -1516,7 +1521,7 @@ Per-window detection result.  Fields: `time`, `detected`, `window_rms`,
 
 ---
 
-## detection/ranging.py
+## air/detection/ranging.py
 
 *Pluggable range estimation algorithms.*
 
@@ -1565,7 +1570,7 @@ Kinematic range from angular rate of change: $R \approx v/|\dot{\theta}|$.
 
 ---
 
-## detection/tracking.py
+## air/detection/tracking.py
 
 *Causal tracking (no Kalman filter).*
 

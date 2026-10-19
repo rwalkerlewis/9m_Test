@@ -104,8 +104,11 @@ ocean water column.
 For implementation status, interpretation caveats, and complete scenario and example workflows,
 see [Harbor](harbor.md).
 
-Legacy imports remain supported: former `acoustic_sim.harbor.*` paths alias `acoustic_sim.water.*`,
-and former top-level air modules alias `acoustic_sim.air.*`. The shared FDTD API is exported from
+Legacy imports remain supported: former `acoustic_sim.harbor.*` paths alias `acoustic_sim.water.*`
+(each submodule is aliased on first import, so `acoustic_sim.harbor.classifier` loads PyTorch only
+when requested), and former top-level air modules (`config`, `domains`, `fire_control`, `forward`,
+`noise`, `processor`, `plotting`, `setup`, `tracker`, `validate`, `detection.*`, `detection_main`,
+`studies`) alias `acoustic_sim.air.*`. The shared FDTD API is exported from
 `acoustic_sim.solver`; `acoustic_sim.fdtd` and `acoustic_sim.fdtd_cuda` remain compatibility paths.
 
 #### FNO surrogate (`ml/fno*.py`)

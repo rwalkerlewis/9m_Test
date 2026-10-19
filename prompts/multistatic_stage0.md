@@ -1,6 +1,8 @@
+> **Earlier task prompt.** Written before the `air/` / `water/` / `solver/` package split; file paths below have been updated to the current layout (`src/acoustic_sim/harbor/` → `src/acoustic_sim/water/`, `src/acoustic_sim/fdtd.py` → `src/acoustic_sim/solver/fdtd.py`).
+
 Work in the 9m_Test repo on branch `multistatic` (`git fetch origin && git checkout multistatic`). Use the GPU: pass `--cuda` to every FDTD script, with CPU fallback.
 
-Read `docs/harbor.md`, `src/acoustic_sim/harbor/bistatic.py`, `src/acoustic_sim/harbor/scatterer.py`, `src/acoustic_sim/harbor/dataset.py`, `examples/harbor_bistatic_dataset.py`, `examples/harbor_bistatic_demo.py`, `examples/harbor_bistatic.scenario.json` and `examples/harbor_cancellation_depth.py` before changing anything.
+Read `docs/harbor.md`, `src/acoustic_sim/water/bistatic.py`, `src/acoustic_sim/water/scatterer.py`, `src/acoustic_sim/water/dataset.py`, `examples/harbor_bistatic_dataset.py`, `examples/harbor_bistatic_demo.py`, `examples/harbor_bistatic.scenario.json` and `examples/harbor_cancellation_depth.py` before changing anything.
 
 ## Already on the branch (not yet run)
 

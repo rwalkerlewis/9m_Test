@@ -1,4 +1,8 @@
-numpy
-scipy
-matplotlib
-# optional: mpi4py (parallel FDTD), cupy-cuda12x (GPU), torch (ML classifiers), pytest
+# Compatibility shim: dependencies are declared in pyproject.toml, the single source of truth.
+# `pip install -r requirements.txt` installs the package (editable) with its base runtime
+# dependencies.  For optional features use the extras instead, e.g.
+#   pip install -e ".[dev]"          pytest + build
+#   pip install -e ".[cuda]"         CuPy GPU backend
+#   pip install -e ".[ml]"           PyTorch classifiers / anomaly detection / FNO
+#   pip install -e ".[mpi]"          mpi4py parallel FDTD
+-e .

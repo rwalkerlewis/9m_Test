@@ -5,7 +5,7 @@ Idealised, and said so on every figure: the ferry's direct path is removed with 
 truth component (perfect cancellation), the ferry waveform and position are known (oracle
 reference, exact track).  What remains is real: an FDTD simulated echo of a 1 m x 3 m soft body
 on a strain DAS cable and four hydrophones, in noise, processed with the coherent bistatic
-matched filter of ``harbor/bistatic.py``.
+matched filter of ``water/bistatic.py``.
 
 Usage::
 

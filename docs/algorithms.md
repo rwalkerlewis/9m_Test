@@ -498,7 +498,7 @@ The pipeline stops firing after `max_hits` (default 3) scored hits.
 ## 5  MFP / EKF Pipeline (Library)
 
 An alternative detection path using matched field processing.
-Implemented in `detection_main.py`; not used by the production
+Implemented in `air/detection_main.py`; not used by the production
 SRP-PHAT pipeline.
 
 ### 5.1  Cross-Spectral Density Matrix
@@ -624,7 +624,7 @@ enriches the source type prediction when both acoustic and kinematic
 features are available.  CVAE anomaly detection flags acoustically
 novel targets via reconstruction error.
 
-The MFP/EKF library path (`detection_main.py`) also contains
+The MFP/EKF library path (`air/detection_main.py`) also contains
 integration scaffolding via `_classify_source()` and
 `_detect_maneuvers()`.
 

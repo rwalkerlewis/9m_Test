@@ -10,6 +10,8 @@ pip install -e .
 
 Core dependencies: `numpy`, `scipy`, `matplotlib`.  Everything else is an optional extra:
 `[cuda]` (CuPy), `[ml]` (torch), `[mpi]` (mpi4py), `[dev]` (pytest).
+Dependencies are declared only in `pyproject.toml`; `requirements.txt` is a compatibility shim
+equivalent to `pip install -e .` (no extras).
 
 ### MPI (optional, only for multi-process FDTD)
 

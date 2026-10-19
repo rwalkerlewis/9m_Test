@@ -135,7 +135,7 @@ theoretically reflectionless absorption of a true PML.
 
 ### PML (Helmholtz)
 
-The frequency-domain Helmholtz solver (`solver.py`) uses a Perfectly
+The frequency-domain Helmholtz solver (`solver/helmholtz.py`) uses a Perfectly
 Matched Layer with complex coordinate stretching.  In the PML region
 the spatial coordinate $x$ is replaced by
 
@@ -231,7 +231,7 @@ modulation.
 
 ## Water-Based Harbor Model (2-D)
 
-The harbor package reuses the scalar pressure FDTD solver in a **2-D
+The water (harbor) package (`acoustic_sim.water`) reuses the scalar pressure FDTD solver in a **2-D
 plan-view** approximation. A boolean mask identifies land cells, which
 are held at zero pressure (pressure-release boundaries); water cells
 carry the effective sound-speed field. The default depth map is

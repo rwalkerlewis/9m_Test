@@ -71,7 +71,7 @@ All detections default to hostile. Engagement is scored by computed miss distanc
 
 ## Water-Based Harbor Pipeline
 
-The separate harbor package (`src/acoustic_sim/harbor/`) synthesizes a harbor environment,
+The separate water package (`src/acoustic_sim/water/`) synthesizes a harbor environment,
 sensor layout, vessel tracks, noisy AIS reports, and sensor traces. Its FDTD model includes a
 water mask, pressure-release land boundaries, shoreline damping, optional finite-size moving
 scatterers, and pressure or strain-like DAS observations. It does **not** solve a 3-D water-column
@@ -158,6 +158,9 @@ pip install -e ".[cuda]"   # GPU acceleration (cupy-cuda12x)
 pip install -e ".[ml]"     # ML classifiers, FNO surrogate, anomaly detection (torch)
 pip install -e ".[dev]"   # pytest
 ```
+
+`pyproject.toml` is the single source of truth for dependencies; `requirements.txt` is only a
+compatibility shim that installs the package (`-e .`) with its base dependencies.
 
 MPI, only for multi-process FDTD (the solver runs single-process without it):
 
@@ -282,10 +285,12 @@ Python ≥ 3.10.
 
 ## Pre-computed Datasets
 
-The repository tracks the *metadata and results* of five reference runs under `output/`
-(`metadata.json`, `results_*.json`, a `README.md` per run) and the trained ML weights in
-`output/models/`.  The traces, snapshots and figures are not tracked (see `.gitignore`); regenerate
-a dataset with the `examples/run_*.sh` script of the same name.
+The repository tracks the *metadata and results* of the drone reference runs under `output/`
+(`metadata.json`, `results_*.json`, a `README.md` per run), the trained ML weights in
+`output/models/`, and selected harbor and performance results and figures.  Traces, datasets,
+caches and other figures are not tracked (see `.gitignore`); regenerate a drone dataset with the
+`examples/run_*.sh` script of the same name.  [Generated outputs](docs/outputs.md) lists what is
+tracked, how to regenerate each directory, and `scripts/clean_outputs.py` for reclaiming space.
 
 | Directory | Dimension | Domain | Source | Duration |
 |-----------|-----------|--------|--------|----------|
@@ -311,4 +316,5 @@ The `docs/` folder contains extensive documentation of the code, algorithms, and
 | [Usage](docs/usage.md) | Installation, CLI commands, running examples |
 | [Studies](docs/studies.md) | Nine parametric robustness studies |
 | [Harbor](docs/harbor.md) | Water-based 2-D harbor, DAS/hydrophone sensing, passive and bistatic examples, assumptions and validation status |
+| [Generated outputs](docs/outputs.md) | What is tracked under `output/`, how to regenerate it, cleanup |
 | [Glossary](docs/glossary.md) | Definitions of terms, acronyms, and concepts |

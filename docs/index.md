@@ -26,7 +26,7 @@ simulations, not real-world sensing or weapon-control systems.
 | **Classification** | CNN / fusion / maneuver / anomaly classifiers (optional, PyTorch, pre-trained weights shipped) | `ml` |
 | **FNO surrogate** | Fourier Neural Operator to replace FDTD (optional) | `ml.fno` |
 
-An older MFP/EKF path (`detection_main.py`) remains in the library for
+An older MFP/EKF path (`air/detection_main.py`) remains in the library for
 parametric studies but is not used by the production pipeline.
 
 ## Documentation
@@ -48,35 +48,43 @@ parametric studies but is not used by the production pipeline.
 ```
 acoustic-sim/
 ├── src/acoustic_sim/           # Python package
-│   ├── __init__.py             # public API re-exports
+│   ├── __init__.py             # public API re-exports + legacy import aliases
 │   ├── __main__.py             # python -m acoustic_sim
 │   ├── cli.py                  # Helmholtz CLI entry point
-│   ├── config.py               # DetectionConfig dataclass
 │   ├── model.py                # VelocityModel / VelocityModel3D
 │   ├── sampling.py             # spatial sampling & CFL checks
-│   ├── solver.py               # Helmholtz sparse solver (2-D, PML)
 │   ├── backend.py              # NumPy / CuPy abstraction
 │   ├── sources.py              # source signals & trajectory classes
-│   ├── domains.py              # domain builders (2-D + 3-D)
-│   ├── fdtd.py                 # FDTD solver (2-D + 3-D, MPI, CUDA)
 │   ├── receivers.py            # array geometry factories
-│   ├── forward.py              # analytical 3-D point-source model
-│   ├── noise.py                # wind noise, sensor noise, faults
-│   ├── processor.py            # MFP beamformer (MVDR, polar grid)
-│   ├── tracker.py              # EKF tracker (single + multi-target)
-│   ├── fire_control.py         # ballistics, lead, CPA, engagement
-│   ├── detection_main.py       # MFP/EKF pipeline orchestrator
-│   ├── plotting.py             # all visualisation
-│   ├── validate.py             # automated sanity checks
-│   ├── setup.py                # high-level simulation builders
 │   ├── io.py                   # JSON / NPZ I/O
-│   ├── studies.py              # parametric robustness studies
-│   ├── detection/              # pluggable detection framework
-│   │   ├── __init__.py
-│   │   ├── bearing.py          # SRPBeamformer, MUSICEstimator, MVDRBeamformer
-│   │   ├── engine.py           # DetectionEngine (streaming processor)
-│   │   ├── ranging.py          # RMS, TDOA, bearing-rate range estimators
-│   │   └── tracking.py         # CausalWLSTracker, EMABearingSmoother
+│   ├── detection_main.py       # compatibility alias for air/detection_main.py
+│   ├── studies.py              # compatibility alias for air/studies.py
+│   ├── solver/                 # shared solvers
+│   │   ├── fdtd.py             # FDTD solver (2-D + 3-D, MPI, CUDA)
+│   │   ├── fdtd_cuda.py        # CUDA kernels for the FDTD solver
+│   │   ├── snapshots.py        # wavefield snapshot PNGs (re-exported by air/plotting.py)
+│   │   ├── helmholtz.py        # Helmholtz sparse solver (2-D, PML)
+│   │   └── domain_meta.py      # DomainMeta / DomainMeta3D
+│   ├── air/                    # airborne drone detection / engagement
+│   │   ├── config.py           # DetectionConfig dataclass
+│   │   ├── domains.py          # domain builders (2-D + 3-D)
+│   │   ├── forward.py          # analytical 3-D point-source model
+│   │   ├── noise.py            # wind noise, sensor noise, faults
+│   │   ├── processor.py        # MFP beamformer (MVDR, polar grid)
+│   │   ├── tracker.py          # EKF tracker (single + multi-target)
+│   │   ├── fire_control.py     # ballistics, lead, CPA, engagement
+│   │   ├── detection_main.py   # MFP/EKF pipeline orchestrator
+│   │   ├── plotting.py         # all visualisation
+│   │   ├── validate.py         # automated sanity checks
+│   │   ├── setup.py            # high-level simulation builders
+│   │   ├── studies.py          # parametric robustness studies
+│   │   └── detection/          # pluggable detection framework
+│   │       ├── bearing.py      # SRPBeamformer, MUSICEstimator, MVDRBeamformer
+│   │       ├── engine.py       # DetectionEngine (streaming processor)
+│   │       ├── ranging.py      # RMS, TDOA, bearing-rate range estimators
+│   │       └── tracking.py     # CausalWLSTracker, EMABearingSmoother
+│   ├── water/                  # harbor DAS + hydrophone pipeline (see harbor.md)
+│   ├── harbor/                 # compatibility package aliasing water/
 │   └── ml/                     # optional ML classifiers
 │       ├── features.py         # mel spectrogram & kinematic features
 │       ├── acoustic_classifier.py
@@ -117,7 +125,7 @@ acoustic-sim/
 │       └── fusion_classifier.pt
 ├── audio/                      # WAV source files
 ├── pyproject.toml
-├── requirements.txt
+├── requirements.txt         # shim: installs the package from pyproject.toml
 ├── Dockerfile
 ├── docker-compose.yml          # dev container (no GPU needed)
 ├── docker-compose.gpu.yml      # adds NVIDIA GPU access
@@ -132,9 +140,11 @@ acoustic-sim/
 | numpy | arrays, linear algebra | yes |
 | scipy | sparse solvers, signal processing | yes |
 | matplotlib | plotting | yes |
-| mpi4py | MPI parallelism for FDTD | yes (single-process fallback) |
-| cupy-cuda12x | GPU acceleration | optional |
-| torch | ML classifiers, FNO surrogate | optional |
+| mpi4py | MPI parallelism for FDTD | optional, `[mpi]` (single-process without it) |
+| cupy-cuda12x | GPU acceleration | optional, `[cuda]` |
+| torch | ML classifiers, FNO surrogate | optional, `[ml]` |
+
+Dependencies are declared in `pyproject.toml`; `requirements.txt` is a compatibility shim for `pip install -e .`.
 
 ## ML Module
 
@@ -173,6 +183,6 @@ ML classifiers are integrated into the production SRP-PHAT pipeline
 (`run_pipeline.py`) as optional components enabled via CLI flags
 (`--enable-classification`, `--enable-maneuver`, `--enable-fusion`,
 `--enable-anomaly`).  Pre-trained weights are shipped in
-`output/models/`.  The MFP/EKF library path (`detection_main.py`) also
+`output/models/`.  The MFP/EKF library path (`air/detection_main.py`) also
 contains ML integration scaffolding via `_classify_source()` and
 `_detect_maneuvers()`.
