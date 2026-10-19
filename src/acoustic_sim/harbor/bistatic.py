@@ -35,6 +35,7 @@ from scipy.signal import get_window, resample
 from acoustic_sim.harbor.ais import AISReports
 from acoustic_sim.harbor.detection import DetectionSet, ScanResult, _nms, channel_weights, green2d, remove_common_mode
 from acoustic_sim.harbor.detection import ProcessingConfig
+from acoustic_sim.harbor.device import get_device
 from acoustic_sim.harbor.dispersion import DispersionModel, replica_wavenumbers
 from acoustic_sim.harbor.environment import HarborEnvironment
 from acoustic_sim.harbor.sensors import SensorLayout
@@ -42,6 +43,7 @@ from acoustic_sim.harbor.sensors import SensorLayout
 METHODS = ("bartlett", "bartlett_phat", "coherent", "mvdr", "music")
 REMOVALS = ("none", "eca", "patch", "adaptive", "patch+adaptive")
 REFERENCES = ("data", "oracle")
+IMPLS = ("reference", "vectorized")
 
 
 @dataclass
@@ -115,6 +117,15 @@ class BistaticConfig:
     dispersion : DispersionModel | None
         Numerical dispersion of the FDTD scheme that produced the data (``dispersion.for_scenario``);
         ``None`` for real data.
+    impl : str
+        ``"vectorized"`` (default): the replica tables are built once per bin and reused across
+        frames, the coherent, MVDR and MUSIC maps run over all frames at once, the ECA builds the
+        delayed reference matrices of all channels of a block from strided views and solves the
+        normal equations in a batch, and the refinement and the motion integration run over frames
+        and velocities at once.  ``"reference"``: the original per channel / per frame loops.  Same
+        mathematics; on the CPU the two agree to the last bit (ECA, refinement, coherent map).
+    use_cuda : bool
+        Run the vectorized chain on the GPU (CuPy, double precision; falls back to NumPy without a GPU).
     """
 
     win_s: float = 0.5
@@ -149,6 +160,8 @@ class BistaticConfig:
     min_separation: float = 20.0
     max_peaks: int = 3
     dispersion: DispersionModel | None = None
+    impl: str = "vectorized"
+    use_cuda: bool = False
 
     def __post_init__(self) -> None:
         if self.method not in METHODS:
@@ -157,6 +170,26 @@ class BistaticConfig:
             raise ValueError(f"removal must be one of {REMOVALS}, got {self.removal!r}")
         if self.reference not in REFERENCES:
             raise ValueError(f"reference must be one of {REFERENCES}, got {self.reference!r}")
+        if self.impl not in IMPLS:
+            raise ValueError(f"impl must be one of {IMPLS}, got {self.impl!r}")
+
+
+def _xp(bc: BistaticConfig):
+    """Array module of the vectorized chain for *bc* (CuPy with ``use_cuda`` and a GPU, else NumPy)."""
+    return get_device(bc.use_cuda and bc.impl == "vectorized").xp
+
+
+def _asnumpy(a):
+    return a.get() if hasattr(a, "get") else np.asarray(a)
+
+
+def _module_of(a):
+    """NumPy or CuPy, whichever *a* belongs to."""
+    if isinstance(a, np.ndarray):
+        return np
+    import cupy
+
+    return cupy
 
 
 # ----------------------------------------------------------------------
@@ -221,49 +254,93 @@ class ReplicaModel:
     value instead of ``w / c``; on a coarse grid (4 cells per wavelength) the numerical phase
     speed is 1 to 2 percent off and direction dependent, which shifts a bistatic fix by metres.
     Leave it ``None`` for real data.  *k* passed to the calls is the free field ``w / c``.
+
+    *xp* is the array module (NumPy, or CuPy for the GPU chain): the replicas come back as arrays
+    of that module; points and sources are always given as host arrays.  :meth:`many` evaluates
+    several wavenumbers on one geometry and :meth:`paths` several sources at one wavenumber, the
+    building blocks of the vectorized chain.
     """
 
     def __init__(self, layout: SensorLayout, c: float, min_range: float = 1.0,
-                 dispersion: DispersionModel | None = None) -> None:
+                 dispersion: DispersionModel | None = None, xp=np) -> None:
         self.layout, self.c, self.min_range = layout, c, min_range
         self.samples = layout.sample_points
         self.weights = None
         self.dispersion = dispersion
-        self._cache: tuple | None = None
+        self.xp = xp
+        self._cache: dict[tuple, tuple] = {}          # geometry key -> (r, theta); a few recent entries
+        self._weights_cache: tuple | None = None
 
-    def _geometry(self, pts: np.ndarray, targets: np.ndarray) -> tuple[np.ndarray, np.ndarray | None]:
-        """Ranges (P, M) and, with dispersion, propagation angles for *pts* to *targets*; the last
-        geometry is cached because the replicas of every bin share it (the AIS refinement and the
-        scan map call this once per bin for the same points)."""
+    def _geometry(self, pts: np.ndarray, targets: np.ndarray) -> tuple:
+        """Ranges (P, M) and, with dispersion, propagation angles for *pts* to *targets* (arrays of
+        ``self.xp``); the last geometry is cached because the replicas of every bin share it (the
+        AIS refinement and the scan map call this once per bin for the same points)."""
         key = (pts.shape, targets.shape, pts.tobytes(), targets.tobytes())      # exact; a 17000 point grid is 270 kB, cheap to compare
-        if self._cache is not None and self._cache[0] == key:
-            return self._cache[1]
-        dx = pts[:, None, 0] - targets[None, :, 0]
-        dy = pts[:, None, 1] - targets[None, :, 1]
-        r = np.maximum(np.hypot(dx, dy), self.min_range)
-        theta = np.arctan2(np.abs(dy), np.abs(dx)) if self.dispersion is not None else None
-        self._cache = (key, (r, theta))
+        hit = self._cache.get(key)
+        if hit is not None:
+            return hit
+        xp = self.xp
+        pts_d, tgt_d = xp.asarray(pts), xp.asarray(targets)
+        dx = pts_d[:, None, 0] - tgt_d[None, :, 0]
+        dy = pts_d[:, None, 1] - tgt_d[None, :, 1]
+        r = xp.maximum(xp.hypot(dx, dy), self.min_range)
+        theta = xp.arctan2(xp.abs(dy), xp.abs(dx)) if self.dispersion is not None else None
+        if len(self._cache) >= 4:                       # the scan grid geometry must survive the per frame path calls
+            del self._cache[next(iter(self._cache))]
+        self._cache[key] = (r, theta)
         return r, theta
 
-    def _kr(self, pts: np.ndarray, targets: np.ndarray, k: float) -> np.ndarray:
+    def _kr_many(self, pts: np.ndarray, targets: np.ndarray, ks: np.ndarray):
+        """``k r`` (B, P, M) for the wavenumbers *ks* (B,) on one geometry."""
+        r, theta = self._geometry(pts, targets)
+        ks = np.atleast_1d(np.asarray(ks, dtype=float))
+        if self.dispersion is None:
+            return self.xp.asarray(ks)[:, None, None] * r
+        f = ks * self.c / (2.0 * np.pi)
+        kk = replica_wavenumbers(self.dispersion, f, self.c, theta, self.xp)
+        return kk * r
+
+    def _kr(self, pts: np.ndarray, targets: np.ndarray, k: float):
         r, theta = self._geometry(pts, targets)
         if self.dispersion is None:
             return k * r
         f = k * self.c / (2.0 * np.pi)
-        kk = replica_wavenumbers(self.dispersion, [f], self.c, theta)[0]
+        kk = replica_wavenumbers(self.dispersion, [f], self.c, theta, self.xp)[0]
         return kk * r
 
-    def __call__(self, pts: np.ndarray, k: float) -> np.ndarray:
+    def _weights_d(self):
+        if self.weights is None:
+            return None
+        if self._weights_cache is None or self._weights_cache[0] is not self.weights:
+            self._weights_cache = (self.weights, self.xp.asarray(self.weights))
+        return self._weights_cache[1]
+
+    def __call__(self, pts: np.ndarray, k: float):
         pts = np.atleast_2d(np.asarray(pts, dtype=float))
-        a = self.layout.collapse(green2d(self._kr(pts, self.samples, k)))
-        if self.weights is not None:
-            a = a * self.weights[None, :]
+        a = self.layout.collapse(green2d(self._kr(pts, self.samples, k), self.xp), self.xp)
+        w = self._weights_d()
+        if w is not None:
+            a = a * w[None, :]
         return a
 
-    def path(self, pts: np.ndarray, src: np.ndarray, k: float) -> np.ndarray:
+    def many(self, pts: np.ndarray, ks: np.ndarray):
+        """Replicas (B, P, N) of *pts* for the wavenumbers *ks* (B,), one geometry evaluation."""
+        pts = np.atleast_2d(np.asarray(pts, dtype=float))
+        a = self.layout.collapse(green2d(self._kr_many(pts, self.samples, ks), self.xp), self.xp)
+        w = self._weights_d()
+        if w is not None:
+            a = a * w[None, None, :]
+        return a
+
+    def path(self, pts: np.ndarray, src: np.ndarray, k: float):
         """Free field path factor ``H0^(2)(k |x - s|)`` (P,) from *src* to *pts*."""
         pts = np.atleast_2d(np.asarray(pts, dtype=float))
-        return green2d(self._kr(pts, np.atleast_2d(np.asarray(src, dtype=float)), k))[:, 0]
+        return green2d(self._kr(pts, np.atleast_2d(np.asarray(src, dtype=float)), k), self.xp)[:, 0]
+
+    def paths(self, pts: np.ndarray, srcs: np.ndarray, k: float):
+        """Path factors (P, M) from every source in *srcs* (M, 2) to *pts*."""
+        pts = np.atleast_2d(np.asarray(pts, dtype=float))
+        return green2d(self._kr(pts, np.atleast_2d(np.asarray(srcs, dtype=float)), k), self.xp)
 
 
 replicas = ReplicaModel  # alias used in the docs
@@ -301,6 +378,54 @@ def ship_positions(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: Bistat
 
     *truth* (K, 2) replaces the AIS prediction (for ablations: exact position, no refinement).
     """
+    if bc.impl == "reference":
+        return _ship_positions_reference(sp, ais, model, bc, vessel, truth)
+    return _ship_positions_vectorized(sp, ais, model, bc, vessel, truth)
+
+
+def _ship_track_prelude(sp: Spectra, ais: AISReports, bc: BistaticConfig, vessel: str | None, truth: np.ndarray | None):
+    vid = vessel or ais.vessels[0]
+    tr = ais.for_vessel(vid)
+    pred = tr.predict(sp.times) if truth is None else np.asarray(truth, dtype=float)
+    present = (sp.times >= tr.t[0] - 60.0) & (tr.age(sp.times) <= 60.0) if truth is None else np.ones(len(sp.times), bool)
+    return vid, pred, present
+
+
+def _ship_positions_vectorized(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: BistaticConfig, vessel: str | None,
+                               truth: np.ndarray | None) -> ShipTrack:
+    """The reference search with the replicas of all bins of a frame built in one call (one geometry,
+    one Green's function evaluation) and the data of all frames moved to the device once; the power
+    is still accumulated bin by bin in the reference order, so the CPU result is identical."""
+    vid, pred, present = _ship_track_prelude(sp, ais, bc, vessel, truth)
+    refined = pred.copy()
+    score = np.ones(len(sp.times))
+    if not bc.refine or truth is not None:
+        return ShipTrack(vid, pred, refined, present, score)
+    xp = model.xp
+    h = np.arange(-bc.refine_half, bc.refine_half + 1e-6, bc.refine_step)
+    off = np.array([(a, b) for a in h for b in h])
+    bins = np.arange(0, len(sp.freqs), 3)
+    ks = sp.wavenumbers[bins] / bc.c
+    Y = _phat(xp.asarray(sp.X[:, bins, :])) * xp.asarray(sp.weights)[:, None, None]       # (N, Bins, K)
+    for k in range(len(sp.times)):
+        if not present[k]:
+            continue
+        pts = pred[k] + off
+        A = model.many(pts, ks)                                                              # (Bins, P, N)
+        norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=2), 1e-30)                            # (Bins, P)
+        power = xp.zeros(len(pts))
+        for i in range(len(bins)):
+            power += xp.abs(A[i].conj() @ Y[:, i, k]) ** 2 / norm[i]
+        power = _asnumpy(power)
+        best = int(np.argmax(power))
+        refined[k] = pts[best]
+        score[k] = power[best] / max(power.mean(), 1e-30)
+    return ShipTrack(vid, pred, refined, present, score)
+
+
+def _ship_positions_reference(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: BistaticConfig, vessel: str | None = None,
+                              truth: np.ndarray | None = None) -> ShipTrack:
+    """The original per frame, per bin loop (``impl = "reference"``; NumPy replica model)."""
     vid = vessel or ais.vessels[0]
     tr = ais.for_vessel(vid)
     pred = tr.predict(sp.times) if truth is None else np.asarray(truth, dtype=float)
@@ -368,6 +493,33 @@ def _resample_at(x: np.ndarray, positions: np.ndarray, factor: int = UPSAMPLE) -
     return np.interp(positions * factor, np.arange(n * factor, dtype=float), up, left=0.0, right=0.0)
 
 
+def _reference_doppler_vectorized(x: np.ndarray, rec: np.ndarray, ship_t: np.ndarray, j: np.ndarray, fs: float,
+                                  bc: BistaticConfig, chunk: int = 16) -> np.ndarray:
+    """Sum over channels of ``_resample_at(x[i], j + adv_i)``: the FFT upsampling of *chunk* channels at a
+    time along one axis (the same transform per row) and one interpolation call per chunk."""
+    xp = _xp(bc)
+    n = x.shape[1]
+    up_n = n * UPSAMPLE
+    grid = xp.arange(up_n, dtype=float)
+    ship_d = xp.asarray(ship_t)
+    rec_d = xp.asarray(rec)
+    j_d = xp.asarray(j)
+    out = xp.zeros(n)
+    for c0 in range(0, x.shape[0], chunk):
+        xc = x[c0:c0 + chunk]
+        if xp is np:
+            up = resample(np.asarray(xc, dtype=np.float64), up_n, axis=1)
+        else:
+            from cupyx.scipy.signal import resample as cp_resample
+
+            up = cp_resample(xp.asarray(xc, dtype=np.float64), up_n, axis=1)
+        adv = xp.hypot(ship_d[None, :, 0] - rec_d[c0:c0 + chunk, None, 0], ship_d[None, :, 1] - rec_d[c0:c0 + chunk, None, 1]) / bc.c * fs
+        pos = (j_d[None, :] + adv) * UPSAMPLE                                               # (chunk, n)
+        for i in range(up.shape[0]):
+            out += xp.interp(pos[i], grid, up[i], left=0.0, right=0.0)
+    return _asnumpy(out)
+
+
 def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy: np.ndarray, block_s: float,
                    bc: BistaticConfig, channels: np.ndarray | None = None, oracle_signal: np.ndarray | None = None,
                    ship_t: np.ndarray | None = None) -> np.ndarray:
@@ -392,6 +544,8 @@ def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy:
     if ship_t is not None:
         j = np.arange(n, dtype=float)
         live = np.sum(np.abs(x) ** 2, axis=1) > 0
+        if bc.impl == "vectorized":
+            return _reference_doppler_vectorized(x[live], rec[live], ship_t, j, fs, bc) / max(live.sum(), 1)
         out = np.zeros(n)
         for i in np.flatnonzero(live):
             adv = np.hypot(ship_t[:, 0] - rec[i, 0], ship_t[:, 1] - rec[i, 1]) / bc.c * fs
@@ -460,6 +614,163 @@ def eca_remove(
     ship_t: np.ndarray | None = None,
 ) -> list[np.ndarray]:
     """Extensive cancellation (least squares projection on delayed copies of the reference).
+
+    For every channel and block of *block_s* seconds, the channel is projected onto the
+    reference delayed by the lags around the predicted direct arrival (``|s - r| / c``) and
+    around each first order image arrival, each window ``bc.eca_halfwidth_s`` wide.  Only
+    those lags are used, so an echo at another bistatic delay survives.  The same projection
+    is applied to every array in *traces* (the measurement and, for diagnostics, its truth
+    components), which is what makes the cancellation depth measurable.
+
+    With *ship_t* (n, 2), the ship position at every sample, each regressor is the reference
+    resampled at the **per sample** delay of its path (direct, or an image whose wall is fixed
+    per block) plus a fixed lag offset, so the delay drift of a moving ship inside a block is
+    followed instead of fitted by a time invariant filter.
+
+    ``bc.impl = "vectorized"`` builds the regressor matrices of all channels of a block from
+    strided views of the (padded, resampled) reference and solves the normal equations of the
+    channels with the same lag count together (:func:`_project_out_batched`); the reference loop
+    is :func:`_eca_remove_reference`.
+    """
+    if bc.impl == "reference":
+        return _eca_remove_reference(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t)
+    return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t)
+
+
+def _project_out_batched(S, segs, loading: float = 1e-14):
+    """Batched :func:`_project_out`: *S* (Ng, block, L), *segs* (Ng, block, R) -> cleaned (Ng, block, R).
+
+    The normal equations of all channels come from one stacked product (identical to the per
+    channel products).  On the CPU the factorisation and solves are SciPy's ``cho_factor`` /
+    ``cho_solve`` per channel, exactly the reference calls, so the result is identical to the
+    last bit; on the GPU they are CuPy's batched Cholesky and triangular solves.
+    """
+    xp = _module_of(S)
+    Ng, block, L = S.shape
+    St = S.transpose(0, 2, 1)
+    G = xp.matmul(St, S)                                                                   # (Ng, L, L)
+    tr = xp.trace(G, axis1=1, axis2=2) / L
+    diag = xp.arange(L)
+    G[:, diag, diag] += (loading * xp.maximum(tr, 1e-300))[:, None]
+    rhs = xp.matmul(St, segs)                                                               # (Ng, L, R)
+    if xp is np:
+        out = np.empty_like(segs)
+        for g in range(Ng):
+            try:
+                c, low = cho_factor(G[g], lower=True, check_finite=False)
+            except np.linalg.LinAlgError:
+                Q, _ = np.linalg.qr(S[g])
+                out[g] = segs[g] - Q @ (Q.T @ segs[g])
+                continue
+            x = cho_solve((c, low), rhs[g], check_finite=False)
+            r = segs[g] - S[g] @ x
+            x += cho_solve((c, low), S[g].T @ r, check_finite=False)
+            out[g] = segs[g] - S[g] @ x
+        return out
+    from cupyx.scipy.linalg import solve_triangular
+
+    try:
+        Lc = xp.linalg.cholesky(G)
+    except Exception:
+        host = _project_out_batched(_asnumpy(S), _asnumpy(segs), loading)
+        return xp.asarray(host)
+    if not bool(xp.isfinite(Lc).all()):
+        host = _project_out_batched(_asnumpy(S), _asnumpy(segs), loading)
+        return xp.asarray(host)
+    Lt = Lc.transpose(0, 2, 1)
+
+    def solve(b):
+        return solve_triangular(Lt, solve_triangular(Lc, b, lower=True), lower=False)
+
+    x = solve(rhs)
+    r = segs - xp.matmul(S, x)
+    x = x + solve(xp.matmul(St, r))
+    return segs - xp.matmul(S, x)
+
+
+def _eca_lags(nominal: np.ndarray, half: int, hi: int) -> list[np.ndarray]:
+    """Per channel lag sets of the reference: the union of the windows around the nominal delays
+    (``nominal`` (N, P)), restricted to ``[0, hi)``."""
+    out = []
+    for nom in nominal:
+        lags = np.unique(np.concatenate([np.arange(L0 - half, L0 + half + 1) for L0 in nom]))
+        out.append(lags[(lags >= 0) & (lags < hi)])
+    return out
+
+
+def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, chunk: int = 32) -> list[np.ndarray]:
+    xp = _xp(bc)
+    from_window = xp.lib.stride_tricks.sliding_window_view
+    n = traces[0].shape[1]
+    nb = int(round(block_s * fs))
+    half = int(round(bc.eca_halfwidth_s * fs))
+    outs = [np.array(x, dtype=np.float64, copy=True) for x in traces]
+    rec = layout.receivers
+    ref = np.asarray(reference, dtype=np.float64)
+    if ship_t is None:
+        refp = xp.asarray(np.concatenate([np.zeros(n), ref]))                                # lag L of block [lo, hi): refp[n + lo - L : n + hi - L]
+    else:
+        ref_up = xp.asarray(resample(ref, n * UPSAMPLE))
+        j_up = xp.arange(n * UPSAMPLE, dtype=float)
+        j_all = xp.arange(n, dtype=float)
+        rec_d = xp.asarray(rec)
+    for b in range(len(ship_xy)):
+        lo, hi = b * nb, min((b + 1) * nb, n)
+        if hi <= lo:
+            break
+        block = hi - lo
+        srcs = [ship_xy[b]] + ([images[b]] if len(images) and len(images[b]) else [])
+        pts = np.vstack([np.atleast_2d(p) for p in srcs])                                   # (P, 2)
+        nominal = np.rint(np.hypot(pts[None, :, 0] - rec[:, None, 0], pts[None, :, 1] - rec[:, None, 1]) / bc.c * fs).astype(int)
+        lag_sets = _eca_lags(nominal, half, hi)
+        if ship_t is not None:
+            a, z = max(lo - half, 0), min(hi + half, n)
+            s_blk = xp.asarray(ship_t[a:z])                                                 # (z - a, 2)
+            walls = 0.5 * (pts[1:] + ship_xy[b][None, :])                                   # image = 2 wall - ship
+            paths = xp.stack([s_blk] + [2.0 * xp.asarray(w)[None, :] - s_blk for w in walls])   # (P, z - a, 2)
+            pad = half
+        groups: dict[int, list[int]] = {}
+        for i, lags in enumerate(lag_sets):
+            if len(lags):
+                groups.setdefault(len(lags), []).append(i)
+        for L, chans in groups.items():
+            for c0 in range(0, len(chans), chunk):
+                idx = np.array(chans[c0:c0 + chunk])
+                lags = np.stack([lag_sets[i] for i in idx])                                    # (Ng, L)
+                if ship_t is None:
+                    W = from_window(refp, block)                                              # (n_win, block): row w = refp[w : w + block]
+                    S = W[xp.asarray(n + lo - lags)]                                           # (Ng, L, block)
+                else:
+                    d = xp.hypot(paths[None, :, :, 0] - rec_d[idx][:, None, None, 0],
+                                 paths[None, :, :, 1] - rec_d[idx][:, None, None, 1]) / bc.c * fs    # (Ng, P, z - a)
+                    pos = (j_all[a:z][None, None, :] - d) * UPSAMPLE
+                    bases = xp.interp(pos.ravel(), j_up, ref_up, left=0.0, right=0.0).reshape(pos.shape)
+                    basep = xp.concatenate([xp.zeros(bases.shape[:2] + (pad,)), bases, xp.zeros(bases.shape[:2] + (pad,))], axis=-1)
+                    owner = np.argmin(np.abs(lags[:, :, None] - nominal[idx][:, None, :]), axis=2)      # (Ng, L)
+                    off = lags - np.take_along_axis(nominal[idx], owner, axis=1)
+                    start = pad + (lo - a) - off                                                      # window start in basep
+                    W = from_window(basep, block, axis=-1)                                           # (Ng, P, n_win, block)
+                    S = W[xp.asarray(np.arange(len(idx)))[:, None], xp.asarray(owner), xp.asarray(start)]   # (Ng, L, block)
+                S = xp.ascontiguousarray(S.transpose(0, 2, 1))                                        # (Ng, block, L)
+                segs = xp.asarray(np.stack([out[idx, lo:hi] for out in outs], axis=-1))               # (Ng, block, R)
+                cleaned = _asnumpy(_project_out_batched(S, segs))
+                for r_i, out in enumerate(outs):
+                    out[idx, lo:hi] = cleaned[:, :, r_i]
+    return outs
+
+
+def _eca_remove_reference(
+    traces: list[np.ndarray],
+    reference: np.ndarray,
+    layout: SensorLayout,
+    fs: float,
+    ship_xy: np.ndarray,
+    images: list[np.ndarray],
+    block_s: float,
+    bc: BistaticConfig,
+    ship_t: np.ndarray | None = None,
+) -> list[np.ndarray]:
+    """The original per channel loop of :func:`eca_remove` (``impl = "reference"``).
 
     For every channel and block of *block_s* seconds, the channel is projected onto the
     reference delayed by the lags around the predicted direct arrival (``|s - r| / c``) and
@@ -543,6 +854,17 @@ def reference_spectrum(sp: Spectra, ship: ShipTrack, model: ReplicaModel, bc: Bi
             raise ValueError("reference='oracle' needs the oracle spectra")
         return oracle
     r = np.zeros((len(sp.freqs), len(sp.times)), dtype=np.complex128)
+    if bc.impl == "vectorized":
+        xp = model.xp
+        X_d = xp.asarray(sp.X)
+        for k in range(len(sp.times)):
+            if not ship.present[k]:
+                continue
+            a = model.many(ship.refined[k][None], sp.wavenumbers / bc.c)[:, 0, :]          # (F, N)
+            num = xp.sum(xp.conj(a) * X_d[:, :, k].T, axis=1)
+            den = xp.maximum(xp.sum(xp.conj(a) * a, axis=1).real, 1e-30)
+            r[:, k] = _asnumpy(num / den)
+        return r
     for k in range(len(sp.times)):
         if not ship.present[k]:
             continue
@@ -578,7 +900,7 @@ def remove_direct(sp: Spectra, ship: ShipTrack, model: ReplicaModel, bc: Bistati
                 continue
             pts = ship.refined[k] + patch
             for i, kk in enumerate(sp.wavenumbers / bc.c):
-                A = model(pts, kk).T                                   # (N, 9)
+                A = _asnumpy(model(pts, kk)).T                         # (N, 9)
                 u, s, _ = np.linalg.svd(A, full_matrices=False)
                 u = u[:, s > bc.svd_rtol * s[0]]
                 z = out.X[:, i, k]
@@ -634,7 +956,85 @@ def bistatic_map(clean: Spectra, ship: ShipTrack, ref: np.ndarray, grid: np.ndar
     magnitude.  The coherent processor correlates ``a_f(x)^H y_f`` against the illuminator
     spectrum times the ship to cell path, ``r_f G(k |x - s|)``, and sums over frequency before
     taking the magnitude: the matched filter against the illuminator waveform.
+
+    ``bc.impl = "vectorized"``: the replica of every bin is built once and applied to all frames,
+    the ship to cell paths of all frames come from one Green's function call, and the MVDR and
+    MUSIC processors use batched inverses and eigendecompositions over frames
+    (:func:`_bistatic_map_vectorized`); the per frame loops are :func:`_bistatic_map_reference`.
     """
+    if bc.impl == "reference":
+        return _bistatic_map_reference(clean, ship, ref, grid, model, bc, method)
+    return _bistatic_map_vectorized(clean, ship, ref, grid, model, bc, method)
+
+
+def _csm_batch(Xi, window: int, loading: float):
+    """Loaded cross spectral matrices of every frame, (K, N, N) (the :func:`_csm` of each frame)."""
+    xp = _module_of(Xi)
+    N, K = Xi.shape
+    R = xp.empty((K, N, N), dtype=Xi.dtype)
+    eye = xp.eye(N)
+    for k in range(K):
+        lo, hi = max(0, k - window), min(K, k + window + 1)
+        D = Xi[:, lo:hi]
+        Rk = D @ D.conj().T / D.shape[1]
+        R[k] = Rk + loading * xp.trace(Rk).real / N * eye
+    return R
+
+
+def _bistatic_map_vectorized(clean, ship, ref, grid, model, bc, method, frame_chunk: int = 8):
+    method = method or bc.method
+    xp = model.xp
+    G, K, F = len(grid), len(clean.times), len(clean.freqs)
+    B = xp.zeros((G, K))
+    Z = xp.zeros((G, K), dtype=np.complex128) if method == "coherent" else None
+    W = xp.zeros((G, K)) if method == "coherent" else None
+    present = np.flatnonzero(ship.present)
+    present_d = xp.asarray(present)
+    ship_p = ship.refined[present]
+    X_d = xp.asarray(clean.X)
+    w_d = xp.asarray(clean.weights)
+    ref_d = xp.asarray(ref) if ref is not None else None
+    for i, kk in enumerate(clean.wavenumbers / bc.c):
+        A = model(grid, kk)                                                                 # (G, N)
+        norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=1), 1e-30)
+        Xi = X_d[:, i, :]                                                                   # (N, K)
+        if method in ("bartlett", "bartlett_phat"):
+            Y = _phat(Xi) * w_d[:, None] if method == "bartlett_phat" else Xi
+            B += xp.abs(A.conj() @ Y) ** 2 / norm[:, None]
+        elif method == "coherent":
+            if len(present) == 0:
+                continue
+            Y = A.conj() @ Xi                                                               # (G, K)
+            path = model.paths(grid, ship_p, kk)                                            # (G, Kp)
+            r_i = ref_d[i, present_d][None, :]
+            Z[:, present_d] += Y[:, present_d] * xp.conj(path) * xp.conj(r_i) / norm[:, None]
+            W[:, present_d] += xp.abs(path) ** 2 * xp.abs(r_i) ** 2 / norm[:, None]
+        elif method in ("mvdr", "music"):
+            R = _csm_batch(Xi, bc.adaptive_window, bc.mvdr_loading)                          # (K, N, N)
+            Ac = A.conj()
+            if method == "mvdr":
+                Ri = xp.linalg.inv(R)
+                for k0 in range(0, K, frame_chunk):
+                    AR = xp.matmul(Ac[None], Ri[k0:k0 + frame_chunk])                        # (kc, G, N)
+                    q = xp.sum(AR * A[None], axis=2).real                                   # (kc, G)
+                    B[:, k0:k0 + frame_chunk] += (norm[None, :] / xp.maximum(q, 1e-30)).T
+            else:
+                lam, vec = xp.linalg.eigh(R)
+                En = vec[:, :, : max(R.shape[1] - bc.music_rank, 1)]                           # (K, N, N - r)
+                for k0 in range(0, K, frame_chunk):
+                    q = xp.sum(xp.abs(xp.matmul(Ac[None], En[k0:k0 + frame_chunk])) ** 2, axis=2)   # (kc, G)
+                    B[:, k0:k0 + frame_chunk] += (norm[None, :] / xp.maximum(q, 1e-30)).T
+    if method == "coherent":
+        B = xp.abs(Z) ** 2
+        if bc.coherent_norm == "snr":
+            B /= xp.maximum(W, 1e-30)
+    B /= max(float(B.max()), 1e-30)
+    return _asnumpy(B), None if Z is None else _asnumpy(Z)
+
+
+def _bistatic_map_reference(clean: Spectra, ship: ShipTrack, ref: np.ndarray, grid: np.ndarray, model: ReplicaModel,
+                            bc: BistaticConfig, method: str | None = None) -> tuple[np.ndarray, np.ndarray | None]:
+    """The original per bin, per frame loops of :func:`bistatic_map` (``impl = "reference"``)."""
     method = method or bc.method
     G, K, F = len(grid), len(clean.times), len(clean.freqs)
     B = np.zeros((G, K))
@@ -789,7 +1189,7 @@ def run_bistatic(
     """
     truth = truth or Truth()
     sp = stft(traces, layout, fs, bc, f_max)
-    model = ReplicaModel(layout, bc.c, dispersion=bc.dispersion)
+    model = ReplicaModel(layout, bc.c, dispersion=bc.dispersion, xp=_xp(bc))
     model.weights = sp.weights
     ship = ship_positions(sp, ais, model, bc, truth=truth.ship_xy)
     grid = grid if grid is not None else build_grid(env, bc)
@@ -828,7 +1228,7 @@ def run_bistatic(
 # ----------------------------------------------------------------------
 
 def motion_integrate(Z: np.ndarray, grid: np.ndarray, times: np.ndarray, speeds: np.ndarray,
-                     coherent: bool = True) -> tuple[np.ndarray, np.ndarray]:
+                     coherent: bool = True, impl: str = "vectorized", use_cuda: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """Integrate the per frame maps along constant velocity hypotheses.
 
     For every velocity ``v`` in *speeds* (V, 2) the frame maps are shifted to the central
@@ -836,7 +1236,52 @@ def motion_integrate(Z: np.ndarray, grid: np.ndarray, times: np.ndarray, speeds:
     magnitudes squared).  Returns the best map ``(G,)`` over velocities and the per velocity
     peak values ``(V,)``.  The ship moves during the window, so the bistatic ellipses sweep
     across a target; integrating along the true velocity is a synthetic aperture.
+
+    *impl* ``"vectorized"`` (default) interpolates all frames and velocities in one call per chunk
+    of velocities (the frame maps stacked, bilinear in the map and exact along the frame axis),
+    optionally on the GPU; ``"reference"`` is the original loop.
     """
+    if impl == "reference":
+        return _motion_integrate_reference(Z, grid, times, speeds, coherent)
+    return _motion_integrate_vectorized(Z, grid, times, speeds, coherent, get_device(use_cuda).xp)
+
+
+def _motion_integrate_vectorized(Z, grid, times, speeds, coherent, xp, budget: int = 2 ** 27):
+    x, y = grid[:, 0], grid[:, 1]
+    xs, ys = np.unique(x), np.unique(y)
+    dx = xs[1] - xs[0]
+    ix = np.rint((x - xs[0]) / dx).astype(int)
+    iy = np.rint((y - ys[0]) / dx).astype(int)
+    K, G, V = len(times), len(grid), len(speeds)
+    t_mid = times[len(times) // 2]
+    complex_in = np.iscomplexobj(Z)
+    imgs = xp.zeros((K, len(ys), len(xs)), dtype=Z.dtype)
+    imgs[:, xp.asarray(iy), xp.asarray(ix)] = xp.asarray(Z).T
+    if xp is np:
+        from scipy.ndimage import map_coordinates as mapc
+    else:
+        from cupyx.scipy.ndimage import map_coordinates as mapc
+    shift = speeds[:, None, :] * (times - t_mid)[None, :, None]                                # (V, K, 2)
+    cx_all = (x[None, None, :] + shift[:, :, 0:1] - xs[0]) / dx                                 # (V, K, G)
+    cy_all = (y[None, None, :] + shift[:, :, 1:2] - ys[0]) / dx
+    ck = np.broadcast_to(np.arange(K, dtype=float)[None, :, None], (V, K, G))
+    acc = xp.zeros((V, G), dtype=np.complex128 if coherent else float)
+    vc = max(1, int(budget // (K * G * 8 * 3)))
+    for v0 in range(0, V, vc):
+        coords = xp.asarray(np.stack([ck[v0:v0 + vc], cy_all[v0:v0 + vc], cx_all[v0:v0 + vc]]))   # (3, vc, K, G)
+        re = mapc(imgs.real, coords, order=1, mode="constant")
+        im = mapc(imgs.imag, coords, order=1, mode="constant") if complex_in else 0.0
+        val = re + 1j * im if complex_in else re
+        acc[v0:v0 + vc] = xp.sum(val, axis=1) if coherent else xp.sum(xp.abs(val) ** 2, axis=1)
+    m = xp.abs(acc) ** 2 if coherent else acc
+    peaks = _asnumpy(m.max(axis=1))
+    best = _asnumpy(m[int(np.argmax(peaks))])
+    return best, peaks
+
+
+def _motion_integrate_reference(Z: np.ndarray, grid: np.ndarray, times: np.ndarray, speeds: np.ndarray,
+                                coherent: bool = True) -> tuple[np.ndarray, np.ndarray]:
+    """The original per velocity, per frame loop of :func:`motion_integrate`."""
     x, y = grid[:, 0], grid[:, 1]
     xs, ys = np.unique(x), np.unique(y)
     dx = xs[1] - xs[0]
