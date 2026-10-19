@@ -33,3 +33,5 @@ jobs:
           python -m pytest -q
           tests/test_package_layout.py
           tests/harbor/test_dispersion.py
+          tests/test_fdtd_3d.py::test_cfl
+          tests/test_fdtd_3d.py::test_propagation

@@ -356,6 +356,9 @@ __all__ = [
     "study_transient_robustness",
 ]
 
+import importlib as _importlib
+import sys as _sys
+
 _LAZY_AIR_EXPORTS = {
     "evaluate_results": "detection_main",
     "evaluate_results_3d": "detection_main",
@@ -387,10 +390,14 @@ def __getattr__(name: str):
 
 
 # Keep the pre-domain package paths importable while callers migrate to air/ and water/.
-import importlib as _importlib
-import sys as _sys
+def _alias(legacy: str, canonical: str, *, attribute: bool = True) -> None:
+    module = _importlib.import_module(f".{canonical}", __name__)
+    _sys.modules[f"{__name__}.{legacy}"] = module
+    if attribute:
+        setattr(_sys.modules[__name__], legacy, module)
 
-_air_modules = (
+
+for _module_name in (
     "config",
     "domains",
     "fire_control",
@@ -401,21 +408,10 @@ _air_modules = (
     "setup",
     "tracker",
     "validate",
-)
-for _module_name in _air_modules:
-    _module = _importlib.import_module(
-        f".air.{_module_name}", __name__
-    )
-    _sys.modules[f"{__name__}.{_module_name}"] = _module
-    setattr(_sys.modules[__name__], _module_name, _module)
-_air_detection = _importlib.import_module(".air.detection", __name__)
-_sys.modules[f"{__name__}.detection"] = _air_detection
-setattr(_sys.modules[__name__], "detection", _air_detection)
+    "detection",
+):
+    _alias(_module_name, f"air.{_module_name}")
 for _module_name in ("bearing", "engine", "ranging", "tracking"):
-    _sys.modules[f"{__name__}.detection.{_module_name}"] = _importlib.import_module(
-        f".air.detection.{_module_name}", __name__
-    )
+    _alias(f"detection.{_module_name}", f"air.detection.{_module_name}", attribute=False)
 for _module_name in ("fdtd", "fdtd_cuda"):
-    _module = _importlib.import_module(f".solver.{_module_name}", __name__)
-    _sys.modules[f"{__name__}.{_module_name}"] = _module
-    setattr(_sys.modules[__name__], _module_name, _module)
+    _alias(_module_name, f"solver.{_module_name}")
