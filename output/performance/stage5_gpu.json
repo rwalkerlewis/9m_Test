@@ -1,11 +1,11 @@
 {
   "tag": "stage5_gpu",
-  "date": "2026-10-19 06:15:22",
-  "git": "6c60f47",
+  "date": "2026-10-19 13:01:03",
+  "git": "ec386bf",
   "host": {
     "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
-    "python": "3.12.3",
-    "numpy": "2.5.4",
+    "python": "3.13.13",
+    "numpy": "2.4.3",
     "cpu_count": 16
   },
   "gpu": {
@@ -15,7 +15,7 @@
     "cupy": "14.2.0",
     "cuda_runtime": 12090,
     "memory_total_mb": 7751.5625,
-    "memory_free_mb": 7152.5625,
+    "memory_free_mb": 6383.0625,
     "compute_capability": "7.5"
   },
   "options": {
@@ -23,7 +23,7 @@
     "repeat": 1,
     "rerender": false,
     "precision": null,
-    "kernel": "fused",
+    "kernel": null,
     "boundary": null,
     "cpml_width": null,
     "body_masks": null,
@@ -41,7 +41,7 @@
     "batched_rel_l2": 1e-12,
     "processing_rel_l2": 1e-10
   },
-  "reference_dir": "/workspace/output/performance/reference",
+  "reference_dir": "/home/dockimble/Projects/9m_Test/output/performance/reference",
   "cases": {
     "proc_oracle": {
       "kind": "processing",
@@ -86,28 +86,28 @@
       "config": "eca_oracle",
       "eca_doppler": true,
       "track_smooth_s": 0.0,
-      "wall_s": 41.161935295996955,
+      "wall_s": 108.79202666599986,
       "frames": 79,
       "grid_cells": 16983,
       "bins": 166,
       "channels": 200,
       "median_error_m": 5.984380453681621,
       "within_5m": 0.4810126582278481,
-      "eca_direct_depth_db": 21.346304351850385,
-      "eca_echo_loss_db": 0.6154779122800682,
+      "eca_direct_depth_db": 21.34630542475794,
+      "eca_echo_loss_db": 0.6154724175015305,
       "bistatic_options": {
         "use_cuda": true,
         "impl": "vectorized"
       },
       "rerendered": false,
       "compare": {
-        "B_rel_rms": 0.039731581635707565,
+        "B_rel_rms": 4.6949450174709425e-14,
         "B_rel_l2_per_frame": {
-          "median": 0.00037390958230004316,
-          "max": 0.3484295191764931,
+          "median": 5.0128763159238874e-14,
+          "max": 7.039355584696263e-14,
           "n": 79
         },
-        "Z_rel_rms": 0.0434256129509614,
+        "Z_rel_rms": 5.393298335266977e-14,
         "ref_rel_rms": 0.0,
         "estimate": {
           "identical": 1.0,
@@ -118,9 +118,9 @@
         },
         "ship_refined_max_shift_m": 0.0,
         "eca_depth_db": {
-          "median_abs_diff": 9.077386664557707e-08,
-          "max_abs_diff": 9.654590291803002,
-          "median_depth_diff": -1.0188591410553727e-06
+          "median_abs_diff": 0.0,
+          "max_abs_diff": 0.0,
+          "median_depth_diff": 0.0
         },
         "waveform_rel_rms": 0.0
       }
@@ -244,5 +244,5 @@
       }
     }
   },
-  "total_wall_s": 129.9652479699871
+  "total_wall_s": 197.59533933999
 }

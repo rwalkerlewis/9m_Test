@@ -145,9 +145,10 @@ portable runtime guarantees; unavailable CUDA hardware falls back to the CPU wit
 Branch `performance` (October 2026).  Goal: an order of magnitude less compute for the harbor
 forward model and the processing chain with no change of results beyond stated tolerances.  Every
 change is measured twice by `scripts/bench_harbor.py`: wall time against the original code and
-accuracy against the outputs the original code produced (saved once, gitignored).  All numbers
-below are on the Quadro RTX 4000 with the container otherwise idle (`output/performance/*.json`;
-the baseline is `baseline.json`, taken from commit `ca42d55` in a worktree).  The stage 0 cases:
+accuracy against the outputs the original code produced (saved once, gitignored).  All numbers below are on the Quadro RTX 4000 (`output/performance/*.json`; the baseline is
+`baseline.json`, from commit `ca42d55`). The refreshed final run used Python 3.13.13 / NumPy 2.4.3;
+the original baseline used Python 3.12.3 / NumPy 2.5.4, so the end-to-end ratio is indicative, not
+a strictly controlled same-interpreter comparison. The stage 0 cases:
 the fine bistatic scenario (0.5 m, 6 kHz, 801 x 601 cells), the moving ferry alone for 2 and 10 s
 and with the 1 m x 3 m UUV body, the multistatic scene (ferry with all ten bodies) for 2 s; the
 `oracle`, `eca_oracle+doppler` and `blind+doppler+smooth4` configurations of
@@ -160,11 +161,11 @@ Forward model (one run; `ms/step` in brackets):
 
 | Case | original (array code, GPU) | stage 1 fused float64, host masks | stage 2 device masks (default) | fused float32 |
 |---|---|---|---|---|
-| ferry alone, 2 s | 20.7 s (1.72) | 1.26 s (0.105) | 1.21 s (0.101) | 0.64 s (0.053) |
-| ferry alone, 10 s | 93.2 s (1.55) | 5.6 s (0.093) | 5.6 s (0.093) | 2.3 s (0.038) |
-| ferry + UUV body, 2 s | 25.0 s (2.08) | 2.7 s (0.225) | 1.28 s (0.107) | 3.0 s (0.254) |
-| ferry + UUV body, 10 s | 119.9 s (2.00) | 19.4 s (0.324) | 12.1 s (0.202) | 20.2 s (0.337) |
-| multistatic, 10 bodies, 2 s | 49.1 s (4.09) | 32.2 s (2.68) | 1.68 s (0.140) | 31.8 s (2.65) |
+| ferry alone, 2 s | 20.7 s (1.72) | 1.26 s (0.105) | 1.81 s (0.151) | 0.64 s (0.053) |
+| ferry alone, 10 s | 93.2 s (1.55) | 5.6 s (0.093) | 8.62 s (0.144) | 2.3 s (0.038) |
+| ferry + UUV body, 2 s | 25.0 s (2.08) | 2.7 s (0.225) | 1.98 s (0.165) | 3.0 s (0.254) |
+| ferry + UUV body, 10 s | 119.9 s (2.00) | 19.4 s (0.324) | 9.56 s (0.159) | 20.2 s (0.337) |
+| multistatic, 10 bodies, 2 s | 49.1 s (4.09) | 32.2 s (2.68) | 2.60 s (0.217) | 31.8 s (2.65) |
 
 The float32 column still uses the host masks for the bodies, which is why its body cases are no
 faster.  Time per step against body count (`fdtd_sweeps.json`, 2 s runs): array code 1.82 / 1.54 /
@@ -186,11 +187,11 @@ Processing (`run_bistatic` wall time, and `eca_stage` alone):
 | Case | original (CPU) | vectorized, CPU | vectorized, GPU (`use_cuda=True`) |
 |---|---|---|---|
 | `oracle` | 364 s | 230 s | 15.5 s |
-| `eca_oracle+doppler` | 370 s | 275 s | 41.2 s |
-| `blind+doppler+smooth4` | 522 s | 394 s | 47.3 s |
-| `eca_stage`, 193 m moving, fixed lags | 23.0 s | 15.0 s | 16.3 s |
-| `eca_stage`, 193 m moving, per sample delays | 29.0 s | 23.1 s | 15.7 s |
-| `ship_positions` refinement, 193 m case (39 frames) | 98 s | 74 s | 2.1 s |
+| `eca_oracle+doppler` | 370 s | 294 s | 102.0 s |
+| `blind+doppler+smooth4` | 522 s | 394 s | 54.1 s |
+| `eca_stage`, 193 m moving, fixed lags | 22.2 s | 22.4 s | 15.1 s |
+| `eca_stage`, 193 m moving, per sample delays | 28.7 s | 25.0 s | 14.4 s |
+| `ship_positions` refinement, 193 m case (39 frames) | 98 s | 70 s | 3.1 s |
 
 On the CPU the vectorization removes redundant work (the scan grid geometry was recomputed for
 every bin because the per frame path calls evicted the single entry cache; the replicas of all
@@ -200,8 +201,11 @@ float64 matrix products of the normal equations (about 1.4 Tflop per 20 s run at
 is why `eca_stage` gains less than the maps; a Toeplitz form of the normal equations would remove
 that cost and is left for later.
 
-Total on the stage 0 benchmark (all cases, forward model and processing): 1616 s with the original
-code against 138 s with the new defaults on the GPU (`final.json`), a factor of 11.7.
+Total on the stage 0 benchmark (all cases, forward model and processing): 1615 s with the original
+code against 226 s with the corrected defaults on the GPU (`final.json`), a measured ratio of 7.2.
+This does not reach the order-of-magnitude goal. The oracle-Doppler accuracy fallback and the
+interpreter mismatch above both affect this total; establish a same-interpreter baseline before
+using this ratio as a deployment estimate.
 
 ### Accuracy and criteria
 
@@ -215,22 +219,23 @@ code against 138 s with the new defaults on the GPU (`final.json`), a factor of 
 | 2 | device masks within 1e-12 of `body_factor`; scattered traces within 1e-10 of the stage 1 run | masks 1.1e-16 (tests); traces 3.7e-13 max | yes |
 | 3 | batched runs within 1e-12 of single runs | identical (0.0) for B up to 32 | yes |
 | 4 | a CPML thickness at least 10 dB below the sponge in every band and angle | 15 cells, cubic profile: 20.5 dB (peak), 16.5 dB (worst band) margin | yes |
-| 5 | vectorized outputs within 1e-10 of the original code, float64 | CPU: maps identical (3e-18 to 1e-15), ECA identical (0.0); GPU: maps 5e-14 and 4e-13, ECA 2e-14 (fixed lags) and 2e-12 (per sample delays), `eca_oracle+doppler` map 4.0e-2 | CPU: yes; GPU: **no** (one configuration) |
+| 5 | vectorized outputs within 1e-10 of the original code, float64 | CPU: maps identical (3e-18 to 1e-15), ECA identical (0.0); GPU: maps 5e-14, 4.7e-14 and 4e-13, ECA 2e-14 (fixed lags) and 2e-12 (per sample delays) | **yes** |
 | 6 | a 1 m scheme within 0.1 rad at 400 to 600 m over 100 to 760 Hz, wall error no worse than the 0.5 m scheme | k-space: 0.50 rad (axis), 1.05 rad (diagonal) over the full band; exact (0.001 rad) over 100 to 380 Hz | **no** |
 
 Float32 fails the direct trace criterion on one of five cases by 3 % of the limit, so float64 stays
 the default (`precision="float32"` is available and is 2 to 2.5 times faster per step without
 bodies; its ECA depths and position estimates on the stage 0 cases are unchanged).
 
-The GPU ECA differs from the reference where the normal equations are ill conditioned: with the
-loading of 1e-14 relative their condition number reaches 1e14, a different Cholesky (cuSOLVER against
-LAPACK) moves the solution by that factor times machine precision, and one refinement step leaves
-the implementation dependent part.  With the data reference (every blind configuration) the noise
-regularises the equations and the cleaned traces agree to 2e-14 (fixed lags) and 2e-12 (per sample
-delays) with no change of any ECA depth or estimate; with the oracle waveform and per sample delays three of 79 frames differ by
-20 to 35 % in the map and one channel's depth by 9.7 dB, while the median depth (1e-6 dB) and every
-estimate are unchanged.  On the CPU the vectorized ECA keeps SciPy's factorisation and the
-reference's call sequence per channel and is identical to the last bit on every stage 0 case.
+The GPU ECA's batched normal equations can be ill conditioned for an oracle waveform with per-sample
+Doppler delays: with loading of 1e-14, cuSOLVER and LAPACK can produce materially different
+projections. That specific configuration now uses the vectorized NumPy/SciPy solve while the rest
+of the chain remains on the GPU; its map agrees to 4.7e-14. The fallback raises that benchmark
+configuration from 41.2 s to about 102 s in the refreshed full run (102.0 s in `final.json`; 108.8 s
+in the separate `stage5_gpu.json` rerun), still below its 370 s baseline. Other GPU ECA cases remain
+batched on device: with the data reference (the blind configurations) cleaned traces agree to
+2e-14 (fixed lags) and 2e-12 (per-sample delays), with no change of ECA depth or estimate. On the
+CPU, the vectorized ECA keeps SciPy's factorisation and reference call sequence per channel and is
+identical to the last bit on every stage 0 case.
 
 CPML (`cpml_reflection.json`, open water, source and receivers 40 m from the edge, 0.5 m grid,
 peak of the reflected field re the incident, dB; incidence 0, 27, 45, 63, 76, 82 degrees):

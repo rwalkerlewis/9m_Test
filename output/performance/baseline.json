@@ -1,7 +1,8 @@
 {
   "tag": "baseline",
   "date": "2026-10-19 06:10:54",
-  "git": null,
+  "git": "ca42d55",
+  "source_revision": "ca42d55b73eee10c7c0b45c606dfedee5ee5fb6a",
   "host": {
     "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
     "python": "3.12.3",
