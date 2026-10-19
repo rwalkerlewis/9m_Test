@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.special import hankel1
 
-from acoustic_sim.harbor import (
+from acoustic_sim.water import (
     Cable,
     HarborFDTDConfig,
     HarborFDTDSolver,
@@ -13,7 +13,7 @@ from acoustic_sim.harbor import (
     simulate_source,
     uniform_water_environment,
 )
-from acoustic_sim.harbor.environment import _finish_environment, segment_polygon
+from acoustic_sim.water.environment import _finish_environment, segment_polygon
 from acoustic_sim.sources import StaticSource
 
 C0 = 1500.0

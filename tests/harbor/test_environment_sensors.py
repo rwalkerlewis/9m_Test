@@ -5,7 +5,7 @@ import json
 import numpy as np
 import pytest
 
-from acoustic_sim.harbor import (
+from acoustic_sim.water import (
     Cable,
     HarborScenarioConfig,
     SensorLayout,

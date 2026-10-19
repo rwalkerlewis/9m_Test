@@ -1,61 +1,43 @@
-"""Harbor DAS + hydrophone detection, localisation, tracking and classification toy model."""
+"""Compatibility package; water-domain code now lives in :mod:`acoustic_sim.water`.
 
-from acoustic_sim.harbor.ais import AISConfig, AISReports, AISTrack, generate_ais
-from acoustic_sim.harbor.dataset import (
-    HarborDataset,
-    assemble_dataset,
-    render_vessel_gathers,
-    simulate_scenario,
-)
-from acoustic_sim.harbor.environment import (
-    HarborEnvironment,
-    build_synthetic_harbor,
-    uniform_water_environment,
-)
-from acoustic_sim.harbor.fdtd_runner import (
-    Gather,
-    HarborFDTDConfig,
-    HarborFDTDSolver,
-    cfl_dt,
-    simulate_source,
-)
-from acoustic_sim.harbor.noise import NoiseConfig, NoiseRealisation, generate_noise
-from acoustic_sim.harbor.scenario import (
-    HarborScenarioConfig,
-    build_environment,
-    build_layout,
-    default_vessels,
-)
-from acoustic_sim.harbor.sensors import Cable, SensorLayout
-from acoustic_sim.harbor.vessels import Track, VesselConfig, build_track
+``import acoustic_sim.harbor.<name>`` returns the very same module object as
+``acoustic_sim.water.<name>``.  Submodules are aliased on first import rather
+than eagerly, so modules with optional dependencies (``classifier`` needs
+PyTorch) are only loaded when they are actually requested.
+"""
 
-__all__ = [
-    "AISConfig",
-    "AISReports",
-    "AISTrack",
-    "Cable",
-    "Gather",
-    "HarborDataset",
-    "HarborEnvironment",
-    "HarborFDTDConfig",
-    "HarborFDTDSolver",
-    "HarborScenarioConfig",
-    "NoiseConfig",
-    "NoiseRealisation",
-    "SensorLayout",
-    "Track",
-    "VesselConfig",
-    "assemble_dataset",
-    "build_environment",
-    "build_layout",
-    "build_synthetic_harbor",
-    "build_track",
-    "cfl_dt",
-    "default_vessels",
-    "generate_ais",
-    "generate_noise",
-    "render_vessel_gathers",
-    "simulate_scenario",
-    "simulate_source",
-    "uniform_water_environment",
-]
+from __future__ import annotations
+
+import importlib
+import importlib.abc
+import importlib.machinery
+import importlib.util
+import sys
+
+from acoustic_sim.water import *  # noqa: F403
+from acoustic_sim.water import __all__
+
+_WATER = "acoustic_sim.water"
+
+
+class _WaterAliasLoader(importlib.abc.Loader):
+    def create_module(self, spec):
+        return None
+
+    def exec_module(self, module):
+        # The import system re-reads sys.modules after exec_module, so the
+        # canonical module replaces the placeholder (identity is preserved).
+        canonical = module.__name__.replace(__name__, _WATER, 1)
+        sys.modules[module.__name__] = importlib.import_module(canonical)
+
+
+class _WaterAliasFinder(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path, target=None):
+        parent, _, child = fullname.rpartition(".")
+        if parent != __name__ or importlib.util.find_spec(f"{_WATER}.{child}") is None:
+            return None
+        return importlib.machinery.ModuleSpec(fullname, _WaterAliasLoader())
+
+
+if not any(isinstance(finder, _WaterAliasFinder) for finder in sys.meta_path):
+    sys.meta_path.append(_WaterAliasFinder())

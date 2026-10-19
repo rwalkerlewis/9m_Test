@@ -40,7 +40,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import (  # noqa: E402
+from acoustic_sim.water import (  # noqa: E402
     HarborScenarioConfig,
     assemble_dataset,
     build_environment,
@@ -48,15 +48,15 @@ from acoustic_sim.harbor import (  # noqa: E402
     build_track,
     render_vessel_gathers,
 )
-from acoustic_sim.harbor.detection import (  # noqa: E402
+from acoustic_sim.water.detection import (  # noqa: E402
     ProcessingConfig,
     build_grid,
     run_detection,
     threshold_from_maxima,
 )
-from acoustic_sim.harbor.evaluate import score_detections  # noqa: E402
-from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
-from acoustic_sim.harbor.suppression import run_ais_aware  # noqa: E402
+from acoustic_sim.water.evaluate import score_detections  # noqa: E402
+from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.suppression import run_ais_aware  # noqa: E402
 from acoustic_sim.ml.features import compute_mel_spectrogram  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -315,7 +315,7 @@ def main() -> None:
 
     if classifier_available:
         try:
-            from acoustic_sim.harbor.classifier import HarborClassifier  # noqa: E402
+            from acoustic_sim.water.classifier import HarborClassifier  # noqa: E402
             device = "cuda" if args.cuda else "cpu"
             clf = HarborClassifier.load(str(cnn_path), str(args.cvae), device=device)
             if mel_list:
@@ -345,7 +345,7 @@ def main() -> None:
                           targets=list(tracks))
 
     # Associate each detection with the nearest truth vessel (for accuracy).
-    from acoustic_sim.harbor.evaluate import associate  # noqa: E402
+    from acoustic_sim.water.evaluate import associate  # noqa: E402
     assoc_labels, _ = associate(dets, ds.tracks, gate=100.0)
 
     per_class_acc = _per_class_accuracy(clf_results, assoc_labels) if classifier_available else {}

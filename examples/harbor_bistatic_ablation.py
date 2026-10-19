@@ -49,12 +49,12 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import HarborDataset, build_environment, build_layout  # noqa: E402
-from acoustic_sim.harbor.bistatic import BistaticConfig, Truth, run_bistatic, stft  # noqa: E402
-from acoustic_sim.harbor.dataset import vessel_injection  # noqa: E402
-from acoustic_sim.harbor.dispersion import for_scenario  # noqa: E402
-from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
-from acoustic_sim.harbor.signatures import f_max_for_grid  # noqa: E402
+from acoustic_sim.water import HarborDataset, build_environment, build_layout  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, Truth, run_bistatic, stft  # noqa: E402
+from acoustic_sim.water.dataset import vessel_injection  # noqa: E402
+from acoustic_sim.water.dispersion import for_scenario  # noqa: E402
+from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
 
 CONFIGS = {
     # name: (direct path in the traces, reference, exact track)

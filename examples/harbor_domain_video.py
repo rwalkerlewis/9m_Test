@@ -44,9 +44,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib import patheffects
 from matplotlib.colors import ListedColormap
-from acoustic_sim.harbor import HarborDataset, build_environment  # noqa: E402
-from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
-from acoustic_sim.harbor.signatures import R_REF, f_max_for_grid, make_reference_signal  # noqa: E402
+from acoustic_sim.water import HarborDataset, build_environment  # noqa: E402
+from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.signatures import R_REF, f_max_for_grid, make_reference_signal  # noqa: E402
 
 C = 1500.0
 TSNAP, HOP, NSNAP = 1.0, 0.5, 5          # 1 s Hann snapshots, 50 % overlap: 3 s windows, 1 Hz bins

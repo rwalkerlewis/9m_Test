@@ -27,8 +27,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.forward import simulate_3d_traces
-from acoustic_sim.noise import generate_sensor_noise, generate_wind_noise
+from acoustic_sim.air.forward import simulate_3d_traces
+from acoustic_sim.air.noise import generate_sensor_noise, generate_wind_noise
 from acoustic_sim.sources import (
     ErraticQuadcopterSource3D,
     MovingSource3D,

@@ -15,15 +15,15 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.fdtd import fd2_coefficients, fd2_cfl_factor, FDTD3DConfig, FDTD3DSolver
+from acoustic_sim.solver.fdtd import fd2_coefficients, fd2_cfl_factor, FDTD3DConfig, FDTD3DSolver
 from acoustic_sim.model import VelocityModel3D, create_uniform_model_3d
-from acoustic_sim.domains import (
+from acoustic_sim.air.domains import (
     DomainMeta3D,
     create_isotropic_domain_3d,
     create_ground_layer_domain_3d,
 )
 from acoustic_sim.sources import StaticSource3D, MovingSource3D, make_wavelet_ricker, make_drone_harmonics
-from acoustic_sim.forward import (
+from acoustic_sim.air.forward import (
     simulate_3d_traces,
     simulate_3d_traces_fdtd,
 )

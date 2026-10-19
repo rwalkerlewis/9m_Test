@@ -5,7 +5,7 @@ Simplified harbor matched field processing demo (analytic forward model).
 Constant sound speed, flat 2-D harbor channel, two DAS fiber runs (cos^2 axial directivity), one AIS
 ferry that is both the loud interferer and the illuminator, three fixed pier scatterers, and a hidden
 UUV.  The replica model is the forward model, so the processing works by construction: this is the
-reference the FDTD harbor chain (``src/acoustic_sim/harbor``, ``bistatic.py``) is measured against.
+reference the FDTD harbor chain (``src/acoustic_sim/water``, ``bistatic.py``) is measured against.
 
 Two ways to find the UUV, each in the chain AIS -> refine ferry -> project ferry + piers out -> scan:
 

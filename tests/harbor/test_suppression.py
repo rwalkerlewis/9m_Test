@@ -3,17 +3,17 @@
 import numpy as np
 import pytest
 
-from acoustic_sim.harbor import AISReports, Cable, SensorLayout, uniform_water_environment
-from acoustic_sim.harbor.detection import (
+from acoustic_sim.water import AISReports, Cable, SensorLayout, uniform_water_environment
+from acoustic_sim.water.detection import (
     MatchedFieldScanner,
     ProcessingConfig,
     Whitened,
     build_grid,
     rewhiten,
 )
-from acoustic_sim.harbor.device import get_device
-from acoustic_sim.harbor.occupancy import OccupancyConfig, OccupancyGrid
-from acoustic_sim.harbor.suppression import (
+from acoustic_sim.water.device import get_device
+from acoustic_sim.water.occupancy import OccupancyConfig, OccupancyGrid
+from acoustic_sim.water.suppression import (
     SuppressionConfig,
     predict_ships,
     project_out_adaptive,

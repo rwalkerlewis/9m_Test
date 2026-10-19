@@ -66,8 +66,8 @@ from scipy.special import h1vp, hankel1, jv, jvp
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor.noise import NoiseConfig  # noqa: E402
-from acoustic_sim.harbor.signatures import R_REF, f_max_for_grid  # noqa: E402
+from acoustic_sim.water.noise import NoiseConfig  # noqa: E402
+from acoustic_sim.water.signatures import R_REF, f_max_for_grid  # noqa: E402
 
 C = 1500.0
 FS0 = 600.0                 # sampling rate the NoiseConfig levels are defined at

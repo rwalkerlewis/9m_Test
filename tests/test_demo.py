@@ -27,13 +27,13 @@ from acoustic_sim.sources import (
     make_drone_harmonics,
     make_stationary_tonal,
 )
-from acoustic_sim.forward import simulate_3d_traces, simulate_scenario_3d
+from acoustic_sim.air.forward import simulate_3d_traces, simulate_scenario_3d
 from acoustic_sim.receivers import create_receiver_l_shaped_3d
-from acoustic_sim.processor import matched_field_process_3d
-from acoustic_sim.tracker import EKFTracker3D, run_tracker_3d
-from acoustic_sim.fire_control import run_fire_control_3d
-from acoustic_sim.detection_main import run_detection_3d, evaluate_results_3d
-from acoustic_sim.plotting import (
+from acoustic_sim.air.processor import matched_field_process_3d
+from acoustic_sim.air.tracker import EKFTracker3D, run_tracker_3d
+from acoustic_sim.air.fire_control import run_fire_control_3d
+from acoustic_sim.air.detection_main import run_detection_3d, evaluate_results_3d
+from acoustic_sim.air.plotting import (
     plot_3d_trajectory,
     plot_altitude_vs_time,
     plot_tracking_3d,
@@ -173,14 +173,13 @@ def _compute_3d_rmse(
     return float(np.sqrt(np.mean(errors ** 2)))
 
 
-def test_tracker_comparison():
+def test_tracker_comparison(tmp_path):
     """Compare baseline vs adaptive tracker on maneuvering trajectories."""
     print("\n" + "=" * 60)
     print("  4.2: Tracker Performance — Baseline vs Adaptive")
     print("=" * 60)
 
-    out_dir = Path("output/evaluation")
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = tmp_path
 
     # Train maneuver classifier.
     print("\n  Training maneuver classifier...")
@@ -294,14 +293,13 @@ def test_tracker_comparison():
 #  4.4: End-to-End Demonstration
 # =====================================================================
 
-def test_end_to_end_demo():
+def test_end_to_end_demo(tmp_path):
     """Full end-to-end demonstration scenario per spec Section 4.4."""
     print("\n" + "=" * 60)
     print("  4.4: End-to-End Demonstration")
     print("=" * 60)
 
-    out_dir = Path("output/demo")
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = tmp_path
 
     dt = 1.0 / 4000
     n_steps = 20000  # 5 seconds
@@ -445,8 +443,11 @@ def test_end_to_end_demo():
 # =====================================================================
 
 def run_all():
-    test_tracker_comparison()
-    test_end_to_end_demo()
+    # Run as a script, the figures go to output/ (under pytest they go to tmp_path).
+    for test, out_dir in ((test_tracker_comparison, "output/evaluation"),
+                          (test_end_to_end_demo, "output/demo")):
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
+        test(Path(out_dir))
 
 
 if __name__ == "__main__":

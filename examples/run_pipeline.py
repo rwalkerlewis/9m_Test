@@ -57,12 +57,12 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.detection import (
+from acoustic_sim.air.detection import (
     DetectionEngine,
     WindowDetection,
     available_bearing_methods,
 )
-from acoustic_sim.fire_control import (
+from acoustic_sim.air.fire_control import (
     compute_bearing_rate,
     compute_engagement_3d,
     compute_lead_3d,
@@ -70,7 +70,7 @@ from acoustic_sim.fire_control import (
     pattern_diameter,
     time_of_flight,
 )
-from acoustic_sim.plotting import (
+from acoustic_sim.air.plotting import (
     plot_beamformer_diagnostic,
     plot_pipeline_summary,
     plot_radial_engagement,

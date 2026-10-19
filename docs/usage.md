@@ -10,6 +10,8 @@ pip install -e .
 
 Core dependencies: `numpy`, `scipy`, `matplotlib`.  Everything else is an optional extra:
 `[cuda]` (CuPy), `[ml]` (torch), `[mpi]` (mpi4py), `[dev]` (pytest).
+Dependencies are declared only in `pyproject.toml`; `requirements.txt` is a compatibility shim
+equivalent to `pip install -e .` (no extras).
 
 ### MPI (optional, only for multi-process FDTD)
 
@@ -58,13 +60,15 @@ docker compose exec dev bash
 **PyTorch** (only the optional `ml` modules and their tests need it) is not in the default image:
 `EXTRAS=cuda,dev,ml ./dev.sh build`.  **Windows:** use WSL or the Dev Container.
 
-Generated data (`output/`, caches, `.npz`) lives in the repository folder on the host and is not
-in git; on a new machine regenerate it, e.g. `./dev.sh run python examples/harbor_m2_dataset.py`.
+Generated data (datasets, caches, `.npy`/`.npz`) lives in the repository folder on the host and is
+gitignored; only selected results, figures and the classifier weights under `output/` are tracked.
+On a new machine regenerate what you need, e.g. `./dev.sh run python examples/harbor_m2_dataset.py`;
+see [Generated outputs](outputs.md).
 
 ### VS Code Dev Container
 
-Prerequisites: Docker with NVIDIA GPU support, VS Code, and the Dev Containers
-extension. Open the **repository root** in VS Code, then run **Dev Containers:
+Prerequisites: Docker, VS Code, and the Dev Containers extension (plus the NVIDIA
+Container Toolkit for the GPU variant). Open the **repository root** in VS Code, then run **Dev Containers:
 Reopen in Container**. After changing the container configuration or Dockerfile,
 run **Dev Containers: Rebuild and Reopen in Container**.
 
@@ -132,17 +136,19 @@ pushing.
 acoustic-sim --model-preset gradient --frequency 40
 ```
 
-Full CLI:
+Main options (`acoustic-sim --help` lists all, including the valley-preset hill parameters):
 
 ```bash
 acoustic-sim [--model-preset PRESET | --model-file JSON | --model-npz NPZ]
-             [--frequency HZ] [--dx DX]
+             [--frequency HZ] [--dx DX] [--min-ppw N] [--bg-velocity C]
              [--x-min X --x-max X --y-min Y --y-max Y]
              [--source-x X --source-y Y]
-             [--receiver-type {line|circle}]
+             [--receiver-type {line|circle}] [--receiver-count N] [--receiver-radius R]
              [--velocity-plot PATH] [--field-plot PATH]
              [--save-model-path NPZ]
 ```
+
+`python -m acoustic_sim` and `python simulate_array.py` run the same CLI.
 
 Model presets: `uniform`, `layered`, `gradient`, `checkerboard`, `valley`.
 
@@ -186,7 +192,7 @@ Runs `{static, moving}` × `{isotropic, wind, hills_vegetation}` ×
 
 | Flag | Description |
 |------|-------------|
-| `--domain` | `isotropic`, `wind`, `hills_vegetation` |
+| `--domain` | `isotropic`, `wind`, `hills_vegetation` (3-D adds `ground_layer`) |
 | `--dx` | grid spacing (m) |
 | `--fd-order` | stencil accuracy: 2, 4, 6, 8 |
 | `--total-time` | simulation duration (s) |
@@ -199,7 +205,7 @@ Runs `{static, moving}` × `{isotropic, wind, hills_vegetation}` ×
 | `--blade-count`, `--rpm`, `--harmonics` | propeller params |
 | `--source-freq` | tone / ricker frequency (Hz) |
 | `--source-wav` | WAV file path |
-| `--array` | `circular`, `concentric`, `linear`, etc. |
+| `--array` | `circular`, `concentric`, `linear` (3-D adds `l_shaped`, `random`) |
 | `--receiver-count` | number of microphones |
 | `--receiver-radius` | array radius (m) |
 | `--receiver-cx`, `--receiver-cy` | array centre |
@@ -213,7 +219,7 @@ Runs `{static, moving}` × `{isotropic, wind, hills_vegetation}` ×
 |------|----------|
 | `traces.npy` | pressure time series `(n_mics, n_steps)` |
 | `metadata.json` | all simulation parameters, receiver positions |
-| `snapshots/` | optional pressure field dumps as `.npy` |
+| `snapshots/` | wavefield PNGs (`snapshot_NNNNNN.png`, dB SPL) every `--snapshot-interval` steps |
 | `domain.png` | velocity model visualisation |
 | `gather.png` | microphone trace gather |
 
@@ -291,7 +297,7 @@ in `metadata.json`.
 | `--enable-maneuver` | off | enable maneuver-adaptive tracking |
 | `--enable-fusion` | off | enable fusion classification |
 | `--enable-anomaly` | off | enable CVAE anomaly detection |
-| `--classification-threshold` | from config (0.7) | override classification confidence threshold |
+| `--classification-threshold` | from config (0.95 in the shipped file) | override classification confidence threshold |
 | `--maneuver-window` | from config (20) | override maneuver window size |
 
 ### Output
@@ -310,18 +316,24 @@ in `metadata.json`.
 Pre-trained weights are shipped in `output/models/`.  To retrain:
 
 ```bash
-# Train all classifiers (generates synthetic data + trains)
+# Train the source, maneuver and fusion classifiers (generates synthetic data + trains)
 python examples/train_all_ml.py
+
+# Train and calibrate the CVAE anomaly detector (not shipped; needed for --enable-anomaly)
+python src/acoustic_sim/ml/anomaly_training.py
 
 # Run ML demo (classification + confusion matrices)
 python examples/run_ml_demo.py
 ```
 
+Both training scripts write to `output/models/`, replacing the shipped weights. The ML tests
+train small models of their own in a temporary directory and leave `output/models/` untouched.
+
 ---
 
 ## Shell Script Demos
 
-Three end-to-end scripts run FDTD then the pipeline:
+Three FDTD demo scripts (only `run_valley.sh` also runs the pipeline on its output):
 
 ```bash
 # 2-D valley: hills+vegetation, moving propeller, circular array
@@ -334,21 +346,26 @@ bash examples/run_valley_3d.sh
 bash examples/run_wind_circular.sh
 ```
 
-Each script sets all parameters as shell variables, runs `run_fdtd.py`
-or `run_fdtd_3d.py`, then calls `run_pipeline.py` on the output.
+Each script sets all parameters as shell variables and runs `run_fdtd.py`
+or `run_fdtd_3d.py` (`run_wind_circular.sh` writes to `output/my_test`).
+`run_pipeline_{valley,valley_3d,erratic,isotropic}.sh` run only the pipeline on a
+pre-computed dataset; set `ENABLE_CLASSIFICATION=true` (or `ENABLE_MANEUVER`,
+`ENABLE_FUSION`, `ENABLE_ANOMALY`) to add ML flags.
 
 ---
 
 ## Extract Traces from Field Plane
 
-If FDTD is run without explicitly placed receivers, traces can be
-extracted post-hoc from saved field snapshots:
+A 3-D run with `--field-plane-z Z` saves a horizontal pressure slice
+(`field_plane.npy`); traces for any array in that plane can then be
+interpolated without re-running the FDTD:
 
 ```bash
 python examples/extract_array_traces.py \
-    --sim-dir output/my_test \
-    --array circular --count 16 --radius 2.0 \
-    --cx 0 --cy 10
+    --input-dir output/valley_3d_test \
+    --output-dir output/valley_3d_array2 \
+    --array circular --receiver-count 16 --receiver-radius 2.0 \
+    --receiver-cx -5.0 --receiver-cy 7.0 --receiver-cz 5.5
 ```
 
 ---
@@ -358,7 +375,7 @@ python examples/extract_array_traces.py \
 The older matched-field-processing pipeline is available in the library:
 
 ```bash
-python src/acoustic_sim/detection_main.py \
+python -m acoustic_sim.air.detection_main \
     --trajectory loiter_approach \
     --domain isotropic \
     --total-time 60 \
@@ -368,8 +385,8 @@ python src/acoustic_sim/detection_main.py \
 Or programmatically:
 
 ```python
-from acoustic_sim.config import DetectionConfig
-from acoustic_sim.detection_main import run_detection_pipeline
+from acoustic_sim.air.config import DetectionConfig
+from acoustic_sim.air.detection_main import run_detection_pipeline
 
 config = DetectionConfig(trajectory_type="linear", total_time=30)
 results = run_detection_pipeline(config)
@@ -380,7 +397,7 @@ results = run_detection_pipeline(config)
 ## Robustness Studies
 
 ```python
-from acoustic_sim.studies import run_all_studies
+from acoustic_sim.air.studies import run_all_studies
 results = run_all_studies()
 ```
 
@@ -463,22 +480,27 @@ limitations. Run `python examples/<script>.py --help` for script-specific option
 ### Build and run FDTD
 
 ```python
-from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
-from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
+import math
 
-domain, meta = build_domain("hills_vegetation", dx=0.18,
-                             x_min=-50, x_max=50, y_min=-50, y_max=50)
-receivers = build_receivers("circular", count=16, radius=2.0, cx=0, cy=10)
-source = build_source("moving", "propeller", domain, dt=None,
-                       source_x=-40, source_y=0, source_x1=40, source_y1=0,
-                       speed=50, blade_count=3, rpm=3600, harmonics=14)
-dt = compute_dt(domain, fd_order=2)
-config = FDTDConfig(total_time=3.0, fd_order=2)
-result = FDTDSolver.run(domain, meta, receivers, source, config)
+from acoustic_sim.air.setup import build_domain, build_receivers, build_source, compute_dt
+from acoustic_sim.solver import FDTDConfig, FDTDSolver
+
+model, meta = build_domain("hills_vegetation", dx=0.18,
+                           x_min=-50, x_max=50, y_min=-50, y_max=50)
+receivers = build_receivers("circular", count=16, radius=2.0, center_x=0, center_y=10)
+dt, f_max = compute_dt(model, meta, fd_order=2)
+n_steps = math.ceil(3.0 / dt)
+source = build_source("moving", "propeller", n_steps=n_steps, dt=dt, f_max=f_max,
+                      x=-40, y=0, x1=40, y1=0, speed=50,
+                      blade_count=3, rpm=3600, harmonics=14)
+config = FDTDConfig(total_time=3.0, dt=dt, fd_order=2, snapshot_interval=0)
+result = FDTDSolver(model, config, source, receivers, meta).run(verbose=False)
 # result["traces"].shape == (16, n_steps)
 ```
 
 ### Run the pipeline on traces
+
+From the repository root (the example scripts are importable as `examples.*`):
 
 ```python
 from pathlib import Path
@@ -491,7 +513,7 @@ results = run_pipeline(Path("output/valley_test"), Path("output/valley_test"), c
 ### Use DetectionEngine directly
 
 ```python
-from acoustic_sim.detection import DetectionEngine
+from acoustic_sim.air.detection import DetectionEngine
 
 engine = DetectionEngine(
     mic_positions=mics,       # (n_mics, 2 or 3)
@@ -508,4 +530,23 @@ for seg in windows:
     det = engine.process_window(seg, t_center)
     if det.detected:
         print(det.bearing_deg, det.range_m, det.track)
+```
+
+---
+
+## Testing
+
+```bash
+pip install -e ".[dev]"           # ".[dev,ml]" to include the PyTorch tests
+python -m pytest -q tests         # full suite; several minutes on a CPU
+python -m pytest -q tests/harbor  # water domain only
+./dev.sh test                     # tests/harbor in the dev container
+```
+
+Tests that need PyTorch skip without it, and GPU-parametrized tests skip without CuPy and a GPU.
+CI (`.github/workflows/tests.yml`) runs a fast CPU-only subset on Python 3.10 and 3.13:
+
+```bash
+python -m pytest -q tests/test_package_layout.py tests/harbor/test_dispersion.py \
+    tests/test_fdtd_3d.py::test_cfl tests/test_fdtd_3d.py::test_propagation
 ```

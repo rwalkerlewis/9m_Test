@@ -83,12 +83,13 @@ def test_cvae_forward_backward():
 #  Test 2: Low reconstruction error for in-distribution data
 # =====================================================================
 
-def test_reconstruction_low_for_in_distribution():
-    """Train CVAE briefly and verify low recon error on known classes."""
-    print("\n" + "=" * 60)
-    print("  TEST 2: Low Reconstruction Error (In-Distribution)")
-    print("=" * 60)
+def _train_in_distribution_model():
+    """Briefly train a ConvVAE on known classes.
 
+    Returns ``(model, val_scores, untrained_scores, X_val)``: the trained
+    model, its per-sample anomaly scores on the held-out known-class set, the
+    scores of an untrained model on the same set, and that set as a tensor.
+    """
     # Generate known-class spectrograms.
     rng = np.random.default_rng(42)
     dt = 1.0 / 4000
@@ -147,8 +148,6 @@ def test_reconstruction_low_for_in_distribution():
         score, _ = model.compute_anomaly_score(X_val[i:i + 1])
         val_scores.append(score)
     val_scores = np.array(val_scores)
-    mean_val_score = float(np.mean(val_scores))
-    std_val_score = float(np.std(val_scores))
 
     # Also compute untrained baseline for comparison.
     untrained_model = ConvVAE(latent_dim=12)
@@ -157,6 +156,26 @@ def test_reconstruction_low_for_in_distribution():
     for i in range(X_val.size(0)):
         score, _ = untrained_model.compute_anomaly_score(X_val[i:i + 1])
         untrained_scores.append(score)
+    untrained_scores = np.array(untrained_scores)
+
+    return model, val_scores, untrained_scores, X_val
+
+
+@pytest.fixture(scope="module")
+def in_distribution_model():
+    """Trained model shared by the in-distribution and OOD tests."""
+    return _train_in_distribution_model()
+
+
+def test_reconstruction_low_for_in_distribution(in_distribution_model):
+    """Train CVAE briefly and verify low recon error on known classes."""
+    print("\n" + "=" * 60)
+    print("  TEST 2: Low Reconstruction Error (In-Distribution)")
+    print("=" * 60)
+
+    _, val_scores, untrained_scores, _ = in_distribution_model
+    assert np.all(np.isfinite(val_scores))
+    mean_val_score = float(np.mean(val_scores))
     untrained_mean = float(np.mean(untrained_scores))
 
     print(f"  Untrained baseline score: {untrained_mean:.4f}")
@@ -171,28 +190,19 @@ def test_reconstruction_low_for_in_distribution():
     print(f"  In-distribution score ({mean_val_score:.4f}) is below threshold")
 
     print("\n  *** TEST 2 PASSED ***")
-    return model, mean_val_score, std_val_score, X_val
 
 
 # =====================================================================
 #  Test 3: High reconstruction error for out-of-distribution input
 # =====================================================================
 
-def test_reconstruction_high_for_ood(model=None, in_dist_mean=None,
-                                      in_dist_std=None, X_val_known=None):
+def test_reconstruction_high_for_ood(in_distribution_model):
     """Verify OOD inputs produce higher reconstruction error."""
     print("\n" + "=" * 60)
     print("  TEST 3: High Reconstruction Error (Out-of-Distribution)")
     print("=" * 60)
 
-    # If no model provided, train one quickly.
-    if model is None:
-        print("  Training fresh model for OOD test...")
-        _, model_ret, mean_ret, std_ret, xv = test_reconstruction_low_for_in_distribution()
-        model = model_ret
-        in_dist_mean = mean_ret
-        in_dist_std = std_ret
-        X_val_known = xv
+    model, _, _, X_val_known = in_distribution_model
 
     n_mels = 64
     max_time = X_val_known.size(3)
@@ -386,7 +396,7 @@ def test_pipeline_integration_no_break():
     print("  load_ml_models returns anomaly=None when disabled: OK")
 
     # 4. Verify that existing detection imports still work.
-    from acoustic_sim.detection import DetectionEngine, WindowDetection
+    from acoustic_sim.air.detection import DetectionEngine, WindowDetection
     from acoustic_sim.ml.acoustic_classifier import AcousticClassifier
     from acoustic_sim.ml.maneuver_classifier import ManeuverClassifier
     from acoustic_sim.ml.fusion_classifier import FusionClassifier
@@ -415,8 +425,9 @@ def run_all():
     print("=" * 60)
 
     test_cvae_forward_backward()
-    model, mean_score, std_score, X_val = test_reconstruction_low_for_in_distribution()
-    test_reconstruction_high_for_ood(model, mean_score, std_score, X_val)
+    trained = _train_in_distribution_model()
+    test_reconstruction_low_for_in_distribution(trained)
+    test_reconstruction_high_for_ood(trained)
     test_integration_wrapper_dataclass()
     test_pipeline_integration_no_break()
 

@@ -7,7 +7,7 @@ Usage::
         --source-signal propeller --array circular --output-dir output/test
 
 All domain / source / receiver construction is handled by
-``acoustic_sim.setup``.  This script is just CLI parsing, wiring,
+``acoustic_sim.air.setup``.  This script is just CLI parsing, wiring,
 and output saving.
 """
 
@@ -28,9 +28,9 @@ _root = Path(__file__).resolve().parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root / "src"))
 
-from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
-from acoustic_sim.plotting import plot_domain, plot_gather
-from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
+from acoustic_sim.solver.fdtd import FDTDConfig, FDTDSolver
+from acoustic_sim.air.plotting import plot_domain, plot_gather
+from acoustic_sim.air.setup import build_domain, build_receivers, build_source, compute_dt
 
 
 # ---------------------------------------------------------------------------

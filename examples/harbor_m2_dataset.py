@@ -26,7 +26,7 @@ from scipy.signal import butter, sosfiltfilt, spectrogram
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import (  # noqa: E402
+from acoustic_sim.water import (  # noqa: E402
     HarborScenarioConfig,
     assemble_dataset,
     build_environment,
@@ -34,7 +34,7 @@ from acoustic_sim.harbor import (  # noqa: E402
     build_track,
     render_vessel_gathers,
 )
-from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 
 
 def band_rms(x: np.ndarray, sos: np.ndarray) -> float:

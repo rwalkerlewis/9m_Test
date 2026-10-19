@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 
-from acoustic_sim.harbor import HarborFDTDConfig, SensorLayout, simulate_source, uniform_water_environment
-from acoustic_sim.harbor.signatures import (
+from acoustic_sim.water import HarborFDTDConfig, SensorLayout, simulate_source, uniform_water_environment
+from acoustic_sim.water.signatures import (
     R_REF,
     InjectionCalibration,
     activity_gate,
@@ -99,7 +99,7 @@ def test_injection_calibration_gives_unit_rms_at_100m(kind, speed):
 
 def test_f_max_follows_grid_spacing():
     """The usable band is 80 Hz on the 5 m grid and scales inversely with dx."""
-    from acoustic_sim.harbor.signatures import F_MAX, f_max_for_grid
+    from acoustic_sim.water.signatures import F_MAX, f_max_for_grid
 
     assert F_MAX == 80.0
     assert f_max_for_grid(5.0) == 80.0

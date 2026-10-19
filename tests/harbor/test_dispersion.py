@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 from scipy.special import hankel2
 
-from acoustic_sim.fdtd import fd2_coefficients
-from acoustic_sim.harbor import HarborFDTDConfig, SensorLayout, simulate_source, uniform_water_environment
-from acoustic_sim.harbor.dispersion import (
+from acoustic_sim.solver.fdtd import fd2_coefficients
+from acoustic_sim.water import HarborFDTDConfig, SensorLayout, simulate_source, uniform_water_environment
+from acoustic_sim.water.dispersion import (
     N_THETA,
     DispersionModel,
     for_scenario,

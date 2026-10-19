@@ -19,7 +19,7 @@ from acoustic_sim.ml.maneuver_classifier import ManeuverClassifier
 from acoustic_sim.ml.training import evaluate_classifier, train_classifier
 
 
-def test_maneuver_classifier():
+def test_maneuver_classifier(tmp_path):
     """Train and evaluate the maneuver detection classifier."""
     print("\n" + "=" * 60)
     print("  MODULE 2: Maneuver Detection")
@@ -69,15 +69,17 @@ def test_maneuver_classifier():
         m = metrics["per_class"][name]
         print(f"  {name:>14s} {m['precision']:>10.3f} {m['recall']:>10.3f} {m['f1']:>10.3f}")
 
-    # Save model.
-    model_path = Path("output/models")
-    model_path.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), model_path / "maneuver_classifier.pt")
-    print(f"\n  Model saved to {model_path / 'maneuver_classifier.pt'}")
+    # Save and reload the weights (to a temporary directory: output/models holds the
+    # committed, trained weights and must not be overwritten by tests).
+    checkpoint = tmp_path / "maneuver_classifier.pt"
+    torch.save(model.state_dict(), checkpoint)
+    model.load_state_dict(torch.load(checkpoint))
 
     print("\n  *** MODULE 2 TEST PASSED ***")
-    return model, metrics
 
 
 if __name__ == "__main__":
-    test_maneuver_classifier()
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        test_maneuver_classifier(Path(tmp))

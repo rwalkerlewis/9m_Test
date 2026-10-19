@@ -47,7 +47,7 @@ except ImportError:
     )
     sys.exit(1)
 
-from acoustic_sim.forward import simulate_3d_traces
+from acoustic_sim.air.forward import simulate_3d_traces
 from acoustic_sim.ml.acoustic_classifier import AcousticClassifier
 from acoustic_sim.ml.data_generation import (
     CLASS_TO_IDX,

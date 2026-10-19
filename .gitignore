@@ -29,6 +29,7 @@ Thumbs.db
 # Generated output: figures, JSON and logs are committed; datasets and FDTD caches are not.
 output/**/cache/
 output/*/snapshots/
+output/performance/.*.log
 *.npy
 *.npz
 

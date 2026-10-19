@@ -13,8 +13,15 @@ described below and in [Harbor](harbor.md).
 
 ## Pipeline Configuration (`pipeline.config.json`)
 
-Used by `examples/run_pipeline.py`.  JSON file with six sections
-(five core + optional `ml`).  CLI flags override individual values.
+Used by `examples/run_pipeline.py`, which merges the JSON file over built-in defaults
+(`_DEFAULTS` in `run_pipeline.py`) and then applies CLI overrides.  Sections: `detection`,
+`beamformer`, `ranging`, `tracking`, `fire_control`, `source`, and optional `ml`.
+
+The **Default** columns below give the effective value with the shipped
+`examples/pipeline.config.json` (loaded unless `--config` points elsewhere).  Where the shipped
+file and the built-in default differ, both are given.  Keys absent from the shipped file
+(`beamformer.method`, `beamformer.max_sources`, all of `ranging`, the `anomaly_*` keys) come from
+the built-in defaults.
 
 ### `detection`
 
@@ -65,21 +72,19 @@ scenarios (ground-truth CPA ≤ threshold) and RMS otherwise.
 |-----|------|---------|-------------|
 | `muzzle_velocity_mps` | float | 400.0 | pellet muzzle velocity (m/s) |
 | `pellet_decel_mps2` | float | 1.5 | velocity loss per metre of travel |
-| `pattern_spread_rate` | float | 0.3 | pattern diameter per metre of range |
+| `pattern_spread_rate` | float | 0.3 (built-in 0.2) | pattern diameter per metre of range |
 
-> **Note on `pattern_spread_rate` defaults:** Three defaults exist in
-> the codebase: `DetectionConfig` uses 0.025, the `pattern_diameter()`
-> function signature defaults to 0.025, and `pipeline.config.json`
-> overrides to 0.3.  The pipeline config value (0.3) is what the
-> production pipeline uses.  The function-level default (0.025)
-> applies only when calling `pattern_diameter()` directly without
-> specifying a spread rate.
 | `max_engagement_range_m` | float | 500.0 | maximum engagement range (m) |
 | `max_position_uncertainty_m` | float | 0.0 | position uncertainty gate (0 = disabled) |
-| `class_label` | str | "fixed_wing" | assumed source class for engagement rules |
+| `class_label` | str | `"fixed_wing"` (built-in `"quadcopter"`) | assumed source class for engagement rules |
 | `class_confidence` | float | 0.9 | assumed classification confidence |
 | `hit_threshold_m` | float | 2.0 | miss distance for scoring a hit (m) |
 | `max_hits` | int | 3 | stop pipeline after this many hits (0 = unlimited) |
+
+> **`pattern_spread_rate` defaults:** the production pipeline uses the shipped config value
+> (0.3).  `DetectionConfig` (MFP/EKF library path) and the `pattern_diameter()` function
+> signature both default to 0.025; the function default applies only when `pattern_diameter()`
+> is called without a spread rate.
 
 ### `source`
 
@@ -99,14 +104,15 @@ produces identical results to a signal-processing-only baseline.
 | `enable_maneuver_detection` | bool | false | Enable maneuver-adaptive tracking |
 | `enable_fusion_classification` | bool | false | Enable fusion (acoustic + kinematic) classifier |
 | `enable_fno_surrogate` | bool | false | Enable FNO data augmentation path |
+| `fno_checkpoint` | str | `"checkpoints/fno_demo/fno_final.pt"` | Path to FNO weights (written by `examples/run_fno.py`; not shipped) |
 | `enable_anomaly_detection` | bool | false | Enable CVAE anomaly detection |
 | `classification_checkpoint` | str | `"output/models/acoustic_classifier.pt"` | Path to acoustic classifier weights |
 | `maneuver_checkpoint` | str | `"output/models/maneuver_classifier.pt"` | Path to maneuver classifier weights |
 | `fusion_checkpoint` | str | `"output/models/fusion_classifier.pt"` | Path to fusion classifier weights |
-| `anomaly_checkpoint` | str | `"output/models/anomaly_detector.pt"` | Path to CVAE anomaly detector weights |
+| `anomaly_checkpoint` | str | `"output/models/anomaly_detector.pt"` | Path to CVAE anomaly detector weights (not shipped; train with `src/acoustic_sim/ml/anomaly_training.py`) |
 | `anomaly_threshold_file` | str | `"output/models/anomaly_threshold.json"` | Path to anomaly threshold calibration |
 | `anomaly_override_confidence_threshold` | float | 0.7 | CNN confidence below this + anomaly novel = NOVEL_THREAT |
-| `classification_confidence_threshold` | float | 0.7 | P(non-drone) must exceed this to reject a detection |
+| `classification_confidence_threshold` | float | 0.95 (built-in 0.7) | P(non-drone) must exceed this to reject a detection |
 | `maneuver_window_size` | int | 20 | Number of kinematic history steps for maneuver classifier |
 | `reject_non_drone_classes` | bool | true | Whether to suppress fire on non-drone classifications |
 | `maneuver_aware_tracking` | bool | true | Whether maneuver class adjusts tracker covariance |
@@ -142,6 +148,7 @@ whose origin is `(x0, y0)`, and sensor/vessel coordinates must be expressed in t
 |---------|-------------|---------|
 | `environment` | `dx`, `c0`, `shallow_c_drop`, `crop` | Plan-view grid spacing, base sound speed, shallow-water effective-speed variation, and optional crop |
 | `fdtd` | `fs`, `total_time`, `fd_order`, `damping_width`, `damping_max`, `background_absorption`, `shore_loss_width`, `shore_loss_max`, `use_cuda` | Sampling rate/duration, stencil, outer sponge, background damping, shoreline damping, and GPU selection |
+| `fdtd` (performance options, defaults shown) | `precision="float64"`, `kernel="auto"`, `body_masks="auto"`, `boundary="sponge"` (or `"cpml"`, with `cpml_width`, `cpml_order`, `cpml_alpha_max`), `time_scheme="leapfrog"` | GPU precision, fused CUDA kernel selection, scatterer mask placement, absorbing boundary and time-stepping scheme; see [Harbor](harbor.md) for measured effects |
 | `cables` | `name`, `waypoints`, `channel_spacing`, `das_mode`, `gauge_length` | Polyline cable layout; `das_mode` is `pressure` or `strain` |
 | `hydrophones` | array of `[x, y]` points | Discrete sensor positions |
 | `vessels` | `id`, `kind`, `waypoints`, `speed`, `t_start`, `t_end`, `level_pa`, `ais`, `wander_sigma`, `seed`, body fields | Source/target trajectories, radiated level, AIS status and optional scattering body |
@@ -167,8 +174,8 @@ dataclasses and their defaults are documented in their module docstrings and sum
 
 ## DetectionConfig (MFP/EKF Library Pipeline)
 
-Defined in `src/acoustic_sim/config.py`.  A `@dataclass` with ~80
-parameters used by `detection_main.py`.  Grouped below by function.
+Defined in `src/acoustic_sim/air/config.py`. A `@dataclass` with 121
+fields used by `air/detection_main.py`. The main ones are grouped below by function.
 
 ### Domain
 
@@ -294,17 +301,17 @@ CLI flags.  Key arguments:
 
 | Flag | Description |
 |------|-------------|
-| `--domain` | `isotropic`, `wind`, `hills_vegetation` |
+| `--domain` | `isotropic`, `wind`, `hills_vegetation` (3-D adds `ground_layer`) |
 | `--source-type` | `static`, `moving` |
 | `--source-signal` | `file`, `propeller`, `tone`, `noise`, `ricker` |
-| `--array` | `circular`, `concentric`, `linear`, ... |
+| `--array` | `circular`, `concentric`, `linear` (3-D adds `l_shaped`, `random`) |
 | `--total-time` | simulation duration in seconds |
 | `--dx` | grid spacing in metres |
 | `--fd-order` | spatial FD order: 2, 4, 6, 8 |
 | `--use-cuda` | enable GPU acceleration |
 | `--output-dir` | output directory |
 
-3-D adds: `--z-min`, `--z-max`, `--source-z`, `--source-z1`.
+3-D adds: `--z-min`, `--z-max`, `--source-z`, `--source-z1`, `--receiver-cz`, and `--field-plane-z` (save a horizontal slice for `extract_array_traces.py`).
 
 ---
 

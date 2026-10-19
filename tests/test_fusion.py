@@ -103,7 +103,7 @@ def _generate_kinematic_features_for_dataset(dataset: dict, seed: int = 42) -> n
     return np.array(features)
 
 
-def test_fusion_classifier():
+def test_fusion_classifier(tmp_path):
     """Train and evaluate the kinematic fusion classifier (Module 3)."""
     print("\n" + "=" * 60)
     print("  MODULE 3: Kinematic Fusion Classifier")
@@ -227,16 +227,18 @@ def test_fusion_classifier():
             print(f" {cm[i, j]:>8d}", end="")
         print()
 
-    # Save models.
-    model_path = Path("output/models")
-    model_path.mkdir(parents=True, exist_ok=True)
-    torch.save(model_fusion.state_dict(), model_path / "fusion_classifier.pt")
-    torch.save(model_acoustic.state_dict(), model_path / "acoustic_classifier.pt")
-    torch.save(model_kin.state_dict(), model_path / "kinematic_classifier.pt")
+    # Save and reload the weights (to a temporary directory: output/models holds the
+    # committed, trained weights and must not be overwritten by tests).
+    for name, model in (("fusion", model_fusion), ("acoustic", model_acoustic), ("kinematic", model_kin)):
+        checkpoint = tmp_path / f"{name}_classifier.pt"
+        torch.save(model.state_dict(), checkpoint)
+        model.load_state_dict(torch.load(checkpoint))
 
     print(f"\n  *** MODULE 3 TEST PASSED ***")
-    return model_fusion, metrics_fusion
 
 
 if __name__ == "__main__":
-    test_fusion_classifier()
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        test_fusion_classifier(Path(tmp))

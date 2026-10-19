@@ -18,8 +18,8 @@ from acoustic_sim.sources import (
     StaticSource3D,
     source_velocity_at_3d,
 )
-from acoustic_sim.forward import simulate_3d_traces
-from acoustic_sim.noise import generate_sensor_noise, generate_wind_noise
+from acoustic_sim.air.forward import simulate_3d_traces
+from acoustic_sim.air.noise import generate_sensor_noise, generate_wind_noise
 
 _P_REF = 20e-6
 

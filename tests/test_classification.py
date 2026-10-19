@@ -23,7 +23,7 @@ from acoustic_sim.ml.training import (
 )
 
 
-def test_acoustic_classifier():
+def test_acoustic_classifier(tmp_path):
     """Train and evaluate the acoustic-only source classifier."""
     print("\n" + "=" * 60)
     print("  MODULE 1: Source Classification")
@@ -89,15 +89,17 @@ def test_acoustic_classifier():
         m = metrics["per_class"][name]
         print(f"  {name:>14s} {m['precision']:>10.3f} {m['recall']:>10.3f} {m['f1']:>10.3f}")
 
-    # Save model.
-    model_path = Path("output/models")
-    model_path.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), model_path / "acoustic_classifier.pt")
-    print(f"\n  Model saved to {model_path / 'acoustic_classifier.pt'}")
+    # Save and reload the weights (to a temporary directory: output/models holds the
+    # committed, trained weights and must not be overwritten by tests).
+    checkpoint = tmp_path / "acoustic_classifier.pt"
+    torch.save(model.state_dict(), checkpoint)
+    model.load_state_dict(torch.load(checkpoint))
 
     print("\n  *** MODULE 1 TEST PASSED ***")
-    return model, metrics, dataset
 
 
 if __name__ == "__main__":
-    test_acoustic_classifier()
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        test_acoustic_classifier(Path(tmp))

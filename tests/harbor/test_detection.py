@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.special import hankel2
 
-from acoustic_sim.harbor import (
+from acoustic_sim.water import (
     Cable,
     HarborFDTDConfig,
     HarborScenarioConfig,
@@ -17,7 +17,7 @@ from acoustic_sim.harbor import (
     render_vessel_gathers,
     uniform_water_environment,
 )
-from acoustic_sim.harbor.detection import (
+from acoustic_sim.water.detection import (
     DetectionSet,
     ProcessingConfig,
     build_grid,
@@ -27,7 +27,7 @@ from acoustic_sim.harbor.detection import (
     run_detection,
     threshold_from_maxima,
 )
-from acoustic_sim.harbor.evaluate import associate, score_detections
+from acoustic_sim.water.evaluate import associate, score_detections
 
 FS = 600.0
 
@@ -94,7 +94,7 @@ def test_build_grid_is_water_with_margin():
 # ----------------------------- scoring -----------------------------
 
 def _truth_track(kind="uuv", ais=False, level=1.0):
-    from acoustic_sim.harbor import Track
+    from acoustic_sim.water import Track
 
     t = np.arange(0, 21.0, 1.0)
     xy = np.column_stack([100.0 + 10.0 * t, np.full_like(t, 200.0)])
@@ -151,7 +151,7 @@ def test_absent_vessels_are_not_associable():
 
 def _synthetic_whitened(amps, positions, n_frames=6, seed=0):
     """Whitened data built directly from free-field replicas: unit complex noise + tones at *positions*."""
-    from acoustic_sim.harbor.detection import MatchedFieldScanner, Whitened
+    from acoustic_sim.water.detection import MatchedFieldScanner, Whitened
 
     rng = np.random.default_rng(seed)
     layout = SensorLayout(
@@ -177,7 +177,7 @@ def _synthetic_whitened(amps, positions, n_frames=6, seed=0):
 
 
 def test_successive_cancellation_keeps_independent_sources_and_drops_sidelobes():
-    from acoustic_sim.harbor.detection import extract_detections
+    from acoustic_sim.water.detection import extract_detections
 
     strong, weak = np.array([350.0, 330.0]), np.array([650.0, 520.0])
     for amps, pos, expect in [([12.0], [strong], 1), ([12.0, 5.0], [strong, weak], 2)]:
@@ -194,7 +194,7 @@ def test_successive_cancellation_keeps_independent_sources_and_drops_sidelobes()
 
 
 def test_match_frame_deflation_removes_the_source_and_its_sidelobes_but_not_others():
-    from acoustic_sim.harbor.detection import ScanResult
+    from acoustic_sim.water.detection import ScanResult
 
     p1, p2 = np.array([350.0, 330.0]), np.array([650.0, 520.0])
     # Two sources: deflating one leaves the other intact.

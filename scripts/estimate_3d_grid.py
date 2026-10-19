@@ -26,7 +26,7 @@ _root = Path(__file__).resolve().parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root / "src"))
 
-from acoustic_sim.fdtd import fd2_coefficients, fd2_cfl_factor
+from acoustic_sim.solver.fdtd import fd2_coefficients, fd2_cfl_factor
 
 
 def estimate(

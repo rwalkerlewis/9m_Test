@@ -1,0 +1,209 @@
+{
+  "tag": "stage2_device",
+  "date": "2026-10-19 05:12:01",
+  "git": "6c60f47",
+  "host": {
+    "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cpu_count": 16
+  },
+  "gpu": {
+    "requested": true,
+    "available": true,
+    "name": "Quadro RTX 4000",
+    "cupy": "14.2.0",
+    "cuda_runtime": 12090,
+    "memory_total_mb": 7751.5625,
+    "memory_free_mb": 7152.5625,
+    "compute_capability": "7.5"
+  },
+  "options": {
+    "cuda": true,
+    "repeat": 1,
+    "rerender": false,
+    "precision": null,
+    "kernel": "fused",
+    "boundary": null,
+    "cpml_width": null,
+    "body_masks": "device",
+    "proc_cuda": null,
+    "impl": null
+  },
+  "criteria": {
+    "fused64_vs_reference_rel_l2": 1e-12,
+    "fused32_direct_rel_l2_median": 0.0001,
+    "fused32_direct_rel_l2_max": 0.001,
+    "fused32_scattered_rel_rms": 0.001,
+    "fused32_eca_depth_db": 0.5,
+    "fused32_estimate_frames_within_one_cell": 0.95,
+    "masks_rel_l2": 1e-10,
+    "batched_rel_l2": 1e-12,
+    "processing_rel_l2": 1e-10
+  },
+  "reference_dir": "/workspace/output/performance/runs/stage1_fused64",
+  "cases": {
+    "fdtd_ferry_2s": {
+      "kind": "fdtd",
+      "scenario": "harbor_bistatic.scenario.json",
+      "total_time_s": 2.0,
+      "bodies": "none",
+      "n_bodies": 0,
+      "n_steps": 12000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 1.2099665729911067,
+      "ms_per_step": 0.10083054774925888,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float64"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 0.0,
+          "max": 0.0,
+          "n": 200
+        },
+        "rel_rms": 0.0
+      }
+    },
+    "fdtd_ferry_10s": {
+      "kind": "fdtd",
+      "scenario": "harbor_bistatic.scenario.json",
+      "total_time_s": 10.0,
+      "bodies": "none",
+      "n_bodies": 0,
+      "n_steps": 60000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 5.600121604002197,
+      "ms_per_step": 0.09333536006670329,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float64"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 0.0,
+          "max": 0.0,
+          "n": 200
+        },
+        "rel_rms": 0.0
+      }
+    },
+    "fdtd_ferry_uuv_2s": {
+      "kind": "fdtd",
+      "scenario": "harbor_bistatic.scenario.json",
+      "total_time_s": 2.0,
+      "bodies": "uuv1",
+      "n_bodies": 1,
+      "n_steps": 12000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 1.2813200679956935,
+      "ms_per_step": 0.10677667233297446,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float64"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 5.064913843678655e-14,
+          "max": 3.669205890818605e-13,
+          "n": 200
+        },
+        "rel_rms": 4.108345534089435e-14,
+        "scattered_rel_rms": 2.927275297133332e-13,
+        "scattered_rel_l2": {
+          "median": 4.4344593043081495e-13,
+          "max": 8.503262371585444e-12,
+          "n": 200
+        },
+        "scattered_to_direct_rms": 0.14034708369831084
+      }
+    },
+    "fdtd_ferry_uuv_10s": {
+      "kind": "fdtd",
+      "scenario": "harbor_bistatic.scenario.json",
+      "total_time_s": 10.0,
+      "bodies": "uuv1",
+      "n_bodies": 1,
+      "n_steps": 60000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 12.109439786989242,
+      "ms_per_step": 0.2018239964498207,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float64"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 5.328672139901033e-14,
+          "max": 3.5686768134452174e-13,
+          "n": 200
+        },
+        "rel_rms": 4.380336010546136e-14,
+        "scattered_rel_rms": 3.0590796048198934e-13,
+        "scattered_rel_l2": {
+          "median": 4.667844763674074e-13,
+          "max": 9.735462472303747e-12,
+          "n": 200
+        },
+        "scattered_to_direct_rms": 0.14319130588907658
+      }
+    },
+    "fdtd_multistatic_2s": {
+      "kind": "fdtd",
+      "scenario": "harbor_multistatic.scenario.json",
+      "total_time_s": 2.0,
+      "bodies": "all",
+      "n_bodies": 10,
+      "n_steps": 12000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 1.679588019993389,
+      "ms_per_step": 0.13996566833278243,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float64"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 5.1164885492499145e-14,
+          "max": 2.148288160860221e-13,
+          "n": 200
+        },
+        "rel_rms": 4.313638466232296e-14,
+        "scattered_rel_rms": 1.4716919538327732e-13,
+        "scattered_rel_l2": {
+          "median": 1.756330184346008e-13,
+          "max": 3.766194166572143e-13,
+          "n": 200
+        },
+        "scattered_to_direct_rms": 0.29310745182280834
+      }
+    }
+  },
+  "total_wall_s": 21.88043605197163
+}

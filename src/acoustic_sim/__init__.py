@@ -41,7 +41,7 @@ from acoustic_sim.receivers import (
     print_array_diagnostics,
 )
 from acoustic_sim.io import load_json, load_model, model_from_json, save_model
-from acoustic_sim.plotting import (
+from acoustic_sim.air.plotting import (
     plot_beam_power,
     plot_detection_domain,
     plot_detection_gather,
@@ -92,7 +92,7 @@ from acoustic_sim.sources import (
     source_velocity_at,
     source_velocity_at_3d,
 )
-from acoustic_sim.domains import (
+from acoustic_sim.air.domains import (
     DomainMeta,
     DomainMeta3D,
     create_echo_canyon_domain,
@@ -105,10 +105,10 @@ from acoustic_sim.domains import (
     create_ground_layer_domain_3d,
     create_hills_vegetation_domain_3d,
 )
-from acoustic_sim.fdtd import FDTD3DConfig, FDTD3DSolver, FDTDConfig, FDTDSolver
-from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
-from acoustic_sim.config import DetectionConfig, sound_speed_from_temperature
-from acoustic_sim.noise import (
+from acoustic_sim.solver.fdtd import FDTD3DConfig, FDTD3DSolver, FDTDConfig, FDTDSolver
+from acoustic_sim.air.setup import build_domain, build_receivers, build_source, compute_dt
+from acoustic_sim.air.config import DetectionConfig, sound_speed_from_temperature
+from acoustic_sim.air.noise import (
     add_all_noise,
     generate_sensor_noise,
     generate_wind_noise,
@@ -116,7 +116,7 @@ from acoustic_sim.noise import (
     inject_transient,
     perturb_mic_positions,
 )
-from acoustic_sim.processor import (
+from acoustic_sim.air.processor import (
     blank_transients,
     broadband_weighted_sum,
     build_polar_grid,
@@ -134,7 +134,7 @@ from acoustic_sim.processor import (
     polar_to_cartesian,
     select_harmonic_bins,
 )
-from acoustic_sim.tracker import (
+from acoustic_sim.air.tracker import (
     EKFTracker,
     EKFTracker3D,
     MultiTargetTracker,
@@ -144,7 +144,7 @@ from acoustic_sim.tracker import (
     run_tracker,
     run_tracker_3d,
 )
-from acoustic_sim.fire_control import (
+from acoustic_sim.air.fire_control import (
     compute_engagement,
     compute_engagement_3d,
     compute_lead,
@@ -159,7 +159,7 @@ from acoustic_sim.fire_control import (
     run_multi_fire_control,
     time_of_flight,
 )
-from acoustic_sim.validate import (
+from acoustic_sim.air.validate import (
     check_amplitude,
     check_energy,
     check_localization,
@@ -167,31 +167,10 @@ from acoustic_sim.validate import (
     check_travel_times,
     run_all_checks,
 )
-from acoustic_sim.detection_main import (
-    evaluate_results,
-    evaluate_results_3d,
-    run_detection,
-    run_detection_3d,
-    run_detection_pipeline,
-    simulate_scenario,
-)
-from acoustic_sim.forward import (
+from acoustic_sim.air.forward import (
     simulate_3d_traces,
     simulate_scenario_3d,
 )
-from acoustic_sim.studies import (
-    run_all_studies,
-    study_array_geometry,
-    study_echo_domains,
-    study_haphazard_array,
-    study_min_sensors,
-    study_mixed_failures,
-    study_multi_drone,
-    study_position_errors,
-    study_sensor_faults,
-    study_transient_robustness,
-)
-
 __all__ = [
     # ── Model ──
     "VelocityModel",
@@ -376,3 +355,63 @@ __all__ = [
     "study_sensor_faults",
     "study_transient_robustness",
 ]
+
+import importlib as _importlib
+import sys as _sys
+
+_LAZY_AIR_EXPORTS = {
+    "evaluate_results": "detection_main",
+    "evaluate_results_3d": "detection_main",
+    "run_detection": "detection_main",
+    "run_detection_3d": "detection_main",
+    "run_detection_pipeline": "detection_main",
+    "simulate_scenario": "detection_main",
+    "run_all_studies": "studies",
+    "study_array_geometry": "studies",
+    "study_echo_domains": "studies",
+    "study_haphazard_array": "studies",
+    "study_min_sensors": "studies",
+    "study_mixed_failures": "studies",
+    "study_multi_drone": "studies",
+    "study_position_errors": "studies",
+    "study_sensor_faults": "studies",
+    "study_transient_robustness": "studies",
+}
+
+
+def __getattr__(name: str):
+    try:
+        module_name = _LAZY_AIR_EXPORTS[name]
+    except KeyError as exc:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from exc
+    value = getattr(_importlib.import_module(f".air.{module_name}", __name__), name)
+    globals()[name] = value
+    return value
+
+
+# Keep the pre-domain package paths importable while callers migrate to air/ and water/.
+def _alias(legacy: str, canonical: str, *, attribute: bool = True) -> None:
+    module = _importlib.import_module(f".{canonical}", __name__)
+    _sys.modules[f"{__name__}.{legacy}"] = module
+    if attribute:
+        setattr(_sys.modules[__name__], legacy, module)
+
+
+for _module_name in (
+    "config",
+    "domains",
+    "fire_control",
+    "forward",
+    "noise",
+    "processor",
+    "plotting",
+    "setup",
+    "tracker",
+    "validate",
+    "detection",
+):
+    _alias(_module_name, f"air.{_module_name}")
+for _module_name in ("bearing", "engine", "ranging", "tracking"):
+    _alias(f"detection.{_module_name}", f"air.detection.{_module_name}", attribute=False)
+for _module_name in ("fdtd", "fdtd_cuda"):
+    _alias(_module_name, f"solver.{_module_name}")

@@ -4,7 +4,7 @@
 One broadband ship source (the ferry's signature) runs alone through the fine bistatic harbor
 (0.5 m grid, strain DAS, quays) at three ranges from the nearest cable channel, first
 stationary and then moving at 4 m/s parallel to the first cable leg.  Each gather is mixed
-with the scenario noise and processed by the ECA stage of ``harbor/bistatic.py``; the
+with the scenario noise and processed by the ECA stage of ``water/bistatic.py``; the
 noise free direct component goes through the same projection, so the energy it loses is the
 cancellation depth of each channel.  Three references are compared:
 
@@ -49,16 +49,16 @@ from scipy.signal import butter, sosfiltfilt
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
-from acoustic_sim.harbor.ais import AISConfig, AISReports  # noqa: E402
-from acoustic_sim.harbor.bistatic import BistaticConfig, ReplicaModel, eca_stage, ship_positions, stft  # noqa: E402
-from acoustic_sim.harbor.dataset import vessel_injection  # noqa: E402
-from acoustic_sim.harbor.dispersion import for_scenario  # noqa: E402
-from acoustic_sim.harbor.fdtd_runner import simulate_source  # noqa: E402
-from acoustic_sim.harbor.noise import generate_noise  # noqa: E402
-from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
-from acoustic_sim.harbor.signatures import f_max_for_grid  # noqa: E402
-from acoustic_sim.harbor.vessels import VesselConfig  # noqa: E402
+from acoustic_sim.water import HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
+from acoustic_sim.water.ais import AISConfig, AISReports  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, ReplicaModel, eca_stage, ship_positions, stft  # noqa: E402
+from acoustic_sim.water.dataset import vessel_injection  # noqa: E402
+from acoustic_sim.water.dispersion import for_scenario  # noqa: E402
+from acoustic_sim.water.fdtd_runner import _fused_available, simulate_source, simulate_sources  # noqa: E402
+from acoustic_sim.water.noise import generate_noise  # noqa: E402
+from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
+from acoustic_sim.water.vessels import VesselConfig  # noqa: E402
 
 RANGES = (200.0, 100.0, 30.0)
 SPEED = 4.0
@@ -179,8 +179,12 @@ def main() -> None:
         traj = None if mode == "stationary" else (tr.t, tr.xy)
         jobs.append(dict(env=env, layout=layout, cfg=cfg.fdtd, signal=sig, position=pos, trajectory=traj, cache_dir=args.cache))
     t0 = time.time()
-    with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        gathers = list(pool.map(_run, jobs))
+    if _fused_available(cfg.fdtd):
+        # All six runs in one batched GPU pass (stage 3 of the performance work); cached runs are loaded.
+        gathers = simulate_sources(env, layout, cfg.fdtd, jobs, cache_dir=args.cache)
+    else:
+        with ProcessPoolExecutor(max_workers=args.workers) as pool:
+            gathers = list(pool.map(_run, jobs))
     say(f"{len(gathers)} FDTD runs in {time.time() - t0:.0f} s")
 
     bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, removal="eca", dispersion=for_scenario(env, cfg.fdtd), eca_doppler=args.doppler,

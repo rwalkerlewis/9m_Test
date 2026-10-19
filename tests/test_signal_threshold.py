@@ -21,8 +21,10 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.processor import matched_field_process
-from acoustic_sim.tracker import run_tracker
+from acoustic_sim.air.processor import matched_field_process
+from acoustic_sim.air.tracker import run_tracker
+
+__test__ = False
 
 
 def test_signal_threshold(output_dir: Path, verbose: bool = True) -> dict:

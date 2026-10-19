@@ -50,8 +50,8 @@ def _generate_sample_2d(
 
     Returns metadata dict on success, None on failure.
     """
-    from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
-    from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
+    from acoustic_sim.solver.fdtd import FDTDConfig, FDTDSolver
+    from acoustic_sim.air.setup import build_domain, build_receivers, build_source, compute_dt
 
     # -- Randomise domain --
     domain_type = rng.choice(["isotropic", "wind", "hills_vegetation"])
@@ -173,7 +173,7 @@ def _generate_sample_3d(
     """Generate one 3-D FDTD training sample."""
     # Import 3D builders from the example script (they live there, not in setup.py).
     from examples.run_fdtd_3d import build_domain_3d, build_receivers_3d, build_source_3d, compute_dt_3d
-    from acoustic_sim.fdtd import FDTD3DSolver, FDTDConfig
+    from acoustic_sim.solver.fdtd import FDTD3DSolver, FDTDConfig
 
     # -- Randomise domain --
     domain_type = rng.choice(["isotropic", "wind", "hills_vegetation"])

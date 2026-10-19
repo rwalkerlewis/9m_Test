@@ -5,7 +5,7 @@ Idealised, and said so on every figure: the ferry's direct path is removed with 
 truth component (perfect cancellation), the ferry waveform and position are known (oracle
 reference, exact track).  What remains is real: an FDTD simulated echo of a 1 m x 3 m soft body
 on a strain DAS cable and four hydrophones, in noise, processed with the coherent bistatic
-matched filter of ``harbor/bistatic.py``.
+matched filter of ``water/bistatic.py``.
 
 Usage::
 
@@ -30,12 +30,12 @@ from scipy.signal import butter, sosfiltfilt
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import HarborDataset, build_environment, build_layout  # noqa: E402
-from acoustic_sim.harbor.bistatic import BistaticConfig, Truth, run_bistatic  # noqa: E402
-from acoustic_sim.harbor.dataset import vessel_injection  # noqa: E402
-from acoustic_sim.harbor.dispersion import for_scenario  # noqa: E402
-from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
-from acoustic_sim.harbor.signatures import f_max_for_grid  # noqa: E402
+from acoustic_sim.water import HarborDataset, build_environment, build_layout  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, Truth, run_bistatic  # noqa: E402
+from acoustic_sim.water.dataset import vessel_injection  # noqa: E402
+from acoustic_sim.water.dispersion import for_scenario  # noqa: E402
+from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
 
 
 def main() -> None:
@@ -64,7 +64,7 @@ def main() -> None:
                         removal="none", method="coherent", coherent_norm="snr", exclusion_radius=25.0, dispersion=for_scenario(env, cfg.fdtd))
     t0 = time.time()
     # Frame times are needed for the exact ship track: run the STFT geometry once via a dry config.
-    from acoustic_sim.harbor.bistatic import stft
+    from acoustic_sim.water.bistatic import stft
     sp = stft(traces, layout, ds.fs, bc, f_max)
     ship_xy = ds.tracks["ferry"].position_at(sp.times)
     run = run_bistatic(traces, layout, ds.fs, env, ds.ais, bc, f_max, oracle_signal=oracle, truth=Truth(ship_xy=ship_xy))

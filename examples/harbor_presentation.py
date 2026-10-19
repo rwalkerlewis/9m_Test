@@ -31,7 +31,7 @@ from scipy.signal import hilbert
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
-from acoustic_sim.harbor import HarborDataset, build_environment  # noqa: E402
+from acoustic_sim.water import HarborDataset, build_environment  # noqa: E402
 
 C, R_REF = 1500.0, 100.0
 FS = 500.0

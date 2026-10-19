@@ -43,7 +43,7 @@ from acoustic_sim.ml.anomaly_detector import ConvVAE, vae_loss
 from acoustic_sim.ml.data_generation import generate_source_signal
 from acoustic_sim.ml.features import compute_mel_spectrogram
 from acoustic_sim.sources import MovingSource3D
-from acoustic_sim.forward import simulate_3d_traces
+from acoustic_sim.air.forward import simulate_3d_traces
 from acoustic_sim.receivers import create_receiver_l_shaped_3d
 
 # Known aerial threat classes used for CVAE training.

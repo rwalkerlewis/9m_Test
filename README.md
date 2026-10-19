@@ -32,11 +32,11 @@ The forward model and the pipeline are deliberately decoupled so that each can b
 
 ## Approach and Design Decisions
 
-**Forward model.** The forward model is a Finite Difference Time Domain solver with configurable stencil order (2nd, 4th, 6th, 8th). The solver supports both 2D and 3D domains with MPI domain decomposition and optional CUDA acceleration via CuPy. Sponge-layer absorbing boundaries prevent reflections from the domain edges. A Helmholtz (frequency-domain) solver with PML boundaries is also available for steady-state analysis.
+**Forward model.** The forward model is a Finite Difference Time Domain solver with configurable stencil order (2nd, 4th, 6th, 8th). The solver supports both 2D and 3D domains with MPI domain decomposition and optional CUDA acceleration via CuPy. Sponge-layer absorbing boundaries (default) or, in the 2-D solver, a convolutional PML prevent reflections from the domain edges. A Helmholtz (frequency-domain) solver with PML boundaries is also available for steady-state analysis.
 
 Source signals include propeller noise (blade-pass fundamental plus harmonics), drone harmonics, tones, Ricker wavelets, WAV files, and white noise. Sources are injected by bilinear (2D) or trilinear (3D) interpolation to support arbitrary trajectories. Source types include static, linear moving, circular orbit, loiter-approach, figure-eight, evasive, and erratic quadcopter.
 
-Six domain configurations are available: isotropic (free space), wind (uniform flow with directional effects), hills and vegetation (valley between two reflective ridges with frequency-dependent absorption), echo canyon (parallel walls with strong multipath), urban echo (buildings with complex reflections), and coupled elastic (3D with ground interaction). The valley and echo domains introduce multipath and terrain effects that stress the detection pipeline.
+Six domain configurations are available: isotropic (free space), wind (uniform flow with directional effects), hills and vegetation (valley between two reflective ridges with frequency-dependent absorption), echo canyon (parallel walls with strong multipath), urban echo (buildings with complex reflections), and ground layer (3-D air over a high-velocity ground half-space, producing ground reflections). The valley and echo domains introduce multipath and terrain effects that stress the detection pipeline. The FDTD scripts expose isotropic, wind and hills/vegetation (plus ground layer in 3-D); echo canyon and urban echo are library domains used by the robustness studies and the MFP/EKF pipeline.
 
 **Detection pipeline.** The pipeline is a causal, real-time system. It processes receiver traces frame by frame in the order they would arrive.
 
@@ -53,7 +53,7 @@ Six domain configurations are available: isotropic (free space), wind (uniform f
 
 All detections default to hostile. Engagement is scored by computed miss distance including projectile flight time. A target is considered neutralized after a configurable number of shots (default 3) fall within the acceptable miss distance. Computational latency is tracked because this is modeled as a real-time system.
 
-**ML classifiers (integrated into the detection pipeline).** PyTorch classifiers for source type (CNN on mel spectrograms, 6 classes: quadcopter, hexacopter, fixed wing, bird, ground vehicle, unknown), maneuver state (1D CNN on kinematic features, 6 classes: steady, turning, accelerating, diving, evasive, hovering), a fusion classifier that combines acoustic and kinematic inputs, and a CVAE anomaly detector for novel threat flagging are wired into the production pipeline as optional components. Source classification gates engagement decisions by filtering non-drone detections before fire control. Maneuver classification adapts tracker covariance based on detected flight behavior (evasive targets get 2.5× covariance, hovering targets get 0.5×). Anomaly detection flags acoustically novel targets via reconstruction error when the primary classifier is uncertain. Trained weights are included in `output/models/`. All ML components are disabled by default; with ML disabled, the pipeline produces identical results to a signal-processing-only baseline.
+**ML classifiers (integrated into the detection pipeline).** PyTorch classifiers for source type (CNN on mel spectrograms, 6 classes: quadcopter, hexacopter, fixed wing, bird, ground vehicle, unknown), maneuver state (1D CNN on kinematic features, 6 classes: steady, turning, accelerating, diving, evasive, hovering), a fusion classifier that combines acoustic and kinematic inputs, and a CVAE anomaly detector for novel threat flagging are wired into the production pipeline as optional components. Source classification gates engagement decisions by filtering non-drone detections before fire control. Maneuver classification adapts tracker covariance based on detected flight behavior (evasive targets get 2.5× covariance, hovering targets get 0.5×). Anomaly detection flags acoustically novel targets via reconstruction error when the primary classifier is uncertain. Trained weights for the source, maneuver and fusion classifiers are included in `output/models/`; the anomaly detector must be trained locally (see [ML training](#ml-training)). All ML components are disabled by default; with ML disabled, the pipeline produces identical results to a signal-processing-only baseline.
 
 **FNO surrogate (included but not integrated).** A Fourier Neural Operator infrastructure to replace the FDTD solver for rapid forward propagation is included with data generation, training, and inference modules. The motivation is that the FDTD solver is too slow for real-time ensemble analysis or rapid parameter studies. An FNO trained on FDTD output could provide forward model evaluations at a fraction of the cost.
 
@@ -71,7 +71,7 @@ All detections default to hostile. Engagement is scored by computed miss distanc
 
 ## Water-Based Harbor Pipeline
 
-The separate harbor package (`src/acoustic_sim/harbor/`) synthesizes a harbor environment,
+The separate water package (`src/acoustic_sim/water/`) synthesizes a harbor environment,
 sensor layout, vessel tracks, noisy AIS reports, and sensor traces. Its FDTD model includes a
 water mask, pressure-release land boundaries, shoreline damping, optional finite-size moving
 scatterers, and pressure or strain-like DAS observations. It does **not** solve a 3-D water-column
@@ -159,6 +159,9 @@ pip install -e ".[ml]"     # ML classifiers, FNO surrogate, anomaly detection (t
 pip install -e ".[dev]"   # pytest
 ```
 
+`pyproject.toml` is the single source of truth for dependencies; `requirements.txt` is only a
+compatibility shim that installs the package (`-e .`) with its base dependencies.
+
 MPI, only for multi-process FDTD (the solver runs single-process without it):
 
 ```bash
@@ -230,6 +233,10 @@ python examples/run_pipeline.py output/valley_test \
     --enable-classification --enable-maneuver --enable-anomaly
 ```
 
+ML flags need the `[ml]` extra. `--enable-anomaly` needs locally trained weights
+(`output/models/anomaly_detector.pt` and `anomaly_threshold.json`); without them the pipeline
+prints a warning and runs without anomaly detection.
+
 ML flags can also be set via environment variables on the shell scripts:
 
 ```bash
@@ -253,8 +260,11 @@ acoustic-sim --model-preset gradient --frequency 40
 ### ML training
 
 ```bash
-# Train all classifiers (acoustic, maneuver, fusion)
+# Train the source, maneuver and fusion classifiers into output/models/
 python examples/train_all_ml.py
+
+# Train and calibrate the CVAE anomaly detector (writes anomaly_detector.pt + anomaly_threshold.json)
+python src/acoustic_sim/ml/anomaly_training.py
 
 # Baseline vs ML comparison across all datasets
 python examples/run_comparison.py
@@ -263,9 +273,21 @@ python examples/run_comparison.py
 ### Batch FDTD
 
 ```bash
-# Run 18 domain × source combinations
+# Run 18 domain × source × array combinations
 python examples/run_all_examples.py
 ```
+
+### Tests
+
+```bash
+pip install -e ".[dev]"     # add ,ml to run the PyTorch tests (they skip without torch)
+python -m pytest -q tests   # full suite: several minutes on a CPU (ML training, harbor FDTD)
+./dev.sh test               # tests/harbor in the dev container (GPU cases run when a GPU is present)
+```
+
+GitHub Actions (`.github/workflows/tests.yml`) runs a fast CPU-only subset on Python 3.10 and
+3.13: `tests/test_package_layout.py`, `tests/harbor/test_dispersion.py` and two FDTD tests from
+`tests/test_fdtd_3d.py`. GPU, MPI and PyTorch are not required there.
 
 ## Dependencies
 
@@ -282,10 +304,13 @@ Python ≥ 3.10.
 
 ## Pre-computed Datasets
 
-The repository tracks the *metadata and results* of five reference runs under `output/`
-(`metadata.json`, `results_*.json`, a `README.md` per run) and the trained ML weights in
-`output/models/`.  The traces, snapshots and figures are not tracked (see `.gitignore`); regenerate
-a dataset with the `examples/run_*.sh` script of the same name.
+The repository tracks the *metadata and results* of the drone reference runs under `output/`
+(`metadata.json`, `results_*.json`, a `README.md` per run), the trained ML weights in
+`output/models/`, and selected harbor and performance results and figures.  Traces, datasets,
+caches and other figures are not tracked (see `.gitignore`). Regenerate the drone traces with
+`python examples/generate_traces.py` (fast analytic forward model, all four datasets) or re-run the
+FDTD (`examples/run_valley.sh`, `run_valley_3d.sh`, `run_fdtd_erratic.py`).  [Generated outputs](docs/outputs.md) lists what is
+tracked, how to regenerate each directory, and `scripts/clean_outputs.py` for reclaiming space.
 
 | Directory | Dimension | Domain | Source | Duration |
 |-----------|-----------|--------|--------|----------|
@@ -293,9 +318,8 @@ a dataset with the `examples/run_*.sh` script of the same name.
 | `valley_3d_test` | 3-D | hills & vegetation | moving propeller (altitude arc) | 1.0 s |
 | `isotropic_2D` | 2-D | wind (5 m/s, 45°) | moving propeller | 3.0 s |
 | `erratic_quadcopter` | 3-D | isotropic | erratic trajectory (8 m/s mean) | 3.0 s |
-| `coupled_moving_3d` | 3-D | coupled elastic | moving propeller | — |
 
-Once regenerated, each directory (except `coupled_moving_3d`) contains `traces.npy`, `metadata.json`, and FDTD `snapshots/`.
+Once regenerated, each directory contains `traces.npy` next to the tracked `metadata.json` (FDTD runs also write `snapshots/` when `--snapshot-interval` is non-zero).
 
 ## Documentation
 
@@ -311,4 +335,5 @@ The `docs/` folder contains extensive documentation of the code, algorithms, and
 | [Usage](docs/usage.md) | Installation, CLI commands, running examples |
 | [Studies](docs/studies.md) | Nine parametric robustness studies |
 | [Harbor](docs/harbor.md) | Water-based 2-D harbor, DAS/hydrophone sensing, passive and bistatic examples, assumptions and validation status |
+| [Generated outputs](docs/outputs.md) | What is tracked under `output/`, how to regenerate it, cleanup |
 | [Glossary](docs/glossary.md) | Definitions of terms, acronyms, and concepts |
