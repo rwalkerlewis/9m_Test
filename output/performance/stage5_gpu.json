@@ -1,0 +1,248 @@
+{
+  "tag": "stage5_gpu",
+  "date": "2026-10-19 06:15:22",
+  "git": "6c60f47",
+  "host": {
+    "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cpu_count": 16
+  },
+  "gpu": {
+    "requested": true,
+    "available": true,
+    "name": "Quadro RTX 4000",
+    "cupy": "14.2.0",
+    "cuda_runtime": 12090,
+    "memory_total_mb": 7751.5625,
+    "memory_free_mb": 7152.5625,
+    "compute_capability": "7.5"
+  },
+  "options": {
+    "cuda": true,
+    "repeat": 1,
+    "rerender": false,
+    "precision": null,
+    "kernel": "fused",
+    "boundary": null,
+    "cpml_width": null,
+    "body_masks": null,
+    "proc_cuda": true,
+    "impl": "vectorized"
+  },
+  "criteria": {
+    "fused64_vs_reference_rel_l2": 1e-12,
+    "fused32_direct_rel_l2_median": 0.0001,
+    "fused32_direct_rel_l2_max": 0.001,
+    "fused32_scattered_rel_rms": 0.001,
+    "fused32_eca_depth_db": 0.5,
+    "fused32_estimate_frames_within_one_cell": 0.95,
+    "masks_rel_l2": 1e-10,
+    "batched_rel_l2": 1e-12,
+    "processing_rel_l2": 1e-10
+  },
+  "reference_dir": "/workspace/output/performance/reference",
+  "cases": {
+    "proc_oracle": {
+      "kind": "processing",
+      "config": "oracle",
+      "eca_doppler": false,
+      "track_smooth_s": 0.0,
+      "wall_s": 15.45009341900004,
+      "frames": 79,
+      "grid_cells": 16983,
+      "bins": 166,
+      "channels": 200,
+      "median_error_m": 2.262550114054546,
+      "within_5m": 0.9240506329113924,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "bistatic_options": {
+        "use_cuda": true,
+        "impl": "vectorized"
+      },
+      "rerendered": false,
+      "compare": {
+        "B_rel_rms": 5.078156898069575e-14,
+        "B_rel_l2_per_frame": {
+          "median": 5.3565980295437784e-14,
+          "max": 7.72185423344277e-14,
+          "n": 79
+        },
+        "Z_rel_rms": 9.697179258676202e-14,
+        "ref_rel_rms": 0.0,
+        "estimate": {
+          "identical": 1.0,
+          "within_one_cell": 1.0,
+          "within_one_cell_diagonal": 1.0,
+          "max_shift_m": 0.0,
+          "grid_dx": 2.0
+        },
+        "ship_refined_max_shift_m": 0.0
+      }
+    },
+    "proc_eca_oracle_doppler": {
+      "kind": "processing",
+      "config": "eca_oracle",
+      "eca_doppler": true,
+      "track_smooth_s": 0.0,
+      "wall_s": 41.161935295996955,
+      "frames": 79,
+      "grid_cells": 16983,
+      "bins": 166,
+      "channels": 200,
+      "median_error_m": 5.984380453681621,
+      "within_5m": 0.4810126582278481,
+      "eca_direct_depth_db": 21.346304351850385,
+      "eca_echo_loss_db": 0.6154779122800682,
+      "bistatic_options": {
+        "use_cuda": true,
+        "impl": "vectorized"
+      },
+      "rerendered": false,
+      "compare": {
+        "B_rel_rms": 0.039731581635707565,
+        "B_rel_l2_per_frame": {
+          "median": 0.00037390958230004316,
+          "max": 0.3484295191764931,
+          "n": 79
+        },
+        "Z_rel_rms": 0.0434256129509614,
+        "ref_rel_rms": 0.0,
+        "estimate": {
+          "identical": 1.0,
+          "within_one_cell": 1.0,
+          "within_one_cell_diagonal": 1.0,
+          "max_shift_m": 0.0,
+          "grid_dx": 2.0
+        },
+        "ship_refined_max_shift_m": 0.0,
+        "eca_depth_db": {
+          "median_abs_diff": 9.077386664557707e-08,
+          "max_abs_diff": 9.654590291803002,
+          "median_depth_diff": -1.0188591410553727e-06
+        },
+        "waveform_rel_rms": 0.0
+      }
+    },
+    "proc_blind_doppler_smooth4": {
+      "kind": "processing",
+      "config": "blind",
+      "eca_doppler": true,
+      "track_smooth_s": 4.0,
+      "wall_s": 47.34367363199999,
+      "frames": 79,
+      "grid_cells": 16983,
+      "bins": 166,
+      "channels": 200,
+      "median_error_m": 3.807044327022529,
+      "within_5m": 0.5822784810126582,
+      "eca_direct_depth_db": 11.036761648932057,
+      "eca_echo_loss_db": 0.32036693194661614,
+      "bistatic_options": {
+        "use_cuda": true,
+        "impl": "vectorized"
+      },
+      "rerendered": false,
+      "compare": {
+        "B_rel_rms": 4.2760175406174026e-13,
+        "B_rel_l2_per_frame": {
+          "median": 4.4219161545215624e-13,
+          "max": 8.759487631783864e-13,
+          "n": 65
+        },
+        "Z_rel_rms": 5.036559174958505e-13,
+        "ref_rel_rms": 2.728367359633323e-14,
+        "estimate": {
+          "identical": 1.0,
+          "within_one_cell": 1.0,
+          "within_one_cell_diagonal": 1.0,
+          "max_shift_m": 0.0,
+          "grid_dx": 2.0
+        },
+        "ship_refined_max_shift_m": 0.0,
+        "eca_depth_db": {
+          "median_abs_diff": 7.993605777301127e-14,
+          "max_abs_diff": 2.5934809855243657e-13,
+          "median_depth_diff": -3.019806626980426e-14
+        },
+        "waveform_rel_rms": 5.6626278992817644e-14
+      }
+    },
+    "eca_193_moving_fixed": {
+      "kind": "eca",
+      "eca_doppler": false,
+      "track_smooth_s": 0.0,
+      "range_min_m": 193.0000001559116,
+      "gather_s": 0.215574366011424,
+      "gather_from_cache": true,
+      "rerendered": false,
+      "ship_positions_s": 2.098219452003832,
+      "eca_stage_s": 16.236475137993693,
+      "wall_s": 16.236475137993693,
+      "cable_median_depth_db": 2.3086668327535964,
+      "position_error_median_m": 0.8053322121507561,
+      "bistatic_options": {
+        "use_cuda": true,
+        "impl": "vectorized"
+      },
+      "compare": {
+        "clean_rel_l2": {
+          "median": 1.1236662332259562e-14,
+          "max": 2.0875504187625947e-14,
+          "n": 196
+        },
+        "clean_direct_rel_l2": {
+          "median": 1.5484414888674517e-14,
+          "max": 2.233135917787493e-14,
+          "n": 200
+        },
+        "waveform_rel_rms": 0.0,
+        "depth_db": {
+          "median_abs_diff": 0.0,
+          "max_abs_diff": 2.220446049250313e-15,
+          "median_depth_diff": -4.440892098500626e-16
+        },
+        "ship_refined_max_shift_m": 0.0
+      }
+    },
+    "eca_193_moving_doppler_smooth4": {
+      "kind": "eca",
+      "eca_doppler": true,
+      "track_smooth_s": 4.0,
+      "range_min_m": 193.0000001559116,
+      "gather_s": 0.2161743589967955,
+      "gather_from_cache": true,
+      "rerendered": false,
+      "ship_positions_s": 2.017174958004034,
+      "eca_stage_s": 9.773070484996424,
+      "wall_s": 9.773070484996424,
+      "cable_median_depth_db": 9.205032543114868,
+      "position_error_median_m": 0.8053322121507561,
+      "bistatic_options": {
+        "use_cuda": true,
+        "impl": "vectorized"
+      },
+      "compare": {
+        "clean_rel_l2": {
+          "median": 7.348018818218144e-13,
+          "max": 1.0050531209791932e-12,
+          "n": 196
+        },
+        "clean_direct_rel_l2": {
+          "median": 9.090224539358329e-13,
+          "max": 2.2432937490463928e-12,
+          "n": 200
+        },
+        "waveform_rel_rms": 7.083233656120738e-14,
+        "depth_db": {
+          "median_abs_diff": 2.4868995751603507e-14,
+          "max_abs_diff": 2.0961010704922955e-13,
+          "median_depth_diff": -1.7763568394002505e-14
+        },
+        "ship_refined_max_shift_m": 0.0
+      }
+    }
+  },
+  "total_wall_s": 129.9652479699871
+}

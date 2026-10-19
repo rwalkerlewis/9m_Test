@@ -1,0 +1,209 @@
+{
+  "tag": "stage1_fused32",
+  "date": "2026-10-19 05:10:59",
+  "git": "6c60f47",
+  "host": {
+    "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cpu_count": 16
+  },
+  "gpu": {
+    "requested": true,
+    "available": true,
+    "name": "Quadro RTX 4000",
+    "cupy": "14.2.0",
+    "cuda_runtime": 12090,
+    "memory_total_mb": 7751.5625,
+    "memory_free_mb": 7152.5625,
+    "compute_capability": "7.5"
+  },
+  "options": {
+    "cuda": true,
+    "repeat": 1,
+    "rerender": false,
+    "precision": "float32",
+    "kernel": "fused",
+    "boundary": null,
+    "cpml_width": null,
+    "body_masks": "host",
+    "proc_cuda": null,
+    "impl": null
+  },
+  "criteria": {
+    "fused64_vs_reference_rel_l2": 1e-12,
+    "fused32_direct_rel_l2_median": 0.0001,
+    "fused32_direct_rel_l2_max": 0.001,
+    "fused32_scattered_rel_rms": 0.001,
+    "fused32_eca_depth_db": 0.5,
+    "fused32_estimate_frames_within_one_cell": 0.95,
+    "masks_rel_l2": 1e-10,
+    "batched_rel_l2": 1e-12,
+    "processing_rel_l2": 1e-10
+  },
+  "reference_dir": "/workspace/output/performance/runs/stage1_fused64",
+  "cases": {
+    "fdtd_ferry_2s": {
+      "kind": "fdtd",
+      "scenario": "harbor_bistatic.scenario.json",
+      "total_time_s": 2.0,
+      "bodies": "none",
+      "n_bodies": 0,
+      "n_steps": 12000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 0.6403387260070303,
+      "ms_per_step": 0.05336156050058586,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float32"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 3.166714904981933e-05,
+          "max": 0.001025830475562046,
+          "n": 200
+        },
+        "rel_rms": 0.00025192384731775094
+      }
+    },
+    "fdtd_ferry_10s": {
+      "kind": "fdtd",
+      "scenario": "harbor_bistatic.scenario.json",
+      "total_time_s": 10.0,
+      "bodies": "none",
+      "n_bodies": 0,
+      "n_steps": 60000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 2.3011282890074654,
+      "ms_per_step": 0.03835213815012442,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float32"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 3.245987173130636e-05,
+          "max": 0.0006614453513876698,
+          "n": 200
+        },
+        "rel_rms": 0.0002840309537615753
+      }
+    },
+    "fdtd_ferry_uuv_2s": {
+      "kind": "fdtd",
+      "scenario": "harbor_bistatic.scenario.json",
+      "total_time_s": 2.0,
+      "bodies": "uuv1",
+      "n_bodies": 1,
+      "n_steps": 12000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 3.0437386499979766,
+      "ms_per_step": 0.2536448874998314,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float32"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 3.170787649985452e-05,
+          "max": 0.0006206829301361834,
+          "n": 200
+        },
+        "rel_rms": 0.00025509621710007426,
+        "scattered_rel_rms": 0.0006687158840476954,
+        "scattered_rel_l2": {
+          "median": 0.0002632863185352142,
+          "max": 0.004897540883399037,
+          "n": 200
+        },
+        "scattered_to_direct_rms": 0.14034708369831084
+      }
+    },
+    "fdtd_ferry_uuv_10s": {
+      "kind": "fdtd",
+      "scenario": "harbor_bistatic.scenario.json",
+      "total_time_s": 10.0,
+      "bodies": "uuv1",
+      "n_bodies": 1,
+      "n_steps": 60000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 20.217590159008978,
+      "ms_per_step": 0.33695983598348295,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float32"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 3.251322602348947e-05,
+          "max": 0.0006366885967344442,
+          "n": 200
+        },
+        "rel_rms": 0.00028772440674446726,
+        "scattered_rel_rms": 0.0005758354192434706,
+        "scattered_rel_l2": {
+          "median": 0.0002780801898570664,
+          "max": 0.005678190742813985,
+          "n": 200
+        },
+        "scattered_to_direct_rms": 0.14319130588907658
+      }
+    },
+    "fdtd_multistatic_2s": {
+      "kind": "fdtd",
+      "scenario": "harbor_multistatic.scenario.json",
+      "total_time_s": 2.0,
+      "bodies": "all",
+      "n_bodies": 10,
+      "n_steps": 12000,
+      "grid": [
+        601,
+        801
+      ],
+      "n_sample_points": 592,
+      "n_channels": 200,
+      "wall_s": 31.781241226999555,
+      "ms_per_step": 2.6484367689166297,
+      "solver": {
+        "kernel": "fused",
+        "precision": "float32"
+      },
+      "compare": {
+        "direct_rel_l2": {
+          "median": 3.698302378442131e-05,
+          "max": 0.0006958074148731988,
+          "n": 200
+        },
+        "rel_rms": 0.0002783309962973458,
+        "scattered_rel_rms": 0.0006586937008391195,
+        "scattered_rel_l2": {
+          "median": 0.00012330906264465752,
+          "max": 0.0018598180201683358,
+          "n": 200
+        },
+        "scattered_to_direct_rms": 0.29310745182280834
+      }
+    }
+  },
+  "total_wall_s": 57.984037051021005
+}
