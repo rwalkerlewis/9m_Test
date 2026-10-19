@@ -9,7 +9,7 @@ from scipy.ndimage import gaussian_filter1d
 
 from acoustic_sim.harbor.environment import HarborEnvironment
 
-KINDS = ("ship", "uuv", "diver")
+KINDS = ("ship", "uuv", "diver", "static")
 
 
 @dataclass
@@ -21,7 +21,9 @@ class VesselConfig:
     id : str
         Unique name, e.g. ``"ferry"``.
     kind : str
-        ``"ship"`` (surface vessel, broadcasts AIS) or ``"uuv"`` (hidden, no AIS).
+        ``"ship"`` (surface vessel, broadcasts AIS), ``"uuv"`` or ``"diver"`` (hidden, no AIS)
+        or ``"static"`` (a fixed structure such as a piling: a silent scattering body with a
+        single waypoint; it has no signature, so ``level_pa`` must be 0).
     waypoints : list of [x, y]
         Path followed at constant *speed*; a single waypoint means a stationary vessel.
     speed : float
@@ -67,6 +69,8 @@ class VesselConfig:
             raise ValueError(f"kind must be one of {KINDS}, got {self.kind!r}")
         if len(self.waypoints) > 1 and self.speed <= 0:
             raise ValueError(f"vessel {self.id!r} has a path but speed <= 0")
+        if self.kind == "static" and (self.level_pa != 0 or len(self.waypoints) != 1):
+            raise ValueError(f"vessel {self.id!r}: a static body is silent (level_pa 0) and has one waypoint")
         if self.body_length > 0 and self.body_width <= 0:
             raise ValueError(f"vessel {self.id!r}: body_width must be positive when body_length is")
 

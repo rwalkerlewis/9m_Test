@@ -126,8 +126,12 @@ def make_scatterer(vcfg: VesselConfig, track: Track) -> Scatterer:
     return Scatterer(vcfg.id, track, vcfg.body_length, vcfg.body_width, vcfg.body_kind, vcfg.body_strength, vcfg.body_shape)
 
 
+COMBINED = "bodies"
+"""Body id of the combined gather (all bodies present at once, ``render_vessel_gathers(combined_bodies=True)``)."""
+
+
 def scattered_key(source_id: str, body_id: str) -> str:
-    """Gather key of the field of *source_id* scattered by *body_id*."""
+    """Gather key of the field of *source_id* scattered by *body_id* (or by all, ``COMBINED``)."""
     return f"{source_id}>{body_id}"
 
 
@@ -145,6 +149,7 @@ def render_vessel_gathers(
     cache_dir: str | Path | None = None,
     workers: int = 1,
     include_silent: bool = False,
+    combined_bodies: bool = False,
 ) -> dict[str, Gather]:
     """Unit-level sensor gathers (cached; FDTD jobs can run in parallel).
 
@@ -154,6 +159,11 @@ def render_vessel_gathers(
     body, i.e. the run with the body present minus the run without it.  Multiple scattering
     between two bodies is not represented (each body is run on its own).  A body that also
     radiates (``level_pa != 0``) is run as a source without itself as a body.
+
+    With *combined_bodies* every radiating vessel is instead run once with **all** the other
+    bodies present and once with none, giving a single gather ``scattered_key(vessel, "bodies")``
+    per vessel that includes the multiple scattering between the bodies (two FDTD runs per
+    vessel however many bodies there are; the per body split is lost).
     """
     cache = None if cache_dir is None else str(cache_dir)
     bodies = {v.id: make_scatterer(v, tracks[v.id]) for v in cfg.vessels if v.is_body}
@@ -168,11 +178,15 @@ def render_vessel_gathers(
             position, trajectory = None, (track.t, track.xy)
         jobs.append((env, layout, cfg.fdtd, signal, position, trajectory, cache, ()))
         keys.append(v.id)
-        for bid, body in bodies.items():
-            if bid == v.id:
-                continue
-            jobs.append((env, layout, cfg.fdtd, signal, position, trajectory, cache, (body,)))
-            keys.append(scattered_key(v.id, bid))
+        others = [body for bid, body in bodies.items() if bid != v.id]
+        if combined_bodies:
+            if others:
+                jobs.append((env, layout, cfg.fdtd, signal, position, trajectory, cache, tuple(others)))
+                keys.append(scattered_key(v.id, COMBINED))
+        else:
+            for body in others:
+                jobs.append((env, layout, cfg.fdtd, signal, position, trajectory, cache, (body,)))
+                keys.append(scattered_key(v.id, body.id))
     if workers > 1 and len(jobs) > 1:
         with ProcessPoolExecutor(max_workers=min(workers, len(jobs))) as pool:
             results = list(pool.map(_job, jobs))
@@ -208,7 +222,9 @@ def assemble_dataset(
     dataset carries every scaled component separately (see ``HarborDataset.components``).
 
     A silent body (``level_pa == 0``) is present in the scene through its scattered gathers
-    and keeps its truth track; an AIS vessel reports only while it radiates.
+    and keeps its truth track; an AIS vessel reports only while it radiates.  A combined
+    gather (``scattered_key(vessel, COMBINED)``, all bodies at once) is used when present; it
+    cannot be scaled per body, so *scatter_gain* must then be all ones.
     """
     levels = levels or {}
     scatter_gain = scatter_gain or {}
@@ -229,6 +245,15 @@ def assemble_dataset(
             clean += direct
             if keep_components:
                 comps["direct:" + v.id] = direct.astype(np.float32)
+            combined = scattered_key(v.id, COMBINED)
+            if combined in gathers:
+                if any(scatter_gain.get(b.id, 1.0) != 1.0 for b in cfg.vessels if b.is_body):
+                    raise ValueError("scatter_gain per body needs per body gathers, not the combined gather")
+                sc = level * gathers[combined].traces.astype(np.float64)
+                clean += sc
+                if keep_components:
+                    comps["scattered:" + combined] = sc.astype(np.float32)
+                continue
             for bid in bodies:
                 key = scattered_key(v.id, bid)
                 if bid == v.id or key not in gathers:

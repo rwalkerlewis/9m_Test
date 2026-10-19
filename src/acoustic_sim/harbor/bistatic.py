@@ -28,8 +28,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+from scipy.linalg import cho_factor, cho_solve
 from scipy.ndimage import map_coordinates
-from scipy.signal import get_window
+from scipy.signal import get_window, resample
 
 from acoustic_sim.harbor.ais import AISReports
 from acoustic_sim.harbor.detection import DetectionSet, ScanResult, _nms, channel_weights, green2d, remove_common_mode
@@ -74,6 +75,18 @@ class BistaticConfig:
         or ``"none"`` (frequency domain, kept for comparison).
     eca_images : bool
         Include the quay and pier image arrivals (:func:`clutter_images`) in the ECA lags.
+    eca_doppler : bool
+        Follow the moving ship within every ECA block: the data reference beam advances each
+        channel by its range to the ship **per sample**, and every ECA regressor is the
+        reference resampled at the per sample delay of its path (direct or image) plus a fixed
+        lag offset.  With the default per block fixed lags the direct path delay drifts by up
+        to ``v T_block / c`` (1.3 ms for 4 m/s and 0.5 s, half a cycle at 380 Hz) inside a
+        block, which caps the depth near 10 dB for a moving ship (stage 0a).
+    track_smooth_s : float
+        With ``eca_doppler``, fit the refined ship track by a local straight line over this
+        window [s] before interpolating it per sample (stage 0a: the per frame refinement
+        jitters by about 1 m, which per sample delays read as velocity noise; 9 dB with the
+        jittery track against 24 dB with the exact one for the ship at 4 m/s).  0: no smoothing.
     ref_channels : str
         Channels for the data reference beam: ``"all"`` or a cable name or ``"hydrophones"``.
     patch_half, svd_rtol : float
@@ -121,6 +134,8 @@ class BistaticConfig:
     eca_block_s: float = 0.5
     eca_halfwidth_s: float = 0.004
     eca_images: bool = True
+    eca_doppler: bool = False
+    track_smooth_s: float = 0.0
     ref_channels: str = "all"
     patch_half: float = 1.0
     svd_rtol: float = 0.05
@@ -214,15 +229,28 @@ class ReplicaModel:
         self.samples = layout.sample_points
         self.weights = None
         self.dispersion = dispersion
+        self._cache: tuple | None = None
 
-    def _kr(self, pts: np.ndarray, targets: np.ndarray, k: float) -> np.ndarray:
+    def _geometry(self, pts: np.ndarray, targets: np.ndarray) -> tuple[np.ndarray, np.ndarray | None]:
+        """Ranges (P, M) and, with dispersion, propagation angles for *pts* to *targets*; the last
+        geometry is cached because the replicas of every bin share it (the AIS refinement and the
+        scan map call this once per bin for the same points)."""
+        key = (pts.shape, targets.shape, pts.tobytes(), targets.tobytes())      # exact; a 17000 point grid is 270 kB, cheap to compare
+        if self._cache is not None and self._cache[0] == key:
+            return self._cache[1]
         dx = pts[:, None, 0] - targets[None, :, 0]
         dy = pts[:, None, 1] - targets[None, :, 1]
         r = np.maximum(np.hypot(dx, dy), self.min_range)
+        theta = np.arctan2(np.abs(dy), np.abs(dx)) if self.dispersion is not None else None
+        self._cache = (key, (r, theta))
+        return r, theta
+
+    def _kr(self, pts: np.ndarray, targets: np.ndarray, k: float) -> np.ndarray:
+        r, theta = self._geometry(pts, targets)
         if self.dispersion is None:
             return k * r
         f = k * self.c / (2.0 * np.pi)
-        kk = replica_wavenumbers(self.dispersion, [f], self.c, np.arctan2(np.abs(dy), np.abs(dx)))[0]
+        kk = replica_wavenumbers(self.dispersion, [f], self.c, theta)[0]
         return kk * r
 
     def __call__(self, pts: np.ndarray, k: float) -> np.ndarray:
@@ -327,15 +355,31 @@ def _fractional_delay(x: np.ndarray, delays: np.ndarray, fs: float) -> np.ndarra
     return np.fft.irfft(np.fft.rfft(x, axis=1) * np.exp(-2j * np.pi * f[None, :] * delays[:, None]), n, axis=1)
 
 
+UPSAMPLE = 8
+
+
+def _resample_at(x: np.ndarray, positions: np.ndarray, factor: int = UPSAMPLE) -> np.ndarray:
+    """*x* (n,) evaluated at fractional sample *positions*: FFT upsampling by *factor* then
+    linear interpolation (plain linear interpolation attenuates the band top by several
+    percent, modulated at the rate at which a moving ship's delay crosses sample boundaries,
+    which caps the cancellation near 20 dB).  Zero outside ``[0, n)``."""
+    n = len(x)
+    up = resample(np.asarray(x, dtype=np.float64), n * factor)
+    return np.interp(positions * factor, np.arange(n * factor, dtype=float), up, left=0.0, right=0.0)
+
+
 def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy: np.ndarray, block_s: float,
-                   bc: BistaticConfig, channels: np.ndarray | None = None, oracle_signal: np.ndarray | None = None) -> np.ndarray:
+                   bc: BistaticConfig, channels: np.ndarray | None = None, oracle_signal: np.ndarray | None = None,
+                   ship_t: np.ndarray | None = None) -> np.ndarray:
     """Illuminator waveform aligned to the emission time, shape ``(n,)``.
 
     ``bc.reference == "oracle"``: the true ship waveform.  ``"data"``: delay and sum of the
     *channels* (default: every live channel) toward the ship position of each block of
     *block_s* seconds (*ship_xy* (K_b, 2), one row per block), each channel advanced by its
-    range so the sum is at the emission time.  The data reference also contains the echo and
-    the multipath, as in every passive radar; that is accepted.
+    range so the sum is at the emission time.  With *ship_t* (n, 2), the ship position at
+    every sample, each channel is instead advanced by its per sample range (a moving ship;
+    ``bc.eca_doppler``).  The data reference also contains the echo and the multipath, as in
+    every passive radar; that is accepted.
     """
     n = traces.shape[1]
     if bc.reference == "oracle":
@@ -345,6 +389,14 @@ def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy:
     idx = np.arange(layout.n_receivers) if channels is None else np.asarray(channels)
     x = np.asarray(traces, dtype=np.float64)[idx]
     rec = layout.receivers[idx]
+    if ship_t is not None:
+        j = np.arange(n, dtype=float)
+        live = np.sum(np.abs(x) ** 2, axis=1) > 0
+        out = np.zeros(n)
+        for i in np.flatnonzero(live):
+            adv = np.hypot(ship_t[:, 0] - rec[i, 0], ship_t[:, 1] - rec[i, 1]) / bc.c * fs
+            out += _resample_at(x[i], j + adv)
+        return out / max(live.sum(), 1)
     nb = int(round(block_s * fs))
     out = np.zeros(n)
     for b in range(len(ship_xy)):
@@ -369,6 +421,33 @@ class ECAReport:
     echo_lost_db: np.ndarray        # (N,) energy of the scattered component removed [dB]
 
 
+def _project_out(S: np.ndarray, segs: list[np.ndarray], loading: float = 1e-14) -> list[np.ndarray]:
+    """Each segment minus its least squares projection on the columns of *S* (block, L).
+
+    Normal equations with a Cholesky solve and one step of iterative refinement: ``S^T S`` is
+    (L, L) with L of order 100 and costs one BLAS3 product, against a QR of the (block, L)
+    matrix (85 ms per channel and block on the fine grid, 4000 of them per pass).  Adjacent lags
+    of a band limited reference are nearly collinear and the normal equations square that
+    condition number, so a relative diagonal *loading* keeps the factorisation stable and the
+    refinement step (residual in full precision, corrected through the same factorisation)
+    recovers the precision lost in the solve.  Measured on the fine stage 0a case against the
+    QR: 2 dB short without the refinement, 0.1 dB with it, five times faster."""
+    G = S.T @ S
+    G[np.diag_indices_from(G)] += loading * max(np.trace(G) / G.shape[0], 1e-300)
+    try:
+        c, low = cho_factor(G, lower=True, check_finite=False)
+    except np.linalg.LinAlgError:
+        Q, _ = np.linalg.qr(S)
+        return [seg - Q @ (Q.T @ seg) for seg in segs]
+    out = []
+    for seg in segs:
+        x = cho_solve((c, low), S.T @ seg, check_finite=False)
+        r = seg - S @ x
+        x += cho_solve((c, low), S.T @ r, check_finite=False)
+        out.append(seg - S @ x)
+    return out
+
+
 def eca_remove(
     traces: list[np.ndarray],
     reference: np.ndarray,
@@ -378,6 +457,7 @@ def eca_remove(
     images: list[np.ndarray],
     block_s: float,
     bc: BistaticConfig,
+    ship_t: np.ndarray | None = None,
 ) -> list[np.ndarray]:
     """Extensive cancellation (least squares projection on delayed copies of the reference).
 
@@ -387,6 +467,11 @@ def eca_remove(
     those lags are used, so an echo at another bistatic delay survives.  The same projection
     is applied to every array in *traces* (the measurement and, for diagnostics, its truth
     components), which is what makes the cancellation depth measurable.
+
+    With *ship_t* (n, 2), the ship position at every sample, each regressor is the reference
+    resampled at the **per sample** delay of its path (direct, or an image whose wall is fixed
+    per block) plus a fixed lag offset, so the delay drift of a moving ship inside a block is
+    followed instead of fitted by a time invariant filter.
     """
     n = traces[0].shape[1]
     nb = int(round(block_s * fs))
@@ -394,25 +479,52 @@ def eca_remove(
     outs = [np.array(x, dtype=np.float64, copy=True) for x in traces]
     rec = layout.receivers
     ref = np.asarray(reference, dtype=np.float64)
+    j_all = np.arange(n, dtype=float)
+    ref_up = resample(ref, n * UPSAMPLE) if ship_t is not None else None
+    j_up = np.arange(n * UPSAMPLE, dtype=float)
     for b in range(len(ship_xy)):
         lo, hi = b * nb, min((b + 1) * nb, n)
         if hi <= lo:
             break
         srcs = [ship_xy[b]] + ([images[b]] if len(images) and len(images[b]) else [])
         pts = np.vstack([np.atleast_2d(p) for p in srcs])
+        if ship_t is not None:
+            # Per sample positions of every path over the block plus the lag margin.
+            a, z = max(lo - half, 0), min(hi + half, n)
+            s_blk = ship_t[a:z]
+            walls = 0.5 * (pts[1:] + ship_xy[b][None, :])                 # image = 2 wall - ship
+            paths = [s_blk] + [2.0 * w[None, :] - s_blk for w in walls]
         for i in range(rec.shape[0]):
-            lags = np.unique(np.concatenate([
-                np.arange(int(round(np.hypot(*(p - rec[i])) / bc.c * fs)) - half, int(round(np.hypot(*(p - rec[i])) / bc.c * fs)) + half + 1)
-                for p in pts]))
+            nominal = np.array([int(round(np.hypot(*(p - rec[i])) / bc.c * fs)) for p in pts])
+            lags = np.unique(np.concatenate([np.arange(L0 - half, L0 + half + 1) for L0 in nominal]))
             lags = lags[(lags >= 0) & (lags < hi)]
             if len(lags) == 0:
                 continue
-            S = np.stack([np.concatenate([np.zeros(max(L - lo, 0)), ref[max(lo - L, 0):hi - L]]) if lo - L < 0 else ref[lo - L:hi - L]
-                          for L in lags], axis=1)                        # (block, lags)
-            Q, _ = np.linalg.qr(S)
-            for out in outs:
-                seg = out[i, lo:hi]
-                out[i, lo:hi] = seg - Q @ (Q.T @ seg)
+            if ship_t is None:
+                S = np.stack([np.concatenate([np.zeros(max(L - lo, 0)), ref[max(lo - L, 0):hi - L]]) if lo - L < 0 else ref[lo - L:hi - L]
+                              for L in lags], axis=1)                    # (block, lags)
+            else:
+                # Each lag belongs to the path whose nominal delay is nearest; its column is the
+                # reference at (t - d_path(t)) shifted by the fixed offset (L - nominal).
+                owner = np.argmin(np.abs(lags[:, None] - nominal[None, :]), axis=1)
+                bases = {}
+                cols = []
+                for L, p in zip(lags, owner):
+                    if p not in bases:
+                        d = np.hypot(paths[p][:, 0] - rec[i, 0], paths[p][:, 1] - rec[i, 1]) / bc.c * fs
+                        bases[p] = np.interp((j_all[a:z] - d) * UPSAMPLE, j_up, ref_up, left=0.0, right=0.0)   # (z - a,)
+                    off = int(L - nominal[p])
+                    # column[j] = base[j - off] for j in [lo, hi); base index 0 is sample a.
+                    src_lo, src_hi = lo - off - a, hi - off - a
+                    col = np.zeros(hi - lo)
+                    s0, s1 = max(src_lo, 0), min(src_hi, z - a)
+                    if s1 > s0:
+                        col[s0 - src_lo:s1 - src_lo] = bases[p][s0:s1]
+                    cols.append(col)
+                S = np.stack(cols, axis=1)
+            cleaned = _project_out(S, [out[i, lo:hi] for out in outs])
+            for out, seg in zip(outs, cleaned):
+                out[i, lo:hi] = seg
     return outs
 
 
@@ -591,6 +703,61 @@ def extract_peaks(B: np.ndarray, grid: np.ndarray, times: np.ndarray, bc: Bistat
 # Runner
 # ----------------------------------------------------------------------
 
+def smooth_track(times: np.ndarray, xy: np.ndarray, present: np.ndarray, window_s: float) -> np.ndarray:
+    """Local straight line fit of *xy* (K, 2) over ``|t - t_k| <= window_s / 2`` per frame (frames
+    with *present* False are left out of the fits and returned unchanged).  ``window_s <= 0``
+    returns *xy*."""
+    if window_s <= 0:
+        return xy
+    out = np.array(xy, dtype=float, copy=True)
+    for k in np.flatnonzero(present):
+        m = present & (np.abs(times - times[k]) <= 0.5 * window_s)
+        if m.sum() < 3:
+            continue
+        A = np.column_stack([np.ones(m.sum()), times[m] - times[k]])
+        coef, *_ = np.linalg.lstsq(A, xy[m], rcond=None)
+        out[k] = coef[0]
+    return out
+
+
+def eca_stage(
+    traces: np.ndarray,
+    layout: SensorLayout,
+    fs: float,
+    env: HarborEnvironment,
+    sp: Spectra,
+    ship: ShipTrack,
+    bc: BistaticConfig,
+    oracle_signal: np.ndarray | None = None,
+    components: list[np.ndarray] | tuple = (),
+) -> tuple[list[np.ndarray], np.ndarray]:
+    """Time domain direct path removal of :func:`run_bistatic`: reference, image lags, ECA.
+
+    The ship position of every ECA block is interpolated from ``ship.refined`` (and, with
+    ``bc.eca_doppler``, the position of every sample).  The same projection is applied to
+    *traces* and to each array in *components*.  Returns the cleaned arrays
+    (``[traces] + components``) and the reference waveform.
+    """
+    nb = int(round(bc.eca_block_s * fs))
+    n_blocks = int(np.ceil(traces.shape[1] / nb))
+    t_blocks = (np.arange(n_blocks) + 0.5) * bc.eca_block_s
+    ship_b = np.column_stack([np.interp(t_blocks, sp.times, ship.refined[:, 0]), np.interp(t_blocks, sp.times, ship.refined[:, 1])])
+    ship_t = None
+    if bc.eca_doppler:
+        t_s = np.arange(traces.shape[1]) / fs
+        refined = smooth_track(sp.times, ship.refined, ship.present, bc.track_smooth_s)
+        ship_t = np.column_stack([np.interp(t_s, sp.times, refined[:, 0]), np.interp(t_s, sp.times, refined[:, 1])])
+    if bc.ref_channels == "all":
+        chans = np.flatnonzero(sp.weights > 0)
+    else:
+        sl = layout.slices[bc.ref_channels]
+        chans = np.arange(sl.start, sl.stop)[sp.weights[sl] > 0]
+    waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, oracle_signal, ship_t=ship_t)
+    images = [clutter_images(env, sxy) for sxy in ship_b] if bc.eca_images else []
+    outs = eca_remove([traces] + list(components), waveform, layout, fs, ship_b, images, bc.eca_block_s, bc, ship_t=ship_t)
+    return outs, waveform
+
+
 @dataclass
 class Truth:
     """Optional truth for ablations and diagnostics."""
@@ -630,19 +797,8 @@ def run_bistatic(
     report = None
     waveform = None
     if bc.removal == "eca":
-        nb = int(round(bc.eca_block_s * fs))
-        n_blocks = int(np.ceil(traces.shape[1] / nb))
-        t_blocks = (np.arange(n_blocks) + 0.5) * bc.eca_block_s
-        ship_b = np.column_stack([np.interp(t_blocks, sp.times, ship.refined[:, 0]), np.interp(t_blocks, sp.times, ship.refined[:, 1])])
-        if bc.ref_channels == "all":
-            chans = np.flatnonzero(sp.weights > 0)
-        else:
-            sl = layout.slices[bc.ref_channels]
-            chans = np.arange(sl.start, sl.stop)[sp.weights[sl] > 0]
-        waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, oracle_signal)
-        images = [clutter_images(env, sxy) for sxy in ship_b] if bc.eca_images else []
         comps = list((truth.components or {}).values())
-        outs = eca_remove([traces] + comps, waveform, layout, fs, ship_b, images, bc.eca_block_s, bc)
+        outs, waveform = eca_stage(traces, layout, fs, env, sp, ship, bc, oracle_signal, comps)
         clean_traces = outs[0]
         if comps:
             names = list(truth.components)

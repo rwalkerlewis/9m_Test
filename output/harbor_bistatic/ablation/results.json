@@ -1,0 +1,497 @@
+{
+  "criterion": {
+    "config": "blind",
+    "dataset": "fine",
+    "contrast_db_median_min": 10.0,
+    "within_5m_min": 0.5,
+    "text": "configuration 'blind' on the fine dataset: median echo contrast >= 10 dB and >= 50 % of frames within 5 m",
+    "pass": false
+  },
+  "configs": {
+    "oracle": {
+      "direct_in_traces": false,
+      "reference": "oracle",
+      "exact_track": true,
+      "oracle_inputs": [
+        "direct path removed with the truth component",
+        "oracle ferry waveform",
+        "exact ferry track"
+      ]
+    },
+    "eca_oracle": {
+      "direct_in_traces": true,
+      "reference": "oracle",
+      "exact_track": true,
+      "oracle_inputs": [
+        "oracle ferry waveform",
+        "exact ferry track"
+      ]
+    },
+    "eca_data": {
+      "direct_in_traces": true,
+      "reference": "data",
+      "exact_track": true,
+      "oracle_inputs": [
+        "exact ferry track"
+      ]
+    },
+    "blind": {
+      "direct_in_traces": true,
+      "reference": "data",
+      "exact_track": false,
+      "oracle_inputs": []
+    }
+  },
+  "datasets": {
+    "coarse": {
+      "path": "output/harbor_bistatic/coarse/dataset.npz",
+      "dx": 1.0,
+      "fs": 3000.0,
+      "band_hz": [
+        100.0,
+        380.0
+      ]
+    },
+    "fine": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "dx": 0.5,
+      "fs": 6000.0,
+      "band_hz": [
+        100.0,
+        760.0
+      ]
+    }
+  },
+  "metrics": {
+    "coarse": {
+      "oracle": {
+        "config": "oracle",
+        "doppler": false,
+        "oracle_inputs": [
+          "direct path removed with the truth component",
+          "oracle ferry waveform",
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "chain_s": 217.8679645061493,
+        "median_error_m": 1.717754124215874,
+        "p90_error_m": 15.772993403057859,
+        "within_5m": 0.8987341772151899,
+        "within_10m": 0.8987341772151899,
+        "rmse_m": 40.78275282563394,
+        "contrast_db_median": 17.848605550038602,
+        "integrated_1p5s": {
+          "median_error_m": 1.4093010681704805,
+          "p90_error_m": 2.3645547972860967,
+          "within_5m": 0.9873417721518988,
+          "rmse_m": 1.7612502118743032
+        },
+        "int_median_error_m": 1.4093010681704805,
+        "int_within_5m": 0.9873417721518988,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": null,
+        "eca_echo_loss_db": null
+      },
+      "eca_oracle": {
+        "config": "eca_oracle",
+        "doppler": false,
+        "oracle_inputs": [
+          "oracle ferry waveform",
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "chain_s": 266.2928309440613,
+        "median_error_m": 71.15161973666554,
+        "p90_error_m": 105.94883682077796,
+        "within_5m": 0.1518987341772152,
+        "within_10m": 0.1518987341772152,
+        "rmse_m": 80.70339420865761,
+        "contrast_db_median": 16.22972102204548,
+        "integrated_1p5s": {
+          "median_error_m": 71.50990470209055,
+          "p90_error_m": 102.72197896744701,
+          "within_5m": 0.02531645569620253,
+          "rmse_m": 79.4898853567082
+        },
+        "int_median_error_m": 71.50990470209055,
+        "int_within_5m": 0.02531645569620253,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": 8.514728671905743,
+        "eca_echo_loss_db": 1.8561683326373668
+      },
+      "eca_data": {
+        "config": "eca_data",
+        "doppler": false,
+        "oracle_inputs": [
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "chain_s": 254.25115394592285,
+        "median_error_m": 84.28927080681113,
+        "p90_error_m": 173.6804556241395,
+        "within_5m": 0.05063291139240506,
+        "within_10m": 0.10126582278481013,
+        "rmse_m": 113.12028538768998,
+        "contrast_db_median": 17.88061188620945,
+        "integrated_1p5s": {
+          "median_error_m": 74.05063978223244,
+          "p90_error_m": 106.33124734718577,
+          "within_5m": 0.012658227848101266,
+          "rmse_m": 86.47575186545492
+        },
+        "int_median_error_m": 74.05063978223244,
+        "int_within_5m": 0.012658227848101266,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": 5.612801852177817,
+        "eca_echo_loss_db": 0.47777221265858083
+      },
+      "blind": {
+        "config": "blind",
+        "doppler": false,
+        "oracle_inputs": [],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "chain_s": 262.6415367126465,
+        "median_error_m": 80.77665058773309,
+        "p90_error_m": 206.4408651700894,
+        "within_5m": 0.05063291139240506,
+        "within_10m": 0.11392405063291139,
+        "rmse_m": 124.6100547467041,
+        "contrast_db_median": 16.77035366780641,
+        "integrated_1p5s": {
+          "median_error_m": 73.7589333957305,
+          "p90_error_m": 207.04293146342422,
+          "within_5m": 0.012658227848101266,
+          "rmse_m": 115.15152323901334
+        },
+        "int_median_error_m": 73.7589333957305,
+        "int_within_5m": 0.012658227848101266,
+        "ship_position_error_median_m": 0.746253654705667,
+        "eca_direct_depth_db": 5.295440928646164,
+        "eca_echo_loss_db": 0.4780734774656175
+      },
+      "eca_oracle+doppler": {
+        "config": "eca_oracle",
+        "doppler": true,
+        "oracle_inputs": [
+          "oracle ferry waveform",
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "chain_s": 216.57125115394592,
+        "median_error_m": 3.76638395875732,
+        "p90_error_m": 163.22599740694704,
+        "within_5m": 0.5443037974683544,
+        "within_10m": 0.5822784810126582,
+        "rmse_m": 85.49338368593608,
+        "contrast_db_median": 14.754331935684755,
+        "integrated_1p5s": {
+          "median_error_m": 1.918518761950783,
+          "p90_error_m": 18.325828506959294,
+          "within_5m": 0.8607594936708861,
+          "rmse_m": 40.27775032715347
+        },
+        "int_median_error_m": 1.918518761950783,
+        "int_within_5m": 0.8607594936708861,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": 25.052016995932775,
+        "eca_echo_loss_db": 1.5902425128710438
+      },
+      "eca_data+doppler": {
+        "config": "eca_data",
+        "doppler": true,
+        "oracle_inputs": [
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "chain_s": 213.0813422203064,
+        "median_error_m": 6.116820239351961,
+        "p90_error_m": 178.2077010714743,
+        "within_5m": 0.4177215189873418,
+        "within_10m": 0.7215189873417721,
+        "rmse_m": 71.64214766082654,
+        "contrast_db_median": 15.270616077758142,
+        "integrated_1p5s": {
+          "median_error_m": 4.418494178367293,
+          "p90_error_m": 10.729615752622575,
+          "within_5m": 0.5316455696202531,
+          "rmse_m": 33.7610597088358
+        },
+        "int_median_error_m": 4.418494178367293,
+        "int_within_5m": 0.5316455696202531,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": 14.848055147155417,
+        "eca_echo_loss_db": 0.5296157479508806
+      },
+      "blind+doppler": {
+        "config": "blind",
+        "doppler": true,
+        "oracle_inputs": [],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "chain_s": 281.27902817726135,
+        "median_error_m": 9.173583163743242,
+        "p90_error_m": 206.14099176044294,
+        "within_5m": 0.26582278481012656,
+        "within_10m": 0.5316455696202531,
+        "rmse_m": 107.86882532960941,
+        "contrast_db_median": 15.390063945670425,
+        "integrated_1p5s": {
+          "median_error_m": 6.839422560185324,
+          "p90_error_m": 206.14099176044294,
+          "within_5m": 0.35443037974683544,
+          "rmse_m": 95.29571858115061
+        },
+        "int_median_error_m": 6.839422560185324,
+        "int_within_5m": 0.35443037974683544,
+        "ship_position_error_median_m": 0.746253654705667,
+        "eca_direct_depth_db": 10.311687000511785,
+        "eca_echo_loss_db": 0.4853844905405443
+      }
+    },
+    "fine": {
+      "oracle": {
+        "config": "oracle",
+        "doppler": false,
+        "oracle_inputs": [
+          "direct path removed with the truth component",
+          "oracle ferry waveform",
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "chain_s": 549.880603313446,
+        "median_error_m": 2.262550114054546,
+        "p90_error_m": 4.28526697525375,
+        "within_5m": 0.9240506329113924,
+        "within_10m": 0.9493670886075949,
+        "rmse_m": 27.860640876920517,
+        "contrast_db_median": 20.16349836909706,
+        "integrated_1p5s": {
+          "median_error_m": 2.103552914777342,
+          "p90_error_m": 3.428937218890805,
+          "within_5m": 1.0,
+          "rmse_m": 2.3729710153948576
+        },
+        "int_median_error_m": 2.103552914777342,
+        "int_within_5m": 1.0,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": null,
+        "eca_echo_loss_db": null
+      },
+      "eca_oracle": {
+        "config": "eca_oracle",
+        "doppler": false,
+        "oracle_inputs": [
+          "oracle ferry waveform",
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "chain_s": 696.8208394050598,
+        "median_error_m": 72.54656958582822,
+        "p90_error_m": 103.19729607698976,
+        "within_5m": 0.0,
+        "within_10m": 0.0,
+        "rmse_m": 83.84878562530258,
+        "contrast_db_median": 18.892084118124203,
+        "integrated_1p5s": {
+          "median_error_m": 72.54656958582822,
+          "p90_error_m": 101.65048908270109,
+          "within_5m": 0.0,
+          "rmse_m": 79.72463884942167
+        },
+        "int_median_error_m": 72.54656958582822,
+        "int_within_5m": 0.0,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": 3.5498710256069237,
+        "eca_echo_loss_db": 0.902689380562546
+      },
+      "eca_data": {
+        "config": "eca_data",
+        "doppler": false,
+        "oracle_inputs": [
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "chain_s": 507.025022983551,
+        "median_error_m": 89.8363290443262,
+        "p90_error_m": 166.1344526700795,
+        "within_5m": 0.012658227848101266,
+        "within_10m": 0.02531645569620253,
+        "rmse_m": 112.58855599724214,
+        "contrast_db_median": 18.82207125887912,
+        "integrated_1p5s": {
+          "median_error_m": 78.59948121714254,
+          "p90_error_m": 105.19813537531031,
+          "within_5m": 0.0,
+          "rmse_m": 81.86250520245012
+        },
+        "int_median_error_m": 78.59948121714254,
+        "int_within_5m": 0.0,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": 2.219297769401865,
+        "eca_echo_loss_db": 0.3470721587521143
+      },
+      "blind": {
+        "config": "blind",
+        "doppler": false,
+        "oracle_inputs": [],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "chain_s": 528.0081510543823,
+        "median_error_m": 89.77871354641779,
+        "p90_error_m": 206.14099176044294,
+        "within_5m": 0.05063291139240506,
+        "within_10m": 0.0759493670886076,
+        "rmse_m": 124.3603193880147,
+        "contrast_db_median": 18.185546432146474,
+        "integrated_1p5s": {
+          "median_error_m": 79.1794284129532,
+          "p90_error_m": 206.14099176044294,
+          "within_5m": 0.0,
+          "rmse_m": 115.76119348348547
+        },
+        "int_median_error_m": 79.1794284129532,
+        "int_within_5m": 0.0,
+        "ship_position_error_median_m": 0.8090064439148406,
+        "eca_direct_depth_db": 2.8030935140634483,
+        "eca_echo_loss_db": 0.30959471214406165
+      },
+      "eca_oracle+doppler": {
+        "config": "eca_oracle",
+        "doppler": true,
+        "oracle_inputs": [
+          "oracle ferry waveform",
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "chain_s": 413.57193064689636,
+        "median_error_m": 5.984380453681621,
+        "p90_error_m": 227.7472321680779,
+        "within_5m": 0.4810126582278481,
+        "within_10m": 0.5316455696202531,
+        "rmse_m": 130.35279555557346,
+        "contrast_db_median": 14.907639835292352,
+        "integrated_1p5s": {
+          "median_error_m": 4.306667736170788,
+          "p90_error_m": 246.01306381099474,
+          "within_5m": 0.5316455696202531,
+          "rmse_m": 149.2464726904058
+        },
+        "int_median_error_m": 4.306667736170788,
+        "int_within_5m": 0.5316455696202531,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": 21.34630542475794,
+        "eca_echo_loss_db": 0.6154724175015305
+      },
+      "eca_data+doppler": {
+        "config": "eca_data",
+        "doppler": true,
+        "oracle_inputs": [
+          "exact ferry track"
+        ],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "chain_s": 402.2695736885071,
+        "median_error_m": 2.727155159423161,
+        "p90_error_m": 204.45179928602755,
+        "within_5m": 0.6835443037974683,
+        "within_10m": 0.8227848101265823,
+        "rmse_m": 89.46401206119096,
+        "contrast_db_median": 16.01070455154537,
+        "integrated_1p5s": {
+          "median_error_m": 2.1408087207807487,
+          "p90_error_m": 189.25421183639426,
+          "within_5m": 0.7215189873417721,
+          "rmse_m": 78.81264087857348
+        },
+        "int_median_error_m": 2.1408087207807487,
+        "int_within_5m": 0.7215189873417721,
+        "ship_position_error_median_m": 0.0,
+        "eca_direct_depth_db": 12.154642401940091,
+        "eca_echo_loss_db": 0.32547434332218317
+      },
+      "blind+doppler": {
+        "config": "blind",
+        "doppler": true,
+        "oracle_inputs": [],
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "chain_s": 494.828102350235,
+        "median_error_m": 6.773444764119535,
+        "p90_error_m": 206.74151286208652,
+        "within_5m": 0.3924050632911392,
+        "within_10m": 0.569620253164557,
+        "rmse_m": 115.6327875623299,
+        "contrast_db_median": 16.202047242105614,
+        "integrated_1p5s": {
+          "median_error_m": 6.088884682985894,
+          "p90_error_m": 206.14099176044294,
+          "within_5m": 0.43037974683544306,
+          "rmse_m": 106.71539690333253
+        },
+        "int_median_error_m": 6.088884682985894,
+        "int_within_5m": 0.43037974683544306,
+        "ship_position_error_median_m": 0.8090064439148406,
+        "eca_direct_depth_db": 8.32050623579378,
+        "eca_echo_loss_db": 0.3233967257141185
+      }
+    }
+  },
+  "reproduces_demo_summary": true,
+  "contrast_loss_by_step_fine_db": {
+    "oracle -> eca_oracle": 1.2714142509728568,
+    "eca_oracle -> eca_data": 0.07001285924508238,
+    "eca_data -> blind": 0.6365248267326464
+  }
+}
