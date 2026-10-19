@@ -126,13 +126,178 @@ implemented as a rigid-body FDTD boundary.
 
 ## GPU
 
-`ProcessingConfig(use_cuda=True)`, `OccupancyConfig(use_cuda=True)` and
-`HarborFDTDConfig(use_cuda=True)` run the processing and the FDTD on the GPU (CuPy,
-`pip install cupy-cuda12x`; single precision for the processing).  CPU and GPU agree: the scan
-maps correlate at 1.000000 and the FDTD traces agree to 4e-17.  Measured on a Quadro RTX 4000:
-the chain is about 3x faster than the CPU once warm, and an FDTD vessel run takes about 1.5 min
-instead of about 8 min. These are historical measurements on that specific GPU and scenario,
-not portable runtime guarantees; unavailable CUDA hardware falls back to CPU with a warning.
+`ProcessingConfig(use_cuda=True)`, `OccupancyConfig(use_cuda=True)`, `BistaticConfig(use_cuda=True)`
+and `HarborFDTDConfig(use_cuda=True)` run the processing and the FDTD on the GPU (CuPy,
+`pip install cupy-cuda12x`).  The passive chain runs in single precision on the GPU; the bistatic
+chain and the FDTD run in double precision (`HarborFDTDConfig.precision = "float32"` is opt in).
+CPU and GPU agree: the passive scan maps correlate at 1.000000, the FDTD traces of the fused kernel
+are identical to the array code to the last bit, and the bistatic maps agree to 1e-12 (the ECA to
+1e-8, see [Performance](#performance)).  Measured on a Quadro RTX 4000 (8 GB, Turing, float64 at
+1/32 of the float32 rate) with the fused kernel (the default on the GPU since the performance work):
+a 20 s fine grid vessel run (0.5 m, 6 kHz, 120 000 steps, 481 000 cells) takes 11 s alone and 17 s
+with ten bodies, against 3 min and 8 min with the array code and about 8 min on the CPU; the
+`blind+doppler+smooth4` bistatic configuration on the fine dataset takes 47 s on the GPU against
+522 s for the original CPU code.  These are measurements on that specific GPU and scenario, not
+portable runtime guarantees; unavailable CUDA hardware falls back to the CPU with a warning.
+
+## Performance
+
+Branch `performance` (October 2026).  Goal: an order of magnitude less compute for the harbor
+forward model and the processing chain with no change of results beyond stated tolerances.  Every
+change is measured twice by `scripts/bench_harbor.py`: wall time against the original code and
+accuracy against the outputs the original code produced (saved once, gitignored).  All numbers
+below are on the Quadro RTX 4000 with the container otherwise idle (`output/performance/*.json`;
+the baseline is `baseline.json`, taken from commit `ca42d55` in a worktree).  The stage 0 cases:
+the fine bistatic scenario (0.5 m, 6 kHz, 801 x 601 cells), the moving ferry alone for 2 and 10 s
+and with the 1 m x 3 m UUV body, the multistatic scene (ferry with all ten bodies) for 2 s; the
+`oracle`, `eca_oracle+doppler` and `blind+doppler+smooth4` configurations of
+`harbor_bistatic_ablation.py` on the fine dataset (79 frames); `eca_stage` on the stage 0a 193 m
+moving case with fixed lags and with per sample delays (4 s track fit).
+
+### Timing, before and after
+
+Forward model (one run; `ms/step` in brackets):
+
+| Case | original (array code, GPU) | stage 1 fused float64, host masks | stage 2 device masks (default) | fused float32 |
+|---|---|---|---|---|
+| ferry alone, 2 s | 20.7 s (1.72) | 1.26 s (0.105) | 1.21 s (0.101) | 0.64 s (0.053) |
+| ferry alone, 10 s | 93.2 s (1.55) | 5.6 s (0.093) | 5.6 s (0.093) | 2.3 s (0.038) |
+| ferry + UUV body, 2 s | 25.0 s (2.08) | 2.7 s (0.225) | 1.28 s (0.107) | 3.0 s (0.254) |
+| ferry + UUV body, 10 s | 119.9 s (2.00) | 19.4 s (0.324) | 12.1 s (0.202) | 20.2 s (0.337) |
+| multistatic, 10 bodies, 2 s | 49.1 s (4.09) | 32.2 s (2.68) | 1.68 s (0.140) | 31.8 s (2.65) |
+
+The float32 column still uses the host masks for the bodies, which is why its body cases are no
+faster.  Time per step against body count (`fdtd_sweeps.json`, 2 s runs): array code 1.82 / 1.54 /
+4.57 ms for 0 / 1 / 10 bodies, fused kernel with host masks 0.10 / 0.25 / 2.82 ms, fused kernel with
+device masks 0.10 / 0.10 (one outlier run at 0.60) / 0.14 ms.  The fused float64 step on the fine
+grid moves about 23 MB through memory in 0.1 ms, close to the card's bandwidth; the remaining cost
+of a 20 s run with bodies is the second launch per step for the masks.
+
+Batched runs (stage 3, `fdtd_sweeps.json`, B copies of the 2 s ferry run in one
+`HarborFDTDBatch`): 3150, 3080, 3220, 3310, 3180 and 2570 runs per hour for B = 1, 2, 4, 8, 16, 32
+(the free memory allowed 32).  Every batched run equals its single run to the last bit.  On this
+grid batching does not raise throughput, because the single run is already bandwidth bound rather
+than launch bound; it removes the Python launch overhead for small grids and it is what
+`render_vessel_gathers` and the stage 0a script now use (the two 20 s runs of the fine dataset
+rebuild in 26 s together).
+
+Processing (`run_bistatic` wall time, and `eca_stage` alone):
+
+| Case | original (CPU) | vectorized, CPU | vectorized, GPU (`use_cuda=True`) |
+|---|---|---|---|
+| `oracle` | 364 s | 230 s | 15.5 s |
+| `eca_oracle+doppler` | 370 s | 275 s | 41.2 s |
+| `blind+doppler+smooth4` | 522 s | 394 s | 47.3 s |
+| `eca_stage`, 193 m moving, fixed lags | 23.0 s | 15.0 s | 16.3 s |
+| `eca_stage`, 193 m moving, per sample delays | 29.0 s | 23.1 s | 15.7 s |
+| `ship_positions` refinement, 193 m case (39 frames) | 98 s | 74 s | 2.1 s |
+
+On the CPU the vectorization removes redundant work (the scan grid geometry was recomputed for
+every bin because the per frame path calls evicted the single entry cache; the replicas of all
+bins of a refinement frame now come from one Green's function call) but not the arithmetic, which
+is the Green's function evaluation and the matrix products.  On the GPU the ECA is bound by the
+float64 matrix products of the normal equations (about 1.4 Tflop per 20 s run at 1/32 rate), which
+is why `eca_stage` gains less than the maps; a Toeplitz form of the normal equations would remove
+that cost and is left for later.
+
+Total on the stage 0 benchmark (all cases, forward model and processing): 1616 s with the original
+code against 138 s with the new defaults on the GPU (`final.json`), a factor of 11.7.
+
+### Accuracy and criteria
+
+| Stage | Criterion | Result | Pass |
+|---|---|---|---|
+| 1 | fused float64 traces within 1e-12 relative per channel of the array code | identical (0.0) on four cases, 2.1e-13 max on the ten body case | yes |
+| 1 | fused float32 direct traces within 1e-4 (median) and 1e-3 (max) of float64 | median 3.2e-5 to 3.7e-5; max 1.03e-3 (ferry 2 s), 6.6e-4, 6.2e-4, 6.4e-4, 7.0e-4 | **no** (max, one case, by 3 %) |
+| 1 | fused float32 scattered field within 1e-3 of its rms | 6.7e-4, 5.8e-4, 6.6e-4 | yes |
+| 1 | fused float32 stage 0a ECA depths within 0.5 dB | 0.00 dB (median), 0.0008 dB max per channel | yes |
+| 1 | fused float32 `blind+doppler+smooth4` estimates within one map cell in 95 % of frames | 100 % identical | yes |
+| 2 | device masks within 1e-12 of `body_factor`; scattered traces within 1e-10 of the stage 1 run | masks 1.1e-16 (tests); traces 3.7e-13 max | yes |
+| 3 | batched runs within 1e-12 of single runs | identical (0.0) for B up to 32 | yes |
+| 4 | a CPML thickness at least 10 dB below the sponge in every band and angle | 15 cells, cubic profile: 20.5 dB (peak), 16.5 dB (worst band) margin | yes |
+| 5 | vectorized outputs within 1e-10 of the original code, float64 | CPU: maps identical (3e-18 to 1e-15), ECA identical (0.0); GPU: maps 5e-14 and 4e-13, ECA 2e-14 (fixed lags) and 2e-12 (per sample delays), `eca_oracle+doppler` map 4.0e-2 | CPU: yes; GPU: **no** (one configuration) |
+| 6 | a 1 m scheme within 0.1 rad at 400 to 600 m over 100 to 760 Hz, wall error no worse than the 0.5 m scheme | k-space: 0.50 rad (axis), 1.05 rad (diagonal) over the full band; exact (0.001 rad) over 100 to 380 Hz | **no** |
+
+Float32 fails the direct trace criterion on one of five cases by 3 % of the limit, so float64 stays
+the default (`precision="float32"` is available and is 2 to 2.5 times faster per step without
+bodies; its ECA depths and position estimates on the stage 0 cases are unchanged).
+
+The GPU ECA differs from the reference where the normal equations are ill conditioned: with the
+loading of 1e-14 relative their condition number reaches 1e14, a different Cholesky (cuSOLVER against
+LAPACK) moves the solution by that factor times machine precision, and one refinement step leaves
+the implementation dependent part.  With the data reference (every blind configuration) the noise
+regularises the equations and the cleaned traces agree to 2e-14 (fixed lags) and 2e-12 (per sample
+delays) with no change of any ECA depth or estimate; with the oracle waveform and per sample delays three of 79 frames differ by
+20 to 35 % in the map and one channel's depth by 9.7 dB, while the median depth (1e-6 dB) and every
+estimate are unchanged.  On the CPU the vectorized ECA keeps SciPy's factorisation and the
+reference's call sequence per channel and is identical to the last bit on every stage 0 case.
+
+CPML (`cpml_reflection.json`, open water, source and receivers 40 m from the edge, 0.5 m grid,
+peak of the reflected field re the incident, dB; incidence 0, 27, 45, 63, 76, 82 degrees):
+
+| Boundary | 0 | 27 | 45 | 63 | 76 | 82 | worst band, worst angle | ms/step (3.9 M cells) |
+|---|---|---|---|---|---|---|---|---|
+| sponge, 60 cells (current) | -76 | -51 | -35 | -19 | -8 | -4.5 | -3.0 | 0.74 |
+| CPML 10 cells, quadratic | -70 | -47 | -46 | -45 | -45 | -26 | -24 | 1.06 |
+| CPML 10 cells, cubic | -87 | -64 | -61 | -57 | -47 | -28 | -26 | 1.04 |
+| CPML 15 cells, cubic | -101 | -81 | -82 | -76 | -43 | -25 | -23 | 1.04 |
+| CPML 20 cells, cubic | -111 | -91 | -92 | -75 | -39 | -23 | -21 | 1.04 |
+| CPML 30 cells, cubic | -124 | -105 | -104 | -66 | -35 | -21 | -19 | 1.08 |
+
+The current sponge is nearly transparent at grazing incidence (its reflection at 82 degrees is
+-4.5 dB), which the stage 0a results never saw because the sources sat in the middle of the crop.
+The CPML costs about 40 % more per step (the memory variables of the layer cells) and thins the
+boundary from 60 to 15 cells: on the fine harbor grid that is 601 x 801 against 511 x 711 cells, a
+quarter of the cells, if the scenario were laid out for it.  The complex frequency shift
+(`cpml_alpha_max`) made no difference here.  The sponge stays the default: switching changes the
+forward model's output (the spurious reflections it removes are in every existing dataset and
+cache), so the change belongs to a scenario revision, with `HarborFDTDConfig(boundary="cpml",
+cpml_width=15, cpml_order=3)` recommended for new scenarios.
+
+Time stepping (`timestep_schemes.json`, `scripts/bench_timestep.py`; stationary source in open
+water, receivers on grid nodes at 100 to 600 m on the axis and the diagonal, time gated, phase of
+the transfer function over the analytic `H0^(2)(k r)` referred to the 100 m receiver; wall: a
+pressure release half plane on a node line, reflected over direct against the image solution):
+
+| Scheme | grid | ms/step | phase error 400 to 600 m, 100 to 760 Hz (axis / diagonal) | same, 100 to 380 Hz | wall, 100 to 760 Hz | wall, 100 to 380 Hz | cost per simulated second |
+|---|---|---|---|---|---|---|---|
+| leapfrog, free field k | 0.5 m | 0.81 | > pi / > pi | > pi / > pi | > pi | 0.68 rad | 4.8 s |
+| leapfrog, dispersion corrected (current processing) | 0.5 m | 0.81 | 0.001 / 0.048 rad | 0.000 / 0.002 rad | (same run) | (same run) | 4.8 s |
+| lw4 | 0.5 m | 1.37 | > pi / > pi | 1.7 / 0.25 rad | > pi | 0.18 rad | 8.2 s |
+| k-space | 0.5 m | 8.3 | 0.000 / 0.000 rad | 0.000 / 0.000 rad | 0.31 rad | 0.15 rad | 50 s |
+| leapfrog, corrected | 1 m | 0.20 | > pi | 0.018 / 0.036 rad | > pi | 2.6 rad | 0.6 s |
+| lw4 | 1 m | 0.35 | > pi | > pi | > pi | 3.1 rad | 1.1 s |
+| k-space | 1 m | 1.78 | 0.50 / 1.05 rad | 0.000 / 0.001 rad | 3.0 rad | 0.31 rad | 5.3 s |
+
+The k-space update is exact where the grid resolves the wave: on the 1 m grid it is exact up to
+380 Hz (four cells per wavelength) and its wall error there, 0.31 rad at every normal receiver,
+is an effective wall position a tenth of a cell beyond the land node line, half the 0.5 m
+leapfrog's error in that band.  Up to 760 Hz the 1 m grid has two cells per wavelength and no
+scheme meets the criterion: the k-space propagation is still exact, but a point source and a point
+receiver on such a grid are not the continuum's (the diagonal error is a constant 1.04 rad at every
+range), and the leapfrog's wall numbers over the full band are its own dispersion over the extra
+path.  The fourth order time stepping does not help at these resolutions: the spatial stencil
+error dominates, and it costs 1.7 times the leapfrog step.  The k-space step costs ten times the
+fused leapfrog step on the same grid (two float64 FFTs on a card with 1/32 rate float64), so the
+1 m k-space run costs 1.1 times the current 0.5 m run per simulated second.  Both schemes stay opt
+in (`time_scheme`); the leapfrog remains the default.
+
+### Options and defaults
+
+| Option | Default now | Changed | Note |
+|---|---|---|---|
+| `FDTDConfig.kernel`, `HarborFDTDConfig.kernel` | `"auto"` (fused on the GPU, array code on the CPU and under MPI) | yes, from `"reference"` | identical results; not in the cache key |
+| `HarborFDTDConfig.body_masks` | `"auto"` (device masks with the fused kernel) | new | 1e-13; not in the cache key |
+| `FDTDConfig.precision` | `"float64"` | no | `"float32"` opt in (criterion missed by 3 % on one case); in the cache key |
+| `FDTDConfig.boundary` | `"sponge"` | no | `"cpml"` opt in, criterion passed; in the cache key when set |
+| `FDTDConfig.time_scheme` | `"leapfrog"` | no | `"lw4"`, `"kspace"` prototypes, criterion failed |
+| `BistaticConfig.impl` | `"vectorized"` | new | `"reference"` keeps the original loops |
+| `BistaticConfig.use_cuda` | `False` | new | GPU chain, double precision; ECA within 2e-12 with the data reference, differs with the oracle waveform |
+| `simulate_sources`, `HarborFDTDBatch` | used by `render_vessel_gathers` and the stage 0a script when the fused kernel is available | new | identical results, same cache keys |
+
+The cache key of a gather ignores `kernel`, `body_masks` and `use_cuda` and includes `precision`,
+`boundary` and the CPML and time scheme fields only when they differ from their defaults, so every
+cache built before this work stays valid.
 
 ## Status and findings
 
@@ -405,11 +570,15 @@ of that specific grid/time step and should not be used as a model of real-water 
 
 ## Tests
 
-`pytest tests/harbor` (116 tests; the GPU variants skip automatically without CuPy / a GPU).
+`pytest tests/harbor` (150 tests; the GPU variants skip automatically without CuPy / a GPU).
 They cover the environment and sensors, the FDTD runner (amplitude against the analytic
 Green's function, moveout, linearity, cache, shoreline), signatures, AIS, noise, the dataset
 mixer, detection and scoring, ship refinement and projection (including a synthetic scene in
 which only the data-adaptive projection removes a multipath ship), the occupancy filter,
 dispersion, GPU / CPU parity, the bistatic ECA on an analytic free field case (`eca_stage`
 against the inline code it replaced, depth and echo preservation, the Doppler variant on a
-moving ship, track smoothing, `run_bistatic` end to end) and the combined body gathers.
+moving ship, track smoothing, `run_bistatic` end to end), the combined body gathers, and the
+performance paths (`test_performance.py`: fused kernel against the array code in both precisions,
+device masks against `body_factor`, batched against single runs, CPML reflection against the
+sponge, the lw4 and k-space schemes; `test_bistatic_vectorized.py`: the vectorized ECA,
+refinement, maps and motion integration against the reference loops on the CPU and the GPU).
