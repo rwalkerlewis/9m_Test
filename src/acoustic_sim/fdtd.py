@@ -181,7 +181,8 @@ class FDTDConfig:
         ``"reference"``: the array code below (NumPy or CuPy; the only path under MPI).
         ``"fused"``: one ``cupy.RawKernel`` launch per step (:mod:`acoustic_sim.fdtd_cuda`;
         single process on the GPU; falls back to the reference path elsewhere).
-        ``"auto"``: fused whenever it is available.
+        ``"auto"`` (default since the fused kernel reproduced the reference to the last bit on the
+        stage 0 benchmark): fused whenever it is available.
     boundary : str
         ``"sponge"`` (default): the damping ramp of ``damping_width`` cells and ``damping_max``.
         ``"cpml"``: a convolutional perfectly matched layer of ``cpml_width`` cells on the four
@@ -219,7 +220,7 @@ class FDTDConfig:
     use_cuda: bool = False
     fd_order: int = 2
     precision: str = "float64"
-    kernel: str = "reference"
+    kernel: str = "auto"
     boundary: str = "sponge"
     cpml_width: int = 15
     cpml_order: int = 2

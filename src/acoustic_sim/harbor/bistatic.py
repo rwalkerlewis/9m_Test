@@ -648,25 +648,34 @@ def _project_out_batched(S, segs, loading: float = 1e-14):
     xp = _module_of(S)
     Ng, block, L = S.shape
     St = S.transpose(0, 2, 1)
-    G = xp.matmul(St, S)                                                                   # (Ng, L, L)
+    G = xp.matmul(St, S)                                                                   # (Ng, L, L): identical to the per channel S.T @ S
+    if xp is np:
+        # Per channel and per array, the exact call sequence of _project_out (loading from the channel's
+        # own trace, matrix-vector products): a batched matrix-matrix product rounds differently, and
+        # the condition number of the normal equations amplifies that.
+        out = np.empty_like(segs)
+        for g in range(Ng):
+            Sg = S[g]
+            Gg = G[g]
+            Gg[np.diag_indices_from(Gg)] += loading * max(np.trace(Gg) / L, 1e-300)
+            try:
+                c, low = cho_factor(Gg, lower=True, check_finite=False)
+            except np.linalg.LinAlgError:
+                Q, _ = np.linalg.qr(Sg)
+                for r_i in range(segs.shape[2]):
+                    out[g, :, r_i] = segs[g, :, r_i] - Q @ (Q.T @ segs[g, :, r_i])
+                continue
+            for r_i in range(segs.shape[2]):
+                seg = np.ascontiguousarray(segs[g, :, r_i])
+                x = cho_solve((c, low), Sg.T @ seg, check_finite=False)
+                r = seg - Sg @ x
+                x += cho_solve((c, low), Sg.T @ r, check_finite=False)
+                out[g, :, r_i] = seg - Sg @ x
+        return out
     tr = xp.trace(G, axis1=1, axis2=2) / L
     diag = xp.arange(L)
     G[:, diag, diag] += (loading * xp.maximum(tr, 1e-300))[:, None]
     rhs = xp.matmul(St, segs)                                                               # (Ng, L, R)
-    if xp is np:
-        out = np.empty_like(segs)
-        for g in range(Ng):
-            try:
-                c, low = cho_factor(G[g], lower=True, check_finite=False)
-            except np.linalg.LinAlgError:
-                Q, _ = np.linalg.qr(S[g])
-                out[g] = segs[g] - Q @ (Q.T @ segs[g])
-                continue
-            x = cho_solve((c, low), rhs[g], check_finite=False)
-            r = segs[g] - S[g] @ x
-            x += cho_solve((c, low), S[g].T @ r, check_finite=False)
-            out[g] = segs[g] - S[g] @ x
-        return out
     from cupyx.scipy.linalg import solve_triangular
 
     try:

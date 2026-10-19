@@ -46,7 +46,11 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from acoustic_sim.harbor import HarborDataset, HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
 from acoustic_sim.harbor.bistatic import BistaticConfig, ReplicaModel, Truth, eca_stage, run_bistatic, ship_positions, stft  # noqa: E402
-from acoustic_sim.harbor.dataset import make_scatterer, vessel_injection  # noqa: E402
+try:
+    from acoustic_sim.harbor.bistatic import _xp as _bistatic_xp  # noqa: E402
+except ImportError:  # the original code
+    _bistatic_xp = None
+from acoustic_sim.harbor.dataset import assemble_dataset, make_scatterer, render_vessel_gathers, vessel_injection  # noqa: E402
 from acoustic_sim.harbor.dispersion import for_scenario  # noqa: E402
 from acoustic_sim.harbor.fdtd_runner import HarborFDTDSolver, simulate_source  # noqa: E402
 from acoustic_sim.harbor.noise import generate_noise  # noqa: E402
@@ -223,6 +227,24 @@ def run_fdtd_case(name: str, args) -> tuple[dict, dict]:
 # Processing cases (the ablation configurations on the fine dataset)
 # ----------------------------------------------------------------------
 
+def rerender_fine_dataset(args, cache_dir: Path) -> tuple[HarborDataset, float]:
+    """The fine bistatic dataset rebuilt with the current solver options (same scenario, tracks and
+    noise seed as ``examples/harbor_bistatic_dataset.py``), so the processing criteria can be
+    evaluated on float32 or CPML or batched forward modelling."""
+    cfg = HarborScenarioConfig.load(BISTATIC_SCENARIO)
+    cfg.fdtd.use_cuda = args.cuda
+    apply_solver_options(cfg.fdtd, args)
+    env = build_environment(cfg)
+    layout = build_layout(cfg, env)
+    tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in cfg.vessels}
+    sync_gpu()
+    t0 = time.perf_counter()
+    gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=cache_dir)
+    sync_gpu()
+    wall = time.perf_counter() - t0
+    ds = assemble_dataset(cfg, layout, tracks, gathers, keep_components=True)
+    return ds, wall
+
 def bistatic_options(args) -> dict:
     """Extra ``BistaticConfig`` fields of the processing stage (only those that exist)."""
     names = {f.name for f in fields(BistaticConfig)}
@@ -307,8 +329,12 @@ def run_eca_case(name: str, args) -> tuple[dict, dict]:
                      level_pa=ferry.level_pa, ais=True, seed=ferry.seed)
     tr = build_track(v, cfg.fdtd.total_time, env)
     sig = vessel_injection(v, tr, env, cfg)
+    apply_solver_options(cfg.fdtd, args) if args.rerender else None
+    cache = (Path(args.out) / f"cache_{args.tag}") if args.rerender else CANCEL_CACHE
+    sync_gpu()
     t0 = time.perf_counter()
-    g = simulate_source(env, layout, cfg.fdtd, sig, trajectory=(tr.t, tr.xy), cache_dir=CANCEL_CACHE)
+    g = simulate_source(env, layout, cfg.fdtd, sig, trajectory=(tr.t, tr.xy), cache_dir=cache)
+    sync_gpu()
     t_gather = time.perf_counter() - t0
     direct = v.level_pa * g.traces.astype(np.float64)
     noise = generate_noise(layout, fs, n, cfg.noise, np.random.default_rng(cfg.seed))
@@ -319,7 +345,7 @@ def run_eca_case(name: str, args) -> tuple[dict, dict]:
                         dispersion=for_scenario(env, cfg.fdtd), eca_doppler=doppler, track_smooth_s=smooth,
                         **bistatic_options(args))
     sp = stft(traces, layout, fs, bc, f_max)
-    model = ReplicaModel(layout, bc.c, dispersion=bc.dispersion)
+    model = ReplicaModel(layout, bc.c, dispersion=bc.dispersion, **({"xp": _bistatic_xp(bc)} if _bistatic_xp else {}))
     model.weights = sp.weights
     sync_gpu()
     t0 = time.perf_counter()
@@ -340,7 +366,8 @@ def run_eca_case(name: str, args) -> tuple[dict, dict]:
                "ship_refined": ship.refined, "live": live}
     info = {
         "kind": "eca", "eca_doppler": doppler, "track_smooth_s": smooth, "range_min_m": float(cd.nearest_channel_range(layout, tr.xy).min()),
-        "gather_s": t_gather, "gather_from_cache": t_gather < 20.0, "ship_positions_s": t_ship, "eca_stage_s": t_eca,
+        "gather_s": t_gather, "gather_from_cache": t_gather < 20.0, "rerendered": bool(args.rerender),
+        "ship_positions_s": t_ship, "eca_stage_s": t_eca,
         "wall_s": t_eca, "cable_median_depth_db": float(np.median(depth[cab][live[cab]])),
         "position_error_median_m": float(np.median(np.hypot(*(ship.refined - tr.position_at(sp.times)).T))),
         "bistatic_options": bistatic_options(args),
@@ -418,6 +445,8 @@ def main() -> None:
     ap.add_argument("--ref-dir", default=None, help="compare against the outputs in this directory (default: the reference)")
     ap.add_argument("--no-compare", action="store_true")
     ap.add_argument("--repeat", type=int, default=1, help="repeat the FDTD cases and keep the best wall time")
+    ap.add_argument("--rerender", action="store_true",
+                    help="rebuild the fine dataset and the stage 0a gather with the current solver options before the processing cases")
     # Solver options of the later stages (passed through to HarborFDTDConfig when the field exists).
     ap.add_argument("--precision", default=None, choices=[None, "float64", "float32"])
     ap.add_argument("--kernel", default=None, choices=[None, "reference", "fused", "auto"])
@@ -435,16 +464,18 @@ def main() -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
     ref_dir = Path(args.ref_dir) if args.ref_dir else out_root / "reference"
 
-    sel = args.cases
-    if sel == "all":
-        cases = ALL_CASES
-    elif sel in ("fdtd", "proc", "eca"):
-        cases = [c for c in ALL_CASES if c.startswith(sel)]
-    else:
-        cases = [c for c in sel.split(",") if c]
-        unknown = [c for c in cases if c not in ALL_CASES]
-        if unknown:
-            raise SystemExit(f"unknown cases {unknown}; choose from {ALL_CASES}")
+    cases: list[str] = []
+    for sel in args.cases.split(","):
+        if not sel:
+            continue
+        if sel == "all":
+            cases += ALL_CASES
+        elif sel in ("fdtd", "proc", "eca"):
+            cases += [c for c in ALL_CASES if c.startswith(sel)]
+        elif sel in ALL_CASES:
+            cases.append(sel)
+        else:
+            raise SystemExit(f"unknown case {sel!r}; choose from {ALL_CASES} or the groups fdtd, proc, eca, all")
 
     json_path = out_root / f"{args.tag}.json"
     previous = json.loads(json_path.read_text()) if json_path.exists() else None
@@ -476,14 +507,20 @@ def main() -> None:
             out, info = best_out, best_info
         elif name in PROC_CASES:
             if ds is None:
-                if not FINE_DATASET.exists():
+                if args.rerender:
+                    ds, t_render = rerender_fine_dataset(args, out_root / f"cache_{args.tag}")
+                    results["rerender"] = {"fine_dataset_render_s": t_render}
+                    say(f"[bench] fine dataset rerendered with the current solver options in {t_render:.1f} s")
+                elif not FINE_DATASET.exists():
                     say(f"[bench] {FINE_DATASET} missing, skipping {name}")
                     continue
-                ds = HarborDataset.load(FINE_DATASET)
+                else:
+                    ds = HarborDataset.load(FINE_DATASET)
                 env_ds = build_environment(ds.cfg)
                 layout_ds = build_layout(ds.cfg, env_ds)
                 f_max_ds = f_max_for_grid(env_ds.dx)
             out, info = run_proc_case(name, ds, env_ds, layout_ds, f_max_ds, args)
+            info["rerendered"] = bool(args.rerender)
         else:
             out, info = run_eca_case(name, args)
         np.savez(run_dir / f"{name}.npz", **{k: v for k, v in out.items() if v is not None})

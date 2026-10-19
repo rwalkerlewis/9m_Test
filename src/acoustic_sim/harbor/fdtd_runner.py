@@ -62,9 +62,10 @@ class HarborFDTDConfig:
         ``"float64"`` (default) or ``"float32"`` fields (:class:`~acoustic_sim.fdtd.FDTDConfig`).
         Part of the cache key.
     kernel : str
-        ``"reference"`` (the array code), ``"fused"`` (one CUDA kernel per step, GPU only) or
-        ``"auto"``.  Not part of the cache key: both kernels compute the same traces (to 1e-13
-        relative in float64).
+        ``"auto"`` (default): one fused CUDA kernel per step on the GPU, the array code elsewhere;
+        ``"reference"`` forces the array code, ``"fused"`` requests the kernel.  Not part of the
+        cache key: both kernels compute the same traces (identical to the last bit in float64 on
+        the stage 0 benchmark).
     boundary, cpml_width, cpml_order, cpml_r0, cpml_alpha_max
         Edge boundary: ``"sponge"`` (default, the ramp above) or ``"cpml"`` (a convolutional PML of
         ``cpml_width`` cells; see :class:`~acoustic_sim.fdtd.FDTDConfig`).  Part of the cache key
@@ -89,7 +90,7 @@ class HarborFDTDConfig:
     shore_loss_max: float = 0.15
     use_cuda: bool = False
     precision: str = "float64"
-    kernel: str = "reference"
+    kernel: str = "auto"
     body_masks: str = "auto"
     boundary: str = "sponge"
     cpml_width: int = 15

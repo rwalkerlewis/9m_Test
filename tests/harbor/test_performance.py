@@ -26,7 +26,7 @@ TOTAL = 0.3
 
 
 def _cfg(**kw) -> HarborFDTDConfig:
-    base = dict(fs=FS, total_time=TOTAL, fd_order=4, damping_width=30, use_cuda=True)
+    base = dict(fs=FS, total_time=TOTAL, fd_order=4, damping_width=30, use_cuda=True, kernel="reference")
     base.update(kw)
     return HarborFDTDConfig(**base)
 
@@ -114,6 +114,9 @@ def test_fused_request_falls_back_to_reference_on_cpu(scene):
     cfg = _cfg(kernel="fused", use_cuda=False)
     solver = HarborFDTDSolver(env, cfg, src, layout.sample_points)
     assert solver.kernel == "reference" and not solver.is_cuda
+    assert HarborFDTDConfig().kernel == "auto" and FDTDConfig().kernel == "auto"
+    auto = HarborFDTDSolver(env, _cfg(kernel="auto", use_cuda=False), src, layout.sample_points)
+    assert auto.kernel == "reference"
 
 
 def test_config_validation():

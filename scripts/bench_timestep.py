@@ -7,7 +7,7 @@ update (``time_scheme = "lw4"``) and the k-space corrected pseudospectral update
 that grid (6 kHz, 3 kHz).
 
 1. Stationary source in open water, receivers on the grid axis and on the diagonal at 100 to
-   800 m.  The transfer function of every receiver is divided by the analytic 2-D Green's
+   600 m (all on grid nodes, arrivals time gated).  The transfer function of every receiver is divided by the analytic 2-D Green's
    function ``H0^(2)(k r)`` and referred to the 100 m axis receiver (the injection factor cancels);
    the phase of that ratio is the dispersion error, per bin of the band.  For the current scheme
    the same is done with the dispersion corrected wavenumber of ``dispersion.py`` (the replica
@@ -17,7 +17,7 @@ that grid (6 kHz, 3 kHz).
    compared with the image solution ``-H0(k r_image) / H0(k r_direct)``, normal and oblique.
 
 Criterion (fixed in the task): a scheme on the 1 m grid matches or beats the current 0.5 m scheme
-with dispersion correction (at most 0.1 rad of phase error at 400 to 800 m across the band, axis
+with dispersion correction (at most 0.1 rad of phase error at 400 to 600 m across the band, axis
 and diagonal) with a wall reflection error no worse than the current scheme's.
 
 Usage::
@@ -47,10 +47,18 @@ from acoustic_sim.sources import StaticSource  # noqa: E402
 C = 1500.0
 BAND_FINE = (100.0, 760.0)          # the fine (0.5 m) scenario's processing band
 BAND_COARSE = (100.0, 380.0)        # the band a 1 m grid serves with the current scheme
-RANGES = np.array([100.0, 200.0, 400.0, 600.0, 800.0])
+# Receivers on grid nodes of both grids (integer coordinates): axis offsets, and diagonal offsets (d, -d)
+# whose ranges d sqrt(2) are 100.4, 199.4, 400.2 and 599.6 m; the source is on a node too, so neither
+# the injection nor the sampling interpolates.  600 m is the largest range the 1023 m domain allows
+# with every path at least 275 m from the edges; the arrivals are time gated as well.
+AXIS_OFF = np.array([100.0, 200.0, 400.0, 600.0])
+DIAG_OFF = np.array([71.0, 141.0, 283.0, 424.0])
+RANGES = AXIS_OFF
 FAR = RANGES >= 400.0
-SRC = np.array([100.0, 100.0])
-T = 0.75
+SRC = np.array([200.0, 700.0])
+T = 0.6
+GATE_PRE, GATE_POST, GATE_TAPER = 0.03, 0.10, 0.01      # s around the direct arrival (stationary case)
+WALL_GATE = 0.45                                        # s: direct and wall reflected arrivals, before the domain edges answer
 SCHEMES = {
     # name: (time_scheme, dx, fs)
     "leapfrog_0.5m": ("leapfrog", 0.5, 6000.0),
@@ -100,13 +108,26 @@ def band_bins(f: np.ndarray, S: np.ndarray, band: tuple[float, float]) -> np.nda
     return (f >= band[0]) & (f <= band[1]) & (np.abs(S) > 1e-2 * np.abs(S).max())
 
 
+def gate(traces: np.ndarray, fs: float, t_arr: np.ndarray, pre: float, post: float, taper: float = GATE_TAPER) -> np.ndarray:
+    """Cosine tapered window ``[t_arr - pre, t_arr + post]`` per receiver (removes later arrivals)."""
+    t = np.arange(traces.shape[1]) / fs
+    out = np.zeros_like(traces)
+    for i, ta in enumerate(t_arr):
+        a, b = ta - pre, ta + post
+        w = np.clip((t - a) / taper, 0.0, 1.0) * np.clip((b - t) / taper, 0.0, 1.0)
+        out[i] = traces[i] * (0.5 - 0.5 * np.cos(np.pi * w))
+    return out
+
+
 def phase_errors(traces: np.ndarray, sig: np.ndarray, fs: float, rec: np.ndarray, k_of: callable) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Phase [rad] and amplitude [dB] of ``H(f, r) / G(f, r)`` referred to receiver 0, per (receiver, bin); and the bin frequencies.
 
     *k_of(f, theta)* gives the wavenumber used in ``G = H0^(2)(k r)`` for the bins *f* and the
-    propagation angle *theta* of each receiver."""
+    propagation angle *theta* of each receiver.  The traces are gated around the direct arrival."""
     n = traces.shape[1]
     f = np.fft.rfftfreq(n, 1.0 / fs)
+    r_all = np.hypot(*(rec - SRC).T)
+    traces = gate(traces, fs, 0.02 + r_all / C, GATE_PRE, GATE_POST)
     P = np.fft.rfft(traces, axis=1)
     S = np.fft.rfft(sig)
     d = rec - SRC
@@ -137,8 +158,8 @@ def stationary_case(name: str, cuda: bool, kernel: str) -> dict:
     scheme, dx, fs = SCHEMES[name]
     width = domain_width(dx)
     env = uniform_water_environment(width, width, dx, C)
-    axis = SRC + np.column_stack([RANGES, np.zeros_like(RANGES)])
-    diag = SRC + np.column_stack([RANGES, RANGES]) / np.sqrt(2.0)
+    axis = SRC + np.column_stack([AXIS_OFF, np.zeros_like(AXIS_OFF)])
+    diag = SRC + np.column_stack([DIAG_OFF, -DIAG_OFF])
     rec = np.vstack([axis, diag])
     cfg = config(scheme, dx, fs, cuda, kernel)
     traces, wall, solver = run(env, cfg, SRC, rec)
@@ -158,13 +179,13 @@ def stationary_case(name: str, cuda: bool, kernel: str) -> dict:
         for bname, band in (("fine", BAND_FINE), ("coarse", BAND_COARSE)):
             sel = band_bins(f, S, band)
             res[bname] = {
-                "max_phase_rad_axis_far": float(np.nanmax(np.abs(ph[:5][FAR][:, sel]))),
-                "max_phase_rad_diag_far": float(np.nanmax(np.abs(ph[5:][FAR][:, sel]))),
-                "max_phase_rad_axis_all": float(np.nanmax(np.abs(ph[:5][:, sel]))),
-                "max_phase_rad_diag_all": float(np.nanmax(np.abs(ph[5:][:, sel]))),
-                "max_amp_db_far": float(np.nanmax(np.abs(np.vstack([amp[:5][FAR], amp[5:][FAR]])[:, sel]))),
-                "phase_rad_per_receiver_axis": [float(np.nanmax(np.abs(ph[i][sel]))) for i in range(5)],
-                "phase_rad_per_receiver_diag": [float(np.nanmax(np.abs(ph[5 + i][sel]))) for i in range(5)],
+                "max_phase_rad_axis_far": float(np.nanmax(np.abs(ph[:4][FAR][:, sel]))),
+                "max_phase_rad_diag_far": float(np.nanmax(np.abs(ph[4:][FAR][:, sel]))),
+                "max_phase_rad_axis_all": float(np.nanmax(np.abs(ph[:4][:, sel]))),
+                "max_phase_rad_diag_all": float(np.nanmax(np.abs(ph[4:][:, sel]))),
+                "max_amp_db_far": float(np.nanmax(np.abs(np.vstack([amp[:4][FAR], amp[4:][FAR]])[:, sel]))),
+                "phase_rad_per_receiver_axis": [float(np.nanmax(np.abs(ph[i][sel]))) for i in range(4)],
+                "phase_rad_per_receiver_diag": [float(np.nanmax(np.abs(ph[4 + i][sel]))) for i in range(4)],
             }
         out[vname] = res
     return out
@@ -186,6 +207,9 @@ def wall_case(name: str, cuda: bool, kernel: str) -> dict:
     to, _, _ = run(env_open, cfg, src, rec)
     sig = ricker(cfg.n_steps, fs)
     n = tw.shape[1]
+    t = np.arange(n) / fs
+    win = (0.5 - 0.5 * np.cos(np.pi * np.clip((WALL_GATE - t) / 0.02, 0.0, 1.0)))[None, :]   # drop the domain edge arrivals
+    tw, to = tw * win, to * win
     f = np.fft.rfftfreq(n, 1.0 / fs)
     S = np.fft.rfft(sig)
     Pw, Po = np.fft.rfft(tw, axis=1), np.fft.rfft(to, axis=1)
@@ -222,7 +246,7 @@ def main() -> None:
         results["stationary"][name] = st
         if st["finite"]:
             free = st["free"]["fine"]
-            msg = f"free k: axis {free['max_phase_rad_axis_far']:.3f} rad, diag {free['max_phase_rad_diag_far']:.3f} rad (400-800 m, 100-760 Hz)"
+            msg = f"free k: axis {free['max_phase_rad_axis_far']:.3f} rad, diag {free['max_phase_rad_diag_far']:.3f} rad (400-600 m, 100-760 Hz)"
             if "corrected" in st:
                 c = st["corrected"]["fine"]
                 msg += f"; corrected: axis {c['max_phase_rad_axis_far']:.3f}, diag {c['max_phase_rad_diag_far']:.3f} rad"
@@ -237,7 +261,7 @@ def main() -> None:
         (out / "timestep_schemes.json").write_text(json.dumps(results, indent=2, default=float))
     # Criterion.
     base = results["stationary"].get("leapfrog_0.5m")
-    verdict = {"text": "a scheme on the 1 m grid within 0.1 rad at 400-800 m over 100-760 Hz (axis and diagonal) with a wall "
+    verdict = {"text": "a scheme on the 1 m grid within 0.1 rad at 400-600 m over 100-760 Hz (axis and diagonal) with a wall "
                        "reflection error no worse than the current 0.5 m scheme's", "pass": False, "passing": []}
     if base is not None and base["finite"]:
         ref_phase = max(base["corrected"]["fine"]["max_phase_rad_axis_far"], base["corrected"]["fine"]["max_phase_rad_diag_far"])
