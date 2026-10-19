@@ -174,7 +174,43 @@ in 100 to 760 Hz; `output/harbor_cancel/`). References: `data` (delay and sum be
 refined position, blind), `oracle` (true waveform, AIS refined position), `oracle_exact` (true
 waveform, exact position). Criterion: median depth with the `data` reference at least 20 dB.
 
-{{0A_TABLE}}
+| Source | Range | `data` | `oracle` | `oracle_exact` | `data`, Doppler + 4 s fit | `oracle`, Doppler + 4 s fit | `oracle_exact`, Doppler |
+|---|---|---|---|---|---|---|---|
+| stationary | 193 m | 8.8 dB | 34.4 dB | 32.9 dB | 8.7 dB | 33.2 dB | 31.5 dB |
+| moving 4 m/s | 193 m | 2.3 dB | 5.5 dB | 5.5 dB | 9.2 dB | 21.4 dB | 24.4 dB |
+| stationary | 99 m | 18.7 dB | 47.3 dB | 45.1 dB | 19.6 dB | 44.2 dB | 42.2 dB |
+| moving 4 m/s | 99 m | 3.4 dB | 3.6 dB | 3.6 dB | 18.9 dB | 22.9 dB | 24.6 dB |
+| stationary | 29 m | 7.0 dB | 37.4 dB | 51.0 dB | 11.9 dB | 29.4 dB | 50.6 dB |
+| moving 4 m/s | 29 m | 2.7 dB | 2.2 dB | 2.2 dB | 7.2 dB | 14.9 dB | 21.5 dB |
+
+Median ECA depth over the live cable channels (`results.json`, `results_doppler.json`,
+`results_doppler_smooth4.json`). **Criterion failed at every range** (the `data` column never
+reaches 20 dB). Reading it with the interpretation fixed in advance:
+
+* The stationary source is low at every range with the `data` reference while the `oracle`
+  reference at the same AIS refined positions reaches 34 to 47 dB, so the removal method is not
+  the limit; the blind reference is. On the coarse debug case the same beam built from the
+  noise free traces gave 19 dB against 8 dB from the noisy ones, and its coherence with the true
+  waveform falls from 0.94 at 300 Hz to 0.16 at 100 Hz: the strain response goes as frequency
+  squared, so the low end of the band is noise dominated in the beam, and a least squares
+  projection on a noisy reference leaves a residual of about one over the reference's signal
+  to noise ratio.
+* The moving source fails at every range for every reference with the fixed lag ECA (2 to
+  6 dB): the direct path delay drifts by `v T / c` inside a 0.5 s block, a full cycle at the
+  band top. Per sample delays that follow the ship (`BistaticConfig.eca_doppler`, 8x FFT
+  upsampling for the resampling) bring the exact track case to 21 to 25 dB. With the AIS
+  refined track the per frame jitter of about 1 m becomes velocity noise (7 to 9 dB) until the
+  track is fitted by a local straight line over 4 s (`track_smooth_s`; 15 to 23 dB).
+* Near field channels are not the cause: the exact position at 29 m is cancelled by 51 dB.
+  What fails at 29 m is the AIS refinement itself (5.6 m error, jumping between frames), so no
+  `gate_radius` rerun was made.
+* The per channel plots (`depth_per_channel.png`) show the data reference depth rising from 3 dB
+  at the channels broadside to the source to 17 dB at the oblique ones (193 m), the oracle
+  20 to 55 dB everywhere.
+* The ECA projection is a Cholesky solve of the normal equations with one refinement step (five
+  times faster than the QR it replaced); on the stationary 193 m oracle case it reads 1 dB
+  (median) and 3 dB (10th percentile) below the exact QR projection. The criterion column is
+  unaffected (8.8 dB either way).
 
 **Stage 0b, the bistatic demo without its oracles** (`examples/harbor_bistatic_ablation.py`,
 coarse and fine datasets, `output/harbor_bistatic/ablation/`). Configurations: 1 `oracle`
@@ -183,7 +219,45 @@ the traces, removed by ECA; oracle waveform; exact track), 3 `eca_data` (data re
 track), 4 `blind` (data reference, AIS track with refinement). Criterion for `blind` on the
 fine dataset: median echo contrast at least 10 dB and at least half the frames within 5 m.
 
-{{0B_TABLE}}
+| Configuration | coarse: median error | within 5 m | 1.5 s within 5 m | contrast | ECA depth | fine: median error | within 5 m | 1.5 s within 5 m | contrast | ECA depth |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `oracle` | 1.7 m | 90 % | 99 % | 17.8 dB | truth | 2.3 m | 92 % | 100 % | 20.2 dB | truth |
+| `eca_oracle` | 71.2 m | 15 % | 3 % | 16.2 dB | 8.5 dB | 72.5 m | 0 % | 0 % | 18.9 dB | 3.5 dB |
+| `eca_data` | 84.3 m | 5 % | 1 % | 17.9 dB | 5.6 dB | 89.8 m | 1 % | 0 % | 18.8 dB | 2.2 dB |
+| `blind` | 80.8 m | 5 % | 1 % | 16.8 dB | 5.3 dB | 89.8 m | 5 % | 0 % | 18.2 dB | 2.8 dB |
+| `eca_oracle+doppler` | 3.8 m | 54 % | 86 % | 14.8 dB | 25.1 dB | 6.0 m | 48 % | 53 % | 14.9 dB | 21.3 dB |
+| `eca_data+doppler` | 6.1 m | 42 % | 53 % | 15.3 dB | 14.8 dB | 2.7 m | 68 % | 72 % | 16.0 dB | 12.2 dB |
+| `blind+doppler` | 9.2 m | 27 % | 35 % | 15.4 dB | 10.3 dB | 6.8 m | 39 % | 43 % | 16.2 dB | 8.3 dB |
+| `eca_oracle+doppler+smooth4` | 3.8 m | 54 % | 86 % | 14.8 dB | 25.1 dB | 6.0 m | 48 % | 53 % | 14.9 dB | 21.3 dB |
+| `eca_data+doppler+smooth4` | 6.1 m | 42 % | 53 % | 15.3 dB | 14.8 dB | 2.7 m | 68 % | 72 % | 16.0 dB | 12.2 dB |
+| `blind+doppler+smooth4` | 8.5 m | 32 % | 37 % | 15.2 dB | 11.0 dB | 3.8 m | 58 % | 54 % | 16.1 dB | 11.0 dB |
+
+Per 0.5 s frame (`results.json`; the `+doppler` rows are the same configurations with
+`eca_doppler=True`, reported as variants outside the criterion). The coarse `oracle` row
+reproduces `demo/demo_summary.json` exactly. **Criterion failed**: `blind` on the fine dataset
+has a median contrast of 18.2 dB but only 5 % of the frames within 5 m. The contrast (map peak
+over map median) does not discriminate here, because with the direct path cancelled by only 2
+to 4 dB the peak sits on the residual direct path, which is just as sharp as an echo. The step
+that loses the localisation is **1 to 2**, the fixed lag ECA replacing the truth removal: 92 %
+of frames within 5 m become 0 % and the ECA removes 3.5 dB of the moving ferry (the stage 0a
+moving source result), with the echo lost by under 1 dB. Steps 2 to 3 and 3 to 4 change
+nothing at that point. With per sample delays (`eca_doppler`) the ECA cancels 21 dB (oracle
+waveform) and 8 to 12 dB (data reference) and the chain works part of the time: the fully
+blind variant locates the UUV in 39 % of the frames (43 % after 1.5 s integration, median
+error 6.8 m), the data reference with the exact track in 68 %. With the refined track also
+fitted over 4 s (`track_smooth_s`, the `+smooth4` rows from `ablation/smooth4/`) the blind
+variant reaches 58 % of frames within 5 m, median error 3.8 m, contrast 16.1 dB, ECA depth
+11 dB: the numbers the criterion asked for, but from a chain changed after the criterion was
+fixed, so it is reported as a variant and not as a pass. The data reference beats the
+oracle waveform once the ECA follows the ship, presumably because the beam carries the quay
+multipath that the free field image lags only approximate. The per frame estimate fails on the
+remaining frames by jumping to a sidelobe (p90 error about 200 m), not by a small miss.
+
+What limits the blind configuration, in order: the direct path residual (8 dB of ECA depth
+against the 16 to 18 dB the echo sits below the direct path on the median cable channel,
+`levels.json`), set by the blind reference's signal to noise ratio (stage 0a); then the AIS
+refined track, whose jitter the per sample delays read as velocity noise (track smoothing,
+below); the echo loss in the ECA is small throughout (0.3 to 1.9 dB).
 
 **Stage 0c, multistatic scenario and dataset** (`examples/harbor_multistatic.scenario.json`,
 `examples/harbor_multistatic_dataset.py`, `output/harbor_multistatic/`). Same 0.5 m crop and
@@ -197,7 +271,16 @@ rendered with all ten bodies present and with none (`combined_bodies=True`), so 
 carries `direct:<id>` and `scattered:<id>>bodies` per illuminator plus the noise, and
 `truth.json` gives every object's type, body, AIS status, position and velocity per frame.
 
-{{0C_TEXT}}
+Fine dataset levels on the median live cable channel, 200 to 760 Hz (`levels.json`): echo to
+direct ferry -8.1 dB, tug -14.5 dB, boat -11.1 dB; echo to noise
+ferry +5.7 dB, tug -0.3 dB, boat -4.7 dB (best channel +13.7, +5.4, +0.5 dB).
+The FDTD runs took 38 min on the GPU (fine) and 19 min (coarse, where the sponge is kept at
+30 m in metres, unlike the bistatic coarse run). `ferry_only_map.png` runs the oracle bistatic
+chain (direct path removed with the truth component, oracle ferry waveform, exact ferry track)
+on the ferry's scattered component alone: in the map summed over the 79 frames every body is
+above the map median within 4 m of its position, uuv1 +6.4 dB, uuv2 +8.0 dB, diver +7.0 dB, piling1 +5.5 dB, piling2 +7.3 dB, piling3 +7.3 dB, piling4 +7.6 dB, piling5 +7.6 dB, piling6 +6.4 dB, moored +15.1 dB.
+The echoes are there; the per frame maps are dominated by the sidelobe streaks of the strongest
+echo, which is the job of the later CLEAN and fusion stages, not of this dataset check.
 
 ### Open
 
@@ -213,6 +296,17 @@ near the cable points at the near-field channels (which could then be gated).
 An analytic forward model (free-field channel with a known replica, as in a simple matched-field
 demo) would make the technique work by construction; this package currently uses the FDTD only,
 by choice.
+
+After stage 0 the moving ferry question above is answered for the bistatic chain: the fixed
+lag ECA could not follow the delay drift inside a block, the per sample delays can (21 to 25 dB
+with the true waveform and track). What remains open is the blind reference: a delay and sum
+beam of the strain cable has too little signal to noise ratio at the low end of the band to
+cancel the direct path by more than 8 to 19 dB, and the AIS refinement is unreliable within
+about 30 m of the cable. Candidates for stage 1: a frequency weighted or iterative reference
+(cancel, re-beam on the cleaned data for the next pass), the hydrophones as a pressure
+reference, a constant velocity track fit across the whole run instead of per frame refinement,
+and gating the near field channels. Multistatic fusion, CLEAN extraction and tracking were
+deliberately not started.
 
 ## Examples and Workflows
 
@@ -311,9 +405,11 @@ of that specific grid/time step and should not be used as a model of real-water 
 
 ## Tests
 
-`pytest tests/harbor` (90+ tests; the GPU variants skip automatically without CuPy / a GPU).
+`pytest tests/harbor` (116 tests; the GPU variants skip automatically without CuPy / a GPU).
 They cover the environment and sensors, the FDTD runner (amplitude against the analytic
 Green's function, moveout, linearity, cache, shoreline), signatures, AIS, noise, the dataset
 mixer, detection and scoring, ship refinement and projection (including a synthetic scene in
 which only the data-adaptive projection removes a multipath ship), the occupancy filter,
-dispersion, and GPU / CPU parity.
+dispersion, GPU / CPU parity, the bistatic ECA on an analytic free field case (`eca_stage`
+against the inline code it replaced, depth and echo preservation, the Doppler variant on a
+moving ship, track smoothing, `run_bistatic` end to end) and the combined body gathers.

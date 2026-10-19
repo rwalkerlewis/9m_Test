@@ -1,0 +1,18 @@
+criterion: configuration 'blind' on the fine dataset: median echo contrast >= 10 dB and >= 50 % of frames within 5 m
+[coarse] output/harbor_bistatic/coarse/dataset.npz: 1.0 m grid, fs 3000 Hz, band 100 to 380 Hz, 200 channels
+[coarse] eca_oracle           median  71.2 m, p90  105.9 m, within 5 m  15 %, contrast  16.2 dB, 1.5 s: median  71.5 m, within 5 m   3 %, ship err 0.0 m, ECA direct 8.5 dB, echo loss 1.86 dB (184 s)
+[coarse] eca_data             median  84.3 m, p90  173.7 m, within 5 m   5 %, contrast  17.9 dB, 1.5 s: median  74.1 m, within 5 m   1 %, ship err 0.0 m, ECA direct 5.6 dB, echo loss 0.48 dB (192 s)
+[coarse] blind                median  80.8 m, p90  206.4 m, within 5 m   5 %, contrast  16.8 dB, 1.5 s: median  73.8 m, within 5 m   1 %, ship err 0.7 m, ECA direct 5.3 dB, echo loss 0.48 dB (246 s)
+[coarse] eca_oracle+doppler+smooth4 median   3.8 m, p90  163.2 m, within 5 m  54 %, contrast  14.8 dB, 1.5 s: median   1.9 m, within 5 m  86 %, ship err 0.0 m, ECA direct 25.1 dB, echo loss 1.59 dB (153 s)
+[coarse] eca_data+doppler+smooth4 median   6.1 m, p90  178.2 m, within 5 m  42 %, contrast  15.3 dB, 1.5 s: median   4.4 m, within 5 m  53 %, ship err 0.0 m, ECA direct 14.8 dB, echo loss 0.53 dB (158 s)
+[coarse] blind+doppler+smooth4 median   8.5 m, p90  206.4 m, within 5 m  32 %, contrast  15.2 dB, 1.5 s: median   6.9 m, within 5 m  37 %, ship err 0.7 m, ECA direct 11.0 dB, echo loss 0.49 dB (189 s)
+[fine] output/harbor_bistatic/fine/dataset.npz: 0.5 m grid, fs 6000 Hz, band 100 to 760 Hz, 200 channels
+[fine] eca_oracle           median  72.5 m, p90  103.2 m, within 5 m   0 %, contrast  18.9 dB, 1.5 s: median  72.5 m, within 5 m   0 %, ship err 0.0 m, ECA direct 3.5 dB, echo loss 0.90 dB (359 s)
+[fine] eca_data             median  89.8 m, p90  166.1 m, within 5 m   1 %, contrast  18.8 dB, 1.5 s: median  78.6 m, within 5 m   0 %, ship err 0.0 m, ECA direct 2.2 dB, echo loss 0.35 dB (368 s)
+[fine] blind                median  89.8 m, p90  206.1 m, within 5 m   5 %, contrast  18.2 dB, 1.5 s: median  79.2 m, within 5 m   0 %, ship err 0.8 m, ECA direct 2.8 dB, echo loss 0.31 dB (428 s)
+[fine] eca_oracle+doppler+smooth4 median   6.0 m, p90  227.7 m, within 5 m  48 %, contrast  14.9 dB, 1.5 s: median   4.3 m, within 5 m  53 %, ship err 0.0 m, ECA direct 21.3 dB, echo loss 0.62 dB (332 s)
+[fine] eca_data+doppler+smooth4 median   2.7 m, p90  204.5 m, within 5 m  68 %, contrast  16.0 dB, 1.5 s: median   2.1 m, within 5 m  72 %, ship err 0.0 m, ECA direct 12.2 dB, echo loss 0.33 dB (326 s)
+[fine] blind+doppler+smooth4 median   3.8 m, p90  207.0 m, within 5 m  58 %, contrast  16.1 dB, 1.5 s: median   3.6 m, within 5 m  54 %, ship err 0.8 m, ECA direct 11.0 dB, echo loss 0.32 dB (391 s)
+criterion: blind on fine: contrast 18.2 dB, within 5 m 5 % -> FAIL
+contrast lost per step (fine): eca_oracle -> eca_data +0.1 dB, eca_data -> blind +0.6 dB
+wrote output/harbor_bistatic/ablation/smooth4
