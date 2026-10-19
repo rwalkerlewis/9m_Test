@@ -1,0 +1,426 @@
+{
+  "criterion": {
+    "text": "kalman within 3 dB of oracle_exact (cable median depth) for every moving case and within 3 dB of oracle (fixed lags, refined positions) for every stationary case; oracle waveform throughout",
+    "margin_db": 3.0,
+    "pass": false
+  },
+  "track": {
+    "filter": "kalman",
+    "accel_m_s2": 0.05,
+    "meas_sigma_m": 1.0,
+    "gate_sigma": 5.0,
+    "fallback_speed_m_s": 0.3,
+    "ais_sigma": [
+      8.0,
+      0.2,
+      0.035
+    ]
+  },
+  "tracks": {
+    "oracle_exact": {
+      "exact_track": true
+    },
+    "oracle": {
+      "eca_doppler": false,
+      "track_filter": "none",
+      "exact_track": false
+    },
+    "kalman": {
+      "eca_doppler": true,
+      "track_filter": "kalman",
+      "exact_track": false
+    },
+    "kalman_a0.3": {
+      "eca_doppler": true,
+      "track_filter": "kalman",
+      "track_accel": 0.3,
+      "exact_track": false
+    },
+    "line4": {
+      "eca_doppler": true,
+      "track_filter": "line",
+      "track_smooth_s": 4.0,
+      "exact_track": false
+    },
+    "raw": {
+      "eca_doppler": true,
+      "track_filter": "none",
+      "fallback_speed": 0.0,
+      "exact_track": false
+    }
+  },
+  "cases": [
+    {
+      "range_target_m": 200.0,
+      "mode": "stationary",
+      "range_min_m": 193.00259065618783,
+      "oracle_exact": {
+        "cable_median_db": 32.867005274095575,
+        "cable_p10_db": 20.003784915557567,
+        "track_error_median_m": 0.0,
+        "track_error_max_m": 0.0,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": false,
+        "seconds": 47.03468680381775
+      },
+      "oracle": {
+        "cable_median_db": 34.35116023614736,
+        "cable_p10_db": 21.16215027199824,
+        "track_error_median_m": 0.5932110937840692,
+        "track_error_max_m": 0.5932110937840692,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": false,
+        "seconds": 52.84019327163696
+      },
+      "kalman": {
+        "cable_median_db": 34.35116023614736,
+        "cable_p10_db": 21.16215027199824,
+        "track_error_median_m": 0.5942088723981879,
+        "track_error_max_m": 0.5967640588527062,
+        "speed_median_m_s": 0.0008365902238561594,
+        "eca_doppler": true,
+        "seconds": 41.67341065406799
+      },
+      "kalman_a0.3": {
+        "cable_median_db": 34.35116023614736,
+        "cable_p10_db": 21.16215027199824,
+        "track_error_median_m": 0.5932116883881168,
+        "track_error_max_m": 0.5999216940399674,
+        "speed_median_m_s": 0.0001856981764254612,
+        "eca_doppler": true,
+        "seconds": 31.835930347442627
+      },
+      "line4": {
+        "cable_median_db": 34.35116023614736,
+        "cable_p10_db": 21.16215027199824,
+        "track_error_median_m": 0.5932110937839913,
+        "track_error_max_m": 0.593211093784147,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": true,
+        "seconds": 39.122236490249634
+      },
+      "raw": {
+        "cable_median_db": 33.21669473967441,
+        "cable_p10_db": 20.53053395167719,
+        "track_error_median_m": 0.5932110937840692,
+        "track_error_max_m": 0.5932110937840692,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": true,
+        "seconds": 70.09872436523438
+      },
+      "target_db": 34.35116023614736,
+      "kalman_minus_target_db": 0.0,
+      "pass": true
+    },
+    {
+      "range_target_m": 200.0,
+      "mode": "moving",
+      "range_min_m": 193.0000001559116,
+      "oracle_exact": {
+        "cable_median_db": 24.366745363206988,
+        "cable_p10_db": 17.26992267435007,
+        "track_error_median_m": 0.0,
+        "track_error_max_m": 0.0,
+        "speed_median_m_s": 3.807381917169522,
+        "eca_doppler": true,
+        "seconds": 51.84357810020447
+      },
+      "oracle": {
+        "cable_median_db": 5.467610783179287,
+        "cable_p10_db": 2.4855994843024045,
+        "track_error_median_m": 0.881276043662245,
+        "track_error_max_m": 1.1735125373968276,
+        "speed_median_m_s": 3.320537429668768,
+        "eca_doppler": false,
+        "seconds": 55.04225397109985
+      },
+      "kalman": {
+        "cable_median_db": 23.34128170458574,
+        "cable_p10_db": 16.209289720052645,
+        "track_error_median_m": 0.7513097798797846,
+        "track_error_max_m": 1.2653879777525892,
+        "speed_median_m_s": 3.5731275602670474,
+        "eca_doppler": true,
+        "seconds": 62.030373096466064
+      },
+      "kalman_a0.3": {
+        "cable_median_db": 24.16076402178136,
+        "cable_p10_db": 16.33580497535648,
+        "track_error_median_m": 0.7354990913439975,
+        "track_error_max_m": 0.858853433258441,
+        "speed_median_m_s": 3.6518374057688154,
+        "eca_doppler": true,
+        "seconds": 41.69759750366211
+      },
+      "line4": {
+        "cable_median_db": 21.93010240020287,
+        "cable_p10_db": 15.711992286263577,
+        "track_error_median_m": 0.7930152573656687,
+        "track_error_max_m": 0.9711137078901417,
+        "speed_median_m_s": 3.6678204181903413,
+        "eca_doppler": true,
+        "seconds": 63.246925830841064
+      },
+      "raw": {
+        "cable_median_db": 6.746784377473645,
+        "cable_p10_db": 5.908213489588745,
+        "track_error_median_m": 0.881276043662245,
+        "track_error_max_m": 1.1735125373968276,
+        "speed_median_m_s": 3.320537429668768,
+        "eca_doppler": true,
+        "seconds": 72.93541383743286
+      },
+      "target_db": 24.366745363206988,
+      "kalman_minus_target_db": -1.0254636586212484,
+      "pass": true
+    },
+    {
+      "range_target_m": 100.0,
+      "mode": "stationary",
+      "range_min_m": 99.00505037623081,
+      "oracle_exact": {
+        "cable_median_db": 45.071452101517124,
+        "cable_p10_db": 21.276958928555636,
+        "track_error_median_m": 0.0,
+        "track_error_max_m": 0.0,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": false,
+        "seconds": 29.351247310638428
+      },
+      "oracle": {
+        "cable_median_db": 47.26594700418505,
+        "cable_p10_db": 21.29315777054578,
+        "track_error_median_m": 0.6603672617866815,
+        "track_error_max_m": 0.6603672617866815,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": false,
+        "seconds": 28.697824954986572
+      },
+      "kalman": {
+        "cable_median_db": 47.090151181460975,
+        "cable_p10_db": 21.29315777054578,
+        "track_error_median_m": 0.6595556490896883,
+        "track_error_max_m": 0.6605536577152227,
+        "speed_median_m_s": 0.0011314308264408714,
+        "eca_doppler": true,
+        "seconds": 57.72319984436035
+      },
+      "kalman_a0.3": {
+        "cable_median_db": 47.090151181460975,
+        "cable_p10_db": 21.29315777054578,
+        "track_error_median_m": 0.6603498302995665,
+        "track_error_max_m": 0.6605246405810308,
+        "speed_median_m_s": 0.00027407415177576,
+        "eca_doppler": true,
+        "seconds": 48.02221131324768
+      },
+      "line4": {
+        "cable_median_db": 47.26594700418505,
+        "cable_p10_db": 21.29315777054578,
+        "track_error_median_m": 0.6603672617866546,
+        "track_error_max_m": 0.6603672617867167,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": true,
+        "seconds": 48.00406503677368
+      },
+      "raw": {
+        "cable_median_db": 44.220997350628544,
+        "cable_p10_db": 21.29145418607686,
+        "track_error_median_m": 0.6603672617866815,
+        "track_error_max_m": 0.6603672617866815,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": true,
+        "seconds": 32.40193223953247
+      },
+      "target_db": 47.26594700418505,
+      "kalman_minus_target_db": -0.17579582272407634,
+      "pass": true
+    },
+    {
+      "range_target_m": 100.0,
+      "mode": "moving",
+      "range_min_m": 99.00000030394882,
+      "oracle_exact": {
+        "cable_median_db": 24.64828861470233,
+        "cable_p10_db": 20.425771339467122,
+        "track_error_median_m": 0.0,
+        "track_error_max_m": 0.0,
+        "speed_median_m_s": 3.8073819171695504,
+        "eca_doppler": true,
+        "seconds": 75.96788692474365
+      },
+      "oracle": {
+        "cable_median_db": 3.5652856184336783,
+        "cable_p10_db": 2.176155811679737,
+        "track_error_median_m": 0.4356466582744603,
+        "track_error_max_m": 1.305724948046193,
+        "speed_median_m_s": 3.418496287371522,
+        "eca_doppler": false,
+        "seconds": 42.17422914505005
+      },
+      "kalman": {
+        "cable_median_db": 21.10457000265278,
+        "cable_p10_db": 17.076200899661078,
+        "track_error_median_m": 0.5352191873144976,
+        "track_error_max_m": 0.9576658401202347,
+        "speed_median_m_s": 3.6524055320594107,
+        "eca_doppler": true,
+        "seconds": 66.33731079101562
+      },
+      "kalman_a0.3": {
+        "cable_median_db": 24.519673803238256,
+        "cable_p10_db": 20.643229541387356,
+        "track_error_median_m": 0.4447852506997729,
+        "track_error_max_m": 0.505201848973965,
+        "speed_median_m_s": 3.877859977166941,
+        "eca_doppler": true,
+        "seconds": 67.20892643928528
+      },
+      "line4": {
+        "cable_median_db": 23.9449698403319,
+        "cable_p10_db": 19.974843880827486,
+        "track_error_median_m": 0.5253977864681314,
+        "track_error_max_m": 0.6576548209016342,
+        "speed_median_m_s": 3.743379214913465,
+        "eca_doppler": true,
+        "seconds": 46.793341875076294
+      },
+      "raw": {
+        "cable_median_db": 12.211800827619014,
+        "cable_p10_db": 10.660519343614592,
+        "track_error_median_m": 0.4356466582744603,
+        "track_error_max_m": 1.305724948046193,
+        "speed_median_m_s": 3.418496287371522,
+        "eca_doppler": true,
+        "seconds": 53.90389108657837
+      },
+      "target_db": 24.64828861470233,
+      "kalman_minus_target_db": -3.5437186120495525,
+      "pass": false
+    },
+    {
+      "range_target_m": 30.0,
+      "mode": "stationary",
+      "range_min_m": 29.017236257093817,
+      "oracle_exact": {
+        "cable_median_db": 50.9955324637378,
+        "cable_p10_db": 30.138249690247314,
+        "track_error_median_m": 0.0,
+        "track_error_max_m": 0.0,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": false,
+        "seconds": 58.76530480384827
+      },
+      "oracle": {
+        "cable_median_db": 37.428669772171844,
+        "cable_p10_db": 26.945224420350186,
+        "track_error_median_m": 5.602158249534766,
+        "track_error_max_m": 6.448519130152532,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": false,
+        "seconds": 40.22670793533325
+      },
+      "kalman": {
+        "cable_median_db": 37.5006714258967,
+        "cable_p10_db": 26.10359182932643,
+        "track_error_median_m": 5.850970221368785,
+        "track_error_max_m": 5.929999072879961,
+        "speed_median_m_s": 0.018985359840015543,
+        "eca_doppler": true,
+        "seconds": 29.98780131340027
+      },
+      "kalman_a0.3": {
+        "cable_median_db": 37.428557035504724,
+        "cable_p10_db": 26.15626812175297,
+        "track_error_median_m": 5.8435263190672115,
+        "track_error_max_m": 5.941528156180284,
+        "speed_median_m_s": 0.020928700548108574,
+        "eca_doppler": true,
+        "seconds": 46.29990077018738
+      },
+      "line4": {
+        "cable_median_db": 37.41091965371005,
+        "cable_p10_db": 26.131628087590876,
+        "track_error_median_m": 5.849611686652377,
+        "track_error_max_m": 5.991237356300242,
+        "speed_median_m_s": 0.07272727272720658,
+        "eca_doppler": true,
+        "seconds": 58.10890984535217
+      },
+      "raw": {
+        "cable_median_db": 6.201769453414952,
+        "cable_p10_db": 5.897608820756334,
+        "track_error_median_m": 5.602158249534766,
+        "track_error_max_m": 6.448519130152532,
+        "speed_median_m_s": 0.0,
+        "eca_doppler": true,
+        "seconds": 61.49836611747742
+      },
+      "target_db": 37.428669772171844,
+      "kalman_minus_target_db": 0.07200165372485401,
+      "pass": true
+    },
+    {
+      "range_target_m": 30.0,
+      "mode": "moving",
+      "range_min_m": 29.000001037618315,
+      "oracle_exact": {
+        "cable_median_db": 21.46665005613671,
+        "cable_p10_db": 19.608956771106193,
+        "track_error_median_m": 0.0,
+        "track_error_max_m": 0.0,
+        "speed_median_m_s": 3.8073819171695504,
+        "eca_doppler": true,
+        "seconds": 36.80631399154663
+      },
+      "oracle": {
+        "cable_median_db": 2.2508012115848413,
+        "cable_p10_db": 2.101473943090699,
+        "track_error_median_m": 0.4959784458435663,
+        "track_error_max_m": 0.9599457589868616,
+        "speed_median_m_s": 3.315682697062645,
+        "eca_doppler": false,
+        "seconds": 47.629156827926636
+      },
+      "kalman": {
+        "cable_median_db": 18.71271885935321,
+        "cable_p10_db": 17.365135679691,
+        "track_error_median_m": 0.5093834974774513,
+        "track_error_max_m": 0.9333361384500245,
+        "speed_median_m_s": 3.6007561908684664,
+        "eca_doppler": true,
+        "seconds": 69.99537444114685
+      },
+      "kalman_a0.3": {
+        "cable_median_db": 21.515135040163237,
+        "cable_p10_db": 19.394855073946303,
+        "track_error_median_m": 0.3914582484074309,
+        "track_error_max_m": 0.5337703963581565,
+        "speed_median_m_s": 3.7192458507604806,
+        "eca_doppler": true,
+        "seconds": 68.06987118721008
+      },
+      "line4": {
+        "cable_median_db": 20.299135476663004,
+        "cable_p10_db": 18.662552477391444,
+        "track_error_median_m": 0.43579118456011784,
+        "track_error_max_m": 0.6643982273215716,
+        "speed_median_m_s": 3.7522060784079865,
+        "eca_doppler": true,
+        "seconds": 74.7580201625824
+      },
+      "raw": {
+        "cable_median_db": 12.360443154544438,
+        "cable_p10_db": 11.795118560557837,
+        "track_error_median_m": 0.4959784458435663,
+        "track_error_max_m": 0.9599457589868616,
+        "speed_median_m_s": 3.315682697062645,
+        "eca_doppler": true,
+        "seconds": 39.60060739517212
+      },
+      "target_db": 21.46665005613671,
+      "kalman_minus_target_db": -2.753931196783501,
+      "pass": true
+    }
+  ]
+}

@@ -1,0 +1,379 @@
+{
+  "criterion": {
+    "text": "at least one blind mode reaches a median ECA depth of 20 dB over the live cable channels for the stationary source at both 193 m and 99 m",
+    "depth_db_min": 20.0,
+    "cases": [
+      "stationary 193 m",
+      "stationary 99 m"
+    ],
+    "blind_modes": [
+      "data",
+      "hydrophones",
+      "equalised",
+      "snr",
+      "mrc",
+      "iterated"
+    ],
+    "pass": true,
+    "passing_modes": [
+      "mrc"
+    ]
+  },
+  "best_mode_rule": "blind mode with the highest mean of the cable median depth over the six cases (moving cases with eca_doppler and the Kalman track)",
+  "modes": {
+    "data": {
+      "reference": "data",
+      "ref_mode": "beam"
+    },
+    "hydrophones": {
+      "reference": "data",
+      "ref_mode": "beam",
+      "ref_channels": "hydrophones"
+    },
+    "equalised": {
+      "reference": "data",
+      "ref_mode": "equalised"
+    },
+    "snr": {
+      "reference": "data",
+      "ref_mode": "snr"
+    },
+    "mrc": {
+      "reference": "data",
+      "ref_mode": "mrc"
+    },
+    "iterated": {
+      "reference": "data",
+      "ref_mode": "iterated"
+    },
+    "oracle": {
+      "reference": "oracle"
+    }
+  },
+  "band_hz": [
+    100.0,
+    760.0
+  ],
+  "simulated_time_s": 10.0,
+  "track": {
+    "filter": "kalman",
+    "accel_m_s2": 0.05,
+    "meas_sigma_m": 1.0,
+    "fallback_speed_m_s": 0.3
+  },
+  "cases": [
+    {
+      "range_target_m": 200.0,
+      "mode": "stationary",
+      "range_min_m": 193.00259065618783,
+      "eca_doppler": false,
+      "track_error_median_m": 0.5942088723981879,
+      "refined_error_median_m": 0.5932110937840692,
+      "data": {
+        "cable_median_db": 8.785896818593713,
+        "cable_p10_db": 2.867980099169467,
+        "coherence_band_mean": 0.8961106052159556,
+        "seconds": 61.05817484855652
+      },
+      "hydrophones": {
+        "cable_median_db": 7.500087377445135,
+        "cable_p10_db": 1.7686622312041063,
+        "coherence_band_mean": 0.9015970548818943,
+        "seconds": 61.013795614242554
+      },
+      "equalised": {
+        "cable_median_db": 15.557247417557061,
+        "cable_p10_db": 12.886568875652987,
+        "coherence_band_mean": 0.9192327405759456,
+        "seconds": 46.605419874191284
+      },
+      "snr": {
+        "cable_median_db": 14.428784125442146,
+        "cable_p10_db": 4.367923570622546,
+        "coherence_band_mean": 0.8594621804981029,
+        "seconds": 87.74554371833801
+      },
+      "mrc": {
+        "cable_median_db": 20.489815277928365,
+        "cable_p10_db": 12.192501813531688,
+        "coherence_band_mean": 0.977743680216977,
+        "seconds": 95.8477873802185
+      },
+      "iterated": {
+        "cable_median_db": 8.202005384980312,
+        "cable_p10_db": 2.9401217650448257,
+        "coherence_band_mean": 0.8835709972312714,
+        "seconds": 124.1017050743103
+      },
+      "oracle": {
+        "cable_median_db": 34.35116023614736,
+        "cable_p10_db": 21.16215027199824,
+        "coherence_band_mean": 1.0,
+        "seconds": 26.77845311164856
+      }
+    },
+    {
+      "range_target_m": 200.0,
+      "mode": "moving",
+      "range_min_m": 193.0000001559116,
+      "eca_doppler": true,
+      "track_error_median_m": 0.7513097798797846,
+      "refined_error_median_m": 0.881276043662245,
+      "data": {
+        "cable_median_db": 9.183164455434863,
+        "cable_p10_db": 3.520144899896902,
+        "coherence_band_mean": 0.652859578783669,
+        "seconds": 72.67023825645447
+      },
+      "hydrophones": {
+        "cable_median_db": 6.0827114703952025,
+        "cable_p10_db": 2.045780653461211,
+        "coherence_band_mean": 0.4808987503088856,
+        "seconds": 62.697283029556274
+      },
+      "equalised": {
+        "cable_median_db": 18.033558661577562,
+        "cable_p10_db": 15.45009348472966,
+        "coherence_band_mean": 0.7339107328115808,
+        "seconds": 37.68632888793945
+      },
+      "snr": {
+        "cable_median_db": 14.847556944239336,
+        "cable_p10_db": 4.707622408915198,
+        "coherence_band_mean": 0.6453165577716533,
+        "seconds": 144.15275311470032
+      },
+      "mrc": {
+        "cable_median_db": 18.532333154549832,
+        "cable_p10_db": 15.281031880002281,
+        "coherence_band_mean": 0.6577835464186844,
+        "seconds": 91.44640278816223
+      },
+      "iterated": {
+        "cable_median_db": 8.629445627481921,
+        "cable_p10_db": 3.464682175853691,
+        "coherence_band_mean": 0.6430035123123589,
+        "seconds": 149.59955191612244
+      },
+      "oracle": {
+        "cable_median_db": 23.34128170458574,
+        "cable_p10_db": 16.209289720052645,
+        "coherence_band_mean": 1.0,
+        "seconds": 69.0256917476654
+      }
+    },
+    {
+      "range_target_m": 100.0,
+      "mode": "stationary",
+      "range_min_m": 99.00505037623081,
+      "eca_doppler": false,
+      "track_error_median_m": 0.6595556490896883,
+      "refined_error_median_m": 0.6603672617866815,
+      "data": {
+        "cable_median_db": 18.709863297235703,
+        "cable_p10_db": 7.9627417960988796,
+        "coherence_band_mean": 0.9413206359898332,
+        "seconds": 36.568437337875366
+      },
+      "hydrophones": {
+        "cable_median_db": 8.549785740895082,
+        "cable_p10_db": 4.1516529551455355,
+        "coherence_band_mean": 0.9111001764326672,
+        "seconds": 36.170393228530884
+      },
+      "equalised": {
+        "cable_median_db": 16.71469819516755,
+        "cable_p10_db": 14.55427412737286,
+        "coherence_band_mean": 0.9395664888397512,
+        "seconds": 55.219393730163574
+      },
+      "snr": {
+        "cable_median_db": 16.297329448253997,
+        "cable_p10_db": 11.780157923779193,
+        "coherence_band_mean": 0.9168424744796329,
+        "seconds": 93.51574516296387
+      },
+      "mrc": {
+        "cable_median_db": 21.281742521409445,
+        "cable_p10_db": 17.22294810728148,
+        "coherence_band_mean": 0.9673894625767299,
+        "seconds": 101.29001188278198
+      },
+      "iterated": {
+        "cable_median_db": 15.963169236406657,
+        "cable_p10_db": 7.6747701021098855,
+        "coherence_band_mean": 0.9299115166460568,
+        "seconds": 94.78106832504272
+      },
+      "oracle": {
+        "cable_median_db": 47.090151181460975,
+        "cable_p10_db": 21.29315777054578,
+        "coherence_band_mean": 1.0,
+        "seconds": 53.086777448654175
+      }
+    },
+    {
+      "range_target_m": 100.0,
+      "mode": "moving",
+      "range_min_m": 99.00000030394882,
+      "eca_doppler": true,
+      "track_error_median_m": 0.5352191873144976,
+      "refined_error_median_m": 0.4356466582744603,
+      "data": {
+        "cable_median_db": 10.612830309148613,
+        "cable_p10_db": 7.9801731690509765,
+        "coherence_band_mean": 0.8134566841984385,
+        "seconds": 72.95171594619751
+      },
+      "hydrophones": {
+        "cable_median_db": 8.932254906563514,
+        "cable_p10_db": 8.367531668154916,
+        "coherence_band_mean": 0.7892919530661339,
+        "seconds": 72.42127823829651
+      },
+      "equalised": {
+        "cable_median_db": 15.818104938199848,
+        "cable_p10_db": 14.169131155149424,
+        "coherence_band_mean": 0.8816711191243732,
+        "seconds": 84.925457239151
+      },
+      "snr": {
+        "cable_median_db": 9.438044982741998,
+        "cable_p10_db": 7.700351958144906,
+        "coherence_band_mean": 0.7889260152188712,
+        "seconds": 85.46408343315125
+      },
+      "mrc": {
+        "cable_median_db": 12.226172708810882,
+        "cable_p10_db": 11.19386898657056,
+        "coherence_band_mean": 0.8650492126434245,
+        "seconds": 68.08639693260193
+      },
+      "iterated": {
+        "cable_median_db": 9.058009350681154,
+        "cable_p10_db": 7.145782498601613,
+        "coherence_band_mean": 0.8011866289646734,
+        "seconds": 93.86877346038818
+      },
+      "oracle": {
+        "cable_median_db": 21.10457000265278,
+        "cable_p10_db": 17.076200899661078,
+        "coherence_band_mean": 1.0,
+        "seconds": 28.123197078704834
+      }
+    },
+    {
+      "range_target_m": 30.0,
+      "mode": "stationary",
+      "range_min_m": 29.017236257093817,
+      "eca_doppler": false,
+      "track_error_median_m": 5.850970221368785,
+      "refined_error_median_m": 5.602158249534766,
+      "data": {
+        "cable_median_db": 11.797419047603853,
+        "cable_p10_db": 1.491285235065959,
+        "coherence_band_mean": 0.9656829844581005,
+        "seconds": 31.8150053024292
+      },
+      "hydrophones": {
+        "cable_median_db": 3.8656628443195498,
+        "cable_p10_db": 2.570480730845856,
+        "coherence_band_mean": 0.8032625037985737,
+        "seconds": 21.547903776168823
+      },
+      "equalised": {
+        "cable_median_db": 10.610176561381657,
+        "cable_p10_db": 2.4499395082366386,
+        "coherence_band_mean": 0.9249594654569571,
+        "seconds": 40.323082447052
+      },
+      "snr": {
+        "cable_median_db": 15.273043017471203,
+        "cable_p10_db": 3.745995660093789,
+        "coherence_band_mean": 0.9559293776957193,
+        "seconds": 59.95947504043579
+      },
+      "mrc": {
+        "cable_median_db": 21.702147402992594,
+        "cable_p10_db": 2.2644166785326143,
+        "coherence_band_mean": 0.9784485945334054,
+        "seconds": 50.6773943901062
+      },
+      "iterated": {
+        "cable_median_db": 10.802291740765913,
+        "cable_p10_db": 1.4261484523199266,
+        "coherence_band_mean": 0.9494485313212669,
+        "seconds": 73.37416863441467
+      },
+      "oracle": {
+        "cable_median_db": 37.5006714258967,
+        "cable_p10_db": 26.10359182932643,
+        "coherence_band_mean": 1.0,
+        "seconds": 16.11438012123108
+      }
+    },
+    {
+      "range_target_m": 30.0,
+      "mode": "moving",
+      "range_min_m": 29.000001037618315,
+      "eca_doppler": true,
+      "track_error_median_m": 0.5093834974774513,
+      "refined_error_median_m": 0.4959784458435663,
+      "data": {
+        "cable_median_db": 10.166797812220967,
+        "cable_p10_db": 9.05837403252054,
+        "coherence_band_mean": 0.7391556256351888,
+        "seconds": 43.546353578567505
+      },
+      "hydrophones": {
+        "cable_median_db": 10.664791445133655,
+        "cable_p10_db": 9.474029458161578,
+        "coherence_band_mean": 0.8928534159771244,
+        "seconds": 39.20421361923218
+      },
+      "equalised": {
+        "cable_median_db": 14.536288270606454,
+        "cable_p10_db": 13.504900216789968,
+        "coherence_band_mean": 0.7805673769957584,
+        "seconds": 31.15654230117798
+      },
+      "snr": {
+        "cable_median_db": 9.30912436104776,
+        "cable_p10_db": 8.443099414528547,
+        "coherence_band_mean": 0.7288352389013737,
+        "seconds": 84.43889117240906
+      },
+      "mrc": {
+        "cable_median_db": 9.905181299587587,
+        "cable_p10_db": 8.959861721217914,
+        "coherence_band_mean": 0.761235579920192,
+        "seconds": 84.42761874198914
+      },
+      "iterated": {
+        "cable_median_db": 9.240129345821327,
+        "cable_p10_db": 8.216069222862949,
+        "coherence_band_mean": 0.7364036476825925,
+        "seconds": 85.89664649963379
+      },
+      "oracle": {
+        "cable_median_db": 18.71271885935321,
+        "cable_p10_db": 17.365135679691,
+        "coherence_band_mean": 1.0,
+        "seconds": 36.33532929420471
+      }
+    }
+  ],
+  "mean_depth_by_mode_db": {
+    "data": 11.542661956706285,
+    "hydrophones": 7.599215630792024,
+    "equalised": 15.211679007415022,
+    "snr": 13.265647146532743,
+    "mrc": 17.356232060879783,
+    "iterated": 10.31584178102288
+  },
+  "best_mode": "mrc",
+  "best_mode_config": {
+    "reference": "data",
+    "ref_mode": "mrc"
+  }
+}

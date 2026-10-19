@@ -1,0 +1,45 @@
+criterion: kalman within 3 dB of oracle_exact (cable median depth) for every moving case and within 3 dB of oracle (fixed lags, refined positions) for every stationary case; oracle waveform throughout
+stationary   193 m  oracle_exact depth  32.9 dB (p10  20.0)  track err  0.0 m (max  0.0)  speed 0.00 m/s  (47 s)
+stationary   193 m  oracle       depth  34.4 dB (p10  21.2)  track err  0.6 m (max  0.6)  speed 0.00 m/s  (53 s)
+stationary   193 m  kalman       depth  34.4 dB (p10  21.2)  track err  0.6 m (max  0.6)  speed 0.00 m/s  (42 s)
+stationary   193 m  kalman_a0.3  depth  34.4 dB (p10  21.2)  track err  0.6 m (max  0.6)  speed 0.00 m/s  (32 s)
+stationary   193 m  line4        depth  34.4 dB (p10  21.2)  track err  0.6 m (max  0.6)  speed 0.00 m/s  (39 s)
+stationary   193 m  raw          depth  33.2 dB (p10  20.5)  track err  0.6 m (max  0.6)  speed 0.00 m/s  (70 s)
+  -> kalman 34.4 dB against the target 34.4 dB: PASS
+moving       193 m  oracle_exact depth  24.4 dB (p10  17.3)  track err  0.0 m (max  0.0)  speed 3.81 m/s  (52 s)
+moving       193 m  oracle       depth   5.5 dB (p10   2.5)  track err  0.9 m (max  1.2)  speed 3.32 m/s  (55 s)
+moving       193 m  kalman       depth  23.3 dB (p10  16.2)  track err  0.8 m (max  1.3)  speed 3.57 m/s  (62 s)
+moving       193 m  kalman_a0.3  depth  24.2 dB (p10  16.3)  track err  0.7 m (max  0.9)  speed 3.65 m/s  (42 s)
+moving       193 m  line4        depth  21.9 dB (p10  15.7)  track err  0.8 m (max  1.0)  speed 3.67 m/s  (63 s)
+moving       193 m  raw          depth   6.7 dB (p10   5.9)  track err  0.9 m (max  1.2)  speed 3.32 m/s  (73 s)
+  -> kalman 23.3 dB against the target 24.4 dB: PASS
+stationary    99 m  oracle_exact depth  45.1 dB (p10  21.3)  track err  0.0 m (max  0.0)  speed 0.00 m/s  (29 s)
+stationary    99 m  oracle       depth  47.3 dB (p10  21.3)  track err  0.7 m (max  0.7)  speed 0.00 m/s  (29 s)
+stationary    99 m  kalman       depth  47.1 dB (p10  21.3)  track err  0.7 m (max  0.7)  speed 0.00 m/s  (58 s)
+stationary    99 m  kalman_a0.3  depth  47.1 dB (p10  21.3)  track err  0.7 m (max  0.7)  speed 0.00 m/s  (48 s)
+stationary    99 m  line4        depth  47.3 dB (p10  21.3)  track err  0.7 m (max  0.7)  speed 0.00 m/s  (48 s)
+stationary    99 m  raw          depth  44.2 dB (p10  21.3)  track err  0.7 m (max  0.7)  speed 0.00 m/s  (32 s)
+  -> kalman 47.1 dB against the target 47.3 dB: PASS
+moving        99 m  oracle_exact depth  24.6 dB (p10  20.4)  track err  0.0 m (max  0.0)  speed 3.81 m/s  (76 s)
+moving        99 m  oracle       depth   3.6 dB (p10   2.2)  track err  0.4 m (max  1.3)  speed 3.42 m/s  (42 s)
+moving        99 m  kalman       depth  21.1 dB (p10  17.1)  track err  0.5 m (max  1.0)  speed 3.65 m/s  (66 s)
+moving        99 m  kalman_a0.3  depth  24.5 dB (p10  20.6)  track err  0.4 m (max  0.5)  speed 3.88 m/s  (67 s)
+moving        99 m  line4        depth  23.9 dB (p10  20.0)  track err  0.5 m (max  0.7)  speed 3.74 m/s  (47 s)
+moving        99 m  raw          depth  12.2 dB (p10  10.7)  track err  0.4 m (max  1.3)  speed 3.42 m/s  (54 s)
+  -> kalman 21.1 dB against the target 24.6 dB: FAIL
+stationary    29 m  oracle_exact depth  51.0 dB (p10  30.1)  track err  0.0 m (max  0.0)  speed 0.00 m/s  (59 s)
+stationary    29 m  oracle       depth  37.4 dB (p10  26.9)  track err  5.6 m (max  6.4)  speed 0.00 m/s  (40 s)
+stationary    29 m  kalman       depth  37.5 dB (p10  26.1)  track err  5.9 m (max  5.9)  speed 0.02 m/s  (30 s)
+stationary    29 m  kalman_a0.3  depth  37.4 dB (p10  26.2)  track err  5.8 m (max  5.9)  speed 0.02 m/s  (46 s)
+stationary    29 m  line4        depth  37.4 dB (p10  26.1)  track err  5.8 m (max  6.0)  speed 0.07 m/s  (58 s)
+stationary    29 m  raw          depth   6.2 dB (p10   5.9)  track err  5.6 m (max  6.4)  speed 0.00 m/s  (61 s)
+  -> kalman 37.5 dB against the target 37.4 dB: PASS
+moving        29 m  oracle_exact depth  21.5 dB (p10  19.6)  track err  0.0 m (max  0.0)  speed 3.81 m/s  (37 s)
+moving        29 m  oracle       depth   2.3 dB (p10   2.1)  track err  0.5 m (max  1.0)  speed 3.32 m/s  (48 s)
+moving        29 m  kalman       depth  18.7 dB (p10  17.4)  track err  0.5 m (max  0.9)  speed 3.60 m/s  (70 s)
+moving        29 m  kalman_a0.3  depth  21.5 dB (p10  19.4)  track err  0.4 m (max  0.5)  speed 3.72 m/s  (68 s)
+moving        29 m  line4        depth  20.3 dB (p10  18.7)  track err  0.4 m (max  0.7)  speed 3.75 m/s  (75 s)
+moving        29 m  raw          depth  12.4 dB (p10  11.8)  track err  0.5 m (max  1.0)  speed 3.32 m/s  (40 s)
+  -> kalman 18.7 dB against the target 21.5 dB: PASS
+criterion: FAIL (5 of 6 cases)
+wrote output/harbor_track
