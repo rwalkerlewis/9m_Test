@@ -122,6 +122,10 @@ def fd2_cfl_factor(coeffs: np.ndarray) -> float:
 # Configuration
 # -----------------------------------------------------------------------
 
+PRECISIONS = ("float64", "float32")
+KERNELS = ("reference", "fused", "auto")
+
+
 @dataclass
 class FDTDConfig:
     """User-tunable simulation parameters.
@@ -150,6 +154,14 @@ class FDTDConfig:
         Spatial finite-difference order (2, 4, 6, 8, …).  Higher orders
         have wider stencils and tighter CFL limits but less numerical
         dispersion.
+    precision : str
+        ``"float64"`` (default) or ``"float32"`` for the pressure fields, ``C2`` and ``sigma``
+        (traces are returned as float64 either way).
+    kernel : str
+        ``"reference"``: the array code below (NumPy or CuPy; the only path under MPI).
+        ``"fused"``: one ``cupy.RawKernel`` launch per step (:mod:`acoustic_sim.fdtd_cuda`;
+        single process on the GPU; falls back to the reference path elsewhere).
+        ``"auto"``: fused whenever it is available.
     """
 
     total_time: float = 0.3
@@ -162,6 +174,18 @@ class FDTDConfig:
     source_amplitude: float = 1.0
     use_cuda: bool = False
     fd_order: int = 2
+    precision: str = "float64"
+    kernel: str = "reference"
+
+    def __post_init__(self) -> None:
+        if self.precision not in PRECISIONS:
+            raise ValueError(f"precision must be one of {PRECISIONS}, got {self.precision!r}")
+        if self.kernel not in KERNELS:
+            raise ValueError(f"kernel must be one of {KERNELS}, got {self.kernel!r}")
+
+    @property
+    def dtype(self):
+        return np.float32 if self.precision == "float32" else np.float64
 
 
 # -----------------------------------------------------------------------
@@ -271,16 +295,22 @@ class FDTDSolver:
         g_bot = self.row_end + self._ghost_bot
         c_local = c_global[g_top:g_bot, :]
 
+        # -- Precision and time step kernel ---------------------------------
+        self.precision = config.precision
+        self._dtype = np.dtype(config.dtype)
+        self.kernel = self._resolve_kernel(config.kernel)
+        self._fk = None                      # fused stepper, created at the first step
+
         # -- Squared Courant number -----------------------------------------
-        self.C2 = xp.asarray((c_local * self.dt / dx) ** 2)
+        self.C2 = xp.asarray(((c_local * self.dt / dx) ** 2).astype(self._dtype))
 
         # -- Damping (built on full grid, then sliced) ----------------------
         sigma_global = self._build_damping_global(ny, nx)
-        self.sigma = xp.asarray(sigma_global[g_top:g_bot, :])
+        self.sigma = xp.asarray(sigma_global[g_top:g_bot, :].astype(self._dtype))
 
         # -- Pressure fields (local, on device if CUDA) --------------------
-        self.p_now = xp.zeros((self._pad_ny, nx), dtype=np.float64)
-        self.p_prev = xp.zeros((self._pad_ny, nx), dtype=np.float64)
+        self.p_now = xp.zeros((self._pad_ny, nx), dtype=self._dtype)
+        self.p_prev = xp.zeros((self._pad_ny, nx), dtype=self._dtype)
 
         # -- Receiver pre-computation (global indices → local) -------------
         self._precompute_receivers(model, dx)
@@ -290,6 +320,12 @@ class FDTDSolver:
             self.traces = np.zeros((receivers.shape[0], self.n_steps))
         else:
             self.traces = None
+
+    def _resolve_kernel(self, requested: str) -> str:
+        """The step implementation actually used: the fused CUDA kernel needs CuPy and a single process."""
+        if requested in ("fused", "auto") and self.is_cuda and not self.use_mpi:
+            return "fused"
+        return "reference"
 
     # ------------------------------------------------------------------
     # Damping
@@ -471,6 +507,9 @@ class FDTDSolver:
 
     def _step(self, n: int) -> None:
         """Advance one timestep on the local subdomain."""
+        if self.kernel == "fused":
+            self._step_fused(n)
+            return
         xp = self.xp
         M = self._M
         coeffs = self._fd_coeffs
@@ -525,6 +564,40 @@ class FDTDSolver:
         self.p_now = p_new
 
         self._sample_receivers(n)
+
+    # ------------------------------------------------------------------
+    # Fused CUDA step (kernel="fused")
+    # ------------------------------------------------------------------
+
+    def _fused_mask(self):
+        """Pressure release mask ``(ny, nx)`` multiplied into every new field, or None (subclasses)."""
+        return None
+
+    def _fused_hooks(self) -> list:
+        """Callables ``(p_new, n)`` run on the device after every fused update (subclasses)."""
+        return []
+
+    def _make_fused(self):
+        from acoustic_sim.fdtd_cuda import FusedFDTD
+
+        fk = FusedFDTD(
+            self._fd_coeffs, (self.p_now, self.p_prev), self.C2, self.sigma, self._fused_mask(), [self.source],
+            (self._recv_iy, self._recv_ix, self._recv_wx, self._recv_wy), self.traces, self.n_steps, self.dt,
+            float(self.model.x[0]), float(self.model.y[0]), float(self.model.dx), self.cfg.source_amplitude, self._dtype,
+        )
+        fk.post_hooks = list(self._fused_hooks())
+        return fk
+
+    def _step_fused(self, n: int) -> None:
+        if self._fk is None:
+            self._fk = self._make_fused()
+        self.p_now, self.p_prev = self._fk.step(self.p_now, self.p_prev, n)
+        self._steps_done = n + 1
+
+    def _finish_traces(self) -> None:
+        """Complete ``self.traces`` (the fused path samples the last field and flushes its device buffer)."""
+        if self._fk is not None:
+            self._fk.finish(self.p_now, getattr(self, "_steps_done", 0))
 
     # ------------------------------------------------------------------
     # Gather full field (for snapshots)
@@ -590,6 +663,7 @@ class FDTDSolver:
         if verbose and is_root:
             print(f"  step {self.n_steps:>6d} / {self.n_steps}  (done)")
 
+        self._finish_traces()
         return {
             "traces": self.traces if is_root else np.empty((0, 0)),
             "dt": self.dt,

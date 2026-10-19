@@ -23,6 +23,14 @@ from acoustic_sim.harbor.sensors import SensorLayout
 from acoustic_sim.sources import CustomTrajectorySource, StaticSource
 
 
+BODY_MASKS = ("auto", "host", "device")
+
+# Fields that do not change the result (excluded from the cache key) and fields added after the
+# caches of the existing datasets were built (excluded while at their default, so those keys stay valid).
+_KEY_EXCLUDE = ("use_cuda", "kernel", "body_masks")
+_KEY_DEFAULTS = {"precision": "float64"}
+
+
 @dataclass
 class HarborFDTDConfig:
     """FDTD settings for harbor runs.
@@ -49,6 +57,18 @@ class HarborFDTDConfig:
         with ``mean_sigma = shore_loss_max / 3``; the defaults give R ≈ 0.5
         (measured 0.51).
         Set ``shore_loss_max = 0`` for perfectly reflecting quays.
+    precision : str
+        ``"float64"`` (default) or ``"float32"`` fields (:class:`~acoustic_sim.fdtd.FDTDConfig`).
+        Part of the cache key.
+    kernel : str
+        ``"reference"`` (the array code), ``"fused"`` (one CUDA kernel per step, GPU only) or
+        ``"auto"``.  Not part of the cache key: both kernels compute the same traces (to 1e-13
+        relative in float64).
+    body_masks : str
+        How moving bodies are imposed with the fused kernel: ``"host"`` evaluates
+        :func:`~acoustic_sim.harbor.scatterer.body_factor` on the CPU every step (the reference),
+        ``"device"`` evaluates the same mask in a CUDA kernel from a pose table built once per run,
+        ``"auto"`` picks ``"device"`` with the fused kernel.  Not part of the cache key.
     """
 
     fs: float = 600.0
@@ -60,6 +80,13 @@ class HarborFDTDConfig:
     shore_loss_width: float = 40.0
     shore_loss_max: float = 0.15
     use_cuda: bool = False
+    precision: str = "float64"
+    kernel: str = "reference"
+    body_masks: str = "auto"
+
+    def __post_init__(self) -> None:
+        if self.body_masks not in BODY_MASKS:
+            raise ValueError(f"body_masks must be one of {BODY_MASKS}, got {self.body_masks!r}")
 
     @property
     def dt(self) -> float:
@@ -125,13 +152,34 @@ class HarborFDTDSolver(FDTDSolver):
             snapshot_interval=0,
             use_cuda=hcfg.use_cuda,
             fd_order=hcfg.fd_order,
+            precision=hcfg.precision,
+            kernel=hcfg.kernel,
         )
         super().__init__(env.model, fcfg, source, receivers)
         assert self.n_steps == hcfg.n_steps
 
         g_top = self.row_start - self._ghost_top
         g_bot = self.row_end + self._ghost_bot
-        self._water_local = self.xp.asarray(env.water[g_top:g_bot, :].astype(np.float64))
+        self._water_local = self.xp.asarray(env.water[g_top:g_bot, :].astype(self._dtype))
+        self.body_masks = "host"
+        if self.kernel == "fused" and hcfg.body_masks in ("auto", "device"):
+            self.body_masks = "device"
+
+    # -- fused kernel hooks -------------------------------------------------
+
+    def _fused_mask(self):
+        return self._water_local
+
+    def _fused_hooks(self) -> list:
+        if not self._scatterers:
+            return []
+        if self.body_masks == "device":
+            from acoustic_sim.harbor.fdtd_cuda_bodies import DeviceBodyMasks
+
+            self._device_bodies = DeviceBodyMasks([self._scatterers], self.model.x, self.model.y, self._env.dx,
+                                                  self.n_steps, self.dt, self._dtype)
+            return [self._device_bodies.apply]
+        return [self._apply_scatterers]
 
     def _build_damping_global(self, ny: int, nx: int) -> np.ndarray:
         sigma = super()._build_damping_global(ny, nx)
@@ -185,6 +233,7 @@ class HarborFDTDSolver(FDTDSolver):
         )
 
     def _finish_traces(self) -> None:
+        super()._finish_traces()
         if getattr(self, "_trace_buf", None) is not None:
             self.traces[:] = self.xp.asnumpy(self._trace_buf)
 
@@ -214,6 +263,12 @@ class HarborFDTDSolver(FDTDSolver):
 # Cache + top-level runner
 # ----------------------------------------------------------------------
 
+def _key_fields(cfg: HarborFDTDConfig) -> dict:
+    """The config fields that enter the cache key (see ``_KEY_EXCLUDE`` and ``_KEY_DEFAULTS``)."""
+    return {k: v for k, v in asdict(cfg).items()
+            if k not in _KEY_EXCLUDE and not (k in _KEY_DEFAULTS and v == _KEY_DEFAULTS[k])}
+
+
 def _cache_key(
     env: HarborEnvironment,
     layout: SensorLayout,
@@ -228,7 +283,7 @@ def _cache_key(
     h.update(layout.fingerprint().encode())
     for sc in scatterers:
         h.update(sc.fingerprint().encode())
-    h.update(json.dumps({k: v for k, v in asdict(cfg).items() if k != "use_cuda"}, sort_keys=True).encode())
+    h.update(json.dumps(_key_fields(cfg), sort_keys=True).encode())
     h.update(np.ascontiguousarray(signal, dtype=np.float64).tobytes())
     if position is not None:
         h.update(b"static")
