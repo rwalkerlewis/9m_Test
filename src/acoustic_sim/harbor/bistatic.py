@@ -44,7 +44,7 @@ from acoustic_sim.harbor.track import TrackConfig, kalman_track
 METHODS = ("bartlett", "bartlett_phat", "coherent", "mvdr", "music")
 REMOVALS = ("none", "eca", "patch", "adaptive", "patch+adaptive")
 REFERENCES = ("data", "oracle")
-REF_MODES = ("beam", "equalised", "snr", "iterated")
+REF_MODES = ("beam", "equalised", "snr", "mrc", "iterated")
 TRACK_FILTERS = ("none", "line", "kalman")
 MAP_NORMS = ("max", "none")
 
@@ -103,8 +103,11 @@ class BistaticConfig:
         so the strain nulls are not amplified.  ``"snr"``: a maximum ratio combiner, every
         channel and frequency weighted by ``sqrt(S) / N`` with ``S`` the power of the direct path
         fitted by a first ECA pass with the plain beam and ``N`` the power of its residual.
+        ``"mrc"``: the model based maximum ratio combiner, ``sum_i conj(a_i) X_i / N_i`` normalised,
+        with ``a_i`` the modelled response and ``N_i`` the residual power of a first ECA pass.
         ``"iterated"``: plain beam, ECA, coherent map, the modelled echo of the strongest map
-        peak is fitted and subtracted from the traces, and the beam is rebuilt (one iteration).
+        peak is fitted (direct path and image lags excluded) and subtracted from the traces, and
+        the beam is rebuilt (one iteration).
     ref_floor : float
         Floor of the equaliser relative to the largest modelled response at each frequency.
     ref_taper_hz : float
@@ -614,6 +617,46 @@ def equaliser_weights(model: ReplicaModel, layout: SensorLayout, channels: np.nd
     return freqs, W / len(channels)
 
 
+def mrc_weights(model: ReplicaModel, layout: SensorLayout, channels: np.ndarray, ship_xy: np.ndarray, sp_res: Spectra,
+                t_blocks: np.ndarray, bc: BistaticConfig, window_s: float = 2.0) -> tuple[np.ndarray, np.ndarray]:
+    """Model based maximum ratio combiner table ``(freqs, W (B, N_sel, F))`` (``ref_mode="mrc"``).
+
+    With the channel model ``X_i = a_i S + n_i`` (``a_i`` the modelled response of
+    :func:`equaliser_weights`, ``N_i`` the noise power of channel ``i`` and bin from the STFT
+    *sp_res* of a first ECA pass residual, averaged over the frames within *window_s* of each
+    block centre) the minimum variance unbiased estimate of ``S`` is
+    ``sum_i conj(a_i) X_i / N_i / sum_i |a_i|^2 / N_i``.  As in :func:`equaliser_weights` the
+    plain range delay is factored out for :func:`make_reference`; unlike the equaliser, a weak
+    (strain null) channel gets a small weight instead of a floored large one.
+    """
+    channels = np.asarray(channels)
+    freqs = np.concatenate([[max(bc.f_lo - bc.ref_taper_hz, 1.0)], sp_res.freqs, [sp_res.freqs[-1] + bc.ref_taper_hz]])
+    rec = layout.receivers[channels]
+    ship_xy = np.atleast_2d(ship_xy)
+    r = np.hypot(rec[None, :, 0] - ship_xy[:, None, 0], rec[None, :, 1] - ship_xy[:, None, 1])    # (B, N_sel)
+    Pr = np.abs(sp_res.X[channels]) ** 2
+    saved = model.weights
+    model.weights = None
+    W = np.zeros((len(ship_xy), len(channels), len(freqs)), dtype=np.complex128)
+    try:
+        for j, f in enumerate(sp_res.freqs):
+            k = 2.0 * np.pi * f / bc.c
+            a = model.asnumpy(model(ship_xy, k))[:, channels].astype(np.complex128)             # (B, N_sel)
+            for b, tb in enumerate(t_blocks):
+                m = np.abs(sp_res.times - tb) <= window_s
+                if not m.any():
+                    m = np.ones(len(sp_res.times), bool)
+                N = Pr[:, j, m].mean(axis=1)
+                live = N > 0
+                w = np.zeros(len(channels), dtype=np.complex128)
+                w[live] = np.conj(a[b, live]) / N[live]
+                norm = max(float(np.sum(np.abs(a[b, live]) ** 2 / N[live])), 1e-30)
+                W[b, :, j + 1] = w * np.exp(-1j * k * r[b]) / norm
+    finally:
+        model.weights = saved
+    return freqs, W
+
+
 def snr_weights(sp_x: Spectra, sp_res: Spectra, channels: np.ndarray, t_blocks: np.ndarray, bc: BistaticConfig,
                 window_s: float = 2.0) -> tuple[np.ndarray, np.ndarray]:
     """Maximum ratio combiner table ``(freqs, W (B, N_sel, F))`` (``ref_mode="snr"``).
@@ -749,6 +792,11 @@ def eca_remove(
             nominal = np.array([int(round(nominal_delay(kd, p, rec[i]))) for kd, p in kinds])
             lags = np.unique(np.concatenate([np.arange(L0 - half, L0 + half + 1) for L0 in nominal]))
             lags = lags[(lags >= 0) & (lags < hi)]
+            if not include_direct:
+                # An echo model must not contain the direct path (or an image): drop its lag window.
+                excl = [int(round(nominal_delay("direct", s_b, rec[i])))]
+                excl += [int(round(nominal_delay("image", np.asarray(im, float), rec[i]))) for im in (np.atleast_2d(images[b]) if len(images) and len(images[b]) else [])]
+                lags = lags[np.all(np.abs(lags[:, None] - np.array(excl)[None, :]) > half, axis=1)]
             if len(lags) == 0:
                 continue
             if ship_t is None:
@@ -1048,6 +1096,11 @@ def eca_stage(
         sp_fit = stft(np.asarray(traces, dtype=np.float64) - residual, layout, fs, bc, f_hi / 0.95)
         sp_res = stft(residual, layout, fs, bc, f_hi / 0.95)
         waveform = beam(traces, snr_weights(sp_fit, sp_res, chans, t_blocks, bc))
+    elif bc.ref_mode == "mrc":
+        model = model or ReplicaModel(layout, bc.c, dispersion=bc.dispersion, device=get_device(bc.use_cuda))
+        residual = eca([traces], beam(traces))[0]
+        sp_res = stft(residual, layout, fs, bc, f_hi / 0.95)
+        waveform = beam(traces, mrc_weights(model, layout, chans, ship_b, sp_res, t_blocks, bc))
     else:                                                        # "iterated"
         model = model or ReplicaModel(layout, bc.c, dispersion=bc.dispersion, device=get_device(bc.use_cuda))
         model.weights = sp.weights

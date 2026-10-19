@@ -49,7 +49,7 @@ def _coherence(ref: np.ndarray, truth: np.ndarray, fs: float, f_lo: float, f_hi:
     return float(np.mean(c[m]))
 
 
-@pytest.mark.parametrize("mode", ["beam", "equalised", "snr", "iterated"])
+@pytest.mark.parametrize("mode", ["beam", "equalised", "snr", "mrc", "iterated"])
 def test_reference_modes_cancel_the_direct_path_and_match_the_waveform(scene, mode):
     env, layout, traces, direct, echo, s, ais = scene
     bc = BistaticConfig(reference="data", removal="eca", c=C, refine=False, ref_mode=mode, grid_dx=5.0, edge=20.0, f_hi=450.0)

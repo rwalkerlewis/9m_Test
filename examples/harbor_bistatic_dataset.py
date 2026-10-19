@@ -8,7 +8,7 @@ the processing gain of every later stage can be measured against truth.
 Usage::
 
     python examples/harbor_bistatic_dataset.py [--config examples/harbor_bistatic.scenario.json]
-        [--out output/harbor_bistatic] [--coarse] [--time 20] [--workers 2] [--cuda]
+        [--out output/harbor_bistatic] [--coarse] [--time 20] [--workers 2] [--cuda] [--tag fine_track2]
 
 ``--coarse`` runs the same scenario on a 1 m grid (band to 400 Hz, about 2 min per FDTD run on
 two CPU cores) instead of 0.5 m (800 Hz, about 20 min per run); the 1 m by 3 m hull is then one
@@ -65,6 +65,7 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--cuda", action="store_true", help="run the FDTD on the GPU (the cache key ignores this)")
+    ap.add_argument("--tag", default=None, help="output subdirectory (default: coarse or fine)")
     args = ap.parse_args()
 
     cfg = HarborScenarioConfig.load(args.config)
@@ -74,7 +75,7 @@ def main() -> None:
         cfg.fdtd.total_time = args.time
     if args.cuda:
         cfg.fdtd.use_cuda = True
-    tag = "coarse" if args.coarse else "fine"
+    tag = args.tag or ("coarse" if args.coarse else "fine")
     out = Path(args.out) / tag
     out.mkdir(parents=True, exist_ok=True)
     cfg.save(out / "scenario_used.json")
