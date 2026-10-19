@@ -37,14 +37,14 @@ from scipy.signal import hilbert
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import (  # noqa: E402
+from acoustic_sim.water import (  # noqa: E402
     HarborFDTDSolver,
     HarborScenarioConfig,
     build_environment,
     build_layout,
 )
-from acoustic_sim.harbor.scatterer import Scatterer  # noqa: E402
-from acoustic_sim.harbor.vessels import Track  # noqa: E402
+from acoustic_sim.water.scatterer import Scatterer  # noqa: E402
+from acoustic_sim.water.vessels import Track  # noqa: E402
 from acoustic_sim.sources import StaticSource  # noqa: E402
 
 # Constants shared with harbor_m1_uuv.py (inlined to avoid sibling-file import).

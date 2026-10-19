@@ -26,7 +26,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import (  # noqa: E402
+from acoustic_sim.water import (  # noqa: E402
     HarborScenarioConfig,
     build_environment,
     build_layout,

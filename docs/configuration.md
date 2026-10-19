@@ -167,8 +167,8 @@ dataclasses and their defaults are documented in their module docstrings and sum
 
 ## DetectionConfig (MFP/EKF Library Pipeline)
 
-Defined in `src/acoustic_sim/config.py`.  A `@dataclass` with ~80
-parameters used by `detection_main.py`.  Grouped below by function.
+Defined in `src/acoustic_sim/air/config.py`. A `@dataclass` with ~80
+parameters used by `air/detection_main.py`. Grouped below by function.
 
 ### Domain
 

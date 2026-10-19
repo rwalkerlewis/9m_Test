@@ -28,7 +28,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from acoustic_sim.harbor import HarborFDTDConfig, HarborFDTDSolver, SensorLayout, uniform_water_environment  # noqa: E402
+from acoustic_sim.water import HarborFDTDConfig, HarborFDTDSolver, SensorLayout, uniform_water_environment  # noqa: E402
 from acoustic_sim.sources import StaticSource  # noqa: E402
 
 DX, FS, C = 0.5, 6000.0, 1500.0

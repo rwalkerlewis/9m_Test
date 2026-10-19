@@ -6,7 +6,7 @@ vessels, multiple non-AIS targets (UUVs and a diver), and passive
 scatterers. It includes both passive matched-field detection of a
 target's own emission and bistatic localization of a silent body from
 the echo of an AIS ship. The forward model reuses this package's FDTD
-solver; harbor-specific code lives in `src/acoustic_sim/harbor/`.
+solver; water-specific code lives in `src/acoustic_sim/water/`.
 
 **Status: the simulation, sensing and processing chain work and are tested, but the UUV is
 not yet detected at the intended source level.**  See [Status and findings](#status-and-findings)
@@ -50,7 +50,7 @@ bodies is not included. `render_vessel_gathers(combined_bodies=True)` (the multi
 instead runs every radiating vessel once with all the bodies present and once with none, which
 keeps the multiple scattering but loses the per body split.
 
-## Modules (`src/acoustic_sim/harbor/`)
+## Modules (`src/acoustic_sim/water/`)
 
 | Module | Role |
 |--------|------|
@@ -535,11 +535,11 @@ uses more compute and storage; cache and output directories are separate from th
 `output/harbor` dataset.
 
 ```python
-from acoustic_sim.harbor import HarborDataset, build_environment
-from acoustic_sim.harbor.detection import ProcessingConfig, build_grid
-from acoustic_sim.harbor.suppression import SuppressionConfig, run_ais_aware
-from acoustic_sim.harbor.occupancy import OccupancyConfig, OccupancyGrid
-from acoustic_sim.harbor.dispersion import for_scenario
+from acoustic_sim.water import HarborDataset, build_environment
+from acoustic_sim.water.detection import ProcessingConfig, build_grid
+from acoustic_sim.water.suppression import SuppressionConfig, run_ais_aware
+from acoustic_sim.water.occupancy import OccupancyConfig, OccupancyGrid
+from acoustic_sim.water.dispersion import for_scenario
 
 ds = HarborDataset.load("output/harbor/dataset.npz")
 env = build_environment(ds.cfg)
@@ -555,9 +555,9 @@ Use `dispersion=` only for FDTD-generated data: it models the simulator's grid, 
 For bistatic processing, the corresponding API is `BistaticConfig` and `run_bistatic`:
 
 ```python
-from acoustic_sim.harbor.bistatic import BistaticConfig, run_bistatic
-from acoustic_sim.harbor.dispersion import for_scenario
-from acoustic_sim.harbor.signatures import f_max_for_grid
+from acoustic_sim.water.bistatic import BistaticConfig, run_bistatic
+from acoustic_sim.water.dispersion import for_scenario
+from acoustic_sim.water.signatures import f_max_for_grid
 
 bc = BistaticConfig(
     reference="data",       # use "oracle" only for controlled experiments

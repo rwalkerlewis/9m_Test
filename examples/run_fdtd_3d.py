@@ -8,7 +8,7 @@ Usage::
         --array circular --output-dir output/valley_3d
 
 This is the 3-D counterpart of ``run_fdtd.py``.  It uses
-:class:`~acoustic_sim.fdtd_3d.FDTD3DSolver` and all 3-D domain /
+:class:`~acoustic_sim.solver.fdtd_3d.FDTD3DSolver` and all 3-D domain /
 source / receiver builders.
 
 Domain choices:  isotropic, wind, hills_vegetation, ground_layer
@@ -34,16 +34,16 @@ _root = Path(__file__).resolve().parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root / "src"))
 
-from acoustic_sim.domains import (
+from acoustic_sim.air.domains import (
     DomainMeta3D,
     create_ground_layer_domain_3d,
     create_hills_vegetation_domain_3d,
     create_isotropic_domain_3d,
     create_wind_domain_3d,
 )
-from acoustic_sim.fdtd import fd2_coefficients, fd2_cfl_factor, FDTD3DConfig, FDTD3DSolver
+from acoustic_sim.solver.fdtd import fd2_coefficients, fd2_cfl_factor, FDTD3DConfig, FDTD3DSolver
 from acoustic_sim.model import VelocityModel3D
-from acoustic_sim.plotting import plot_gather
+from acoustic_sim.air.plotting import plot_gather
 from acoustic_sim.receivers import (
     create_receiver_circle_3d,
     create_receiver_line_3d,

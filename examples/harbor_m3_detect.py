@@ -33,7 +33,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import (  # noqa: E402
+from acoustic_sim.water import (  # noqa: E402
     HarborScenarioConfig,
     assemble_dataset,
     build_environment,
@@ -41,15 +41,15 @@ from acoustic_sim.harbor import (  # noqa: E402
     build_track,
     render_vessel_gathers,
 )
-from acoustic_sim.harbor.detection import (  # noqa: E402
+from acoustic_sim.water.detection import (  # noqa: E402
     ProcessingConfig,
     build_grid,
     run_detection,
     threshold_from_maxima,
 )
-from acoustic_sim.harbor.evaluate import score_detections  # noqa: E402
-from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
-from acoustic_sim.harbor.suppression import AISAwareRun, SuppressionConfig, run_ais_aware  # noqa: E402
+from acoustic_sim.water.evaluate import score_detections  # noqa: E402
+from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.suppression import AISAwareRun, SuppressionConfig, run_ais_aware  # noqa: E402
 
 CONFIGS = {"fused": None, "das": ("cable1",), "hydrophones": ("hydrophones",)}
 LEVEL_FACTORS = [0.25, 0.5, 1.0, 2.0]
@@ -78,7 +78,7 @@ def main() -> None:
     # ---- empirical localiser (optional) ----------------------------------------
     empirical_loc = None
     if args.empirical_refine is not None:
-        from acoustic_sim.harbor.localiser import EmpiricalLocaliser  # noqa: E402
+        from acoustic_sim.water.localiser import EmpiricalLocaliser  # noqa: E402
         if args.empirical_refine == "grid_survey":
             if not (out / "survey_cache").exists():
                 sys.exit("Run examples/harbor_survey_grid.py first to build the survey cache.")

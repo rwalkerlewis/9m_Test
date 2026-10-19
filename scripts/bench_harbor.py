@@ -44,18 +44,18 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from acoustic_sim.harbor import HarborDataset, HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
-from acoustic_sim.harbor.bistatic import BistaticConfig, ReplicaModel, Truth, eca_stage, run_bistatic, ship_positions, stft  # noqa: E402
+from acoustic_sim.water import HarborDataset, HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, ReplicaModel, Truth, eca_stage, run_bistatic, ship_positions, stft  # noqa: E402
 try:
-    from acoustic_sim.harbor.bistatic import _xp as _bistatic_xp  # noqa: E402
+    from acoustic_sim.water.bistatic import _xp as _bistatic_xp  # noqa: E402
 except ImportError:  # the original code
     _bistatic_xp = None
-from acoustic_sim.harbor.dataset import assemble_dataset, make_scatterer, render_vessel_gathers, vessel_injection  # noqa: E402
-from acoustic_sim.harbor.dispersion import for_scenario  # noqa: E402
-from acoustic_sim.harbor.fdtd_runner import HarborFDTDSolver, simulate_source  # noqa: E402
-from acoustic_sim.harbor.noise import generate_noise  # noqa: E402
-from acoustic_sim.harbor.signatures import f_max_for_grid  # noqa: E402
-from acoustic_sim.harbor.vessels import VesselConfig  # noqa: E402
+from acoustic_sim.water.dataset import assemble_dataset, make_scatterer, render_vessel_gathers, vessel_injection  # noqa: E402
+from acoustic_sim.water.dispersion import for_scenario  # noqa: E402
+from acoustic_sim.water.fdtd_runner import HarborFDTDSolver, simulate_source  # noqa: E402
+from acoustic_sim.water.noise import generate_noise  # noqa: E402
+from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
+from acoustic_sim.water.vessels import VesselConfig  # noqa: E402
 from acoustic_sim.sources import CustomTrajectorySource  # noqa: E402
 
 BISTATIC_SCENARIO = ROOT / "examples" / "harbor_bistatic.scenario.json"

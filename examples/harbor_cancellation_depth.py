@@ -49,16 +49,16 @@ from scipy.signal import butter, sosfiltfilt
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
-from acoustic_sim.harbor.ais import AISConfig, AISReports  # noqa: E402
-from acoustic_sim.harbor.bistatic import BistaticConfig, ReplicaModel, eca_stage, ship_positions, stft  # noqa: E402
-from acoustic_sim.harbor.dataset import vessel_injection  # noqa: E402
-from acoustic_sim.harbor.dispersion import for_scenario  # noqa: E402
-from acoustic_sim.harbor.fdtd_runner import _fused_available, simulate_source, simulate_sources  # noqa: E402
-from acoustic_sim.harbor.noise import generate_noise  # noqa: E402
-from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
-from acoustic_sim.harbor.signatures import f_max_for_grid  # noqa: E402
-from acoustic_sim.harbor.vessels import VesselConfig  # noqa: E402
+from acoustic_sim.water import HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
+from acoustic_sim.water.ais import AISConfig, AISReports  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, ReplicaModel, eca_stage, ship_positions, stft  # noqa: E402
+from acoustic_sim.water.dataset import vessel_injection  # noqa: E402
+from acoustic_sim.water.dispersion import for_scenario  # noqa: E402
+from acoustic_sim.water.fdtd_runner import _fused_available, simulate_source, simulate_sources  # noqa: E402
+from acoustic_sim.water.noise import generate_noise  # noqa: E402
+from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
+from acoustic_sim.water.vessels import VesselConfig  # noqa: E402
 
 RANGES = (200.0, 100.0, 30.0)
 SPEED = 4.0

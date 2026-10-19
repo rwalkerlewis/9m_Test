@@ -47,13 +47,13 @@ from acoustic_sim.sources import (
     source_velocity_at_3d,
     make_drone_harmonics,
 )
-from acoustic_sim.forward import simulate_3d_traces, simulate_scenario_3d
+from acoustic_sim.air.forward import simulate_3d_traces, simulate_scenario_3d
 from acoustic_sim.receivers import create_receiver_l_shaped_3d
-from acoustic_sim.detection_main import run_detection_3d, evaluate_results_3d
-from acoustic_sim.fire_control import run_fire_control_3d
-from acoustic_sim.tracker import run_tracker_3d
-from acoustic_sim.processor import matched_field_process_3d
-from acoustic_sim.plotting import (
+from acoustic_sim.air.detection_main import run_detection_3d, evaluate_results_3d
+from acoustic_sim.air.fire_control import run_fire_control_3d
+from acoustic_sim.air.tracker import run_tracker_3d
+from acoustic_sim.air.processor import matched_field_process_3d
+from acoustic_sim.air.plotting import (
     plot_3d_trajectory,
     plot_altitude_vs_time,
     plot_tracking_3d,

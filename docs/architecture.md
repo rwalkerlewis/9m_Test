@@ -2,9 +2,10 @@
 
 ## Package Organisation
 
-All production code lives in `src/acoustic_sim/`.  Each module handles
-both 2-D and 3-D; there are no separate `_3d.py` files.  The only
-exception is `ml/`, which contains optional PyTorch classifiers.
+All production code lives in `src/acoustic_sim/`. The shared simulation
+core is in the package root and `solver/`; domain-specific application
+code is grouped under `air/` and `water/`. Air and water FDTD runs use
+the same solver implementation. `ml/` contains optional PyTorch models.
 
 ### Module Inventory
 
@@ -13,43 +14,58 @@ exception is `ml/`, which contains optional PyTorch classifiers.
 | Module | Responsibility |
 |--------|---------------|
 | `model.py` | `VelocityModel` (2-D) and `VelocityModel3D` dataclasses.  Factory functions: `create_uniform_model`, `create_layered_model`, `create_gradient_model`, `create_checkerboard_model`, `create_valley_model`, `create_uniform_model_3d`, `create_layered_z_model_3d`, `model_3d_from_array`.  Anomaly injection: `add_circle_anomaly`, `add_rectangle_anomaly`. |
-| `domains.py` | `DomainMeta` / `DomainMeta3D` dataclasses (wind field, attenuation coefficients, terrain).  Builders: `create_isotropic_domain`, `create_wind_domain`, `create_hills_vegetation_domain`, `create_echo_canyon_domain`, `create_urban_echo_domain` (2-D); 3-D equivalents build `DomainMeta3D`. |
+| `solver/domain_meta.py` | Shared `DomainMeta` / `DomainMeta3D` passed into the FDTD solvers. |
 | `sources.py` | Signal generators: `make_wavelet_ricker`, `make_source_tone`, `make_source_noise`, `make_source_propeller`, `make_drone_harmonics`, `make_source_from_file`, `make_stationary_tonal`.  Trajectory classes (2-D): `StaticSource`, `MovingSource`, `CircularOrbitSource`, `FigureEightSource`, `LoiterApproachSource`, `EvasiveSource`, `CustomTrajectorySource`.  3-D variants add altitude: `StaticSource3D`, `MovingSource3D`, `CircularOrbitSource3D`, `ErraticQuadcopterSource3D` (Ornstein–Uhlenbeck mean-reverting random walk, bounded), etc.  All expose `position_at(step, dt)` and carry a signal array. |
 | `receivers.py` | Array geometry factories.  2-D: `create_receiver_circle`, `create_receiver_line`, `create_receiver_concentric`, `create_receiver_nested_circular`, `create_receiver_l_shaped`, `create_receiver_log_spiral`, `create_receiver_random_disk`, `create_receiver_random`, `create_receiver_custom`.  3-D: same names with `_3d` suffix, adding a z-coordinate.  `print_array_diagnostics` reports aperture, element spacing, and spatial Nyquist. |
-| `fdtd.py` | `FDTDConfig` dataclass.  `FDTDSolver` (2-D) and `FDTD3DSolver` (3-D).  Leapfrog time stepping with configurable-order spatial stencils (2/4/6/8).  MPI domain decomposition: y-axis for 2-D, z-slab for 3-D.  Sponge-layer absorbing boundaries.  Bilinear (2-D) / trilinear (3-D) source injection and receiver sampling.  CuPy GPU path if `--use-cuda`.  `fd2_coefficients(order)` and `fd2_cfl_factor(order)` compute stencil weights and CFL limits. |
-| `solver.py` | `solve_helmholtz(model, source_xy, frequency_hz, damping_width)` — sparse direct solve of the 2-D Helmholtz equation with PML. |
-| `forward.py` | `simulate_3d_traces` — analytical 3-D point-source propagation with 1/r spreading, optional image-source ground reflection, and exponential air absorption.  `simulate_scenario_3d` wraps it with trajectory + receivers. |
+| `solver/fdtd.py`, `solver/fdtd_cuda.py` | Shared `FDTDConfig`, `FDTDSolver` (2-D), and `FDTD3DSolver` (3-D), plus the fused CUDA implementation. Both air and water forward models use these classes; water adds environment and scatterer behavior in `water/fdtd_runner.py`. |
+| `solver/helmholtz.py` | `solve_helmholtz(model, source_xy, frequency_hz, damping_width)` — sparse direct solve of the 2-D Helmholtz equation with PML. |
 | `backend.py` | `get_backend(use_cuda)` → returns `(xp, is_cuda)` where `xp` is numpy or cupy. |
 | `sampling.py` | `check_spatial_sampling`, `check_cfl`, `suggest_dx`. |
 | `io.py` | `load_json`, `save_model`, `load_model`, `model_from_json`. |
 
-#### Detection sub-package (`detection/`)
+#### Air-domain application (`air/`)
 
-The production SRP-PHAT pipeline uses modules in `detection/`, a
+Air-specific domain builders, detection/engagement pipelines, signal
+processing, tracking, and studies live in `air/`. Shared source
+trajectories, receiver geometry, velocity models, and the FDTD solver
+remain in the common package or `solver/`.
+
+| Module | Responsibility |
+|--------|----------------|
+| `air/domains.py`, `air/config.py`, `air/setup.py` | Air/terrain domain construction and configuration |
+| `air/forward.py`, `air/noise.py` | Analytical air propagation and air-domain noise models |
+| `air/detection_main.py`, `air/detection/` | Detection pipeline orchestration and pluggable bearing/ranging/tracking |
+| `air/processor.py`, `air/tracker.py` | Matched-field processing and legacy MFP/EKF tracking |
+| `air/fire_control.py`, `air/validate.py` | Engagement calculations and validation checks |
+| `air/studies.py`, `air/plotting.py` | Parametric studies and air-domain visualizations |
+
+#### Detection sub-package (`air/detection/`)
+
+The production SRP-PHAT pipeline uses modules in `air/detection/`, a
 pluggable framework with abstract base classes and factory functions.
 
 | Module | Responsibility |
 |--------|---------------|
-| `detection/__init__.py` | Re-exports all public symbols; quick-start docstring. |
-| `detection/bearing.py` | **Bearing estimators.**  `SRPBeamformer` (SRP-PHAT, pre-computed steering matrix, multi-source peak finding), `MUSICEstimator` (subspace DOA with MDL source-count selection), `MVDRBeamformer` (Capon beamformer on polar grid with harmonic CSDM).  ABC: `BearingEstimator`.  Factory: `create_bearing_estimator(method, **kw)`.  Dataclasses: `BearingDetection`, `BearingResult`. |
-| `detection/engine.py` | **`DetectionEngine`** — streaming window processor.  Instantiates a bearing estimator, range estimator, EMA smoother, and WLS tracker; dispatches each window through the chain.  `calibrate_range()` sets RMS reference.  `process_window(segment, t)` → `WindowDetection` (bearing, range, position, track state). |
-| `detection/ranging.py` | **Range estimators.**  `RMSRangeEstimator` (inverse-square RMS calibration), `TDOARangeEstimator` (GCC-PHAT TDOA grid search), `BearingRateRangeEstimator` (`v/ω` kinematic range).  ABC: `RangeEstimator`.  Factory: `create_range_estimator(method, **kw)`.  Dataclass: `RangeEstimate`. |
-| `detection/tracking.py` | **`CausalWLSTracker`** — weighted-least-squares constant-velocity fit over a sliding window.  `EMABearingSmoother` — unit-circle exponential moving average.  Dataclass: `TrackState` (6-DOF position + velocity + residuals + `position_at(t)` extrapolation). |
+| `air/detection/__init__.py` | Re-exports all public symbols; quick-start docstring. |
+| `air/detection/bearing.py` | **Bearing estimators.** `SRPBeamformer`, `MUSICEstimator`, `MVDRBeamformer`, the `BearingEstimator` ABC and estimator factory. |
+| `air/detection/engine.py` | **`DetectionEngine`** — streaming window processor for bearing, range and tracking. |
+| `air/detection/ranging.py` | **Range estimators.** `RMSRangeEstimator`, `TDOARangeEstimator`, `BearingRateRangeEstimator` and factory. |
+| `air/detection/tracking.py` | **`CausalWLSTracker`** and `EMABearingSmoother` for streaming estimates. |
 
-#### Detection / engagement (library)
+#### Air detection / engagement (library)
 
 | Module | Responsibility |
 |--------|---------------|
-| `noise.py` | Post-hoc noise injection: `generate_wind_noise` (spatially correlated, spectrally shaped), `generate_sensor_noise` (white Gaussian), `inject_sensor_faults` (elevated noise / dropout / spikes / DC offset), `inject_transient` (broadband impulse), `perturb_mic_positions`.  `add_all_noise` applies a noise recipe in one call. |
-| `processor.py` | Matched field processing in 2-D and 3-D (legacy MFP/EKF path).  Polar grid construction, steering vector computation, CSDM estimation with harmonic selection, MVDR and conventional beamforming, broadband weighted sum, peak finding with parabolic interpolation.  Robustness: `compute_sensor_weights` (fault detection), `blank_transients`, `calibrate_positions` (TDOA self-calibration), `detect_stationary` (interference rejection).  Top-level: `matched_field_process(traces, mic_positions, dt, sound_speed, config)`. |
-| `tracker.py` | `EKFTracker` (4-state: x, y, vx, vy), `EKFTracker3D` (6-state: x, y, z, vx, vy, vz).  Both use bearing + range + amplitude measurements (legacy MFP/EKF path).  `MultiTargetTracker` / `MultiTargetTracker3D` add nearest-neighbour data association and track initiation/deletion.  Top-level: `run_tracker`, `run_tracker_3d`, `run_multi_tracker`, `run_multi_tracker_3d`. |
-| `fire_control.py` | Pellet ballistics: `time_of_flight`, `pellet_velocity_at_range`, `pattern_diameter`.  2-D: `compute_lead`, `compute_engagement`, `run_fire_control`.  3-D: `compute_lead_3d` (iterative ballistic intercept), `compute_engagement_3d` (class-based rules, maneuver-adaptive thresholds, position uncertainty gating), `compute_miss_distance_3d`.  Trajectory analysis: `projectile_path`, `find_cpa`, `compute_bearing_rate`.  Multi-target: `prioritize_threats`, `prioritize_threats_3d`, `run_multi_fire_control`. |
-| `detection_main.py` | Full MFP/EKF pipeline orchestrator: `simulate_scenario`, `run_detection`, `run_detection_pipeline`, `evaluate_results`.  3-D: `run_detection_3d`, `run_detection_pipeline_3d`.  Contains ML integration scaffolding (`_classify_source`, `_detect_maneuvers`).  The production SRP-PHAT pipeline (`run_pipeline.py`) has its own ML integration with source classification gating, maneuver-adaptive covariance, fusion classification, and CVAE anomaly detection, all enabled via CLI flags. |
-| `validate.py` | Sanity checks: `check_amplitude`, `check_snr`, `check_travel_times`, `check_localization`, `check_energy`, `run_all_checks`. |
-| `setup.py` | High-level builders: `build_domain`, `build_receivers`, `build_source`, `compute_dt`. |
-| `config.py` | `DetectionConfig` dataclass — all parameters for the MFP/EKF pipeline.  Not used by `run_pipeline.py`, which reads `pipeline.config.json` instead. |
-| `studies.py` | Nine parametric studies (see [Studies](studies.md)). |
-| `plotting.py` | 2-D + 3-D visualisation: domain, gather, wavefield, velocity model, beam power, vespagram, tracking, multi-track, snapshot, 3-D trajectory, altitude-vs-time, study comparison, radial engagement, pipeline summary, beamformer diagnostic. |
+| `air/noise.py` | Post-hoc air-domain and sensor noise injection. |
+| `air/processor.py` | Matched-field processing in 2-D and 3-D (legacy MFP/EKF path). |
+| `air/tracker.py` | EKF and multi-target tracking for the air-domain pipeline. |
+| `air/fire_control.py` | Ballistic lead, engagement, and multi-target prioritization. |
+| `air/detection_main.py` | Full MFP/EKF pipeline orchestration. |
+| `air/validate.py` | Amplitude, SNR, travel-time, localization and energy checks. |
+| `air/setup.py` | High-level air-domain, receiver, source, and timestep builders. |
+| `air/config.py` | `DetectionConfig` for the MFP/EKF pipeline. |
+| `air/studies.py` | Parametric studies (see [Studies](studies.md)). |
+| `air/plotting.py` | Air-domain, gather, wavefield, beam, tracking and study visualizations. |
 
 #### ML classifiers (`ml/`)
 
@@ -65,7 +81,7 @@ pluggable framework with abstract base classes and factory functions.
 | `anomaly_integration.py` | `AnomalyDetector` wrapper: loads model + threshold, provides `process_frame()` and `process_mel_spectrogram()` returning `AnomalyResult` dataclass. |
 | `anomaly_training.py` | Training script for the CVAE: synthetic data generation, training loop, threshold calibration. |
 
-#### Harbor sensing application (`harbor/`)
+#### Water / harbor sensing application (`water/`)
 
 This is a separate 2-D application built on the shared FDTD solver. It models a plan-view
 harbor with water/land geometry, shoreline absorption, cable DAS and hydrophone receivers,
@@ -75,18 +91,22 @@ ocean water column.
 
 | Module | Responsibility |
 |--------|----------------|
-| `environment.py`, `scenario.py` | Water/land mask, informational depth, effective sound-speed map, crop support, JSON scenario configuration and builders |
-| `sensors.py` | Polyline cable geometry; pressure or gauge-length strain-like DAS output; hydrophones; layout validation and channel splitting |
-| `vessels.py`, `signatures.py`, `ais.py` | Source/target tracks, acoustic signatures and injection calibration, noisy AIS reports and prediction |
-| `fdtd_runner.py`, `scatterer.py` | Harbor-specific FDTD boundaries, cached single-source gathers, and moving soft/absorbing finite-size bodies |
-| `noise.py`, `dataset.py` | Ambient/shipping/instrument noise, channel gains/faults, source mixture and labelled `HarborDataset` serialization |
-| `detection.py`, `suppression.py`, `occupancy.py` | Passive matched-field detection, CFAR, AIS-guided position refinement and ship suppression, and track-before-detect |
-| `bistatic.py` | AIS-ship-illuminated echo processing, direct-path removal, and Bartlett/coherent/MVDR/MUSIC localization maps |
-| `dispersion.py`, `localiser.py` | FDTD numerical-dispersion-aware replicas and optional empirical propagation calibration |
-| `evaluate.py`, `classifier.py`, `plotting.py`, `device.py` | Detection scoring, optional harbor CNN/CVAE wrapper, visualizations, and CPU/CuPy dispatch |
+| `water/environment.py`, `water/scenario.py` | Water/land mask, informational depth, effective sound-speed map, crop support, JSON scenario configuration and builders |
+| `water/sensors.py` | Polyline cable geometry; pressure or gauge-length strain-like DAS output; hydrophones; layout validation and channel splitting |
+| `water/vessels.py`, `water/signatures.py`, `water/ais.py` | Source/target tracks, acoustic signatures and injection calibration, noisy AIS reports and prediction |
+| `water/fdtd_runner.py`, `water/scatterer.py` | Harbor-specific FDTD behavior over the shared solver |
+| `water/noise.py`, `water/dataset.py` | Ambient/shipping/instrument noise, channel gains/faults, source mixture and labelled `HarborDataset` serialization |
+| `water/detection.py`, `water/suppression.py`, `water/occupancy.py` | Passive matched-field detection, CFAR, AIS-guided position refinement and ship suppression, and track-before-detect |
+| `water/bistatic.py` | AIS-ship-illuminated echo processing, direct-path removal, and Bartlett/coherent/MVDR/MUSIC localization maps |
+| `water/dispersion.py`, `water/localiser.py` | FDTD numerical-dispersion-aware replicas and optional empirical propagation calibration |
+| `water/evaluate.py`, `water/classifier.py`, `water/plotting.py`, `water/device.py` | Detection scoring, optional harbor CNN/CVAE wrapper, visualizations, and CPU/CuPy dispatch |
 
 For implementation status, interpretation caveats, and complete scenario and example workflows,
 see [Harbor](harbor.md).
+
+Legacy imports remain supported: former `acoustic_sim.harbor.*` paths alias `acoustic_sim.water.*`,
+and former top-level air modules alias `acoustic_sim.air.*`. The shared FDTD API is exported from
+`acoustic_sim.solver`; `acoustic_sim.fdtd` and `acoustic_sim.fdtd_cuda` remain compatibility paths.
 
 #### FNO surrogate (`ml/fno*.py`)
 

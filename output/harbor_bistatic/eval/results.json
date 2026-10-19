@@ -1,0 +1,5331 @@
+{
+  "criterion": {
+    "text": "configuration 'blind' reaches Pd >= 0.5 at a frame false alarm rate of 0.05 (threshold set on the body free development run) averaged over the held out noise seeds, and Pd >= 0.5 averaged over the held out geometry runs",
+    "pd_min": 0.5,
+    "pfa": 0.05,
+    "radius_m": 5.0,
+    "pd_noise": 0.46835443037974683,
+    "pd_geometry": 0.012658227848101266,
+    "pass": false
+  },
+  "blind_reference_mode": "mrc",
+  "blind_reference_config": {
+    "reference": "data",
+    "ref_mode": "mrc"
+  },
+  "configs": {
+    "oracle": {
+      "oracle_inputs": [
+        "direct path removed with the truth component",
+        "oracle ferry waveform",
+        "exact ferry track"
+      ]
+    },
+    "eca_oracle+doppler": {
+      "oracle_inputs": [
+        "oracle ferry waveform",
+        "exact ferry track"
+      ]
+    },
+    "blind": {
+      "oracle_inputs": []
+    },
+    "blind_stage0": {
+      "oracle_inputs": []
+    }
+  },
+  "sets": {
+    "dev": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": null
+    },
+    "noise1": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 1
+    },
+    "noise2": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 2
+    },
+    "noise3": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 3
+    },
+    "noise4": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 4
+    },
+    "noise5": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "seed": 5
+    },
+    "geometry0": {
+      "path": "output/harbor_bistatic/fine_track2/dataset.npz",
+      "seed": null
+    },
+    "geometry1": {
+      "path": "output/harbor_bistatic/fine_track2/dataset.npz",
+      "seed": 1
+    },
+    "geometry2": {
+      "path": "output/harbor_bistatic/fine_track2/dataset.npz",
+      "seed": 2
+    }
+  },
+  "miss_classes": {
+    "error_min_m": 20.0,
+    "near_m": 10.0,
+    "classes": [
+      "ship_edge",
+      "quay_image",
+      "direct_path",
+      "elsewhere"
+    ]
+  },
+  "runs": {
+    "dev/oracle/body": {
+      "set": "dev",
+      "config": "oracle",
+      "body": true,
+      "seconds": 8.767516851425171,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.7974683544303798,
+        "declared": 0.810126582278481,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.9240506329113924,
+        "median_error_m": 2.262550114054546,
+        "p90_error_m": 4.28526697525375,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9620253164556962,
+        "declared": 0.9620253164556962,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 1.0,
+        "median_error_m": 2.103552914777342,
+        "p90_error_m": 3.428937218890805,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 4,
+        "total": 4
+      }
+    },
+    "dev/oracle/free": {
+      "set": "dev",
+      "config": "oracle",
+      "body": false,
+      "seconds": 8.767788648605347,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 86.53337614151773,
+        "p90_error_m": 103.70174282950673,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 84.45683700827931,
+        "p90_error_m": 94.67143275723853,
+        "frames": 79
+      }
+    },
+    "dev/eca_oracle+doppler/body": {
+      "set": "dev",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 71.40955853462219,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.34630542475794,
+      "eca_echo_loss_db": 0.6154724175015305,
+      "frame": {
+        "pd": 0.11392405063291139,
+        "declared": 0.16455696202531644,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.4810126582278481,
+        "median_error_m": 5.984380453681621,
+        "p90_error_m": 227.7472321680779,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.16455696202531644,
+        "declared": 0.21518987341772153,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5316455696202531,
+        "median_error_m": 4.306667736170788,
+        "p90_error_m": 246.01306381099474,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 7,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 30,
+        "total": 37
+      }
+    },
+    "dev/eca_oracle+doppler/free": {
+      "set": "dev",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 77.58704495429993,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.398169534521674,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 156.63248834046772,
+        "p90_error_m": 239.60685950418096,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 207.014943107201,
+        "p90_error_m": 246.00134201338443,
+        "frames": 79
+      }
+    },
+    "dev/blind/body": {
+      "set": "dev",
+      "config": "blind",
+      "body": true,
+      "seconds": 177.59023427963257,
+      "ship_error_median_m": 0.5544315418059849,
+      "eca_direct_depth_db": 17.43256546261279,
+      "eca_echo_loss_db": 0.5411593698129731,
+      "frame": {
+        "pd": 0.4430379746835443,
+        "declared": 0.4936708860759494,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.7341772151898734,
+        "median_error_m": 2.6345607744398127,
+        "p90_error_m": 81.47098340667543,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.759493670886076,
+        "declared": 0.7721518987341772,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.8734177215189873,
+        "median_error_m": 2.1275065694525197,
+        "p90_error_m": 15.98280416794244,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 13,
+        "elsewhere": 7,
+        "total": 20
+      }
+    },
+    "dev/blind/free": {
+      "set": "dev",
+      "config": "blind",
+      "body": false,
+      "seconds": 165.0413200855255,
+      "ship_error_median_m": 0.599315260395023,
+      "eca_direct_depth_db": 16.996916662888932,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 89.8536192779201,
+        "p90_error_m": 139.97777592103782,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 89.85555840910861,
+        "p90_error_m": 106.59470813478973,
+        "frames": 79
+      }
+    },
+    "dev/blind_stage0/body": {
+      "set": "dev",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 104.6765365600586,
+      "ship_error_median_m": 0.6633602206998895,
+      "eca_direct_depth_db": 11.035589202919203,
+      "eca_echo_loss_db": 0.3197832907080308,
+      "frame": {
+        "pd": 0.46835443037974683,
+        "declared": 0.6582278481012658,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5949367088607594,
+        "median_error_m": 3.583051317322763,
+        "p90_error_m": 207.04293146342422,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5443037974683544,
+        "declared": 0.759493670886076,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6075949367088608,
+        "median_error_m": 3.0052172047533667,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 18,
+        "total": 19
+      }
+    },
+    "dev/blind_stage0/free": {
+      "set": "dev",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 84.71085381507874,
+      "ship_error_median_m": 0.6633602206998895,
+      "eca_direct_depth_db": 10.795479428387766,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 167.29428131125283,
+        "p90_error_m": 208.2562478875437,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 163.93520529372404,
+        "p90_error_m": 210.4148500106611,
+        "frames": 79
+      }
+    },
+    "noise1/oracle/body": {
+      "set": "noise1",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.569674730300903,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8227848101265823,
+        "declared": 0.8607594936708861,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.9113924050632911,
+        "median_error_m": 2.3328545037753914,
+        "p90_error_m": 4.361617676796015,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9873417721518988,
+        "declared": 0.9873417721518988,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 1.0,
+        "median_error_m": 1.959300751081849,
+        "p90_error_m": 3.1443670205512673,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 4,
+        "elsewhere": 3,
+        "total": 7
+      }
+    },
+    "noise1/oracle/free": {
+      "set": "noise1",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.9316630363464355,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.12658227848101267,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 84.02956991467912,
+        "p90_error_m": 100.65250629652536,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.1518987341772152,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 86.2966826278642,
+        "p90_error_m": 99.28055602778441,
+        "frames": 79
+      }
+    },
+    "noise1/eca_oracle+doppler/body": {
+      "set": "noise1",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 84.57679605484009,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.39816953452315,
+      "eca_echo_loss_db": 0.5894397503023094,
+      "frame": {
+        "pd": 0.13924050632911392,
+        "declared": 0.17721518987341772,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.4936708860759494,
+        "median_error_m": 5.197788091534797,
+        "p90_error_m": 231.45401522278684,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.22784810126582278,
+        "declared": 0.27848101265822783,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.569620253164557,
+        "median_error_m": 4.033669142213374,
+        "p90_error_m": 248.8361347392644,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 4,
+        "elsewhere": 29,
+        "total": 37
+      }
+    },
+    "noise1/eca_oracle+doppler/free": {
+      "set": "noise1",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 81.06501841545105,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.364779353571983,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 153.01298641891407,
+        "p90_error_m": 244.6714174150912,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 215.9749615271441,
+        "p90_error_m": 247.73786024485779,
+        "frames": 79
+      }
+    },
+    "noise1/blind/body": {
+      "set": "noise1",
+      "config": "blind",
+      "body": true,
+      "seconds": 183.61142778396606,
+      "ship_error_median_m": 0.5881079313628845,
+      "eca_direct_depth_db": 18.09441446112472,
+      "eca_echo_loss_db": 0.5271234267132635,
+      "frame": {
+        "pd": 0.45569620253164556,
+        "declared": 0.569620253164557,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.620253164556962,
+        "median_error_m": 3.141626432647575,
+        "p90_error_m": 91.66227193615354,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.7468354430379747,
+        "declared": 0.8354430379746836,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.8354430379746836,
+        "median_error_m": 2.195844411971974,
+        "p90_error_m": 63.78223494275749,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 13,
+        "elsewhere": 15,
+        "total": 28
+      }
+    },
+    "noise1/blind/free": {
+      "set": "noise1",
+      "config": "blind",
+      "body": false,
+      "seconds": 183.0989830493927,
+      "ship_error_median_m": 0.5904340607696122,
+      "eca_direct_depth_db": 17.800373041104027,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.12658227848101267,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 86.25672659946194,
+        "p90_error_m": 115.48472990631701,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.13924050632911392,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 83.12157429845021,
+        "p90_error_m": 108.9038796726654,
+        "frames": 79
+      }
+    },
+    "noise1/blind_stage0/body": {
+      "set": "noise1",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 112.28759765625,
+      "ship_error_median_m": 0.5884959731951909,
+      "eca_direct_depth_db": 11.254509590782753,
+      "eca_echo_loss_db": 0.32302569850589025,
+      "frame": {
+        "pd": 0.4936708860759494,
+        "declared": 0.6962025316455697,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5949367088607594,
+        "median_error_m": 3.8358681137836803,
+        "p90_error_m": 206.4408651700894,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.569620253164557,
+        "declared": 0.7974683544303798,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6582278481012658,
+        "median_error_m": 3.2657614020316457,
+        "p90_error_m": 206.74151286208652,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 3,
+        "elsewhere": 13,
+        "total": 17
+      }
+    },
+    "noise1/blind_stage0/free": {
+      "set": "noise1",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 95.56326723098755,
+      "ship_error_median_m": 0.5884959731951909,
+      "eca_direct_depth_db": 11.343643515976458,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 146.71196555395534,
+        "p90_error_m": 208.2562478875437,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 190.39068634986813,
+        "p90_error_m": 222.5737712834665,
+        "frames": 79
+      }
+    },
+    "noise2/oracle/body": {
+      "set": "noise2",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.602524518966675,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8734177215189873,
+        "declared": 0.8860759493670886,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.9493670886075949,
+        "median_error_m": 2.1104775358432537,
+        "p90_error_m": 4.144852328018512,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9873417721518988,
+        "declared": 0.9873417721518988,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 1.0,
+        "median_error_m": 1.9093010681705023,
+        "p90_error_m": 3.0135062609596472,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 2,
+        "total": 3
+      }
+    },
+    "noise2/oracle/free": {
+      "set": "noise2",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.9027259349823,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 129.06758626219798,
+        "p90_error_m": 183.95628373972042,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 126.4056215306687,
+        "p90_error_m": 178.38825724499202,
+        "frames": 79
+      }
+    },
+    "noise2/eca_oracle+doppler/body": {
+      "set": "noise2",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 100.78183817863464,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.46023451926049,
+      "eca_echo_loss_db": 0.6566898170016285,
+      "frame": {
+        "pd": 0.16455696202531644,
+        "declared": 0.21518987341772153,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.5063291139240507,
+        "median_error_m": 4.894084649675958,
+        "p90_error_m": 223.01346601224873,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.26582278481012656,
+        "declared": 0.2911392405063291,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5822784810126582,
+        "median_error_m": 3.7092368040744343,
+        "p90_error_m": 242.9585729178955,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 5,
+        "quay_image": 0,
+        "direct_path": 2,
+        "elsewhere": 27,
+        "total": 34
+      }
+    },
+    "noise2/eca_oracle+doppler/free": {
+      "set": "noise2",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 88.38763475418091,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.431559715468012,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 151.90248740142815,
+        "p90_error_m": 230.9504712050399,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 172.18423548084616,
+        "p90_error_m": 242.78828089584357,
+        "frames": 79
+      }
+    },
+    "noise2/blind/body": {
+      "set": "noise2",
+      "config": "blind",
+      "body": true,
+      "seconds": 197.93749594688416,
+      "ship_error_median_m": 0.546359165624911,
+      "eca_direct_depth_db": 16.580649426470483,
+      "eca_echo_loss_db": 0.567245933661741,
+      "frame": {
+        "pd": 0.5316455696202531,
+        "declared": 0.6329113924050633,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.6455696202531646,
+        "median_error_m": 2.4965299669607517,
+        "p90_error_m": 177.14840340764243,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.7848101265822784,
+        "declared": 0.8481012658227848,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.8354430379746836,
+        "median_error_m": 2.125484572562861,
+        "p90_error_m": 164.35687567313886,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 11,
+        "elsewhere": 17,
+        "total": 28
+      }
+    },
+    "noise2/blind/free": {
+      "set": "noise2",
+      "config": "blind",
+      "body": false,
+      "seconds": 186.46258687973022,
+      "ship_error_median_m": 0.546359165624911,
+      "eca_direct_depth_db": 15.676833664302968,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.12658227848101267,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 158.18205511967176,
+        "p90_error_m": 192.25700234705647,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.11392405063291139,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 163.69261354224005,
+        "p90_error_m": 189.8065566843504,
+        "frames": 79
+      }
+    },
+    "noise2/blind_stage0/body": {
+      "set": "noise2",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 118.0615906715393,
+      "ship_error_median_m": 1.29359461670672,
+      "eca_direct_depth_db": 9.002244026414992,
+      "eca_echo_loss_db": 0.32033840133757424,
+      "frame": {
+        "pd": 0.43037974683544306,
+        "declared": 0.6075949367088608,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5822784810126582,
+        "median_error_m": 4.2685814984832975,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5569620253164557,
+        "declared": 0.759493670886076,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5949367088607594,
+        "median_error_m": 3.934813357232844,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 1,
+        "elsewhere": 20,
+        "total": 21
+      }
+    },
+    "noise2/blind_stage0/free": {
+      "set": "noise2",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 96.56072974205017,
+      "ship_error_median_m": 1.29359461670672,
+      "eca_direct_depth_db": 8.970224675530178,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.10126582278481013,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 160.86303289067442,
+        "p90_error_m": 206.74151286208652,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 163.12712902294513,
+        "p90_error_m": 207.95177915849075,
+        "frames": 79
+      }
+    },
+    "noise3/oracle/body": {
+      "set": "noise3",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.735219955444336,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8481012658227848,
+        "declared": 0.8987341772151899,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.8987341772151899,
+        "median_error_m": 2.262550114054546,
+        "p90_error_m": 4.683988320897715,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9493670886075949,
+        "declared": 0.9873417721518988,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.9620253164556962,
+        "median_error_m": 2.0123215103157897,
+        "p90_error_m": 3.4586512181266116,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 5,
+        "elsewhere": 0,
+        "total": 5
+      }
+    },
+    "noise3/oracle/free": {
+      "set": "noise3",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.618406772613525,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.02531645569620253,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 86.27106733056712,
+        "p90_error_m": 129.0984952783494,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 90.05654301026478,
+        "p90_error_m": 116.27649308702324,
+        "frames": 79
+      }
+    },
+    "noise3/eca_oracle+doppler/body": {
+      "set": "noise3",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 95.41623210906982,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.398169534529742,
+      "eca_echo_loss_db": 0.6154724175010569,
+      "frame": {
+        "pd": 0.17721518987341772,
+        "declared": 0.21518987341772153,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.45569620253164556,
+        "median_error_m": 6.461489783490137,
+        "p90_error_m": 222.306507928616,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.24050632911392406,
+        "declared": 0.2911392405063291,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5189873417721519,
+        "median_error_m": 4.617822780348394,
+        "p90_error_m": 239.69977820406686,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 2,
+        "quay_image": 0,
+        "direct_path": 2,
+        "elsewhere": 32,
+        "total": 36
+      }
+    },
+    "noise3/eca_oracle+doppler/free": {
+      "set": "noise3",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 86.70007181167603,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.398169534529742,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 172.4524142106705,
+        "p90_error_m": 222.306507928616,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.02531645569620253,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 197.91258691168184,
+        "p90_error_m": 240.19872105810882,
+        "frames": 79
+      }
+    },
+    "noise3/blind/body": {
+      "set": "noise3",
+      "config": "blind",
+      "body": true,
+      "seconds": 200.2298469543457,
+      "ship_error_median_m": 0.5936865001569879,
+      "eca_direct_depth_db": 17.355117575885114,
+      "eca_echo_loss_db": 0.5389618717119241,
+      "frame": {
+        "pd": 0.4936708860759494,
+        "declared": 0.5443037974683544,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.7215189873417721,
+        "median_error_m": 2.8534779099774505,
+        "p90_error_m": 83.53465210347429,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.8481012658227848,
+        "declared": 0.8607594936708861,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.9493670886075949,
+        "median_error_m": 2.262550114054546,
+        "p90_error_m": 3.950983497876688,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 12,
+        "elsewhere": 7,
+        "total": 19
+      }
+    },
+    "noise3/blind/free": {
+      "set": "noise3",
+      "config": "blind",
+      "body": false,
+      "seconds": 180.84915900230408,
+      "ship_error_median_m": 0.5936865001569879,
+      "eca_direct_depth_db": 17.114872162931434,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.08860759493670886,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 80.6701576014474,
+        "p90_error_m": 139.0443903211591,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.11392405063291139,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 82.76951017286056,
+        "p90_error_m": 118.18273235674303,
+        "frames": 79
+      }
+    },
+    "noise3/blind_stage0/body": {
+      "set": "noise3",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 123.2136459350586,
+      "ship_error_median_m": 0.5752576190235948,
+      "eca_direct_depth_db": 10.038465308781657,
+      "eca_echo_loss_db": 0.3265112607745986,
+      "frame": {
+        "pd": 0.4177215189873418,
+        "declared": 0.7088607594936709,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5316455696202531,
+        "median_error_m": 4.2685814984832975,
+        "p90_error_m": 192.5424339026607,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5189873417721519,
+        "declared": 0.7974683544303798,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6582278481012658,
+        "median_error_m": 3.1938678105262506,
+        "p90_error_m": 112.97855126979391,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 8,
+        "quay_image": 0,
+        "direct_path": 4,
+        "elsewhere": 13,
+        "total": 25
+      }
+    },
+    "noise3/blind_stage0/free": {
+      "set": "noise3",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 103.05617594718933,
+      "ship_error_median_m": 0.5785495200451637,
+      "eca_direct_depth_db": 10.088457442900808,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.24050632911392406,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 140.63326648983698,
+        "p90_error_m": 221.9707355856298,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.3037974683544304,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 176.28236322684793,
+        "p90_error_m": 230.5056695360652,
+        "frames": 79
+      }
+    },
+    "noise4/oracle/body": {
+      "set": "noise4",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.6771626472473145,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8481012658227848,
+        "declared": 0.9113924050632911,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.9240506329113924,
+        "median_error_m": 2.223562362542418,
+        "p90_error_m": 4.005377488028436,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9620253164556962,
+        "declared": 0.9873417721518988,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.9746835443037974,
+        "median_error_m": 2.048077366280615,
+        "p90_error_m": 3.6923435617104396,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 3,
+        "elsewhere": 0,
+        "total": 3
+      }
+    },
+    "noise4/oracle/free": {
+      "set": "noise4",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.568671703338623,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 108.04991962639049,
+        "p90_error_m": 177.8178447884322,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 97.38772931624699,
+        "p90_error_m": 183.07976280022328,
+        "frames": 79
+      }
+    },
+    "noise4/eca_oracle+doppler/body": {
+      "set": "noise4",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 178.29849886894226,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.460234519257956,
+      "eca_echo_loss_db": 0.5894397503034641,
+      "frame": {
+        "pd": 0.17721518987341772,
+        "declared": 0.20253164556962025,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.5443037974683544,
+        "median_error_m": 4.447124725084773,
+        "p90_error_m": 213.91806137620415,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.20253164556962025,
+        "declared": 0.26582278481012656,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5949367088607594,
+        "median_error_m": 3.684000966472978,
+        "p90_error_m": 246.73945324826852,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 6,
+        "elsewhere": 22,
+        "total": 32
+      }
+    },
+    "noise4/eca_oracle+doppler/free": {
+      "set": "noise4",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 185.17579555511475,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.431559715469568,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 177.18508886763271,
+        "p90_error_m": 229.78837297269686,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 200.8307223555438,
+        "p90_error_m": 246.5118991592944,
+        "frames": 79
+      }
+    },
+    "noise4/blind/body": {
+      "set": "noise4",
+      "config": "blind",
+      "body": true,
+      "seconds": 737.6783902645111,
+      "ship_error_median_m": 0.8125102938898524,
+      "eca_direct_depth_db": 16.82030241914125,
+      "eca_echo_loss_db": 0.5117485877804564,
+      "frame": {
+        "pd": 0.4050632911392405,
+        "declared": 0.5316455696202531,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.620253164556962,
+        "median_error_m": 3.4006068804707814,
+        "p90_error_m": 182.68178308328092,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.7974683544303798,
+        "declared": 0.810126582278481,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.9240506329113924,
+        "median_error_m": 2.169793953130912,
+        "p90_error_m": 4.482391331725929,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 8,
+        "elsewhere": 20,
+        "total": 28
+      }
+    },
+    "noise4/blind/free": {
+      "set": "noise4",
+      "config": "blind",
+      "body": false,
+      "seconds": 616.2574424743652,
+      "ship_error_median_m": 0.8149618309327332,
+      "eca_direct_depth_db": 16.507732352270537,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.189873417721519,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 148.1382051417232,
+        "p90_error_m": 190.11926292610514,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 153.44694243021735,
+        "p90_error_m": 189.7389426783972,
+        "frames": 79
+      }
+    },
+    "noise4/blind_stage0/body": {
+      "set": "noise4",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 511.7156457901001,
+      "ship_error_median_m": 1.2421860552241215,
+      "eca_direct_depth_db": 8.889304422695286,
+      "eca_echo_loss_db": 0.3269230419113056,
+      "frame": {
+        "pd": 0.43037974683544306,
+        "declared": 0.6962025316455697,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.45569620253164556,
+        "median_error_m": 6.1688940171337405,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.4936708860759494,
+        "declared": 0.7721518987341772,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5189873417721519,
+        "median_error_m": 4.667029952934222,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 6,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 24,
+        "total": 30
+      }
+    },
+    "noise4/blind_stage0/free": {
+      "set": "noise4",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 100.83499145507812,
+      "ship_error_median_m": 0.9861012792378677,
+      "eca_direct_depth_db": 8.98216883946286,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.12658227848101267,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 151.8870030597859,
+        "p90_error_m": 206.4408651700894,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 148.6946044185646,
+        "p90_error_m": 207.04293146342422,
+        "frames": 79
+      }
+    },
+    "noise5/oracle/body": {
+      "set": "noise5",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.506195306777954,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8607594936708861,
+        "declared": 0.8860759493670886,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.9113924050632911,
+        "median_error_m": 2.223562362542418,
+        "p90_error_m": 4.635829152288464,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9873417721518988,
+        "declared": 0.9873417721518988,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 1.0,
+        "median_error_m": 2.048077366280615,
+        "p90_error_m": 3.4283955553647076,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 4,
+        "elsewhere": 0,
+        "total": 5
+      }
+    },
+    "noise5/oracle/free": {
+      "set": "noise5",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.595022678375244,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 90.62932665092411,
+        "p90_error_m": 110.04235761163413,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 90.62932665092411,
+        "p90_error_m": 112.88504818134848,
+        "frames": 79
+      }
+    },
+    "noise5/eca_oracle+doppler/body": {
+      "set": "noise5",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 298.21559596061707,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.37969560570576,
+      "eca_echo_loss_db": 0.5894397503049735,
+      "frame": {
+        "pd": 0.13924050632911392,
+        "declared": 0.16455696202531644,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.5443037974683544,
+        "median_error_m": 4.7044827588163125,
+        "p90_error_m": 240.25014050422465,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.22784810126582278,
+        "declared": 0.24050632911392406,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5822784810126582,
+        "median_error_m": 4.250969145125731,
+        "p90_error_m": 246.9474673255018,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 9,
+        "quay_image": 0,
+        "direct_path": 4,
+        "elsewhere": 19,
+        "total": 32
+      }
+    },
+    "noise5/eca_oracle+doppler/free": {
+      "set": "noise5",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 347.0577039718628,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.34630542475877,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 134.25835106483947,
+        "p90_error_m": 245.04764974738217,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 157.13248614421963,
+        "p90_error_m": 247.73786024485779,
+        "frames": 79
+      }
+    },
+    "noise5/blind/body": {
+      "set": "noise5",
+      "config": "blind",
+      "body": true,
+      "seconds": 890.47909116745,
+      "ship_error_median_m": 0.5551326930831187,
+      "eca_direct_depth_db": 18.12543043607687,
+      "eca_echo_loss_db": 0.5298861848376304,
+      "frame": {
+        "pd": 0.45569620253164556,
+        "declared": 0.5063291139240507,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.7088607594936709,
+        "median_error_m": 2.869181585738714,
+        "p90_error_m": 84.19956610243105,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.810126582278481,
+        "declared": 0.8354430379746836,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.9367088607594937,
+        "median_error_m": 2.1104775358432537,
+        "p90_error_m": 4.036012738582411,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 14,
+        "elsewhere": 8,
+        "total": 22
+      }
+    },
+    "noise5/blind/free": {
+      "set": "noise5",
+      "config": "blind",
+      "body": false,
+      "seconds": 794.7660551071167,
+      "ship_error_median_m": 0.5551326930831187,
+      "eca_direct_depth_db": 17.923147769515992,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.10126582278481013,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 88.52538413367215,
+        "p90_error_m": 114.92646438462017,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.189873417721519,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 89.26007342982165,
+        "p90_error_m": 118.8455856302272,
+        "frames": 79
+      }
+    },
+    "noise5/blind_stage0/body": {
+      "set": "noise5",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 524.4431011676788,
+      "ship_error_median_m": 0.7570043397447331,
+      "eca_direct_depth_db": 12.786932259557307,
+      "eca_echo_loss_db": 0.32229558817658577,
+      "frame": {
+        "pd": 0.4936708860759494,
+        "declared": 0.6455696202531646,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6835443037974683,
+        "median_error_m": 3.729679134914056,
+        "p90_error_m": 183.3537801165665,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5316455696202531,
+        "declared": 0.759493670886076,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6962025316455697,
+        "median_error_m": 3.4138947799279276,
+        "p90_error_m": 104.36062880590478,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 3,
+        "elsewhere": 10,
+        "total": 14
+      }
+    },
+    "noise5/blind_stage0/free": {
+      "set": "noise5",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 427.678573846817,
+      "ship_error_median_m": 0.7570043397447331,
+      "eca_direct_depth_db": 12.771467739888102,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.06329113924050633,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 119.247426106782,
+        "p90_error_m": 208.82847381737864,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 139.00596050854844,
+        "p90_error_m": 211.27316064986147,
+        "frames": 79
+      }
+    },
+    "geometry0/oracle/body": {
+      "set": "geometry0",
+      "config": "oracle",
+      "body": true,
+      "seconds": 11.539241552352905,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.13924050632911392,
+        "declared": 0.1518987341772152,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.45569620253164556,
+        "median_error_m": 62.88143735751709,
+        "p90_error_m": 101.93929442035362,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.2911392405063291,
+        "declared": 0.2911392405063291,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.7341772151898734,
+        "median_error_m": 1.7046505340852556,
+        "p90_error_m": 74.3887299757189,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 30,
+        "elsewhere": 12,
+        "total": 43
+      }
+    },
+    "geometry0/oracle/free": {
+      "set": "geometry0",
+      "config": "oracle",
+      "body": false,
+      "seconds": 5.540230989456177,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 87.11774977062439,
+        "p90_error_m": 117.02942374939322,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 90.66415493293175,
+        "p90_error_m": 115.89127387191179,
+        "frames": 79
+      }
+    },
+    "geometry0/eca_oracle+doppler/body": {
+      "set": "geometry0",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 261.9091022014618,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.638120132385154,
+      "eca_echo_loss_db": 0.2612097460428519,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.6962025316455697,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 222.3582194668999,
+        "p90_error_m": 236.923353277354,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.8354430379746836,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 228.1007792513708,
+        "p90_error_m": 240.64083479993448,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 3,
+        "quay_image": 0,
+        "direct_path": 1,
+        "elsewhere": 75,
+        "total": 79
+      }
+    },
+    "geometry0/eca_oracle+doppler/free": {
+      "set": "geometry0",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 232.73477029800415,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.673114230485602,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.7088607594936709,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 222.3582194668999,
+        "p90_error_m": 239.62794169282918,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.810126582278481,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 228.6001047257015,
+        "p90_error_m": 238.82900656519192,
+        "frames": 79
+      }
+    },
+    "geometry0/blind/body": {
+      "set": "geometry0",
+      "config": "blind",
+      "body": true,
+      "seconds": 383.6653411388397,
+      "ship_error_median_m": 0.28540505551447437,
+      "eca_direct_depth_db": 18.694713329002198,
+      "eca_echo_loss_db": 0.2442371501302837,
+      "frame": {
+        "pd": 0.0379746835443038,
+        "declared": 0.4810126582278481,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0759493670886076,
+        "median_error_m": 100.52130612595727,
+        "p90_error_m": 187.55501801111689,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.08860759493670886,
+        "declared": 0.6582278481012658,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.11392405063291139,
+        "median_error_m": 96.56101161679739,
+        "p90_error_m": 189.33952337778334,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 3,
+        "quay_image": 0,
+        "direct_path": 36,
+        "elsewhere": 34,
+        "total": 73
+      }
+    },
+    "geometry0/blind/free": {
+      "set": "geometry0",
+      "config": "blind",
+      "body": false,
+      "seconds": 302.1958405971527,
+      "ship_error_median_m": 0.28540505551447437,
+      "eca_direct_depth_db": 18.74099863376129,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.4177215189873418,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 107.89325095800352,
+        "p90_error_m": 186.63695004339203,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.5443037974683544,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 104.08839663831753,
+        "p90_error_m": 184.80624448755177,
+        "frames": 79
+      }
+    },
+    "geometry0/blind_stage0/body": {
+      "set": "geometry0",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 266.3748404979706,
+      "ship_error_median_m": 0.2815709436155243,
+      "eca_direct_depth_db": 9.539130496109998,
+      "eca_echo_loss_db": 0.23122636169243144,
+      "frame": {
+        "pd": 0.012658227848101266,
+        "declared": 0.569620253164557,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.05063291139240506,
+        "median_error_m": 214.19711932837305,
+        "p90_error_m": 230.3607476168973,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.6708860759493671,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.05063291139240506,
+        "median_error_m": 215.48162238515653,
+        "p90_error_m": 237.06570578485628,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 2,
+        "elsewhere": 69,
+        "total": 75
+      }
+    },
+    "geometry0/blind_stage0/free": {
+      "set": "geometry0",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 77.23932814598083,
+      "ship_error_median_m": 0.2852054325830074,
+      "eca_direct_depth_db": 9.698465041819887,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.5443037974683544,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 214.6364310136533,
+        "p90_error_m": 231.35787375818649,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.6962025316455697,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 221.04868197746563,
+        "p90_error_m": 237.06570578485628,
+        "frames": 79
+      }
+    },
+    "geometry1/oracle/body": {
+      "set": "geometry1",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.642347812652588,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.17721518987341772,
+        "declared": 0.22784810126582278,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.4050632911392405,
+        "median_error_m": 72.97211213174069,
+        "p90_error_m": 112.96095732295629,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.3924050632911392,
+        "declared": 0.3924050632911392,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.7215189873417721,
+        "median_error_m": 1.684795447782683,
+        "p90_error_m": 83.79967334150399,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 2,
+        "quay_image": 0,
+        "direct_path": 25,
+        "elsewhere": 20,
+        "total": 47
+      }
+    },
+    "geometry1/oracle/free": {
+      "set": "geometry1",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.613965272903442,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.06329113924050633,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 91.02309880114177,
+        "p90_error_m": 115.35910336802719,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 92.14248294652832,
+        "p90_error_m": 116.82602545396196,
+        "frames": 79
+      }
+    },
+    "geometry1/eca_oracle+doppler/body": {
+      "set": "geometry1",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 67.56920433044434,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.812867427810268,
+      "eca_echo_loss_db": 0.2622772608889228,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.6582278481012658,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 224.5427002465492,
+        "p90_error_m": 243.2335515642353,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.759493670886076,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 231.14959626853087,
+        "p90_error_m": 244.09722061602696,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 4,
+        "elsewhere": 71,
+        "total": 79
+      }
+    },
+    "geometry1/eca_oracle+doppler/free": {
+      "set": "geometry1",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 61.40491580963135,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.716942546908303,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.6708860759493671,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 224.62205055028664,
+        "p90_error_m": 243.2335515642353,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.759493670886076,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 230.64973037079358,
+        "p90_error_m": 244.09722061602696,
+        "frames": 79
+      }
+    },
+    "geometry1/blind/body": {
+      "set": "geometry1",
+      "config": "blind",
+      "body": true,
+      "seconds": 244.58324599266052,
+      "ship_error_median_m": 0.3170371158764116,
+      "eca_direct_depth_db": 18.87746309632943,
+      "eca_echo_loss_db": 0.2543666390179967,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.25316455696202533,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.02531645569620253,
+        "median_error_m": 94.23818278580367,
+        "p90_error_m": 149.43565636411094,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.02531645569620253,
+        "declared": 0.3037974683544304,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.12658227848101267,
+        "median_error_m": 90.9997326632086,
+        "p90_error_m": 116.31807829350396,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 5,
+        "quay_image": 0,
+        "direct_path": 37,
+        "elsewhere": 35,
+        "total": 77
+      }
+    },
+    "geometry1/blind/free": {
+      "set": "geometry1",
+      "config": "blind",
+      "body": false,
+      "seconds": 281.9286766052246,
+      "ship_error_median_m": 0.3241150258940859,
+      "eca_direct_depth_db": 18.896172059501378,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.24050632911392406,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 94.6923370565284,
+        "p90_error_m": 153.48080309742815,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.26582278481012656,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 94.23818278580367,
+        "p90_error_m": 118.66213717220998,
+        "frames": 79
+      }
+    },
+    "geometry1/blind_stage0/body": {
+      "set": "geometry1",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 174.563880443573,
+      "ship_error_median_m": 0.22319923299292752,
+      "eca_direct_depth_db": 9.290524510961601,
+      "eca_echo_loss_db": 0.20584726138266224,
+      "frame": {
+        "pd": 0.012658227848101266,
+        "declared": 0.6329113924050633,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.05063291139240506,
+        "median_error_m": 214.23017284402363,
+        "p90_error_m": 229.96668286903164,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.7215189873417721,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.012658227848101266,
+        "median_error_m": 221.26697228399948,
+        "p90_error_m": 236.5906004161678,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 9,
+        "quay_image": 0,
+        "direct_path": 1,
+        "elsewhere": 65,
+        "total": 75
+      }
+    },
+    "geometry1/blind_stage0/free": {
+      "set": "geometry1",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 137.1513397693634,
+      "ship_error_median_m": 0.20776990517770355,
+      "eca_direct_depth_db": 9.388464680907246,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.6455696202531646,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 215.5058894077892,
+        "p90_error_m": 231.4609823325821,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.7341772151898734,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 222.1724409231369,
+        "p90_error_m": 236.5906004161678,
+        "frames": 79
+      }
+    },
+    "geometry2/oracle/body": {
+      "set": "geometry2",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.9631640911102295,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.16455696202531644,
+        "declared": 0.17721518987341772,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.5949367088607594,
+        "median_error_m": 2.1275065694525197,
+        "p90_error_m": 174.40346894755206,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.3291139240506329,
+        "declared": 0.3291139240506329,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.8607594936708861,
+        "median_error_m": 1.684795447782683,
+        "p90_error_m": 134.30829291293082,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 3,
+        "quay_image": 0,
+        "direct_path": 16,
+        "elsewhere": 12,
+        "total": 31
+      }
+    },
+    "geometry2/oracle/free": {
+      "set": "geometry2",
+      "config": "oracle",
+      "body": false,
+      "seconds": 6.780701160430908,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 1245.0753173828125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 125.46983960851473,
+        "p90_error_m": 189.44348789002575,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 2541.7861328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 142.8026847561116,
+        "p90_error_m": 190.0476453667357,
+        "frames": 79
+      }
+    },
+    "geometry2/eca_oracle+doppler/body": {
+      "set": "geometry2",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 108.04293894767761,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.69208681702162,
+      "eca_echo_loss_db": 0.26268728845815903,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.7088607594936709,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 220.27322244299933,
+        "p90_error_m": 237.27111692147108,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.7848101265822784,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 225.67341062286124,
+        "p90_error_m": 239.71485704327145,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 6,
+        "quay_image": 0,
+        "direct_path": 4,
+        "elsewhere": 68,
+        "total": 78
+      }
+    },
+    "geometry2/eca_oracle+doppler/free": {
+      "set": "geometry2",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 104.0301468372345,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.69208681702162,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.7088607594936709,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 220.27322244299933,
+        "p90_error_m": 237.27111692147108,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.7721518987341772,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 226.17285008288695,
+        "p90_error_m": 241.32642370975998,
+        "frames": 79
+      }
+    },
+    "geometry2/blind/body": {
+      "set": "geometry2",
+      "config": "blind",
+      "body": true,
+      "seconds": 158.38566136360168,
+      "ship_error_median_m": 0.33823804947507474,
+      "eca_direct_depth_db": 18.57434030698645,
+      "eca_echo_loss_db": 0.2425549330949983,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.759493670886076,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.012658227848101266,
+        "median_error_m": 163.25361759797553,
+        "p90_error_m": 195.65184825259365,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.012658227848101266,
+        "declared": 0.8860759493670886,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.02531645569620253,
+        "median_error_m": 161.2285722641538,
+        "p90_error_m": 195.29506063697616,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 10,
+        "quay_image": 0,
+        "direct_path": 33,
+        "elsewhere": 35,
+        "total": 78
+      }
+    },
+    "geometry2/blind/free": {
+      "set": "geometry2",
+      "config": "blind",
+      "body": false,
+      "seconds": 126.23216843605042,
+      "ship_error_median_m": 0.3843709653107148,
+      "eca_direct_depth_db": 18.594353368629406,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.6962025316455697,
+        "threshold": 980.1574096679688,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 167.47751934055196,
+        "p90_error_m": 196.99497533721265,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.8481012658227848,
+        "threshold": 1590.646484375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 162.75794095031327,
+        "p90_error_m": 196.2078658253747,
+        "frames": 79
+      }
+    },
+    "geometry2/blind_stage0/body": {
+      "set": "geometry2",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 95.01343870162964,
+      "ship_error_median_m": 1.5277304348275802,
+      "eca_direct_depth_db": 7.791656207938146,
+      "eca_echo_loss_db": 0.2478247629728324,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.5063291139240507,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.02531645569620253,
+        "median_error_m": 208.19523336225447,
+        "p90_error_m": 227.1411354940248,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.6835443037974683,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 213.7440097013583,
+        "p90_error_m": 233.70819347625957,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 8,
+        "elsewhere": 65,
+        "total": 77
+      }
+    },
+    "geometry2/blind_stage0/free": {
+      "set": "geometry2",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 54.57140564918518,
+      "ship_error_median_m": 1.5528952038226835,
+      "eca_direct_depth_db": 7.7255056581961625,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.5822784810126582,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 211.06686483775886,
+        "p90_error_m": 230.5734983571006,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.6835443037974683,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 214.66846607961395,
+        "p90_error_m": 234.31217440601336,
+        "frames": 79
+      }
+    }
+  },
+  "summary": {
+    "oracle": {
+      "dev": {
+        "pd": 0.7974683544303798,
+        "pd_by_set": {
+          "dev": 0.7974683544303798
+        },
+        "declared_free": 0.0379746835443038,
+        "within_5m": 0.9240506329113924,
+        "median_error_m": 2.262550114054546,
+        "integrated_pd": 0.9620253164556962,
+        "integrated_within_5m": 1.0,
+        "eca_direct_depth_db": null,
+        "misses": {
+          "ship_edge": 0,
+          "quay_image": 0,
+          "direct_path": 0,
+          "elsewhere": 4,
+          "total": 4
+        }
+      },
+      "noise": {
+        "pd": 0.8506329113924052,
+        "pd_by_set": {
+          "noise1": 0.8227848101265823,
+          "noise2": 0.8734177215189873,
+          "noise3": 0.8481012658227848,
+          "noise4": 0.8481012658227848,
+          "noise5": 0.8607594936708861
+        },
+        "declared_free": 0.043037974683544304,
+        "within_5m": 0.9189873417721518,
+        "median_error_m": 2.2306013757516054,
+        "integrated_pd": 0.9746835443037976,
+        "integrated_within_5m": 0.9873417721518987,
+        "eca_direct_depth_db": null,
+        "misses": {
+          "ship_edge": 2,
+          "quay_image": 0,
+          "direct_path": 16,
+          "elsewhere": 5,
+          "total": 23
+        }
+      },
+      "geometry": {
+        "pd": 0.16033755274261605,
+        "pd_by_set": {
+          "geometry0": 0.13924050632911392,
+          "geometry1": 0.17721518987341772,
+          "geometry2": 0.16455696202531644
+        },
+        "declared_free": 0.029535864978902954,
+        "within_5m": 0.4852320675105484,
+        "median_error_m": 45.993685352903434,
+        "integrated_pd": 0.3375527426160338,
+        "integrated_within_5m": 0.7721518987341772,
+        "eca_direct_depth_db": null,
+        "misses": {
+          "ship_edge": 6,
+          "quay_image": 0,
+          "direct_path": 71,
+          "elsewhere": 44,
+          "total": 121
+        }
+      }
+    },
+    "eca_oracle+doppler": {
+      "dev": {
+        "pd": 0.11392405063291139,
+        "pd_by_set": {
+          "dev": 0.11392405063291139
+        },
+        "declared_free": 0.0379746835443038,
+        "within_5m": 0.4810126582278481,
+        "median_error_m": 5.984380453681621,
+        "integrated_pd": 0.16455696202531644,
+        "integrated_within_5m": 0.5316455696202531,
+        "eca_direct_depth_db": 21.34630542475794,
+        "misses": {
+          "ship_edge": 7,
+          "quay_image": 0,
+          "direct_path": 0,
+          "elsewhere": 30,
+          "total": 37
+        }
+      },
+      "noise": {
+        "pd": 0.15949367088607594,
+        "pd_by_set": {
+          "noise1": 0.13924050632911392,
+          "noise2": 0.16455696202531644,
+          "noise3": 0.17721518987341772,
+          "noise4": 0.17721518987341772,
+          "noise5": 0.13924050632911392
+        },
+        "declared_free": 0.02278481012658228,
+        "within_5m": 0.5088607594936709,
+        "median_error_m": 5.1409940017203954,
+        "integrated_pd": 0.23291139240506328,
+        "integrated_within_5m": 0.569620253164557,
+        "eca_direct_depth_db": 21.41930074265542,
+        "misses": {
+          "ship_edge": 24,
+          "quay_image": 0,
+          "direct_path": 18,
+          "elsewhere": 129,
+          "total": 171
+        }
+      },
+      "geometry": {
+        "pd": 0.0,
+        "pd_by_set": {
+          "geometry0": 0.0,
+          "geometry1": 0.0,
+          "geometry2": 0.0
+        },
+        "declared_free": 0.6962025316455697,
+        "within_5m": 0.0,
+        "median_error_m": 222.39138071881612,
+        "integrated_pd": 0.0,
+        "integrated_within_5m": 0.0,
+        "eca_direct_depth_db": 22.714358125739015,
+        "misses": {
+          "ship_edge": 13,
+          "quay_image": 0,
+          "direct_path": 9,
+          "elsewhere": 214,
+          "total": 236
+        }
+      }
+    },
+    "blind": {
+      "dev": {
+        "pd": 0.4430379746835443,
+        "pd_by_set": {
+          "dev": 0.4430379746835443
+        },
+        "declared_free": 0.0379746835443038,
+        "within_5m": 0.7341772151898734,
+        "median_error_m": 2.6345607744398127,
+        "integrated_pd": 0.759493670886076,
+        "integrated_within_5m": 0.8734177215189873,
+        "eca_direct_depth_db": 17.43256546261279,
+        "misses": {
+          "ship_edge": 0,
+          "quay_image": 0,
+          "direct_path": 13,
+          "elsewhere": 7,
+          "total": 20
+        }
+      },
+      "noise": {
+        "pd": 0.46835443037974683,
+        "pd_by_set": {
+          "noise1": 0.45569620253164556,
+          "noise2": 0.5316455696202531,
+          "noise3": 0.4936708860759494,
+          "noise4": 0.4050632911392405,
+          "noise5": 0.45569620253164556
+        },
+        "declared_free": 0.12658227848101267,
+        "within_5m": 0.6632911392405063,
+        "median_error_m": 2.9522845551590544,
+        "integrated_pd": 0.7974683544303798,
+        "integrated_within_5m": 0.8962025316455696,
+        "eca_direct_depth_db": 17.395182863739688,
+        "misses": {
+          "ship_edge": 0,
+          "quay_image": 0,
+          "direct_path": 58,
+          "elsewhere": 67,
+          "total": 125
+        }
+      },
+      "geometry": {
+        "pd": 0.012658227848101266,
+        "pd_by_set": {
+          "geometry0": 0.0379746835443038,
+          "geometry1": 0.0,
+          "geometry2": 0.0
+        },
+        "declared_free": 0.4514767932489452,
+        "within_5m": 0.0379746835443038,
+        "median_error_m": 119.33770216991216,
+        "integrated_pd": 0.042194092827004225,
+        "integrated_within_5m": 0.08860759493670887,
+        "eca_direct_depth_db": 18.71550557743936,
+        "misses": {
+          "ship_edge": 18,
+          "quay_image": 0,
+          "direct_path": 106,
+          "elsewhere": 104,
+          "total": 228
+        }
+      }
+    },
+    "blind_stage0": {
+      "dev": {
+        "pd": 0.46835443037974683,
+        "pd_by_set": {
+          "dev": 0.46835443037974683
+        },
+        "declared_free": 0.0379746835443038,
+        "within_5m": 0.5949367088607594,
+        "median_error_m": 3.583051317322763,
+        "integrated_pd": 0.5443037974683544,
+        "integrated_within_5m": 0.6075949367088608,
+        "eca_direct_depth_db": 11.035589202919203,
+        "misses": {
+          "ship_edge": 1,
+          "quay_image": 0,
+          "direct_path": 0,
+          "elsewhere": 18,
+          "total": 19
+        }
+      },
+      "noise": {
+        "pd": 0.45316455696202534,
+        "pd_by_set": {
+          "noise1": 0.4936708860759494,
+          "noise2": 0.43037974683544306,
+          "noise3": 0.4177215189873418,
+          "noise4": 0.43037974683544306,
+          "noise5": 0.4936708860759494
+        },
+        "declared_free": 0.11645569620253164,
+        "within_5m": 0.569620253164557,
+        "median_error_m": 4.454320852559614,
+        "integrated_pd": 0.5341772151898734,
+        "integrated_within_5m": 0.6253164556962025,
+        "eca_direct_depth_db": 10.394291121646399,
+        "misses": {
+          "ship_edge": 16,
+          "quay_image": 0,
+          "direct_path": 11,
+          "elsewhere": 80,
+          "total": 107
+        }
+      },
+      "geometry": {
+        "pd": 0.008438818565400843,
+        "pd_by_set": {
+          "geometry0": 0.012658227848101266,
+          "geometry1": 0.012658227848101266,
+          "geometry2": 0.0
+        },
+        "declared_free": 0.5907172995780591,
+        "within_5m": 0.042194092827004225,
+        "median_error_m": 212.20750851155037,
+        "integrated_pd": 0.0,
+        "integrated_within_5m": 0.021097046413502112,
+        "eca_direct_depth_db": 8.873770405003249,
+        "misses": {
+          "ship_edge": 17,
+          "quay_image": 0,
+          "direct_path": 11,
+          "elsewhere": 199,
+          "total": 227
+        }
+      }
+    }
+  },
+  "thresholds": {
+    "oracle": {
+      "frame": 1245.0753173828125,
+      "integrated": 2541.7861328125
+    },
+    "eca_oracle+doppler": {
+      "frame": 2085.0126953125,
+      "integrated": 4870.10986328125
+    },
+    "blind": {
+      "frame": 980.1574096679688,
+      "integrated": 1590.646484375
+    },
+    "blind_stage0": {
+      "frame": 1659.494384765625,
+      "integrated": 3660.635009765625
+    }
+  },
+  "cable_exclusion_m": 10.0,
+  "thresholds_cable_exclusion": {
+    "oracle": {
+      "frame": 1042.1138916015625,
+      "integrated": 1811.65869140625
+    },
+    "eca_oracle+doppler": {
+      "frame": 2085.0126953125,
+      "integrated": 4870.10986328125
+    },
+    "blind": {
+      "frame": 907.9859619140625,
+      "integrated": 1566.4609375
+    },
+    "blind_stage0": {
+      "frame": 1659.494384765625,
+      "integrated": 3660.635009765625
+    }
+  },
+  "runs_cable_exclusion": {
+    "dev/oracle/body": {
+      "set": "dev",
+      "config": "oracle",
+      "body": true,
+      "seconds": 8.767516851425171,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8607594936708861,
+        "declared": 0.8734177215189873,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.9240506329113924,
+        "median_error_m": 2.262550114054546,
+        "p90_error_m": 4.28526697525375,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9873417721518988,
+        "declared": 0.9873417721518988,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 1.0,
+        "median_error_m": 2.103552914777342,
+        "p90_error_m": 3.428937218890805,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 4,
+        "total": 4
+      }
+    },
+    "dev/oracle/free": {
+      "set": "dev",
+      "config": "oracle",
+      "body": false,
+      "seconds": 8.767788648605347,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 93.70867671865423,
+        "p90_error_m": 122.07620647954714,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 90.3823140451291,
+        "p90_error_m": 104.97003492893303,
+        "frames": 79
+      }
+    },
+    "dev/eca_oracle+doppler/body": {
+      "set": "dev",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 71.40955853462219,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.34630542475794,
+      "eca_echo_loss_db": 0.6154724175015305,
+      "frame": {
+        "pd": 0.11392405063291139,
+        "declared": 0.16455696202531644,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.4810126582278481,
+        "median_error_m": 5.984380453681621,
+        "p90_error_m": 227.7472321680779,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.16455696202531644,
+        "declared": 0.21518987341772153,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5316455696202531,
+        "median_error_m": 4.306667736170788,
+        "p90_error_m": 246.01306381099474,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 7,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 30,
+        "total": 37
+      }
+    },
+    "dev/eca_oracle+doppler/free": {
+      "set": "dev",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 77.58704495429993,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.398169534521674,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 156.63248834046772,
+        "p90_error_m": 239.60685950418096,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 210.48559573697304,
+        "p90_error_m": 246.00134201338443,
+        "frames": 79
+      }
+    },
+    "dev/blind/body": {
+      "set": "dev",
+      "config": "blind",
+      "body": true,
+      "seconds": 177.59023427963257,
+      "ship_error_median_m": 0.5544315418059849,
+      "eca_direct_depth_db": 17.43256546261279,
+      "eca_echo_loss_db": 0.5411593698129731,
+      "frame": {
+        "pd": 0.4810126582278481,
+        "declared": 0.5443037974683544,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.7848101265822784,
+        "median_error_m": 2.5080960947445945,
+        "p90_error_m": 91.45804904772721,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.759493670886076,
+        "declared": 0.7848101265822784,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.8734177215189873,
+        "median_error_m": 2.1275065694525197,
+        "p90_error_m": 15.98280416794244,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 6,
+        "elsewhere": 10,
+        "total": 16
+      }
+    },
+    "dev/blind/free": {
+      "set": "dev",
+      "config": "blind",
+      "body": false,
+      "seconds": 165.0413200855255,
+      "ship_error_median_m": 0.599315260395023,
+      "eca_direct_depth_db": 16.996916662888932,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 95.30992843937315,
+        "p90_error_m": 162.18438282949893,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 96.79624437960796,
+        "p90_error_m": 120.12449510887069,
+        "frames": 79
+      }
+    },
+    "dev/blind_stage0/body": {
+      "set": "dev",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 104.6765365600586,
+      "ship_error_median_m": 0.6633602206998895,
+      "eca_direct_depth_db": 11.035589202919203,
+      "eca_echo_loss_db": 0.3197832907080308,
+      "frame": {
+        "pd": 0.46835443037974683,
+        "declared": 0.6582278481012658,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5949367088607594,
+        "median_error_m": 3.583051317322763,
+        "p90_error_m": 207.04293146342422,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5443037974683544,
+        "declared": 0.759493670886076,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6075949367088608,
+        "median_error_m": 3.0052172047533667,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 18,
+        "total": 19
+      }
+    },
+    "dev/blind_stage0/free": {
+      "set": "dev",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 84.71085381507874,
+      "ship_error_median_m": 0.6633602206998895,
+      "eca_direct_depth_db": 10.795479428387766,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 167.29428131125283,
+        "p90_error_m": 208.2562478875437,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 163.93520529372404,
+        "p90_error_m": 210.4148500106611,
+        "frames": 79
+      }
+    },
+    "noise1/oracle/body": {
+      "set": "noise1",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.569674730300903,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8860759493670886,
+        "declared": 0.9367088607594937,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.9113924050632911,
+        "median_error_m": 2.3328545037753914,
+        "p90_error_m": 4.361617676796015,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9873417721518988,
+        "declared": 0.9873417721518988,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 1.0,
+        "median_error_m": 1.959300751081849,
+        "p90_error_m": 3.1443670205512673,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 3,
+        "elsewhere": 4,
+        "total": 7
+      }
+    },
+    "noise1/oracle/free": {
+      "set": "noise1",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.9316630363464355,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.10126582278481013,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 83.73694503935131,
+        "p90_error_m": 110.81682432151112,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.1518987341772152,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 83.12393614609799,
+        "p90_error_m": 103.18077077515791,
+        "frames": 79
+      }
+    },
+    "noise1/eca_oracle+doppler/body": {
+      "set": "noise1",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 84.57679605484009,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.39816953452315,
+      "eca_echo_loss_db": 0.5894397503023094,
+      "frame": {
+        "pd": 0.13924050632911392,
+        "declared": 0.17721518987341772,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.5063291139240507,
+        "median_error_m": 4.894084649675958,
+        "p90_error_m": 231.45401522278684,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.22784810126582278,
+        "declared": 0.27848101265822783,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.569620253164557,
+        "median_error_m": 4.033669142213374,
+        "p90_error_m": 248.8361347392644,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 2,
+        "elsewhere": 30,
+        "total": 36
+      }
+    },
+    "noise1/eca_oracle+doppler/free": {
+      "set": "noise1",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 81.06501841545105,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.364779353571983,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 169.44280103702079,
+        "p90_error_m": 244.6714174150912,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 215.9749615271441,
+        "p90_error_m": 247.73786024485779,
+        "frames": 79
+      }
+    },
+    "noise1/blind/body": {
+      "set": "noise1",
+      "config": "blind",
+      "body": true,
+      "seconds": 183.61142778396606,
+      "ship_error_median_m": 0.5881079313628845,
+      "eca_direct_depth_db": 18.09441446112472,
+      "eca_echo_loss_db": 0.5271234267132635,
+      "frame": {
+        "pd": 0.4936708860759494,
+        "declared": 0.5822784810126582,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.6455696202531646,
+        "median_error_m": 2.8007825087631084,
+        "p90_error_m": 94.21887071297184,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.7468354430379747,
+        "declared": 0.810126582278481,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.8481012658227848,
+        "median_error_m": 2.169793953130912,
+        "p90_error_m": 57.65202967832817,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 10,
+        "elsewhere": 16,
+        "total": 26
+      }
+    },
+    "noise1/blind/free": {
+      "set": "noise1",
+      "config": "blind",
+      "body": false,
+      "seconds": 183.0989830493927,
+      "ship_error_median_m": 0.5904340607696122,
+      "eca_direct_depth_db": 17.800373041104027,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.12658227848101267,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 89.96165764879348,
+        "p90_error_m": 123.51188570534644,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.1518987341772152,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 87.51532697034268,
+        "p90_error_m": 114.81831525506665,
+        "frames": 79
+      }
+    },
+    "noise1/blind_stage0/body": {
+      "set": "noise1",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 112.28759765625,
+      "ship_error_median_m": 0.5884959731951909,
+      "eca_direct_depth_db": 11.254509590782753,
+      "eca_echo_loss_db": 0.32302569850589025,
+      "frame": {
+        "pd": 0.4936708860759494,
+        "declared": 0.6962025316455697,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6075949367088608,
+        "median_error_m": 3.8091330419175287,
+        "p90_error_m": 206.4408651700894,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.569620253164557,
+        "declared": 0.7974683544303798,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6582278481012658,
+        "median_error_m": 3.2657614020316457,
+        "p90_error_m": 206.74151286208652,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 2,
+        "elsewhere": 13,
+        "total": 16
+      }
+    },
+    "noise1/blind_stage0/free": {
+      "set": "noise1",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 95.56326723098755,
+      "ship_error_median_m": 0.5884959731951909,
+      "eca_direct_depth_db": 11.343643515976458,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 150.06936673948826,
+        "p90_error_m": 208.2562478875437,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 190.39068634986813,
+        "p90_error_m": 222.5737712834665,
+        "frames": 79
+      }
+    },
+    "noise2/oracle/body": {
+      "set": "noise2",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.602524518966675,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.9113924050632911,
+        "declared": 0.9367088607594937,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.9493670886075949,
+        "median_error_m": 2.1104775358432537,
+        "p90_error_m": 4.144852328018512,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9873417721518988,
+        "declared": 0.9873417721518988,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 1.0,
+        "median_error_m": 1.9093010681705023,
+        "p90_error_m": 3.0135062609596472,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 2,
+        "total": 3
+      }
+    },
+    "noise2/oracle/free": {
+      "set": "noise2",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.9027259349823,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.06329113924050633,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 129.06758626219798,
+        "p90_error_m": 183.95628373972042,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 126.90420342066065,
+        "p90_error_m": 178.38825724499202,
+        "frames": 79
+      }
+    },
+    "noise2/eca_oracle+doppler/body": {
+      "set": "noise2",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 100.78183817863464,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.46023451926049,
+      "eca_echo_loss_db": 0.6566898170016285,
+      "frame": {
+        "pd": 0.16455696202531644,
+        "declared": 0.21518987341772153,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.5063291139240507,
+        "median_error_m": 4.894084649675958,
+        "p90_error_m": 223.01346601224873,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.26582278481012656,
+        "declared": 0.2911392405063291,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5822784810126582,
+        "median_error_m": 3.7092368040744343,
+        "p90_error_m": 242.9585729178955,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 5,
+        "quay_image": 0,
+        "direct_path": 2,
+        "elsewhere": 27,
+        "total": 34
+      }
+    },
+    "noise2/eca_oracle+doppler/free": {
+      "set": "noise2",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 88.38763475418091,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.431559715468012,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 151.90248740142815,
+        "p90_error_m": 230.9504712050399,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 172.18423548084616,
+        "p90_error_m": 242.78828089584357,
+        "frames": 79
+      }
+    },
+    "noise2/blind/body": {
+      "set": "noise2",
+      "config": "blind",
+      "body": true,
+      "seconds": 197.93749594688416,
+      "ship_error_median_m": 0.546359165624911,
+      "eca_direct_depth_db": 16.580649426470483,
+      "eca_echo_loss_db": 0.567245933661741,
+      "frame": {
+        "pd": 0.5949367088607594,
+        "declared": 0.7468354430379747,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.6455696202531646,
+        "median_error_m": 2.4965299669607517,
+        "p90_error_m": 177.14840340764243,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.7848101265822784,
+        "declared": 0.8481012658227848,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.8354430379746836,
+        "median_error_m": 2.125484572562861,
+        "p90_error_m": 164.35687567313886,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 11,
+        "elsewhere": 17,
+        "total": 28
+      }
+    },
+    "noise2/blind/free": {
+      "set": "noise2",
+      "config": "blind",
+      "body": false,
+      "seconds": 186.46258687973022,
+      "ship_error_median_m": 0.546359165624911,
+      "eca_direct_depth_db": 15.676833664302968,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.22784810126582278,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 158.18205511967176,
+        "p90_error_m": 192.25700234705647,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.12658227848101267,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 163.69261354224005,
+        "p90_error_m": 189.8065566843504,
+        "frames": 79
+      }
+    },
+    "noise2/blind_stage0/body": {
+      "set": "noise2",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 118.0615906715393,
+      "ship_error_median_m": 1.29359461670672,
+      "eca_direct_depth_db": 9.002244026414992,
+      "eca_echo_loss_db": 0.32033840133757424,
+      "frame": {
+        "pd": 0.43037974683544306,
+        "declared": 0.6075949367088608,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5822784810126582,
+        "median_error_m": 4.2685814984832975,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5569620253164557,
+        "declared": 0.759493670886076,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5949367088607594,
+        "median_error_m": 3.934813357232844,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 1,
+        "elsewhere": 20,
+        "total": 21
+      }
+    },
+    "noise2/blind_stage0/free": {
+      "set": "noise2",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 96.56072974205017,
+      "ship_error_median_m": 1.29359461670672,
+      "eca_direct_depth_db": 8.970224675530178,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.10126582278481013,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 160.86303289067442,
+        "p90_error_m": 206.74151286208652,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 163.12712902294513,
+        "p90_error_m": 207.95177915849075,
+        "frames": 79
+      }
+    },
+    "noise3/oracle/body": {
+      "set": "noise3",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.735219955444336,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8734177215189873,
+        "declared": 0.9493670886075949,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.8987341772151899,
+        "median_error_m": 2.262550114054546,
+        "p90_error_m": 4.683988320897715,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9620253164556962,
+        "declared": 1.0,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.9620253164556962,
+        "median_error_m": 2.0123215103157897,
+        "p90_error_m": 3.4586512181266116,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 5,
+        "elsewhere": 0,
+        "total": 5
+      }
+    },
+    "noise3/oracle/free": {
+      "set": "noise3",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.618406772613525,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0759493670886076,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.012658227848101266,
+        "median_error_m": 89.71130746712959,
+        "p90_error_m": 132.4611233614431,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 89.71130746712959,
+        "p90_error_m": 119.19863528026995,
+        "frames": 79
+      }
+    },
+    "noise3/eca_oracle+doppler/body": {
+      "set": "noise3",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 95.41623210906982,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.398169534529742,
+      "eca_echo_loss_db": 0.6154724175010569,
+      "frame": {
+        "pd": 0.17721518987341772,
+        "declared": 0.21518987341772153,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.45569620253164556,
+        "median_error_m": 6.461489783490137,
+        "p90_error_m": 222.306507928616,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.24050632911392406,
+        "declared": 0.2911392405063291,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5189873417721519,
+        "median_error_m": 4.617822780348394,
+        "p90_error_m": 239.69977820406686,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 2,
+        "quay_image": 0,
+        "direct_path": 2,
+        "elsewhere": 32,
+        "total": 36
+      }
+    },
+    "noise3/eca_oracle+doppler/free": {
+      "set": "noise3",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 86.70007181167603,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.398169534529742,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 172.4524142106705,
+        "p90_error_m": 222.306507928616,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.02531645569620253,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 197.91258691168184,
+        "p90_error_m": 240.19872105810882,
+        "frames": 79
+      }
+    },
+    "noise3/blind/body": {
+      "set": "noise3",
+      "config": "blind",
+      "body": true,
+      "seconds": 200.2298469543457,
+      "ship_error_median_m": 0.5936865001569879,
+      "eca_direct_depth_db": 17.355117575885114,
+      "eca_echo_loss_db": 0.5389618717119241,
+      "frame": {
+        "pd": 0.5443037974683544,
+        "declared": 0.5949367088607594,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.7341772151898734,
+        "median_error_m": 2.8007825087631084,
+        "p90_error_m": 84.4786225571294,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.8734177215189873,
+        "declared": 0.8734177215189873,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.9746835443037974,
+        "median_error_m": 2.2141875930720634,
+        "p90_error_m": 3.7701720690166454,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 9,
+        "elsewhere": 9,
+        "total": 18
+      }
+    },
+    "noise3/blind/free": {
+      "set": "noise3",
+      "config": "blind",
+      "body": false,
+      "seconds": 180.84915900230408,
+      "ship_error_median_m": 0.5936865001569879,
+      "eca_direct_depth_db": 17.114872162931434,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.08860759493670886,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 83.25556804486294,
+        "p90_error_m": 144.5035563754394,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0759493670886076,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 82.76951017286056,
+        "p90_error_m": 142.98455795709478,
+        "frames": 79
+      }
+    },
+    "noise3/blind_stage0/body": {
+      "set": "noise3",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 123.2136459350586,
+      "ship_error_median_m": 0.5752576190235948,
+      "eca_direct_depth_db": 10.038465308781657,
+      "eca_echo_loss_db": 0.3265112607745986,
+      "frame": {
+        "pd": 0.4177215189873418,
+        "declared": 0.7088607594936709,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5316455696202531,
+        "median_error_m": 4.2685814984832975,
+        "p90_error_m": 192.5424339026607,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5189873417721519,
+        "declared": 0.7974683544303798,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6582278481012658,
+        "median_error_m": 3.1938678105262506,
+        "p90_error_m": 112.97855126979391,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 8,
+        "quay_image": 0,
+        "direct_path": 4,
+        "elsewhere": 13,
+        "total": 25
+      }
+    },
+    "noise3/blind_stage0/free": {
+      "set": "noise3",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 103.05617594718933,
+      "ship_error_median_m": 0.5785495200451637,
+      "eca_direct_depth_db": 10.088457442900808,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.24050632911392406,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 140.63326648983698,
+        "p90_error_m": 221.9707355856298,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.3037974683544304,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 176.28236322684793,
+        "p90_error_m": 230.5056695360652,
+        "frames": 79
+      }
+    },
+    "noise4/oracle/body": {
+      "set": "noise4",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.6771626472473145,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8607594936708861,
+        "declared": 0.9240506329113924,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.9240506329113924,
+        "median_error_m": 2.223562362542418,
+        "p90_error_m": 4.005377488028436,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.9746835443037974,
+        "declared": 1.0,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.9746835443037974,
+        "median_error_m": 2.048077366280615,
+        "p90_error_m": 3.6923435617104396,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 3,
+        "elsewhere": 0,
+        "total": 3
+      }
+    },
+    "noise4/oracle/free": {
+      "set": "noise4",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.568671703338623,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 108.04991962639049,
+        "p90_error_m": 177.8178447884322,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 111.6245958579151,
+        "p90_error_m": 183.61710862076868,
+        "frames": 79
+      }
+    },
+    "noise4/eca_oracle+doppler/body": {
+      "set": "noise4",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 178.29849886894226,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.460234519257956,
+      "eca_echo_loss_db": 0.5894397503034641,
+      "frame": {
+        "pd": 0.17721518987341772,
+        "declared": 0.20253164556962025,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.5443037974683544,
+        "median_error_m": 4.447124725084773,
+        "p90_error_m": 213.91806137620415,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.20253164556962025,
+        "declared": 0.26582278481012656,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5949367088607594,
+        "median_error_m": 3.684000966472978,
+        "p90_error_m": 246.73945324826852,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 6,
+        "elsewhere": 22,
+        "total": 32
+      }
+    },
+    "noise4/eca_oracle+doppler/free": {
+      "set": "noise4",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 185.17579555511475,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.431559715469568,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 177.18508886763271,
+        "p90_error_m": 229.78837297269686,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 200.8307223555438,
+        "p90_error_m": 246.5118991592944,
+        "frames": 79
+      }
+    },
+    "noise4/blind/body": {
+      "set": "noise4",
+      "config": "blind",
+      "body": true,
+      "seconds": 737.6783902645111,
+      "ship_error_median_m": 0.8125102938898524,
+      "eca_direct_depth_db": 16.82030241914125,
+      "eca_echo_loss_db": 0.5117485877804564,
+      "frame": {
+        "pd": 0.43037974683544306,
+        "declared": 0.6075949367088608,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.620253164556962,
+        "median_error_m": 3.4006068804707814,
+        "p90_error_m": 182.68178308328092,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.8227848101265823,
+        "declared": 0.8481012658227848,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.9240506329113924,
+        "median_error_m": 2.169793953130912,
+        "p90_error_m": 4.482391331725929,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 8,
+        "elsewhere": 20,
+        "total": 28
+      }
+    },
+    "noise4/blind/free": {
+      "set": "noise4",
+      "config": "blind",
+      "body": false,
+      "seconds": 616.2574424743652,
+      "ship_error_median_m": 0.8149618309327332,
+      "eca_direct_depth_db": 16.507732352270537,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.25316455696202533,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 148.1382051417232,
+        "p90_error_m": 190.11926292610514,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0379746835443038,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 153.44694243021735,
+        "p90_error_m": 189.7389426783972,
+        "frames": 79
+      }
+    },
+    "noise4/blind_stage0/body": {
+      "set": "noise4",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 511.7156457901001,
+      "ship_error_median_m": 1.2421860552241215,
+      "eca_direct_depth_db": 8.889304422695286,
+      "eca_echo_loss_db": 0.3269230419113056,
+      "frame": {
+        "pd": 0.43037974683544306,
+        "declared": 0.6962025316455697,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.45569620253164556,
+        "median_error_m": 6.1688940171337405,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.4936708860759494,
+        "declared": 0.7721518987341772,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.5189873417721519,
+        "median_error_m": 4.667029952934222,
+        "p90_error_m": 206.14099176044294,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 6,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 24,
+        "total": 30
+      }
+    },
+    "noise4/blind_stage0/free": {
+      "set": "noise4",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 100.83499145507812,
+      "ship_error_median_m": 0.9861012792378677,
+      "eca_direct_depth_db": 8.98216883946286,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.12658227848101267,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 151.8870030597859,
+        "p90_error_m": 206.4408651700894,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 148.6946044185646,
+        "p90_error_m": 207.04293146342422,
+        "frames": 79
+      }
+    },
+    "noise5/oracle/body": {
+      "set": "noise5",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.506195306777954,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.8987341772151899,
+        "declared": 0.9367088607594937,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.9367088607594937,
+        "median_error_m": 2.2195639163655545,
+        "p90_error_m": 4.144852328018512,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 1.0,
+        "declared": 1.0,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 1.0,
+        "median_error_m": 2.048077366280615,
+        "p90_error_m": 3.4283955553647076,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 2,
+        "elsewhere": 0,
+        "total": 3
+      }
+    },
+    "noise5/oracle/free": {
+      "set": "noise5",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.595022678375244,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.08860759493670886,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 91.70730986389987,
+        "p90_error_m": 113.5081235519458,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.10126582278481013,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 93.1349350575844,
+        "p90_error_m": 118.5809832655347,
+        "frames": 79
+      }
+    },
+    "noise5/eca_oracle+doppler/body": {
+      "set": "noise5",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 298.21559596061707,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.37969560570576,
+      "eca_echo_loss_db": 0.5894397503049735,
+      "frame": {
+        "pd": 0.13924050632911392,
+        "declared": 0.16455696202531644,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.5569620253164557,
+        "median_error_m": 4.581417439296915,
+        "p90_error_m": 240.25014050422465,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.22784810126582278,
+        "declared": 0.24050632911392406,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.5822784810126582,
+        "median_error_m": 4.250969145125731,
+        "p90_error_m": 246.9474673255018,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 9,
+        "quay_image": 0,
+        "direct_path": 1,
+        "elsewhere": 21,
+        "total": 31
+      }
+    },
+    "noise5/eca_oracle+doppler/free": {
+      "set": "noise5",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 347.0577039718628,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 21.34630542475877,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 147.30243253115964,
+        "p90_error_m": 245.04764974738217,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 195.38332461518127,
+        "p90_error_m": 247.73786024485779,
+        "frames": 79
+      }
+    },
+    "noise5/blind/body": {
+      "set": "noise5",
+      "config": "blind",
+      "body": true,
+      "seconds": 890.47909116745,
+      "ship_error_median_m": 0.5551326930831187,
+      "eca_direct_depth_db": 18.12543043607687,
+      "eca_echo_loss_db": 0.5298861848376304,
+      "frame": {
+        "pd": 0.4936708860759494,
+        "declared": 0.569620253164557,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.7468354430379747,
+        "median_error_m": 2.7451397198205965,
+        "p90_error_m": 87.72653114655148,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.810126582278481,
+        "declared": 0.8354430379746836,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.9493670886075949,
+        "median_error_m": 2.048077366280615,
+        "p90_error_m": 4.022795007931346,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 0,
+        "quay_image": 0,
+        "direct_path": 8,
+        "elsewhere": 11,
+        "total": 19
+      }
+    },
+    "noise5/blind/free": {
+      "set": "noise5",
+      "config": "blind",
+      "body": false,
+      "seconds": 794.7660551071167,
+      "ship_error_median_m": 0.5551326930831187,
+      "eca_direct_depth_db": 17.923147769515992,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.13924050632911392,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 90.54434671286796,
+        "p90_error_m": 117.37387104425805,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.12658227848101267,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 95.79129254676222,
+        "p90_error_m": 119.17158819715546,
+        "frames": 79
+      }
+    },
+    "noise5/blind_stage0/body": {
+      "set": "noise5",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 524.4431011676788,
+      "ship_error_median_m": 0.7570043397447331,
+      "eca_direct_depth_db": 12.786932259557307,
+      "eca_echo_loss_db": 0.32229558817658577,
+      "frame": {
+        "pd": 0.4936708860759494,
+        "declared": 0.6455696202531646,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6835443037974683,
+        "median_error_m": 3.729679134914056,
+        "p90_error_m": 183.3537801165665,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5316455696202531,
+        "declared": 0.759493670886076,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.6962025316455697,
+        "median_error_m": 3.4138947799279276,
+        "p90_error_m": 104.36062880590478,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 3,
+        "elsewhere": 10,
+        "total": 14
+      }
+    },
+    "noise5/blind_stage0/free": {
+      "set": "noise5",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 427.678573846817,
+      "ship_error_median_m": 0.7570043397447331,
+      "eca_direct_depth_db": 12.771467739888102,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.06329113924050633,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 129.70509468067763,
+        "p90_error_m": 208.82847381737864,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.05063291139240506,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 139.00596050854844,
+        "p90_error_m": 211.27316064986147,
+        "frames": 79
+      }
+    },
+    "geometry0/oracle/body": {
+      "set": "geometry0",
+      "config": "oracle",
+      "body": true,
+      "seconds": 11.539241552352905,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.21518987341772153,
+        "declared": 0.2911392405063291,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.5189873417721519,
+        "median_error_m": 4.46749529483127,
+        "p90_error_m": 104.17347685406675,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5949367088607594,
+        "declared": 0.620253164556962,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.7721518987341772,
+        "median_error_m": 1.684795447782683,
+        "p90_error_m": 68.10713445672883,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 1,
+        "quay_image": 0,
+        "direct_path": 18,
+        "elsewhere": 19,
+        "total": 38
+      }
+    },
+    "geometry0/oracle/free": {
+      "set": "geometry0",
+      "config": "oracle",
+      "body": false,
+      "seconds": 5.540230989456177,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.10126582278481013,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 94.32032182167295,
+        "p90_error_m": 130.11917906376308,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.06329113924050633,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 91.53992287236832,
+        "p90_error_m": 118.38240830219459,
+        "frames": 79
+      }
+    },
+    "geometry0/eca_oracle+doppler/body": {
+      "set": "geometry0",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 261.9091022014618,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.638120132385154,
+      "eca_echo_loss_db": 0.2612097460428519,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.6962025316455697,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 222.43988123851886,
+        "p90_error_m": 236.923353277354,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.8354430379746836,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 228.1007792513708,
+        "p90_error_m": 240.64083479993448,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 3,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 76,
+        "total": 79
+      }
+    },
+    "geometry0/eca_oracle+doppler/free": {
+      "set": "geometry0",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 232.73477029800415,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.673114230485602,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.7088607594936709,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 222.3582194668999,
+        "p90_error_m": 239.62794169282918,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.810126582278481,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 228.6001047257015,
+        "p90_error_m": 238.82900656519192,
+        "frames": 79
+      }
+    },
+    "geometry0/blind/body": {
+      "set": "geometry0",
+      "config": "blind",
+      "body": true,
+      "seconds": 383.6653411388397,
+      "ship_error_median_m": 0.28540505551447437,
+      "eca_direct_depth_db": 18.694713329002198,
+      "eca_echo_loss_db": 0.2442371501302837,
+      "frame": {
+        "pd": 0.0379746835443038,
+        "declared": 0.4936708860759494,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0759493670886076,
+        "median_error_m": 102.9714646124965,
+        "p90_error_m": 191.08949947111086,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.08860759493670886,
+        "declared": 0.620253164556962,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.11392405063291139,
+        "median_error_m": 100.63295391576453,
+        "p90_error_m": 194.18886324609775,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 3,
+        "quay_image": 0,
+        "direct_path": 32,
+        "elsewhere": 38,
+        "total": 73
+      }
+    },
+    "geometry0/blind/free": {
+      "set": "geometry0",
+      "config": "blind",
+      "body": false,
+      "seconds": 302.1958405971527,
+      "ship_error_median_m": 0.28540505551447437,
+      "eca_direct_depth_db": 18.74099863376129,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.46835443037974683,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 113.30460354272162,
+        "p90_error_m": 187.9099936527983,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.4936708860759494,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 107.09127717819425,
+        "p90_error_m": 187.9656907520917,
+        "frames": 79
+      }
+    },
+    "geometry0/blind_stage0/body": {
+      "set": "geometry0",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 266.3748404979706,
+      "ship_error_median_m": 0.2815709436155243,
+      "eca_direct_depth_db": 9.539130496109998,
+      "eca_echo_loss_db": 0.23122636169243144,
+      "frame": {
+        "pd": 0.012658227848101266,
+        "declared": 0.569620253164557,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.05063291139240506,
+        "median_error_m": 214.6364310136533,
+        "p90_error_m": 230.3607476168973,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.6708860759493671,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.05063291139240506,
+        "median_error_m": 215.48162238515653,
+        "p90_error_m": 237.06570578485628,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 1,
+        "elsewhere": 70,
+        "total": 75
+      }
+    },
+    "geometry0/blind_stage0/free": {
+      "set": "geometry0",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 77.23932814598083,
+      "ship_error_median_m": 0.2852054325830074,
+      "eca_direct_depth_db": 9.698465041819887,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.5443037974683544,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 214.66846607961395,
+        "p90_error_m": 231.35787375818649,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.6962025316455697,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 221.04868197746563,
+        "p90_error_m": 237.06570578485628,
+        "frames": 79
+      }
+    },
+    "geometry1/oracle/body": {
+      "set": "geometry1",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.642347812652588,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.26582278481012656,
+        "declared": 0.379746835443038,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.4430379746835443,
+        "median_error_m": 62.77598882398577,
+        "p90_error_m": 114.05448960380438,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5822784810126582,
+        "declared": 0.6329113924050633,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.7341772151898734,
+        "median_error_m": 1.684795447782683,
+        "p90_error_m": 92.91412691461602,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 3,
+        "quay_image": 0,
+        "direct_path": 14,
+        "elsewhere": 27,
+        "total": 44
+      }
+    },
+    "geometry1/oracle/free": {
+      "set": "geometry1",
+      "config": "oracle",
+      "body": false,
+      "seconds": 4.613965272903442,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.08860759493670886,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 97.63899941087978,
+        "p90_error_m": 118.15634920290731,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.08860759493670886,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 98.62027257583972,
+        "p90_error_m": 116.82602545396196,
+        "frames": 79
+      }
+    },
+    "geometry1/eca_oracle+doppler/body": {
+      "set": "geometry1",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 67.56920433044434,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.812867427810268,
+      "eca_echo_loss_db": 0.2622772608889228,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.6582278481012658,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 224.5427002465492,
+        "p90_error_m": 243.2335515642353,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.759493670886076,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 231.14959626853087,
+        "p90_error_m": 244.09722061602696,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 3,
+        "elsewhere": 72,
+        "total": 79
+      }
+    },
+    "geometry1/eca_oracle+doppler/free": {
+      "set": "geometry1",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 61.40491580963135,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.716942546908303,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.6708860759493671,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 224.62205055028664,
+        "p90_error_m": 243.2335515642353,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.759493670886076,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 230.64973037079358,
+        "p90_error_m": 244.09722061602696,
+        "frames": 79
+      }
+    },
+    "geometry1/blind/body": {
+      "set": "geometry1",
+      "config": "blind",
+      "body": true,
+      "seconds": 244.58324599266052,
+      "ship_error_median_m": 0.3170371158764116,
+      "eca_direct_depth_db": 18.87746309632943,
+      "eca_echo_loss_db": 0.2543666390179967,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.26582278481012656,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.06329113924050633,
+        "median_error_m": 100.16582028419961,
+        "p90_error_m": 150.0063800082662,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.02531645569620253,
+        "declared": 0.2911392405063291,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.1518987341772152,
+        "median_error_m": 92.73291313115271,
+        "p90_error_m": 116.31807829350396,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 6,
+        "quay_image": 0,
+        "direct_path": 21,
+        "elsewhere": 47,
+        "total": 74
+      }
+    },
+    "geometry1/blind/free": {
+      "set": "geometry1",
+      "config": "blind",
+      "body": false,
+      "seconds": 281.9286766052246,
+      "ship_error_median_m": 0.3241150258940859,
+      "eca_direct_depth_db": 18.896172059501378,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.22784810126582278,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 100.37234972959544,
+        "p90_error_m": 153.95624968138227,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.24050632911392406,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 103.59012573256021,
+        "p90_error_m": 125.19204894427534,
+        "frames": 79
+      }
+    },
+    "geometry1/blind_stage0/body": {
+      "set": "geometry1",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 174.563880443573,
+      "ship_error_median_m": 0.22319923299292752,
+      "eca_direct_depth_db": 9.290524510961601,
+      "eca_echo_loss_db": 0.20584726138266224,
+      "frame": {
+        "pd": 0.012658227848101266,
+        "declared": 0.6329113924050633,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.06329113924050633,
+        "median_error_m": 214.23017284402363,
+        "p90_error_m": 229.96668286903164,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.7215189873417721,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.012658227848101266,
+        "median_error_m": 221.26697228399948,
+        "p90_error_m": 236.5906004161678,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 9,
+        "quay_image": 0,
+        "direct_path": 0,
+        "elsewhere": 65,
+        "total": 74
+      }
+    },
+    "geometry1/blind_stage0/free": {
+      "set": "geometry1",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 137.1513397693634,
+      "ship_error_median_m": 0.20776990517770355,
+      "eca_direct_depth_db": 9.388464680907246,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.6455696202531646,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 215.5058894077892,
+        "p90_error_m": 231.4609823325821,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.7341772151898734,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 222.1724409231369,
+        "p90_error_m": 236.5906004161678,
+        "frames": 79
+      }
+    },
+    "geometry2/oracle/body": {
+      "set": "geometry2",
+      "config": "oracle",
+      "body": true,
+      "seconds": 4.9631640911102295,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.24050632911392406,
+        "declared": 0.26582278481012656,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.6075949367088608,
+        "median_error_m": 2.1275065694525197,
+        "p90_error_m": 174.40346894755206,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.5569620253164557,
+        "declared": 0.5569620253164557,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.8607594936708861,
+        "median_error_m": 1.684795447782683,
+        "p90_error_m": 134.30829291293082,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 3,
+        "quay_image": 0,
+        "direct_path": 15,
+        "elsewhere": 12,
+        "total": 30
+      }
+    },
+    "geometry2/oracle/free": {
+      "set": "geometry2",
+      "config": "oracle",
+      "body": false,
+      "seconds": 6.780701160430908,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": null,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.012658227848101266,
+        "threshold": 1042.1138916015625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 129.73080964667307,
+        "p90_error_m": 189.44348789002575,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.0,
+        "threshold": 1811.65869140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 146.9536697000525,
+        "p90_error_m": 191.16111944662833,
+        "frames": 79
+      }
+    },
+    "geometry2/eca_oracle+doppler/body": {
+      "set": "geometry2",
+      "config": "eca_oracle+doppler",
+      "body": true,
+      "seconds": 108.04293894767761,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.69208681702162,
+      "eca_echo_loss_db": 0.26268728845815903,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.7088607594936709,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 220.27322244299933,
+        "p90_error_m": 237.27111692147108,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.7848101265822784,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 225.67341062286124,
+        "p90_error_m": 239.71485704327145,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 6,
+        "quay_image": 0,
+        "direct_path": 4,
+        "elsewhere": 68,
+        "total": 78
+      }
+    },
+    "geometry2/eca_oracle+doppler/free": {
+      "set": "geometry2",
+      "config": "eca_oracle+doppler",
+      "body": false,
+      "seconds": 104.0301468372345,
+      "ship_error_median_m": 0.0,
+      "eca_direct_depth_db": 22.69208681702162,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.7088607594936709,
+        "threshold": 2085.0126953125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 220.27322244299933,
+        "p90_error_m": 237.27111692147108,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.7721518987341772,
+        "threshold": 4870.10986328125,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 226.17285008288695,
+        "p90_error_m": 241.32642370975998,
+        "frames": 79
+      }
+    },
+    "geometry2/blind/body": {
+      "set": "geometry2",
+      "config": "blind",
+      "body": true,
+      "seconds": 158.38566136360168,
+      "ship_error_median_m": 0.33823804947507474,
+      "eca_direct_depth_db": 18.57434030698645,
+      "eca_echo_loss_db": 0.2425549330949983,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.759493670886076,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.012658227848101266,
+        "median_error_m": 163.25361759797553,
+        "p90_error_m": 195.65184825259365,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.012658227848101266,
+        "declared": 0.8860759493670886,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.02531645569620253,
+        "median_error_m": 161.2285722641538,
+        "p90_error_m": 195.29506063697616,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 10,
+        "quay_image": 0,
+        "direct_path": 33,
+        "elsewhere": 35,
+        "total": 78
+      }
+    },
+    "geometry2/blind/free": {
+      "set": "geometry2",
+      "config": "blind",
+      "body": false,
+      "seconds": 126.23216843605042,
+      "ship_error_median_m": 0.3843709653107148,
+      "eca_direct_depth_db": 18.594353368629406,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.7468354430379747,
+        "threshold": 907.9859619140625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 167.47751934055196,
+        "p90_error_m": 196.99497533721265,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.8607594936708861,
+        "threshold": 1566.4609375,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 162.75794095031327,
+        "p90_error_m": 196.2078658253747,
+        "frames": 79
+      }
+    },
+    "geometry2/blind_stage0/body": {
+      "set": "geometry2",
+      "config": "blind_stage0",
+      "body": true,
+      "seconds": 95.01343870162964,
+      "ship_error_median_m": 1.5277304348275802,
+      "eca_direct_depth_db": 7.791656207938146,
+      "eca_echo_loss_db": 0.2478247629728324,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.5063291139240507,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.02531645569620253,
+        "median_error_m": 208.19523336225447,
+        "p90_error_m": 227.1411354940248,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.6835443037974683,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 213.7440097013583,
+        "p90_error_m": 233.70819347625957,
+        "frames": 79
+      },
+      "misses": {
+        "ship_edge": 4,
+        "quay_image": 0,
+        "direct_path": 8,
+        "elsewhere": 65,
+        "total": 77
+      }
+    },
+    "geometry2/blind_stage0/free": {
+      "set": "geometry2",
+      "config": "blind_stage0",
+      "body": false,
+      "seconds": 54.57140564918518,
+      "ship_error_median_m": 1.5528952038226835,
+      "eca_direct_depth_db": 7.7255056581961625,
+      "eca_echo_loss_db": null,
+      "frame": {
+        "pd": 0.0,
+        "declared": 0.5822784810126582,
+        "threshold": 1659.494384765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 211.06686483775886,
+        "p90_error_m": 230.5734983571006,
+        "frames": 79
+      },
+      "integrated": {
+        "pd": 0.0,
+        "declared": 0.6835443037974683,
+        "threshold": 3660.635009765625,
+        "radius_m": 5.0,
+        "within_radius": 0.0,
+        "median_error_m": 214.66846607961395,
+        "p90_error_m": 234.31217440601336,
+        "frames": 79
+      }
+    }
+  },
+  "summary_cable_exclusion": {
+    "oracle": {
+      "dev": {
+        "pd": 0.8607594936708861,
+        "pd_by_set": {
+          "dev": 0.8607594936708861
+        },
+        "declared_free": 0.0379746835443038,
+        "within_5m": 0.9240506329113924,
+        "median_error_m": 2.262550114054546,
+        "integrated_pd": 0.9873417721518988,
+        "integrated_within_5m": 1.0,
+        "eca_direct_depth_db": null,
+        "misses": {
+          "ship_edge": 0,
+          "quay_image": 0,
+          "direct_path": 0,
+          "elsewhere": 4,
+          "total": 4
+        }
+      },
+      "noise": {
+        "pd": 0.8860759493670887,
+        "pd_by_set": {
+          "noise1": 0.8860759493670886,
+          "noise2": 0.9113924050632911,
+          "noise3": 0.8734177215189873,
+          "noise4": 0.8607594936708861,
+          "noise5": 0.8987341772151899
+        },
+        "declared_free": 0.06835443037974684,
+        "within_5m": 0.9240506329113923,
+        "median_error_m": 2.229801686516233,
+        "integrated_pd": 0.9822784810126581,
+        "integrated_within_5m": 0.9873417721518987,
+        "eca_direct_depth_db": null,
+        "misses": {
+          "ship_edge": 2,
+          "quay_image": 0,
+          "direct_path": 13,
+          "elsewhere": 6,
+          "total": 21
+        }
+      },
+      "geometry": {
+        "pd": 0.24050632911392408,
+        "pd_by_set": {
+          "geometry0": 0.21518987341772153,
+          "geometry1": 0.26582278481012656,
+          "geometry2": 0.24050632911392406
+        },
+        "declared_free": 0.06751054852320676,
+        "within_5m": 0.5232067510548523,
+        "median_error_m": 23.12366356275652,
+        "integrated_pd": 0.5780590717299577,
+        "integrated_within_5m": 0.7890295358649789,
+        "eca_direct_depth_db": null,
+        "misses": {
+          "ship_edge": 7,
+          "quay_image": 0,
+          "direct_path": 47,
+          "elsewhere": 58,
+          "total": 112
+        }
+      }
+    },
+    "eca_oracle+doppler": {
+      "dev": {
+        "pd": 0.11392405063291139,
+        "pd_by_set": {
+          "dev": 0.11392405063291139
+        },
+        "declared_free": 0.0379746835443038,
+        "within_5m": 0.4810126582278481,
+        "median_error_m": 5.984380453681621,
+        "integrated_pd": 0.16455696202531644,
+        "integrated_within_5m": 0.5316455696202531,
+        "eca_direct_depth_db": 21.34630542475794,
+        "misses": {
+          "ship_edge": 7,
+          "quay_image": 0,
+          "direct_path": 0,
+          "elsewhere": 30,
+          "total": 37
+        }
+      },
+      "noise": {
+        "pd": 0.15949367088607594,
+        "pd_by_set": {
+          "noise1": 0.13924050632911392,
+          "noise2": 0.16455696202531644,
+          "noise3": 0.17721518987341772,
+          "noise4": 0.17721518987341772,
+          "noise5": 0.13924050632911392
+        },
+        "declared_free": 0.02278481012658228,
+        "within_5m": 0.5139240506329114,
+        "median_error_m": 5.055640249444748,
+        "integrated_pd": 0.23291139240506328,
+        "integrated_within_5m": 0.569620253164557,
+        "eca_direct_depth_db": 21.41930074265542,
+        "misses": {
+          "ship_edge": 24,
+          "quay_image": 0,
+          "direct_path": 13,
+          "elsewhere": 132,
+          "total": 169
+        }
+      },
+      "geometry": {
+        "pd": 0.0,
+        "pd_by_set": {
+          "geometry0": 0.0,
+          "geometry1": 0.0,
+          "geometry2": 0.0
+        },
+        "declared_free": 0.6962025316455697,
+        "within_5m": 0.0,
+        "median_error_m": 222.4186013093558,
+        "integrated_pd": 0.0,
+        "integrated_within_5m": 0.0,
+        "eca_direct_depth_db": 22.714358125739015,
+        "misses": {
+          "ship_edge": 13,
+          "quay_image": 0,
+          "direct_path": 7,
+          "elsewhere": 216,
+          "total": 236
+        }
+      }
+    },
+    "blind": {
+      "dev": {
+        "pd": 0.4810126582278481,
+        "pd_by_set": {
+          "dev": 0.4810126582278481
+        },
+        "declared_free": 0.0379746835443038,
+        "within_5m": 0.7848101265822784,
+        "median_error_m": 2.5080960947445945,
+        "integrated_pd": 0.759493670886076,
+        "integrated_within_5m": 0.8734177215189873,
+        "eca_direct_depth_db": 17.43256546261279,
+        "misses": {
+          "ship_edge": 0,
+          "quay_image": 0,
+          "direct_path": 6,
+          "elsewhere": 10,
+          "total": 16
+        }
+      },
+      "noise": {
+        "pd": 0.5113924050632911,
+        "pd_by_set": {
+          "noise1": 0.4936708860759494,
+          "noise2": 0.5949367088607594,
+          "noise3": 0.5443037974683544,
+          "noise4": 0.43037974683544306,
+          "noise5": 0.4936708860759494
+        },
+        "declared_free": 0.1670886075949367,
+        "within_5m": 0.6784810126582278,
+        "median_error_m": 2.848768316955669,
+        "integrated_pd": 0.8075949367088608,
+        "integrated_within_5m": 0.9063291139240507,
+        "eca_direct_depth_db": 17.395182863739688,
+        "misses": {
+          "ship_edge": 0,
+          "quay_image": 0,
+          "direct_path": 46,
+          "elsewhere": 73,
+          "total": 119
+        }
+      },
+      "geometry": {
+        "pd": 0.012658227848101266,
+        "pd_by_set": {
+          "geometry0": 0.0379746835443038,
+          "geometry1": 0.0,
+          "geometry2": 0.0
+        },
+        "declared_free": 0.48101265822784806,
+        "within_5m": 0.050632911392405076,
+        "median_error_m": 122.13030083155722,
+        "integrated_pd": 0.042194092827004225,
+        "integrated_within_5m": 0.0970464135021097,
+        "eca_direct_depth_db": 18.71550557743936,
+        "misses": {
+          "ship_edge": 19,
+          "quay_image": 0,
+          "direct_path": 86,
+          "elsewhere": 120,
+          "total": 225
+        }
+      }
+    },
+    "blind_stage0": {
+      "dev": {
+        "pd": 0.46835443037974683,
+        "pd_by_set": {
+          "dev": 0.46835443037974683
+        },
+        "declared_free": 0.0379746835443038,
+        "within_5m": 0.5949367088607594,
+        "median_error_m": 3.583051317322763,
+        "integrated_pd": 0.5443037974683544,
+        "integrated_within_5m": 0.6075949367088608,
+        "eca_direct_depth_db": 11.035589202919203,
+        "misses": {
+          "ship_edge": 1,
+          "quay_image": 0,
+          "direct_path": 0,
+          "elsewhere": 18,
+          "total": 19
+        }
+      },
+      "noise": {
+        "pd": 0.45316455696202534,
+        "pd_by_set": {
+          "noise1": 0.4936708860759494,
+          "noise2": 0.43037974683544306,
+          "noise3": 0.4177215189873418,
+          "noise4": 0.43037974683544306,
+          "noise5": 0.4936708860759494
+        },
+        "declared_free": 0.11645569620253164,
+        "within_5m": 0.5721518987341773,
+        "median_error_m": 4.448973838186385,
+        "integrated_pd": 0.5341772151898734,
+        "integrated_within_5m": 0.6253164556962025,
+        "eca_direct_depth_db": 10.394291121646399,
+        "misses": {
+          "ship_edge": 16,
+          "quay_image": 0,
+          "direct_path": 10,
+          "elsewhere": 80,
+          "total": 106
+        }
+      },
+      "geometry": {
+        "pd": 0.008438818565400843,
+        "pd_by_set": {
+          "geometry0": 0.012658227848101266,
+          "geometry1": 0.012658227848101266,
+          "geometry2": 0.0
+        },
+        "declared_free": 0.5907172995780591,
+        "within_5m": 0.04641350210970464,
+        "median_error_m": 212.35394573997712,
+        "integrated_pd": 0.0,
+        "integrated_within_5m": 0.021097046413502112,
+        "eca_direct_depth_db": 8.873770405003249,
+        "misses": {
+          "ship_edge": 17,
+          "quay_image": 0,
+          "direct_path": 9,
+          "elsewhere": 200,
+          "total": 226
+        }
+      }
+    }
+  },
+  "dominant_miss_class_blind": "elsewhere"
+}

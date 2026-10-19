@@ -21,13 +21,13 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import (  # noqa: E402
+from acoustic_sim.water import (  # noqa: E402
     HarborFDTDSolver,
     HarborScenarioConfig,
     build_environment,
     build_layout,
 )
-from acoustic_sim.harbor.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.sources import StaticSource  # noqa: E402
 
 

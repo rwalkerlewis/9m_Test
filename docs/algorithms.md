@@ -29,7 +29,7 @@ more `BearingDetection` (bearing + power).
 Steered Response Power with Phase Transform.  This is the default
 bearing estimator used by the engagement pipeline.
 
-**Module:** `acoustic_sim.detection.bearing.SRPBeamformer`
+**Module:** `acoustic_sim.air.detection.bearing.SRPBeamformer`
 
 #### Pre-computation (once)
 
@@ -91,7 +91,7 @@ Multiple Signal Classification — a subspace method that models the
 received signal as a sum of $D$ narrowband plane waves in additive
 noise.
 
-**Module:** `acoustic_sim.detection.bearing.MUSICEstimator`
+**Module:** `acoustic_sim.air.detection.bearing.MUSICEstimator`
 
 1. Estimate the cross-spectral density matrix (CSDM) $\hat{\mathbf{R}}$
    from the FFT of the segment, with diagonal loading
@@ -129,7 +129,7 @@ $$
 Minimum Variance Distortionless Response beamformer on a polar
 (azimuth × range) grid.
 
-**Module:** `acoustic_sim.detection.bearing.MVDRBeamformer`
+**Module:** `acoustic_sim.air.detection.bearing.MVDRBeamformer`
 
 The MVDR estimator inverts the CSDM at selected harmonic frequencies of
 the expected source and computes:
@@ -170,7 +170,7 @@ distance (see §2.4).
 
 ### 2.1  RMS Inverse-Square Law
 
-**Module:** `acoustic_sim.detection.ranging.RMSRangeEstimator`
+**Module:** `acoustic_sim.air.detection.ranging.RMSRangeEstimator`
 
 Assumes free-field spherical spreading.  Given a calibration point
 $(R_\text{ref},\, A_\text{ref})$ where $A$ is the RMS pressure:
@@ -194,7 +194,7 @@ Uncertainty estimate: $\sigma_R = 0.3\,\hat{R}$.
 
 ### 2.2  TDOA Multilateration (GCC-PHAT)
 
-**Module:** `acoustic_sim.detection.ranging.TDOARangeEstimator`
+**Module:** `acoustic_sim.air.detection.ranging.TDOARangeEstimator`
 
 Uses Generalised Cross-Correlation with Phase Transform (GCC-PHAT) to
 estimate time-delay-of-arrival for every microphone pair, then searches
@@ -245,7 +245,7 @@ reliable GCC-PHAT peaks.
 
 ### 2.3  Bearing-Rate Range
 
-**Module:** `acoustic_sim.detection.ranging.BearingRateRangeEstimator`
+**Module:** `acoustic_sim.air.detection.ranging.BearingRateRangeEstimator`
 
 A kinematic estimator that infers range from the angular rate of change
 of the bearing:
@@ -298,7 +298,7 @@ $$
 
 ### 3.1  Causal WLS Tracker
 
-**Module:** `acoustic_sim.detection.tracking.CausalWLSTracker`
+**Module:** `acoustic_sim.air.detection.tracking.CausalWLSTracker`
 
 A constant-velocity model fit over a sliding window of past detections.
 Unlike a Kalman filter, the entire fit is recomputed from scratch each
@@ -364,7 +364,7 @@ are trusted.
 
 ### 4.1  Pellet Ballistics
 
-**Module:** `acoustic_sim.fire_control`
+**Module:** `acoustic_sim.air.fire_control`
 
 #### Velocity decay
 
@@ -435,7 +435,7 @@ Returns: `aim_bearing`, `aim_elevation`, `tof`, `intercept_pos`,
 
 ### 4.3  Bearing-Rate Fire Gating
 
-**Module:** `acoustic_sim.fire_control.compute_bearing_rate`
+**Module:** `acoustic_sim.air.fire_control.compute_bearing_rate`
 
 Before firing, the pipeline evaluates the bearing rate
 $\dot{\theta}$ over a short history window (default 0.15 s):

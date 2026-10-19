@@ -104,7 +104,7 @@ CLI argument parser for the detection pipeline.
 
 ### `main(argv=None)` — L727
 
-Entry point for `python -m acoustic_sim.detection_main`.
+Entry point for `python -m acoustic_sim.air.detection_main`.
 
 ### `run_detection_3d(traces, mic_positions, dt, sound_speed=343.0, weapon_position=...)` — L754
 
@@ -523,7 +523,7 @@ Wrap an existing 3-D numpy array as a `VelocityModel3D`.
 ## harbor/ — Water-Based Harbor Sensing
 
 The harbor package is a separate 2-D application. The following symbols are re-exported from
-`acoustic_sim.harbor`: `HarborScenarioConfig`, `HarborEnvironment`, `HarborFDTDConfig`,
+`acoustic_sim.water`: `HarborScenarioConfig`, `HarborEnvironment`, `HarborFDTDConfig`,
 `HarborFDTDSolver`, `HarborDataset`, `Cable`, `SensorLayout`, `VesselConfig`, `Track`,
 `AISConfig`, `AISReports`, `NoiseConfig`, `Gather`, and the scenario/dataset helper functions.
 Processing classes are imported from their submodules as shown below.
@@ -580,12 +580,12 @@ Processing classes are imported from their submodules as shown below.
 * `BistaticConfig` — bistatic STFT, reference, direct-path removal, processor, grid, peak and
   dispersion settings.
 * `build_grid(env, bc)` / `run_bistatic(traces, layout, fs, env, ais, bc, f_max, ...)` from
-  `acoustic_sim.harbor.bistatic` — form bistatic scan maps and extracted peaks.
+  `acoustic_sim.water.bistatic` — form bistatic scan maps and extracted peaks.
 * `OccupancyConfig` / `OccupancyGrid(grid, cfg=None)` — track-before-detect over map frames;
   `.run(B, times, snapshot_frames=())` returns `OccupancyHistory`.
-* `for_scenario(env, fdtd_cfg)` from `acoustic_sim.harbor.dispersion` — build FDTD-specific
+* `for_scenario(env, fdtd_cfg)` from `acoustic_sim.water.dispersion` — build FDTD-specific
   numerical-dispersion correction. Use for simulated data only, not as a real-water model.
-* `score_detections(...)` from `acoustic_sim.harbor.evaluate` — associate detections to truth
+* `score_detections(...)` from `acoustic_sim.water.evaluate` — associate detections to truth
   tracks and report probability of detection, localization error, false alarms, and other-vessel
   detections.
 

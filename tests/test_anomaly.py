@@ -386,7 +386,7 @@ def test_pipeline_integration_no_break():
     print("  load_ml_models returns anomaly=None when disabled: OK")
 
     # 4. Verify that existing detection imports still work.
-    from acoustic_sim.detection import DetectionEngine, WindowDetection
+    from acoustic_sim.air.detection import DetectionEngine, WindowDetection
     from acoustic_sim.ml.acoustic_classifier import AcousticClassifier
     from acoustic_sim.ml.maneuver_classifier import ManeuverClassifier
     from acoustic_sim.ml.fusion_classifier import FusionClassifier

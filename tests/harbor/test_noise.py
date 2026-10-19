@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from acoustic_sim.harbor import Cable, NoiseConfig, SensorLayout, generate_noise
+from acoustic_sim.water import Cable, NoiseConfig, SensorLayout, generate_noise
 
 FS = 600.0
 N = 12000

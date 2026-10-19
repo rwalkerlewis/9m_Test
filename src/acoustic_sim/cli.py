@@ -14,7 +14,7 @@ from acoustic_sim.model import (
     create_uniform_model,
     create_valley_model,
 )
-from acoustic_sim.plotting import plot_velocity_model, plot_wavefield
+from acoustic_sim.air.plotting import plot_velocity_model, plot_wavefield
 from acoustic_sim.receivers import create_receiver_circle, create_receiver_line
 from acoustic_sim.sampling import check_spatial_sampling
 from acoustic_sim.solver import solve_helmholtz

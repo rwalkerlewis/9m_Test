@@ -11,12 +11,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from acoustic_sim.harbor import HarborFDTDConfig, HarborFDTDSolver, SensorLayout, simulate_source, uniform_water_environment
-from acoustic_sim.harbor.cylinder import line_source_scattered, plane_wave_far_field_amplitude
-from acoustic_sim.harbor.environment import build_synthetic_harbor
-from acoustic_sim.harbor.scatterer import Scatterer, body_factor
-from acoustic_sim.harbor.sensors import Cable
-from acoustic_sim.harbor.vessels import Track
+from acoustic_sim.water import HarborFDTDConfig, HarborFDTDSolver, SensorLayout, simulate_source, uniform_water_environment
+from acoustic_sim.water.cylinder import line_source_scattered, plane_wave_far_field_amplitude
+from acoustic_sim.water.environment import build_synthetic_harbor
+from acoustic_sim.water.scatterer import Scatterer, body_factor
+from acoustic_sim.water.sensors import Cable
+from acoustic_sim.water.vessels import Track
 from acoustic_sim.sources import StaticSource
 
 DX = 0.5

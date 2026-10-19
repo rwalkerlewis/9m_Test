@@ -28,9 +28,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from acoustic_sim.harbor import HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
-from acoustic_sim.harbor.dataset import make_scatterer, vessel_injection  # noqa: E402
-from acoustic_sim.harbor.fdtd_runner import HarborFDTDBatch, HarborFDTDSolver, batch_size  # noqa: E402
+from acoustic_sim.water import HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
+from acoustic_sim.water.dataset import make_scatterer, vessel_injection  # noqa: E402
+from acoustic_sim.water.fdtd_runner import HarborFDTDBatch, HarborFDTDSolver, batch_size  # noqa: E402
 from acoustic_sim.sources import CustomTrajectorySource  # noqa: E402
 
 MULTISTATIC = ROOT / "examples" / "harbor_multistatic.scenario.json"

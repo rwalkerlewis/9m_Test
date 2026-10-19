@@ -28,8 +28,8 @@ _root = Path(__file__).resolve().parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root / "src"))
 
-from acoustic_sim.domains import create_isotropic_domain_3d
-from acoustic_sim.fdtd import fd2_coefficients, fd2_cfl_factor, FDTD3DConfig, FDTD3DSolver
+from acoustic_sim.air.domains import create_isotropic_domain_3d
+from acoustic_sim.solver.fdtd import fd2_coefficients, fd2_cfl_factor, FDTD3DConfig, FDTD3DSolver
 from acoustic_sim.receivers import create_receiver_circle_3d
 from acoustic_sim.sources import (
     ErraticQuadcopterSource3D,
@@ -268,7 +268,7 @@ def main(argv=None):
     print(f"Saved domain plot to {out / 'domain_trajectory.png'}")
 
     # -- Gather plot -------------------------------------------------------
-    from acoustic_sim.plotting import plot_gather
+    from acoustic_sim.air.plotting import plot_gather
     plot_gather(
         traces, result["dt"],
         output_path=str(out / "gather.png"),

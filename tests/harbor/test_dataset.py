@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 
-from acoustic_sim.harbor.scenario import default_vessels
-from acoustic_sim.harbor import (
+from acoustic_sim.water.scenario import default_vessels
+from acoustic_sim.water import (
     Cable,
     HarborDataset,
     HarborFDTDConfig,
@@ -89,7 +89,7 @@ def test_removing_a_ship_removes_its_ais(setup):
 
 
 def test_fixed_noise_realisation_isolates_signal_change(setup):
-    from acoustic_sim.harbor import generate_noise
+    from acoustic_sim.water import generate_noise
 
     env, layout, cfg, tracks, gathers, _ = setup
     noise = generate_noise(layout, cfg.fdtd.fs, cfg.fdtd.n_steps, cfg.noise, np.random.default_rng(9))

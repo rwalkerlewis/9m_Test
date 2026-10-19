@@ -1,8 +1,8 @@
 # Parametric Studies
 
-Nine parametric studies in `src/acoustic_sim/studies.py` sweep
+Nine parametric studies in `src/acoustic_sim/air/studies.py` sweep
 configuration parameters to evaluate detection pipeline robustness.
-All operate on the MFP/EKF library pipeline (`detection_main.py`).
+All operate on the MFP/EKF library pipeline (`air/detection_main.py`).
 These nine studies do not include the separate harbor sensing experiments; for harbor passive
 detection sweeps, AIS suppression, bistatic echo localization, and classifier workflows, see
 [Harbor](harbor.md#examples-and-workflows).
@@ -10,7 +10,7 @@ detection sweeps, AIS suppression, bistatic echo localization, and classifier wo
 Run all single-FDTD studies (4 of 9):
 
 ```python
-from acoustic_sim.studies import run_all_studies
+from acoustic_sim.air.studies import run_all_studies
 results = run_all_studies()
 ```
 

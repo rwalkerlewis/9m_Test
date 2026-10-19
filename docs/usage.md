@@ -358,7 +358,7 @@ python examples/extract_array_traces.py \
 The older matched-field-processing pipeline is available in the library:
 
 ```bash
-python src/acoustic_sim/detection_main.py \
+python -m acoustic_sim.air.detection_main \
     --trajectory loiter_approach \
     --domain isotropic \
     --total-time 60 \
@@ -368,8 +368,8 @@ python src/acoustic_sim/detection_main.py \
 Or programmatically:
 
 ```python
-from acoustic_sim.config import DetectionConfig
-from acoustic_sim.detection_main import run_detection_pipeline
+from acoustic_sim.air.config import DetectionConfig
+from acoustic_sim.air.detection_main import run_detection_pipeline
 
 config = DetectionConfig(trajectory_type="linear", total_time=30)
 results = run_detection_pipeline(config)
@@ -380,7 +380,7 @@ results = run_detection_pipeline(config)
 ## Robustness Studies
 
 ```python
-from acoustic_sim.studies import run_all_studies
+from acoustic_sim.air.studies import run_all_studies
 results = run_all_studies()
 ```
 
@@ -463,8 +463,8 @@ limitations. Run `python examples/<script>.py --help` for script-specific option
 ### Build and run FDTD
 
 ```python
-from acoustic_sim.setup import build_domain, build_receivers, build_source, compute_dt
-from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
+from acoustic_sim.air.setup import build_domain, build_receivers, build_source, compute_dt
+from acoustic_sim.solver.fdtd import FDTDConfig, FDTDSolver
 
 domain, meta = build_domain("hills_vegetation", dx=0.18,
                              x_min=-50, x_max=50, y_min=-50, y_max=50)
@@ -491,7 +491,7 @@ results = run_pipeline(Path("output/valley_test"), Path("output/valley_test"), c
 ### Use DetectionEngine directly
 
 ```python
-from acoustic_sim.detection import DetectionEngine
+from acoustic_sim.air.detection import DetectionEngine
 
 engine = DetectionEngine(
     mic_positions=mics,       # (n_mics, 2 or 3)

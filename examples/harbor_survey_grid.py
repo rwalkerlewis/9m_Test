@@ -28,13 +28,13 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.harbor import (  # noqa: E402
+from acoustic_sim.water import (  # noqa: E402
     HarborFDTDSolver,
     HarborScenarioConfig,
     build_environment,
     build_layout,
 )
-from acoustic_sim.harbor.detection import ProcessingConfig, build_grid  # noqa: E402
+from acoustic_sim.water.detection import ProcessingConfig, build_grid  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ def _run_cell(args):
     ix, iy, x, y, env_pkl, hcfg_pkl, layout_pkl, total_time = args
 
     import numpy as np
-    from acoustic_sim.harbor.fdtd_runner import HarborFDTDSolver
+    from acoustic_sim.water.fdtd_runner import HarborFDTDSolver
     from acoustic_sim.sources import StaticSource
 
     env, hcfg, layout = env_pkl, hcfg_pkl, layout_pkl

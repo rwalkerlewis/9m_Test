@@ -7,9 +7,9 @@ import numpy as np
 import pytest
 from scipy.signal import butter, sosfiltfilt
 
-from acoustic_sim.harbor import Cable, SensorLayout, uniform_water_environment
-from acoustic_sim.harbor.ais import AISReports
-from acoustic_sim.harbor.bistatic import (
+from acoustic_sim.water import Cable, SensorLayout, uniform_water_environment
+from acoustic_sim.water.ais import AISReports
+from acoustic_sim.water.bistatic import (
     BistaticConfig,
     ReplicaModel,
     ShipTrack,

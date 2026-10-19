@@ -25,10 +25,10 @@ from acoustic_sim.sources import (
     source_velocity_at_3d,
 )
 from acoustic_sim.receivers import create_receiver_l_shaped, create_receiver_l_shaped_3d
-from acoustic_sim.processor import matched_field_process, matched_field_process_3d
-from acoustic_sim.tracker import run_tracker, run_tracker_3d
-from acoustic_sim.fire_control import compute_lead, run_fire_control, compute_lead_3d, run_fire_control_3d
-from acoustic_sim.forward import simulate_3d_traces
+from acoustic_sim.air.processor import matched_field_process, matched_field_process_3d
+from acoustic_sim.air.tracker import run_tracker, run_tracker_3d
+from acoustic_sim.air.fire_control import compute_lead, run_fire_control, compute_lead_3d, run_fire_control_3d
+from acoustic_sim.air.forward import simulate_3d_traces
 
 
 def _make_test_signal(n_steps, dt):

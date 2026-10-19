@@ -39,9 +39,9 @@ from scipy.special import hankel2
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from acoustic_sim.harbor import HarborFDTDConfig, HarborFDTDSolver, SensorLayout, uniform_water_environment  # noqa: E402
-from acoustic_sim.harbor.dispersion import DispersionModel, replica_wavenumbers  # noqa: E402
-from acoustic_sim.harbor.environment import _finish_environment  # noqa: E402
+from acoustic_sim.water import HarborFDTDConfig, HarborFDTDSolver, SensorLayout, uniform_water_environment  # noqa: E402
+from acoustic_sim.water.dispersion import DispersionModel, replica_wavenumbers  # noqa: E402
+from acoustic_sim.water.environment import _finish_environment  # noqa: E402
 from acoustic_sim.sources import StaticSource  # noqa: E402
 
 C = 1500.0

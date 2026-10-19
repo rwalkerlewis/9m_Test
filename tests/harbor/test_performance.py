@@ -9,12 +9,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from acoustic_sim.fdtd import FDTDConfig
-from acoustic_sim.harbor import Cable, HarborFDTDConfig, HarborFDTDSolver, SensorLayout, uniform_water_environment
-from acoustic_sim.harbor.environment import _finish_environment, segment_polygon
-from acoustic_sim.harbor.fdtd_runner import _cache_key, _key_fields
-from acoustic_sim.harbor.scatterer import Scatterer, body_factor
-from acoustic_sim.harbor.vessels import Track
+from acoustic_sim.solver.fdtd import FDTDConfig
+from acoustic_sim.water import Cable, HarborFDTDConfig, HarborFDTDSolver, SensorLayout, uniform_water_environment
+from acoustic_sim.water.environment import _finish_environment, segment_polygon
+from acoustic_sim.water.fdtd_runner import _cache_key, _key_fields
+from acoustic_sim.water.scatterer import Scatterer, body_factor
+from acoustic_sim.water.vessels import Track
 from acoustic_sim.sources import CustomTrajectorySource, StaticSource
 
 from ._gpu import HAS_GPU
@@ -165,7 +165,7 @@ def test_device_masks_match_body_factor():
     """Every shape and kind, a body partly outside the grid: factors agree to 1e-12 (measured 1e-16)."""
     import cupy as cp
 
-    from acoustic_sim.harbor.fdtd_cuda_bodies import DeviceBodyMasks, pose_table
+    from acoustic_sim.water.fdtd_cuda_bodies import DeviceBodyMasks, pose_table
 
     env = uniform_water_environment(120.0, 100.0, DX)
     x, y = env.model.x, env.model.y
@@ -200,7 +200,7 @@ def test_overlapping_bodies_fall_back_to_sequential_launches():
     """Two bodies sharing cells are applied one after the other (the reference order), still exact."""
     import cupy as cp
 
-    from acoustic_sim.harbor.fdtd_cuda_bodies import DeviceBodyMasks
+    from acoustic_sim.water.fdtd_cuda_bodies import DeviceBodyMasks
 
     env = uniform_water_environment(60.0, 60.0, DX)
     x, y = env.model.x, env.model.y
@@ -235,8 +235,8 @@ def test_device_masks_reproduce_host_masks_in_traces(scene):
 @gpu
 def test_batched_runs_match_single_runs(scene, tmp_path):
     """Four jobs (static and moving sources, zero to two bodies) in one batch: each equals its single run to 1e-12."""
-    from acoustic_sim.harbor import simulate_source, simulate_sources
-    from acoustic_sim.harbor.fdtd_runner import HarborFDTDBatch, batch_size
+    from acoustic_sim.water import simulate_source, simulate_sources
+    from acoustic_sim.water.fdtd_runner import HarborFDTDBatch, batch_size
 
     env, moving, body, layout = scene
     cfg = _cfg(kernel="fused")
@@ -266,7 +266,7 @@ def test_batched_runs_match_single_runs(scene, tmp_path):
 
 
 def test_simulate_sources_runs_sequentially_on_cpu(scene, tmp_path):
-    from acoustic_sim.harbor import simulate_source, simulate_sources
+    from acoustic_sim.water import simulate_source, simulate_sources
 
     env, moving, body, layout = scene
     cfg = _cfg(use_cuda=False, total_time=0.05)
@@ -403,7 +403,7 @@ def test_kspace_is_exact_for_a_plane_wave_mode():
     cos(c k dt) per step under the k-space update (the leapfrog does not)."""
     import cupy as cp
 
-    from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
+    from acoustic_sim.solver.fdtd import FDTDConfig, FDTDSolver
     from acoustic_sim.model import VelocityModel
 
     nx, ny, dx = 64, 48, 1.0
