@@ -141,6 +141,9 @@ def fd1_coefficients(order: int) -> np.ndarray:
 PRECISIONS = ("float64", "float32")
 KERNELS = ("reference", "fused", "auto")
 BOUNDARIES = ("sponge", "cpml")
+TIME_SCHEMES = ("leapfrog", "lw4", "kspace")
+# Stability limit of each scheme relative to the leapfrog CFL limit (see FDTDSolver.__init__).
+_SCHEME_CFL_FACTOR = {"leapfrog": 1.0, "lw4": math.sqrt(3.0), "kspace": math.inf}
 
 
 @dataclass
@@ -195,6 +198,14 @@ class FDTDConfig:
     cpml_alpha_max : float
         Complex frequency shift [1/s] at the inner edge of the layer (``alpha(l) = alpha_max (1 - l)``),
         which helps grazing incidence and low frequencies; 0 is the classical PML.
+    time_scheme : str
+        ``"leapfrog"`` (default): second order in time.  ``"lw4"``: fourth order in time by the
+        modified equation (Lax-Wendroff type), ``p(t+dt) = 2p - p(t-dt) + dt^2 c^2 L p +
+        dt^4/12 c^2 L (c^2 L p)`` with the same spatial stencil ``L``; stable up to sqrt(3) times the
+        leapfrog limit.  ``"kspace"``: pseudospectral Laplacian with the k-space temporal correction,
+        ``2p - p(t-dt) + (c/c0)^2 F^-1[-4 sin^2(c0 |k| dt / 2) F p]``, exact in time and space for a
+        homogeneous medium of speed ``c0 = max c`` and unconditionally stable; the land stays a
+        pressure release mask.  Both are prototypes (single process, no CPML).
     """
 
     total_time: float = 0.3
@@ -214,6 +225,7 @@ class FDTDConfig:
     cpml_order: int = 2
     cpml_r0: float = 1e-6
     cpml_alpha_max: float = 0.0
+    time_scheme: str = "leapfrog"
 
     def __post_init__(self) -> None:
         if self.precision not in PRECISIONS:
@@ -224,6 +236,10 @@ class FDTDConfig:
             raise ValueError(f"boundary must be one of {BOUNDARIES}, got {self.boundary!r}")
         if self.boundary == "cpml" and self.cpml_width < 1:
             raise ValueError("cpml_width must be at least 1 cell")
+        if self.time_scheme not in TIME_SCHEMES:
+            raise ValueError(f"time_scheme must be one of {TIME_SCHEMES}, got {self.time_scheme!r}")
+        if self.time_scheme != "leapfrog" and self.boundary == "cpml":
+            raise ValueError("the lw4 and kspace schemes use the sponge boundary")
 
     @property
     def dtype(self):
@@ -309,12 +325,14 @@ class FDTDSolver:
         c_max = float(np.max(c_global))
         v_wind = math.sqrt(self.meta.wind_vx ** 2 + self.meta.wind_vy ** 2)
         cfl_limit = 2.0 * dx / ((c_max + v_wind) * math.sqrt(2.0 * spec_radius))
+        self.time_scheme = config.time_scheme
+        scheme_limit = cfl_limit * _SCHEME_CFL_FACTOR[self.time_scheme]   # lw4: sqrt(3) x; kspace: unconditional
 
         if config.dt is not None:
             self.dt = config.dt
-            if self.dt > cfl_limit:
+            if self.dt > scheme_limit:
                 raise ValueError(
-                    f"dt={self.dt:.2e} exceeds CFL limit {cfl_limit:.2e}"
+                    f"dt={self.dt:.2e} exceeds CFL limit {scheme_limit:.2e}"
                 )
         else:
             self.dt = config.cfl_safety * cfl_limit
@@ -361,6 +379,13 @@ class FDTDSolver:
             if self.use_mpi:
                 raise NotImplementedError("boundary='cpml' runs in a single process only")
             self._cpml = self._build_cpml(ny, nx, c_max)
+
+        # -- Higher order time stepping prototypes -----------------------------
+        self._scheme = None
+        if self.time_scheme != "leapfrog":
+            if self.use_mpi:
+                raise NotImplementedError(f"time_scheme={self.time_scheme!r} runs in a single process only")
+            self._scheme = self._build_scheme(c_local, c_max, dx)
 
         # -- Receiver pre-computation (global indices → local) -------------
         self._precompute_receivers(model, dx)
@@ -578,27 +603,35 @@ class FDTDSolver:
         cs, ce = M, nx_loc - M
         s = (slice(rs, re), slice(cs, ce))
 
-        if self._cpml is not None:
-            lap = self._cpml_laplacian(p, s, rs, re, cs, ce)
+        if self._scheme is not None:
+            term = self._scheme_term(p, s, rs, re, cs, ce)
+            p_next = (
+                2.0 * p[s] - pp[s]
+                + term
+                - self.sigma[s] * (p[s] - pp[s])
+            )
         else:
-            # Laplacian: centre weight (×2 for x + y contributions)
-            lap = coeffs[0] * 2.0 * p[s]
+            if self._cpml is not None:
+                lap = self._cpml_laplacian(p, s, rs, re, cs, ce)
+            else:
+                # Laplacian: centre weight (×2 for x + y contributions)
+                lap = coeffs[0] * 2.0 * p[s]
 
-            # Off-centre weights (±k in both dimensions)
-            for k in range(1, M + 1):
-                ck = coeffs[k]
-                lap += ck * (
-                    p[rs + k : re + k, cs : ce]    # down
-                  + p[rs - k : re - k, cs : ce]    # up
-                  + p[rs : re, cs + k : ce + k]    # right
-                  + p[rs : re, cs - k : ce - k]    # left
-                )
+                # Off-centre weights (±k in both dimensions)
+                for k in range(1, M + 1):
+                    ck = coeffs[k]
+                    lap += ck * (
+                        p[rs + k : re + k, cs : ce]    # down
+                      + p[rs - k : re - k, cs : ce]    # up
+                      + p[rs : re, cs + k : ce + k]    # right
+                      + p[rs : re, cs - k : ce - k]    # left
+                    )
 
-        p_next = (
-            2.0 * p[s] - pp[s]
-            + self.C2[s] * lap
-            - self.sigma[s] * (p[s] - pp[s])
-        )
+            p_next = (
+                2.0 * p[s] - pp[s]
+                + self.C2[s] * lap
+                - self.sigma[s] * (p[s] - pp[s])
+            )
 
         p_new = xp.zeros_like(p)
         p_new[s] = p_next
@@ -693,6 +726,54 @@ class FDTDSolver:
         return (lapx + dqx + zetax[s]) + (lapy + dqy + zetay[s])
 
     # ------------------------------------------------------------------
+    # Higher order time stepping (time_scheme="lw4" | "kspace")
+    # ------------------------------------------------------------------
+
+    def _build_scheme(self, c_local: np.ndarray, c_max: float, dx: float) -> dict[str, Any]:
+        xp = self.xp
+        if self.time_scheme == "lw4":
+            return {"name": "lw4", "q": xp.zeros((self._pad_ny, self.global_nx), dtype=self._dtype)}
+        # k-space: F^-1[-4 sin^2(c0 |k| dt / 2) F p] on the local (whole) grid, scaled by (c / c0)^2.
+        ny, nx = self._pad_ny, self.global_nx
+        kx = 2.0 * np.pi * np.fft.rfftfreq(nx, dx)
+        ky = 2.0 * np.pi * np.fft.fftfreq(ny, dx)
+        kk = np.hypot(ky[:, None], kx[None, :])
+        kernel = -4.0 * np.sin(0.5 * c_max * kk * self.dt) ** 2
+        ratio = (c_local / c_max) ** 2
+        return {"name": "kspace", "kernel": xp.asarray(kernel), "ratio": xp.asarray(ratio.astype(self._dtype)), "c0": c_max}
+
+    def _stencil_laplacian(self, f, rs, re, cs, ce):
+        """Interior Laplacian of *f* with the stencil (reference order of operations)."""
+        coeffs, M = self._fd_coeffs, self._M
+        s = (slice(rs, re), slice(cs, ce))
+        lap = coeffs[0] * 2.0 * f[s]
+        for k in range(1, M + 1):
+            ck = coeffs[k]
+            lap += ck * (
+                f[rs + k : re + k, cs : ce]
+              + f[rs - k : re - k, cs : ce]
+              + f[rs : re, cs + k : ce + k]
+              + f[rs : re, cs - k : ce - k]
+            )
+        return lap
+
+    def _scheme_term(self, p, s, rs, re, cs, ce):
+        """The ``c^2 dt^2 Laplacian`` term of the interior update for the lw4 and kspace schemes."""
+        xp = self.xp
+        sc = self._scheme
+        if sc["name"] == "lw4":
+            q = sc["q"]
+            q[...] = 0.0
+            q[s] = self.C2[s] * self._stencil_laplacian(p, rs, re, cs, ce)
+            mask = self._fused_mask()
+            if mask is not None:
+                q *= mask
+            return q[s] + (self.C2[s] * (1.0 / 12.0)) * self._stencil_laplacian(q, rs, re, cs, ce)
+        spec = xp.fft.rfft2(p)
+        lk = xp.fft.irfft2(spec * sc["kernel"], s=p.shape).astype(self._dtype, copy=False)
+        return sc["ratio"][s] * lk[s]
+
+    # ------------------------------------------------------------------
     # Fused CUDA step (kernel="fused")
     # ------------------------------------------------------------------
 
@@ -711,7 +792,7 @@ class FDTDSolver:
             self._fd_coeffs, (self.p_now, self.p_prev), self.C2, self.sigma, self._fused_mask(), [self.source],
             (self._recv_iy, self._recv_ix, self._recv_wx, self._recv_wy), self.traces, self.n_steps, self.dt,
             float(self.model.x[0]), float(self.model.y[0]), float(self.model.dx), self.cfg.source_amplitude, self._dtype,
-            cpml=self._cpml,
+            cpml=self._cpml, scheme=self._scheme,
         )
         fk.post_hooks = list(self._fused_hooks())
         return fk

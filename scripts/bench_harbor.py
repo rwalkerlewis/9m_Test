@@ -56,8 +56,9 @@ from acoustic_sim.sources import CustomTrajectorySource  # noqa: E402
 
 BISTATIC_SCENARIO = ROOT / "examples" / "harbor_bistatic.scenario.json"
 MULTISTATIC_SCENARIO = ROOT / "examples" / "harbor_multistatic.scenario.json"
-FINE_DATASET = ROOT / "output" / "harbor_bistatic" / "fine" / "dataset.npz"
-CANCEL_CACHE = ROOT / "output" / "harbor_cancel" / "cache"
+DATA_ROOT = Path(__import__("os").environ.get("BENCH_DATA_ROOT", ROOT))      # where output/harbor_bistatic and output/harbor_cancel live
+FINE_DATASET = DATA_ROOT / "output" / "harbor_bistatic" / "fine" / "dataset.npz"
+CANCEL_CACHE = DATA_ROOT / "output" / "harbor_cancel" / "cache"
 
 FDTD_CASES = {
     # name: (scenario, total_time, bodies)
@@ -445,6 +446,8 @@ def main() -> None:
         if unknown:
             raise SystemExit(f"unknown cases {unknown}; choose from {ALL_CASES}")
 
+    json_path = out_root / f"{args.tag}.json"
+    previous = json.loads(json_path.read_text()) if json_path.exists() else None
     results = {
         "tag": args.tag, "date": time.strftime("%Y-%m-%d %H:%M:%S"), "git": _git_rev(),
         "host": {"platform": platform.platform(), "python": platform.python_version(), "numpy": np.__version__,
@@ -453,9 +456,8 @@ def main() -> None:
         "options": {k: v for k, v in vars(args).items() if k not in ("tag", "cases", "out", "save_reference", "ref_dir", "no_compare")},
         "criteria": CRITERIA,
         "reference_dir": None if args.save_reference else str(ref_dir),
-        "cases": {},
+        "cases": {} if previous is None else previous.get("cases", {}),     # a rerun of some cases keeps the others
     }
-    json_path = out_root / f"{args.tag}.json"
 
     def say(msg: str) -> None:
         print(msg, flush=True)

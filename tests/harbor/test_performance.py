@@ -338,3 +338,89 @@ def test_fused_cpml_matches_reference_cpml(scene):
         fused, s = _run(env, HarborFDTDConfig(**{**_cfg().__dict__, **kw, "kernel": "fused"}), src, layout, [body])
         assert s.kernel == "fused" and s.boundary == "cpml"
         assert _rel_l2(fused, ref).max() < 1e-12, order
+
+
+# ----------------------------------------------------------------------
+# Higher order time stepping prototypes (time_scheme = "lw4" | "kspace")
+# ----------------------------------------------------------------------
+
+def test_time_scheme_config_and_cfl():
+    with pytest.raises(ValueError, match="time_scheme"):
+        FDTDConfig(time_scheme="rk4")
+    with pytest.raises(ValueError, match="sponge"):
+        FDTDConfig(time_scheme="lw4", boundary="cpml")
+    env = uniform_water_environment(60.0, 50.0, 1.0)
+    # 1 m grid, c = 1500: leapfrog limit for order 4 is 2 dx / (c sqrt(2 * 16 / 3)) = 408 us; lw4 allows sqrt(3) more.
+    dt_leap = 2.0 / (1500.0 * np.sqrt(2.0 * 16.0 / 3.0))
+    fs = 1.0 / (1.2 * dt_leap)
+    with pytest.raises(ValueError, match="CFL"):
+        HarborFDTDSolver(env, HarborFDTDConfig(fs=fs, total_time=0.01, use_cuda=False), StaticSource(30.0, 25.0, np.zeros(100)), np.array([[40.0, 25.0]]))
+    s = HarborFDTDSolver(env, HarborFDTDConfig(fs=fs, total_time=0.01, use_cuda=False, time_scheme="lw4"),
+                         StaticSource(30.0, 25.0, np.zeros(HarborFDTDConfig(fs=fs, total_time=0.01).n_steps)), np.array([[40.0, 25.0]]))
+    assert s.time_scheme == "lw4" and s._scheme["name"] == "lw4"
+    s = HarborFDTDSolver(env, HarborFDTDConfig(fs=fs / 4, total_time=0.01, use_cuda=False, time_scheme="kspace"),
+                         StaticSource(30.0, 25.0, np.zeros(HarborFDTDConfig(fs=fs / 4, total_time=0.01).n_steps)), np.array([[40.0, 25.0]]))
+    assert s._scheme["name"] == "kspace" and float(np.asarray(s._scheme["ratio"]).max()) == 1.0
+
+
+@pytest.mark.parametrize("scheme", ["lw4", "kspace"])
+def test_schemes_are_stable_and_propagate_on_cpu(scheme):
+    """A pulse in open water on the CPU array path: finite, arrives at the right time, decays in the sponge."""
+    env = uniform_water_environment(120.0, 100.0, 1.0)
+    cfg = HarborFDTDConfig(fs=3000.0, total_time=0.08, damping_width=15, background_absorption=0.0, shore_loss_max=0.0,
+                           use_cuda=False, time_scheme=scheme)
+    n = cfg.n_steps
+    t = np.arange(n) / cfg.fs
+    a = (np.pi * 300.0 * (t - 0.01)) ** 2
+    sig = (1 - 2 * a) * np.exp(-a)
+    rec = np.array([[80.0, 50.0], [95.0, 50.0]])
+    tr = HarborFDTDSolver(env, cfg, StaticSource(30.0, 50.0, sig), rec).run(verbose=False)["traces"]
+    assert np.isfinite(tr).all() and np.abs(tr).max() > 0
+    lag = (np.argmax(np.abs(tr[1])) - np.argmax(np.abs(tr[0]))) / cfg.fs
+    assert abs(lag - 15.0 / 1500.0) < 1.5 / cfg.fs
+
+
+@gpu
+@pytest.mark.parametrize("scheme", ["lw4", "kspace"])
+def test_fused_schemes_match_array_path(scene, scheme):
+    env, src, body, layout = scene
+    kw = dict(time_scheme=scheme)
+    ref, s_ref = _run(env, HarborFDTDConfig(**{**_cfg().__dict__, **kw, "kernel": "reference"}), src, layout, [body])
+    fused, s_f = _run(env, HarborFDTDConfig(**{**_cfg().__dict__, **kw, "kernel": "fused"}), src, layout, [body])
+    assert s_ref.kernel == "reference" and s_f.kernel == "fused"
+    assert np.isfinite(fused).all()
+    assert _rel_l2(fused, ref).max() < 1e-10, scheme
+    leap, _ = _run(env, HarborFDTDConfig(**{**_cfg().__dict__, "kernel": "fused"}), src, layout, [body])
+    assert np.linalg.norm(fused - leap) > 1e-4 * np.linalg.norm(leap)      # a different scheme
+
+
+@gpu
+def test_kspace_is_exact_for_a_plane_wave_mode():
+    """Periodic homogeneous water, no sponge or edges in play: one Fourier mode advances with exactly
+    cos(c k dt) per step under the k-space update (the leapfrog does not)."""
+    import cupy as cp
+
+    from acoustic_sim.fdtd import FDTDConfig, FDTDSolver
+    from acoustic_sim.model import VelocityModel
+
+    nx, ny, dx = 64, 48, 1.0
+    model = VelocityModel(x=np.arange(nx) * dx, y=np.arange(ny) * dx, values=np.full((ny, nx), 1500.0), dx=dx, dy=dx)
+    cfg = FDTDConfig(total_time=0.005, dt=1.0 / 3000.0, damping_width=0, damping_max=0.0, air_absorption=0.0,
+                     snapshot_interval=0, use_cuda=True, fd_order=4, time_scheme="kspace", kernel="fused")
+    solver = FDTDSolver(model, cfg, StaticSource(-10.0, -10.0, np.zeros(16)), np.array([[1.0, 1.0]]))   # source outside the grid
+    kx, ky = 2 * np.pi * 3 / (nx * dx), 2 * np.pi * 2 / (ny * dx)
+    X, Y = np.meshgrid(np.arange(nx) * dx, np.arange(ny) * dx)
+    mode = np.cos(kx * X + ky * Y)
+    omega = 1500.0 * np.hypot(kx, ky)
+    M = solver._M
+    inner = (slice(M, ny - M), slice(M, nx - M))
+    solver.p_now[...] = cp.asarray(mode)
+    solver.p_prev[...] = cp.asarray(mode * np.cos(omega * solver.dt))
+    solver._step(0)
+    expect = mode * np.cos(omega * solver.dt)                      # p(t + dt) = 2 cos(w dt) p(t) - p(t - dt) with p(t - dt) = cos(w dt) mode
+    got = cp.asnumpy(solver.p_now)
+    err = np.abs(got[inner] - expect[inner]).max()
+    # The zeroed Dirichlet bands break periodicity: the interior differs from the exact mode only
+    # through the Gibbs ringing of those edges; check far from them.
+    core = (slice(12, ny - 12), slice(12, nx - 12))
+    assert np.abs(got[core] - expect[core]).max() < 0.05 and err < 1.0

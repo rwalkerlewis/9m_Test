@@ -28,7 +28,8 @@ BODY_MASKS = ("auto", "host", "device")
 # Fields that do not change the result (excluded from the cache key) and fields added after the
 # caches of the existing datasets were built (excluded while at their default, so those keys stay valid).
 _KEY_EXCLUDE = ("use_cuda", "kernel", "body_masks")
-_KEY_DEFAULTS = {"precision": "float64", "boundary": "sponge", "cpml_width": 15, "cpml_order": 2, "cpml_r0": 1e-6, "cpml_alpha_max": 0.0}
+_KEY_DEFAULTS = {"precision": "float64", "boundary": "sponge", "cpml_width": 15, "cpml_order": 2, "cpml_r0": 1e-6, "cpml_alpha_max": 0.0,
+                 "time_scheme": "leapfrog"}
 
 
 @dataclass
@@ -68,6 +69,9 @@ class HarborFDTDConfig:
         Edge boundary: ``"sponge"`` (default, the ramp above) or ``"cpml"`` (a convolutional PML of
         ``cpml_width`` cells; see :class:`~acoustic_sim.fdtd.FDTDConfig`).  Part of the cache key
         when not at the defaults.
+    time_scheme : str
+        ``"leapfrog"`` (default), ``"lw4"`` or ``"kspace"`` (:class:`~acoustic_sim.fdtd.FDTDConfig`;
+        prototypes).  Part of the cache key when not the default.
     body_masks : str
         How moving bodies are imposed with the fused kernel: ``"host"`` evaluates
         :func:`~acoustic_sim.harbor.scatterer.body_factor` on the CPU every step (the reference),
@@ -92,6 +96,7 @@ class HarborFDTDConfig:
     cpml_order: int = 2
     cpml_r0: float = 1e-6
     cpml_alpha_max: float = 0.0
+    time_scheme: str = "leapfrog"
 
     def __post_init__(self) -> None:
         if self.body_masks not in BODY_MASKS:
@@ -170,6 +175,7 @@ class HarborFDTDSolver(FDTDSolver):
             cpml_order=hcfg.cpml_order,
             cpml_r0=hcfg.cpml_r0,
             cpml_alpha_max=hcfg.cpml_alpha_max,
+            time_scheme=hcfg.time_scheme,
         )
         super().__init__(env.model, fcfg, source, receivers)
         assert self.n_steps == hcfg.n_steps
@@ -308,7 +314,7 @@ class HarborFDTDBatch(HarborFDTDSolver):
             [src for src, _ in self._jobs], (self._recv_iy, self._recv_ix, self._recv_wx, self._recv_wy), self.traces,
             self.n_steps, self.dt, float(self.model.x[0]), float(self.model.y[0]), float(self.model.dx),
             self.cfg.source_amplitude, self._dtype,
-            cpml=self._cpml,
+            cpml=self._cpml, scheme=self._scheme,
         )
         fk.post_hooks = list(self._fused_hooks())
         return fk

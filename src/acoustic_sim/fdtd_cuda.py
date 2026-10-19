@@ -47,6 +47,7 @@ void fdtd_step(const {T}* __restrict__ p, {T}* __restrict__ pp,
                {T}* __restrict__ zetax, {T}* __restrict__ zetay,
                const {T}* __restrict__ bx, const {T}* __restrict__ ax, const {T}* __restrict__ mx,
                const {T}* __restrict__ by, const {T}* __restrict__ ay, const {T}* __restrict__ my,
+               const {T}* __restrict__ q,
                const int n, const int n_steps, const int ny, const int nx)
 {{
     const int ix = blockIdx.x * blockDim.x + threadIdx.x;
@@ -78,7 +79,7 @@ void fdtd_step(const {T}* __restrict__ p, {T}* __restrict__ pp,
         const {T} pc = p[i];
         const {T} ppc = pp[i];
 {LAPLACIAN}
-        out = ((({T})2.0 * pc - ppc) + c2[g] * lap) - sigma[g] * (pc - ppc);
+        out = ((({T})2.0 * pc - ppc) + {TERM}) - sigma[g] * (pc - ppc);
     }}
     // Source injection: the four bilinear cells of this step (the table holds weight x amplitude).
     {{
@@ -93,6 +94,29 @@ void fdtd_step(const {T}* __restrict__ p, {T}* __restrict__ pp,
     }}
 {MASK}
     pp[i] = out;
+}}
+
+extern "C" __global__
+void lw4_q(const {T}* __restrict__ p, {T}* __restrict__ q, const {T}* __restrict__ c2, const {T}* __restrict__ mask,
+           const int ny, const int nx)
+{{
+    const int ix = blockIdx.x * blockDim.x + threadIdx.x;
+    const int iy = blockIdx.y * blockDim.y + threadIdx.y;
+    const int b = blockIdx.z;
+    if (ix >= nx || iy >= ny) return;
+    const size_t g = (size_t)iy * nx + ix;
+    const size_t i = (size_t)b * ny * nx + g;
+    {T} out;
+    if (iy < {M} || iy >= ny - {M} || ix < {M} || ix >= nx - {M}) {{
+        out = ({T})0.0;
+    }} else {{
+        const {T} pc = p[i];
+        {T} lap = ({T}){C0X2} * pc;
+{LAP_P}
+        out = c2[g] * lap;
+    }}
+{MASK}
+    q[i] = out;
 }}
 
 extern "C" __global__
@@ -152,20 +176,33 @@ def _lit(x: float) -> str:
     return repr(float(x))
 
 
-def step_kernel_source(coeffs: np.ndarray, dtype, has_mask: bool, cpml: bool = False, d1: np.ndarray | None = None) -> str:
+def step_kernel_source(coeffs: np.ndarray, dtype, has_mask: bool, cpml: bool = False, d1: np.ndarray | None = None,
+                       scheme: str = "leapfrog") -> str:
     """CUDA source of the fused step for the stencil *coeffs* (``fd2_coefficients``); with *cpml* the
-    Laplacian carries the layer terms of ``FDTDSolver._cpml_laplacian`` (*d1*: ``fd1_coefficients``)."""
+    Laplacian carries the layer terms of ``FDTDSolver._cpml_laplacian`` (*d1*: ``fd1_coefficients``);
+    *scheme* ``"lw4"`` adds the fourth order time term from the scratch field ``q = C2 L p`` and
+    ``"kspace"`` takes the k-space Laplacian from ``q`` (``c2`` then holds ``(c / c0)^2``)."""
     T = _CTYPE[np.dtype(dtype)]
     M = len(coeffs) - 1
     if d1 is None:
         d1 = np.zeros(M + 1)
         d1[1] = 0.5
     lines = []
-    if not cpml:
-        lines.append(f"        {T} lap = ({T}){_lit(coeffs[0] * 2.0)} * pc;")
+    term = "c2[g] * lap"
+    # Reference order: lap += ck * (down + up + right + left) with ((down + up) + right) + left.
+    lap_p = [f"        lap += ({T}){_lit(coeffs[k])} * (((p[i + {k} * nx] + p[i - {k} * nx]) + p[i + {k}]) + p[i - {k}]);"
+             for k in range(1, M + 1)]
+    if scheme == "lw4":
+        lines.append(f"        const {T} qc = q[i];")
+        lines.append(f"        {T} lap = ({T}){_lit(coeffs[0] * 2.0)} * qc;")
         for k in range(1, M + 1):
-            # Reference order: lap += ck * (down + up + right + left) with ((down + up) + right) + left.
-            lines.append(f"        lap += ({T}){_lit(coeffs[k])} * (((p[i + {k} * nx] + p[i - {k} * nx]) + p[i + {k}]) + p[i - {k}]);")
+            lines.append(f"        lap += ({T}){_lit(coeffs[k])} * (((q[i + {k} * nx] + q[i - {k} * nx]) + q[i + {k}]) + q[i - {k}]);")
+        term = f"(qc + (c2[g] * ({T}){_lit(1.0 / 12.0)}) * lap)"
+    elif scheme == "kspace":
+        term = "c2[g] * q[i]"
+    elif not cpml:
+        lines.append(f"        {T} lap = ({T}){_lit(coeffs[0] * 2.0)} * pc;")
+        lines.extend(lap_p)
     else:
         # Reference order of _cpml_laplacian: lapx, lapy accumulated per k; dqx, dqy likewise; then
         # ((lapx + dqx) + zetax) + ((lapy + dqy) + zetay).
@@ -197,22 +234,25 @@ def step_kernel_source(coeffs: np.ndarray, dtype, has_mask: bool, cpml: bool = F
     dpx = [f"        dpx = dpx + ({T}){_lit(d1[k])} * (p[i + {k}] - p[i - {k}]);" for k in range(2, M + 1)]
     dpy = [f"        dpy = dpy + ({T}){_lit(d1[k])} * (p[i + {k} * nx] - p[i - {k} * nx]);" for k in range(2, M + 1)]
     mask = "    out *= mask[g];" if has_mask else ""
-    return _STEP_SRC.format(T=T, M=M, LAPLACIAN="\n".join(lines), MASK=mask, D1_1=_lit(d1[1]),
-                            DPX_TERMS="\n".join(dpx), DPY_TERMS="\n".join(dpy))
+    return _STEP_SRC.format(T=T, M=M, LAPLACIAN="\n".join(lines), TERM=term, MASK=mask, D1_1=_lit(d1[1]),
+                            DPX_TERMS="\n".join(dpx), DPY_TERMS="\n".join(dpy),
+                            C0X2=_lit(coeffs[0] * 2.0), LAP_P="\n".join(lap_p))
 
 
 _MODULE_CACHE: dict[tuple, Any] = {}
 
 
-def compile_step(coeffs: np.ndarray, dtype, has_mask: bool, cpml: bool = False, d1: np.ndarray | None = None):
-    """``(step_kernel, sample_kernel, psi_kernel)`` compiled once per (stencil, dtype, mask, cpml)."""
+def compile_step(coeffs: np.ndarray, dtype, has_mask: bool, cpml: bool = False, d1: np.ndarray | None = None,
+                 scheme: str = "leapfrog"):
+    """``(step_kernel, sample_kernel, psi_kernel, lw4_kernel)`` compiled once per (stencil, dtype, mask, cpml, scheme)."""
     import cupy as cp
 
     key = (tuple(float(c) for c in coeffs), np.dtype(dtype).str, bool(has_mask), bool(cpml),
-           None if d1 is None else tuple(float(c) for c in d1))
+           None if d1 is None else tuple(float(c) for c in d1), scheme)
     if key not in _MODULE_CACHE:
-        mod = cp.RawModule(code=step_kernel_source(coeffs, dtype, has_mask, cpml, d1), options=("--fmad=false", "--std=c++11"))
-        _MODULE_CACHE[key] = (mod.get_function("fdtd_step"), mod.get_function("fdtd_sample"), mod.get_function("cpml_psi"))
+        mod = cp.RawModule(code=step_kernel_source(coeffs, dtype, has_mask, cpml, d1, scheme), options=("--fmad=false", "--std=c++11"))
+        _MODULE_CACHE[key] = (mod.get_function("fdtd_step"), mod.get_function("fdtd_sample"), mod.get_function("cpml_psi"),
+                              mod.get_function("lw4_q"))
     return _MODULE_CACHE[key]
 
 
@@ -279,7 +319,7 @@ class FusedFDTD:
 
     def __init__(self, coeffs: np.ndarray, fields, c2, sigma, mask, sources: list, receivers, traces: np.ndarray,
                  n_steps: int, dt: float, x0: float, y0: float, dx: float, amplitude: float, dtype,
-                 cpml: dict | None = None) -> None:
+                 cpml: dict | None = None, scheme: dict | None = None) -> None:
         import cupy as cp
 
         self.xp = cp
@@ -291,8 +331,15 @@ class FusedFDTD:
         if len(sources) != self.B:
             raise ValueError(f"{len(sources)} sources for a batch of {self.B}")
         self.cpml = cpml
-        self.step_kernel, self.sample_kernel, self.psi_kernel = compile_step(
-            coeffs, self.dtype, mask is not None, cpml is not None, None if cpml is None else cpml["d1"])
+        self.scheme = "leapfrog" if scheme is None else scheme["name"]
+        if self.scheme != "leapfrog" and cpml is not None:
+            raise ValueError("lw4 / kspace schemes do not combine with the CPML")
+        self.step_kernel, self.sample_kernel, self.psi_kernel, self.lw4_kernel = compile_step(
+            coeffs, self.dtype, mask is not None, cpml is not None, None if cpml is None else cpml["d1"], self.scheme)
+        if self.scheme == "kspace":
+            c2 = scheme["ratio"]                                    # the kernel multiplies the k-space Laplacian by (c / c0)^2
+            self.k_kernel = cp.asarray(scheme["kernel"])
+        self.q = cp.zeros(p.shape, dtype=self.dtype) if self.scheme != "leapfrog" else None
         self.c2 = cp.ascontiguousarray(c2, dtype=self.dtype)
         self.sigma = cp.ascontiguousarray(sigma, dtype=self.dtype)
         self.mask = cp.ascontiguousarray(mask, dtype=self.dtype) if mask is not None else self.c2   # unused when absent
@@ -343,12 +390,21 @@ class FusedFDTD:
         col = n - 1 - self.col0 if n >= 1 and self.sampled_to == n - 1 else -1
         if self.cpml is not None:
             self.psi_kernel(self.grid, _BLOCK, (p, self.psix, self.psiy, *self.cp_prof, np.int32(self.ny), np.int32(self.nx)))
+        q = self.c2                                                 # unused placeholder for the leapfrog
+        if self.scheme == "lw4":
+            self.lw4_kernel(self.grid, _BLOCK, (p, self.q, self.c2, self.mask, np.int32(self.ny), np.int32(self.nx)))
+            q = self.q
+        elif self.scheme == "kspace":
+            xp = self.xp
+            spec = xp.fft.rfft2(p, axes=(-2, -1))
+            self.q[...] = xp.fft.irfft2(spec * self.k_kernel, s=(self.ny, self.nx), axes=(-2, -1))
+            q = self.q
         self.step_kernel(
             self.grid, _BLOCK,
             (p, pp, self.c2, self.sigma, self.mask, self.src_iy, self.src_ix, self.src_w,
              self.r_iy, self.r_ix, self.r_wx, self.r_wy, self.trace_buf,
              np.int32(self.n_recv), np.int32(col), np.int32(self.chunk),
-             self.psix, self.psiy, self.zetax, self.zetay, *self.cp_prof,
+             self.psix, self.psiy, self.zetax, self.zetay, *self.cp_prof, q,
              np.int32(n), np.int32(self.n_steps), np.int32(self.ny), np.int32(self.nx)),
         )
         if col >= 0:
