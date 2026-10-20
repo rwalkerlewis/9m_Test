@@ -306,10 +306,10 @@
     }
    },
    "best": {
-    "direct_db": -2.3858957839526505,
+    "direct_db": -2.38589578395265,
     "echo_db": -19.083407809539843,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -16.69751202558719,
+    "echo_to_direct_db": -16.697512025587194,
     "echo_to_noise_db": 0.7595937397032024,
     "scattering_strength_bistatic_db": 4.543758495006949,
     "required_cancellation_db": {
@@ -350,7 +350,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -18.413517334181165,
     "echo_to_noise_db": -1.2784616002148947,
-    "scattering_strength_bistatic_db": 2.344511656839566,
+    "scattering_strength_bistatic_db": 2.3445116568395656,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -400,7 +400,7 @@
     "direct_db": -2.061590023038189,
     "echo_db": -20.128503185043158,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -17.42449173304895,
+    "echo_to_direct_db": -17.424491733048953,
     "echo_to_noise_db": -0.1688604064357886,
     "scattering_strength_bistatic_db": 3.6494872682588593,
     "required_cancellation_db": {
@@ -463,11 +463,11 @@
    },
    "best": {
     "direct_db": -2.1843102268833086,
-    "echo_db": -17.653572814076107,
+    "echo_db": -17.653572814076103,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -15.469262587192798,
-    "echo_to_noise_db": 2.1894287351669384,
-    "scattering_strength_bistatic_db": 4.5576682031468705,
+    "echo_to_direct_db": -15.469262587192794,
+    "echo_to_noise_db": 2.189428735166942,
+    "scattering_strength_bistatic_db": 4.55766820314687,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -506,7 +506,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -20.7177461026619,
     "echo_to_noise_db": -2.280602641049736,
-    "scattering_strength_bistatic_db": 0.42054523238385433,
+    "scattering_strength_bistatic_db": 0.42054523238385516,
     "required_cancellation_db": {
      "T1s": 2.2667657025193293,
      "T2s": 0.0,
@@ -527,7 +527,7 @@
     },
     "receiver": "das112(x=244)",
     "range_uuv_rx_m": 56.73182528352142,
-    "bistatic_angle_deg": 8.693488612018186
+    "bistatic_angle_deg": 8.693488612018188
    }
   },
   {
@@ -566,12 +566,12 @@
     }
    },
    "best": {
-    "direct_db": -1.8052376909779024,
+    "direct_db": -1.8052376909779029,
     "echo_db": -17.84463265560007,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -16.03939496462217,
+    "echo_to_direct_db": -16.039394964622165,
     "echo_to_noise_db": 1.9983688936429758,
-    "scattering_strength_bistatic_db": 4.665946895423344,
+    "scattering_strength_bistatic_db": 4.665946895423345,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -735,7 +735,7 @@
     },
     "receiver": "das115(x=250)",
     "range_uuv_rx_m": 41.23105625617661,
-    "bistatic_angle_deg": 7.765166018425306
+    "bistatic_angle_deg": 7.765166018425308
    }
   },
   {
@@ -775,10 +775,10 @@
    },
    "best": {
     "direct_db": -1.571864500046635,
-    "echo_db": -17.098136616086215,
+    "echo_db": -17.09813661608621,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -15.52627211603958,
-    "echo_to_noise_db": 2.74486493315683,
+    "echo_to_direct_db": -15.526272116039577,
+    "echo_to_noise_db": 2.7448649331568333,
     "scattering_strength_bistatic_db": 4.6828712407258335,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -827,10 +827,10 @@
    },
    "best": {
     "direct_db": -1.4683593277119,
-    "echo_db": -17.145257357931975,
+    "echo_db": -17.14525735793197,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -15.676898030220075,
-    "echo_to_noise_db": 2.6977441913110702,
+    "echo_to_direct_db": -15.676898030220071,
+    "echo_to_noise_db": 2.697744191311074,
     "scattering_strength_bistatic_db": 4.7032989390772375,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -920,7 +920,7 @@
     "direct_db": -2.0748667398540905,
     "echo_db": -20.1792425503722,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -17.42449173304895,
+    "echo_to_direct_db": -17.424491733048953,
     "echo_to_noise_db": -0.1688604064357886,
     "scattering_strength_bistatic_db": 3.2276384772690845,
     "required_cancellation_db": {
@@ -973,8 +973,8 @@
     "echo_db": -22.576644291733693,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -20.485267947613032,
-    "echo_to_noise_db": -2.6125547928237207,
-    "scattering_strength_bistatic_db": 0.9577015263492585,
+    "echo_to_noise_db": -2.612554792823719,
+    "scattering_strength_bistatic_db": 0.9577015263492592,
     "required_cancellation_db": {
      "T1s": 2.034287547470461,
      "T2s": 0.0,
@@ -1025,7 +1025,7 @@
     "echo_db": -21.90311070687219,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -19.814650552243886,
-    "echo_to_noise_db": -1.884384835132476,
+    "echo_to_noise_db": -1.8843848351324795,
     "scattering_strength_bistatic_db": 1.5744182763397534,
     "required_cancellation_db": {
      "T1s": 1.3636701521013173,
@@ -1074,13 +1074,13 @@
    "scattering_strength_back_db": -0.3496993561174858,
    "median": {
     "direct_db": -2.0748667398540905,
-    "echo_db": -21.331085155316387,
+    "echo_db": -21.331085155316384,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -18.96878500925233,
+    "echo_to_direct_db": -18.968785009252333,
     "echo_to_noise_db": -1.316719897158368,
     "scattering_strength_bistatic_db": 2.5422430977734543,
     "required_cancellation_db": {
-     "T1s": 0.5178046091097617,
+     "T1s": 0.5178046091097634,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -1099,7 +1099,7 @@
     },
     "receiver": "das084(x=188)",
     "range_uuv_rx_m": 67.1863081289633,
-    "bistatic_angle_deg": 3.7781977071617825
+    "bistatic_angle_deg": 3.7781977071617834
    }
   },
   {
@@ -1151,7 +1151,7 @@
     },
     "receiver": "das064(x=148)",
     "range_uuv_rx_m": 86.98563099730897,
-    "bistatic_angle_deg": 7.208789950411109
+    "bistatic_angle_deg": 7.208789950411111
    }
   },
   {
@@ -1351,7 +1351,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.465779652510253,
     "echo_to_noise_db": 1.192911669849483,
-    "scattering_strength_bistatic_db": 4.593963724942445,
+    "scattering_strength_bistatic_db": 4.593963724942444,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -1390,9 +1390,9 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -18.524433228380573,
     "echo_to_noise_db": -2.1581602681804686,
-    "scattering_strength_bistatic_db": 2.7462489684247195,
+    "scattering_strength_bistatic_db": 2.746248968424719,
     "required_cancellation_db": {
-     "T1s": 0.07345282823800403,
+     "T1s": 0.07345282823800581,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -1493,7 +1493,7 @@
     "echo_db": -22.975971342095335,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.28502677798472,
-    "echo_to_noise_db": -2.8339743818219922,
+    "echo_to_noise_db": -2.8339743818219905,
     "scattering_strength_bistatic_db": 1.8881423812527705,
     "required_cancellation_db": {
      "T1s": 2.8340463778421494,
@@ -1515,7 +1515,7 @@
     },
     "receiver": "das126(x=272)",
     "range_uuv_rx_m": 51.22499389946279,
-    "bistatic_angle_deg": 6.340191745909907
+    "bistatic_angle_deg": 6.340191745909908
    }
   },
   {
@@ -1600,7 +1600,7 @@
     "echo_to_noise_db": -0.4412352729767157,
     "scattering_strength_bistatic_db": 2.002905858663331,
     "required_cancellation_db": {
-     "T1s": 0.43614539985019185,
+     "T1s": 0.4361453998501883,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -1658,7 +1658,7 @@
     }
    },
    "best": {
-    "direct_db": -2.3564585552946915,
+    "direct_db": -2.356458555294692,
     "echo_db": -14.722999550515132,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -12.36654099522044,
@@ -1701,8 +1701,8 @@
     "echo_db": -17.913921269850363,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -15.042567576164839,
-    "echo_to_noise_db": 2.1080748680908705,
-    "scattering_strength_bistatic_db": 5.727800806019964,
+    "echo_to_noise_db": 2.1080748680908687,
+    "scattering_strength_bistatic_db": 5.727800806019962,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -1802,13 +1802,13 @@
    "scattering_strength_back_db": 2.110242938686715,
    "median": {
     "direct_db": -2.061590023038189,
-    "echo_db": -20.862392303453415,
+    "echo_db": -20.86239230345341,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -19.28834618670443,
     "echo_to_noise_db": -0.6841985783755664,
     "scattering_strength_bistatic_db": 1.9124974641478603,
     "required_cancellation_db": {
-     "T1s": 0.8373657865618611,
+     "T1s": 0.8373657865618593,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -1827,7 +1827,7 @@
     },
     "receiver": "das115(x=250)",
     "range_uuv_rx_m": 59.26634795564849,
-    "bistatic_angle_deg": 3.3177811683349283
+    "bistatic_angle_deg": 3.3177811683349288
    }
   },
   {
@@ -1866,7 +1866,7 @@
     }
    },
    "best": {
-    "direct_db": -1.8501585635479099,
+    "direct_db": -1.8501585635479096,
     "echo_db": -13.70151358890472,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -11.851355025356812,
@@ -2179,10 +2179,10 @@
    },
    "best": {
     "direct_db": -1.534911412756828,
-    "echo_db": -13.036248048545975,
+    "echo_db": -13.036248048545973,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -11.501336635789148,
-    "echo_to_noise_db": 6.80675350069707,
+    "echo_to_direct_db": -11.501336635789144,
+    "echo_to_noise_db": 6.806753500697072,
     "scattering_strength_bistatic_db": 9.11022786535272,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -2221,7 +2221,7 @@
     "echo_db": -17.913921269850363,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -15.21517999574284,
-    "echo_to_noise_db": 2.1080748680908705,
+    "echo_to_noise_db": 2.1080748680908687,
     "scattering_strength_bistatic_db": 4.573472154884163,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -2377,7 +2377,7 @@
     "echo_db": -19.93848949501445,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -17.6617449460759,
-    "echo_to_noise_db": 0.08458751044824986,
+    "echo_to_noise_db": 0.08458751044825163,
     "scattering_strength_bistatic_db": 3.1517272715403495,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -2481,7 +2481,7 @@
     "echo_db": -19.979324154746344,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -18.227139163731145,
-    "echo_to_noise_db": 0.1288118442659698,
+    "echo_to_noise_db": 0.1288118442659716,
     "scattering_strength_bistatic_db": 2.2478941852169374,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -2533,8 +2533,8 @@
     "echo_db": -21.3431448322349,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -19.201152706142707,
-    "echo_to_noise_db": -1.3308553902067253,
-    "scattering_strength_bistatic_db": 2.094521445490189,
+    "echo_to_noise_db": -1.3308553902067288,
+    "scattering_strength_bistatic_db": 2.094521445490188,
     "required_cancellation_db": {
      "T1s": 0.7501723060001382,
      "T2s": 0.0,
@@ -2542,11 +2542,11 @@
     }
    },
    "best": {
-    "direct_db": -1.5464470532762797,
-    "echo_db": -12.218193359169948,
+    "direct_db": -1.5464470532762795,
+    "echo_db": -12.218193359169952,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -10.671746305893668,
-    "echo_to_noise_db": 7.624808190073097,
+    "echo_to_direct_db": -10.671746305893672,
+    "echo_to_noise_db": 7.624808190073093,
     "scattering_strength_bistatic_db": 9.119013380643592,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -2594,7 +2594,7 @@
     }
    },
    "best": {
-    "direct_db": -1.8052376909779024,
+    "direct_db": -1.8052376909779029,
     "echo_db": -13.335387328265714,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -11.530149637287812,
@@ -2637,7 +2637,7 @@
     "echo_db": -19.766260423941596,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.595799914007863,
-    "echo_to_noise_db": 0.2423146563302616,
+    "echo_to_noise_db": 0.2423146563302634,
     "scattering_strength_bistatic_db": 5.251607719069131,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -2763,7 +2763,7 @@
     },
     "receiver": "das011(x=42)",
     "range_uuv_rx_m": 156.4736399525492,
-    "bistatic_angle_deg": 6.057407085345129
+    "bistatic_angle_deg": 6.05740708534513
    }
   },
   {
@@ -2786,19 +2786,19 @@
    "synchronous": true,
    "track_fraction": 0.0,
    "range_ship_uuv_m": 141.4213562373095,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
-    "echo_db": -29.91245056308464,
+    "echo_db": -29.912450563084636,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -27.68080072070272,
+    "echo_to_direct_db": -27.680800720702724,
     "echo_to_noise_db": -9.944614175854484,
-    "scattering_strength_bistatic_db": -2.43487395797162,
+    "scattering_strength_bistatic_db": -2.434873957971619,
     "required_cancellation_db": {
-     "T1s": 9.229820320560153,
-     "T2s": 6.21952036392034,
-     "T4s": 3.2092204072805277
+     "T1s": 9.229820320560155,
+     "T2s": 6.219520363920342,
+     "T4s": 3.2092204072805295
     }
    },
    "best": {
@@ -2838,14 +2838,14 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 120.26013470805694,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -29.82521686426312,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -27.733131773077787,
-    "echo_to_noise_db": -9.872097290679134,
+    "echo_to_noise_db": -9.872097290679138,
     "scattering_strength_bistatic_db": -3.1695510118494385,
     "required_cancellation_db": {
      "T1s": 9.282151372935216,
@@ -2890,23 +2890,23 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 99.24716620639605,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -29.605472101307356,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -27.621256779952585,
+    "echo_to_direct_db": -27.62125677995259,
     "echo_to_noise_db": -9.681179478844973,
-    "scattering_strength_bistatic_db": -3.3436900741389337,
+    "scattering_strength_bistatic_db": -3.343690074138933,
     "required_cancellation_db": {
-     "T1s": 9.170276379810016,
-     "T2s": 6.159976423170203,
-     "T4s": 3.1496764665303907
+     "T1s": 9.170276379810018,
+     "T2s": 6.159976423170205,
+     "T4s": 3.1496764665303925
     }
    },
    "best": {
-    "direct_db": -2.53549959702087,
+    "direct_db": -2.5354995970208694,
     "echo_db": -28.173155507989982,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -25.637655910969112,
@@ -2942,7 +2942,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 78.50159234053791,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
@@ -2952,9 +2952,9 @@
     "echo_to_noise_db": -9.369000514737994,
     "scattering_strength_bistatic_db": -3.6491797062944014,
     "required_cancellation_db": {
-     "T1s": 8.747662717183976,
-     "T2s": 5.737362760544164,
-     "T4s": 2.727062803904351
+     "T1s": 8.747662717183978,
+     "T2s": 5.7373627605441655,
+     "T4s": 2.727062803904353
     }
    },
    "best": {
@@ -2994,14 +2994,14 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 58.309518948453004,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -28.88922776415671,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -26.66227593418105,
-    "echo_to_noise_db": -9.030962159266661,
+    "echo_to_noise_db": -9.03096215926666,
     "scattering_strength_bistatic_db": -4.126104722913814,
     "required_cancellation_db": {
      "T1s": 8.21129553403848,
@@ -3046,7 +3046,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 122.06555615733703,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
@@ -3098,19 +3098,19 @@
    "synchronous": true,
    "track_fraction": 0.25,
    "range_ship_uuv_m": 102.04165815979276,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -29.636929566205175,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -27.77456856824293,
+    "echo_to_direct_db": -27.774568568242927,
     "echo_to_noise_db": -9.727886866115336,
     "scattering_strength_bistatic_db": -3.3602283474076398,
     "required_cancellation_db": {
-     "T1s": 9.323588168100361,
-     "T2s": 6.313288211460549,
-     "T4s": 3.302988254820736
+     "T1s": 9.32358816810036,
+     "T2s": 6.313288211460547,
+     "T4s": 3.3029882548207343
     }
    },
    "best": {
@@ -3127,7 +3127,7 @@
     },
     "receiver": "das114(x=248)",
     "range_uuv_rx_m": 58.365229375031156,
-    "bistatic_angle_deg": 5.057248532559082
+    "bistatic_angle_deg": 5.057248532559083
    }
   },
   {
@@ -3150,7 +3150,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 82.76472678623425,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
@@ -3166,7 +3166,7 @@
     }
    },
    "best": {
-    "direct_db": -1.8501585635479099,
+    "direct_db": -1.8501585635479096,
     "echo_db": -26.765461999811695,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -24.915303436263784,
@@ -3202,7 +3202,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 64.90377492873584,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
@@ -3210,7 +3210,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -27.71284616250798,
     "echo_to_noise_db": -10.335657192273164,
-    "scattering_strength_bistatic_db": -4.863218987612116,
+    "scattering_strength_bistatic_db": -4.863218987612117,
     "required_cancellation_db": {
      "T1s": 9.261865762365412,
      "T2s": 6.251565805725599,
@@ -3254,7 +3254,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 50.0,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.061590023038189,
@@ -3306,7 +3306,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 107.70329614269008,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
@@ -3358,7 +3358,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 90.34655499796325,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
@@ -3368,9 +3368,9 @@
     "echo_to_noise_db": -10.404235709988775,
     "scattering_strength_bistatic_db": -4.196776566179061,
     "required_cancellation_db": {
-     "T1s": 9.656011271139782,
-     "T2s": 6.6457113144999695,
-     "T4s": 3.635411357860157
+     "T1s": 9.65601127113978,
+     "T2s": 6.645711314499968,
+     "T4s": 3.6354113578601552
     }
    },
    "best": {
@@ -3410,7 +3410,7 @@
    "synchronous": true,
    "track_fraction": 0.5,
    "range_ship_uuv_m": 75.16648189186454,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
@@ -3462,19 +3462,19 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 63.73774391990981,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
     "echo_db": -30.580818204720003,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -28.201234622902568,
+    "echo_to_direct_db": -28.20123462290257,
     "echo_to_noise_db": -10.736039280275257,
-    "scattering_strength_bistatic_db": -5.541506371044778,
+    "scattering_strength_bistatic_db": -5.541506371044777,
     "required_cancellation_db": {
-     "T1s": 9.75025422276,
-     "T2s": 6.739954266120188,
-     "T4s": 3.7296543094803756
+     "T1s": 9.750254222760002,
+     "T2s": 6.73995426612019,
+     "T4s": 3.7296543094803773
     }
    },
    "best": {
@@ -3514,15 +3514,15 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 58.309518948453004,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
     "echo_db": -28.892560367835394,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -26.575128443579622,
-    "echo_to_noise_db": -9.030962159266661,
-    "scattering_strength_bistatic_db": -4.043024041393197,
+    "echo_to_noise_db": -9.03096215926666,
+    "scattering_strength_bistatic_db": -4.0430240413931955,
     "required_cancellation_db": {
      "T1s": 8.124148043437051,
      "T2s": 5.113848086797239,
@@ -3566,7 +3566,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 100.4987562112089,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
@@ -3574,11 +3574,11 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -28.582240313561485,
     "echo_to_noise_db": -10.885899085094797,
-    "scattering_strength_bistatic_db": -4.243314569199184,
+    "scattering_strength_bistatic_db": -4.243314569199183,
     "required_cancellation_db": {
-     "T1s": 10.131259913418914,
-     "T2s": 7.120959956779101,
-     "T4s": 4.110660000139289
+     "T1s": 10.131259913418916,
+     "T2s": 7.120959956779103,
+     "T4s": 4.110660000139291
     }
    },
    "best": {
@@ -3618,7 +3618,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 87.82084035125148,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
@@ -3670,7 +3670,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 79.05694150420949,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
@@ -3722,7 +3722,7 @@
    "synchronous": true,
    "track_fraction": 0.75,
    "range_ship_uuv_m": 75.58108228915486,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
@@ -3774,7 +3774,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 78.10249675906654,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.0748667398540905,
@@ -3782,7 +3782,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -27.08782720761838,
     "echo_to_noise_db": -9.439727267767422,
-    "scattering_strength_bistatic_db": -3.335662033279836,
+    "scattering_strength_bistatic_db": -3.3356620332798355,
     "required_cancellation_db": {
      "T1s": 8.63684680747581,
      "T2s": 5.626546850835997,
@@ -3826,7 +3826,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 101.9803902718557,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.1983545361027783,
@@ -3878,7 +3878,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 95.19716382329885,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.1983545361027783,
@@ -3930,7 +3930,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 93.00537618869137,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.1983545361027783,
@@ -3982,7 +3982,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 95.72094859538323,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.1983545361027783,
@@ -4011,7 +4011,7 @@
     },
     "receiver": "das047(x=114)",
     "range_uuv_rx_m": 106.81058000029772,
-    "bistatic_angle_deg": 5.753808924070914
+    "bistatic_angle_deg": 5.753808924070915
    }
   },
   {
@@ -4034,7 +4034,7 @@
    "synchronous": true,
    "track_fraction": 1.0,
    "range_ship_uuv_m": 102.95630140987001,
-   "scattering_strength_forward_db": -3.208433329072757,
+   "scattering_strength_forward_db": -3.208433329072756,
    "scattering_strength_back_db": -2.3865368679902046,
    "median": {
     "direct_db": -2.1983545361027783,
@@ -4145,8 +4145,8 @@
     "echo_db": -25.069144013390748,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -23.40900945078722,
-    "echo_to_noise_db": -5.078381437888318,
-    "scattering_strength_bistatic_db": 0.583894351908163,
+    "echo_to_noise_db": -5.078381437888316,
+    "scattering_strength_bistatic_db": 0.5838943519081623,
     "required_cancellation_db": {
      "T1s": 4.958029050644651,
      "T2s": 1.9477290940048384,
@@ -4154,7 +4154,7 @@
     }
    },
    "best": {
-    "direct_db": -2.749673231128302,
+    "direct_db": -2.7496732311283023,
     "echo_db": -20.828024310517105,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -18.078351079388803,
@@ -4198,7 +4198,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -22.45123219589688,
     "echo_to_noise_db": -4.519997578634062,
-    "scattering_strength_bistatic_db": 0.44672733756056854,
+    "scattering_strength_bistatic_db": 0.4467273375605685,
     "required_cancellation_db": {
      "T1s": 4.000251795754307,
      "T2s": 0.9899518391144948,
@@ -4258,12 +4258,12 @@
     }
    },
    "best": {
-    "direct_db": -2.3858957839526505,
+    "direct_db": -2.38589578395265,
     "echo_db": -20.364611161873874,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -17.978715377921223,
+    "echo_to_direct_db": -17.978715377921226,
     "echo_to_noise_db": -0.5216096126308294,
-    "scattering_strength_bistatic_db": 4.11413903105777,
+    "scattering_strength_bistatic_db": 4.1141390310577695,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -4304,7 +4304,7 @@
     "echo_to_noise_db": -2.728489235824153,
     "scattering_strength_bistatic_db": 1.406034972960787,
     "required_cancellation_db": {
-     "T1s": 2.062123860010912,
+     "T1s": 2.0621238600109137,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -4353,11 +4353,11 @@
     "echo_db": -25.156572223644503,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -23.54112717644633,
-    "echo_to_noise_db": -5.162284317868668,
+    "echo_to_noise_db": -5.162284317868666,
     "scattering_strength_bistatic_db": 0.4894673416835459,
     "required_cancellation_db": {
-     "T1s": 5.0901467763037616,
-     "T2s": 2.079846819663949,
+     "T1s": 5.09014677630376,
+     "T2s": 2.0798468196639472,
      "T4s": 0.0
     }
    },
@@ -4406,7 +4406,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -22.927331437673953,
     "echo_to_noise_db": -4.95050656281988,
-    "scattering_strength_bistatic_db": 0.23672510457655244,
+    "scattering_strength_bistatic_db": 0.2367251045765524,
     "required_cancellation_db": {
      "T1s": 4.4763510375313835,
      "T2s": 1.466051080891571,
@@ -4427,7 +4427,7 @@
     },
     "receiver": "das115(x=250)",
     "range_uuv_rx_m": 59.26634795564849,
-    "bistatic_angle_deg": 3.3177811683349283
+    "bistatic_angle_deg": 3.3177811683349288
    }
   },
   {
@@ -4466,7 +4466,7 @@
     }
    },
    "best": {
-    "direct_db": -1.8501585635479099,
+    "direct_db": -1.8501585635479096,
     "echo_db": -19.310475407506217,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -17.460316843958307,
@@ -4506,7 +4506,7 @@
    "scattering_strength_back_db": 1.3464415653086808,
    "median": {
     "direct_db": -2.061590023038189,
-    "echo_db": -23.41259950397461,
+    "echo_db": -23.412599503974608,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.2821138501362,
     "echo_to_noise_db": -3.430523029205773,
@@ -4558,13 +4558,13 @@
    "scattering_strength_back_db": 1.3464415653086808,
    "median": {
     "direct_db": -2.061590023038189,
-    "echo_db": -22.60562436645817,
+    "echo_db": -22.605624366458166,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -20.54403434341998,
+    "echo_to_direct_db": -20.544034343419977,
     "echo_to_noise_db": -2.669049869677803,
     "scattering_strength_bistatic_db": 0.880073127364592,
     "required_cancellation_db": {
-     "T1s": 2.093053943277411,
+     "T1s": 2.0930539432774076,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -4614,7 +4614,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -23.46142017833037,
     "echo_to_noise_db": -5.1527329013475445,
-    "scattering_strength_bistatic_db": -0.04818113270924832,
+    "scattering_strength_bistatic_db": -0.048181132709248314,
     "required_cancellation_db": {
      "T1s": 5.0104397781878,
      "T2s": 2.0001398215479878,
@@ -4714,11 +4714,11 @@
    "scattering_strength_back_db": 1.3464415653086808,
    "median": {
     "direct_db": -2.0748667398540905,
-    "echo_db": -23.83911264391577,
+    "echo_db": -23.839112643915772,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.761709128765286,
     "echo_to_noise_db": -3.8784783981972364,
-    "scattering_strength_bistatic_db": 0.6982861235299588,
+    "scattering_strength_bistatic_db": 0.6982861235299589,
     "required_cancellation_db": {
      "T1s": 3.310728728622717,
      "T2s": 0.3004287719829044,
@@ -4778,7 +4778,7 @@
     }
    },
    "best": {
-    "direct_db": -1.5464470532762797,
+    "direct_db": -1.5464470532762795,
     "echo_db": -18.652393865811018,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -17.10594681253474,
@@ -4824,7 +4824,7 @@
     "echo_to_noise_db": -2.728489235824153,
     "scattering_strength_bistatic_db": 1.0362275832033143,
     "required_cancellation_db": {
-     "T1s": 2.062123860010912,
+     "T1s": 2.0621238600109137,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -4874,7 +4874,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -22.804526553148104,
     "echo_to_noise_db": -4.8890506383779755,
-    "scattering_strength_bistatic_db": -0.1695937548452821,
+    "scattering_strength_bistatic_db": -0.16959375484528186,
     "required_cancellation_db": {
      "T1s": 4.353546153005535,
      "T2s": 1.3432461963657225,
@@ -5082,7 +5082,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.800438193930862,
     "echo_to_noise_db": -3.6019740724144,
-    "scattering_strength_bistatic_db": 0.48875134255492714,
+    "scattering_strength_bistatic_db": 0.4887513425549276,
     "required_cancellation_db": {
      "T1s": 3.349457793788293,
      "T2s": 0.33915783714848047,
@@ -5130,11 +5130,11 @@
    "scattering_strength_back_db": 1.3464415653086808,
    "median": {
     "direct_db": -2.1983545361027783,
-    "echo_db": -24.953913776752103,
+    "echo_db": -24.9539137767521,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -22.770953215355885,
     "echo_to_noise_db": -4.955142942387553,
-    "scattering_strength_bistatic_db": 0.18620860468184408,
+    "scattering_strength_bistatic_db": 0.18620860468184405,
     "required_cancellation_db": {
      "T1s": 4.319972815213315,
      "T2s": 1.309672858573503,
@@ -5142,7 +5142,7 @@
     }
    },
    "best": {
-    "direct_db": -1.5464470532762797,
+    "direct_db": -1.5464470532762795,
     "echo_db": -17.821176580586783,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.274729527310505,
@@ -5186,7 +5186,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -22.386103438105305,
     "echo_to_noise_db": -4.830154238187069,
-    "scattering_strength_bistatic_db": 0.8099674602359991,
+    "scattering_strength_bistatic_db": 0.809967460235999,
     "required_cancellation_db": {
      "T1s": 3.935123037962736,
      "T2s": 0.9248230813229235,
@@ -5194,10 +5194,10 @@
     }
    },
    "best": {
-    "direct_db": -1.8052376909779024,
+    "direct_db": -1.8052376909779029,
     "echo_db": -18.94183206732958,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -17.13659437635168,
+    "echo_to_direct_db": -17.136594376351677,
     "echo_to_noise_db": 0.9011694819134632,
     "scattering_strength_bistatic_db": 4.118929633838825,
     "required_cancellation_db": {
@@ -5407,7 +5407,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.222398759539054,
     "echo_to_noise_db": 1.0243512905063596,
-    "scattering_strength_bistatic_db": 0.916219551794165,
+    "scattering_strength_bistatic_db": 0.9162195517941649,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -5455,10 +5455,10 @@
    },
    "best": {
     "direct_db": -2.4155104976068396,
-    "echo_db": -19.27553357172802,
+    "echo_db": -19.275533571728015,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -16.86002307412118,
-    "echo_to_noise_db": 0.567467977515026,
+    "echo_to_direct_db": -16.860023074121177,
+    "echo_to_noise_db": 0.5674679775150295,
     "scattering_strength_bistatic_db": 0.9757688193369571,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -5550,7 +5550,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -18.200383636923302,
     "echo_to_noise_db": -0.9588559370173915,
-    "scattering_strength_bistatic_db": 0.05635882618654696,
+    "scattering_strength_bistatic_db": 0.05635882618654695,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -5563,7 +5563,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.967820688147867,
     "echo_to_noise_db": 0.8003141212410902,
-    "scattering_strength_bistatic_db": 1.1258879086765061,
+    "scattering_strength_bistatic_db": 1.1258879086765063,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -5706,7 +5706,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -19.308175818159743,
     "echo_to_noise_db": -1.5848711175804286,
-    "scattering_strength_bistatic_db": -0.9908319883404979,
+    "scattering_strength_bistatic_db": -0.9908319883404972,
     "required_cancellation_db": {
      "T1s": 0.8571954180171737,
      "T2s": 0.0,
@@ -5771,7 +5771,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.51915306001235,
     "echo_to_noise_db": 1.5819347071411194,
-    "scattering_strength_bistatic_db": 1.1938751539415668,
+    "scattering_strength_bistatic_db": 1.1938751539415666,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -5818,7 +5818,7 @@
     }
    },
    "best": {
-    "direct_db": -1.5718645000466378,
+    "direct_db": -1.5718645000466376,
     "echo_db": -17.8683296760508,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.296465176004162,
@@ -5870,7 +5870,7 @@
     }
    },
    "best": {
-    "direct_db": -1.461280356782382,
+    "direct_db": -1.4612803567823822,
     "echo_db": -17.300018149083456,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -15.838737792301075,
@@ -5968,7 +5968,7 @@
     "echo_to_noise_db": -1.0752645473982696,
     "scattering_strength_bistatic_db": -0.36769391406680485,
     "required_cancellation_db": {
-     "T1s": 0.4208195478513783,
+     "T1s": 0.4208195478513801,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -6026,7 +6026,7 @@
     }
    },
    "best": {
-    "direct_db": -1.468359327711894,
+    "direct_db": -1.4683593277118936,
     "echo_db": -17.66243027668708,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.194070948975185,
@@ -6070,7 +6070,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -17.819530022925566,
     "echo_to_noise_db": 0.00899718937900218,
-    "scattering_strength_bistatic_db": 0.18228937344384918,
+    "scattering_strength_bistatic_db": 0.18228937344384916,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -6174,7 +6174,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -19.32253777670256,
     "echo_to_noise_db": -1.4078251774371218,
-    "scattering_strength_bistatic_db": -0.66757565098951,
+    "scattering_strength_bistatic_db": -0.6675756509895097,
     "required_cancellation_db": {
      "T1s": 0.8715573765599895,
      "T2s": 0.0,
@@ -6286,12 +6286,12 @@
     }
    },
    "best": {
-    "direct_db": -1.6156414656256057,
+    "direct_db": -1.6156414656256055,
     "echo_db": -17.98151199401027,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -16.36587052838466,
+    "echo_to_direct_db": -16.365870528384665,
     "echo_to_noise_db": 1.861489555232776,
-    "scattering_strength_bistatic_db": 1.2319455122555443,
+    "scattering_strength_bistatic_db": 1.2319455122555445,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -6299,7 +6299,7 @@
     },
     "receiver": "das086(x=192)",
     "range_uuv_rx_m": 66.2872536767062,
-    "bistatic_angle_deg": 7.125016348901756
+    "bistatic_angle_deg": 7.125016348901757
    }
   },
   {
@@ -6328,7 +6328,7 @@
     "direct_db": -2.0748667398540874,
     "echo_db": -20.760983322237273,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -18.147356937377975,
+    "echo_to_direct_db": -18.147356937377978,
     "echo_to_noise_db": -0.7787971128667692,
     "scattering_strength_bistatic_db": 0.6893439800398347,
     "required_cancellation_db": {
@@ -6551,7 +6551,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.89629179102774,
     "echo_to_noise_db": 0.8718430183612185,
-    "scattering_strength_bistatic_db": 1.1116102982651277,
+    "scattering_strength_bistatic_db": 1.1116102982651275,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -6642,7 +6642,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -19.54041992359268,
     "echo_to_noise_db": -2.660257751620456,
-    "scattering_strength_bistatic_db": -0.6895980554945143,
+    "scattering_strength_bistatic_db": -0.6895980554945141,
     "required_cancellation_db": {
      "T1s": 1.0894395234501122,
      "T2s": 0.0,
@@ -6694,7 +6694,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -19.988898384845477,
     "echo_to_noise_db": -1.509036649728655,
-    "scattering_strength_bistatic_db": -0.10481451363673647,
+    "scattering_strength_bistatic_db": -0.10481451363673622,
     "required_cancellation_db": {
      "T1s": 1.5379179847029096,
      "T2s": 0.0,
@@ -6702,7 +6702,7 @@
     }
    },
    "best": {
-    "direct_db": -2.749673231128302,
+    "direct_db": -2.7496732311283023,
     "echo_db": -15.69158518955894,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -12.941911958430639,
@@ -6798,7 +6798,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.99908942112766,
     "echo_to_noise_db": 0.9335887888496703,
-    "scattering_strength_bistatic_db": 0.8632856876993124,
+    "scattering_strength_bistatic_db": 0.8632856876993122,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -6806,7 +6806,7 @@
     }
    },
    "best": {
-    "direct_db": -2.445290184995306,
+    "direct_db": -2.4452901849953057,
     "echo_db": -16.135283209828746,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -13.68999302483344,
@@ -6871,7 +6871,7 @@
     },
     "receiver": "das106(x=232)",
     "range_uuv_rx_m": 89.36721994109473,
-    "bistatic_angle_deg": 7.3706694853227095
+    "bistatic_angle_deg": 7.37066948532271
    }
   },
   {
@@ -6950,13 +6950,13 @@
    "scattering_strength_back_db": -0.29136524298892175,
    "median": {
     "direct_db": -2.0615900230381845,
-    "echo_db": -20.71542495545606,
+    "echo_db": -20.715424955456065,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -19.25126626479068,
     "echo_to_noise_db": -0.6918776843898993,
     "scattering_strength_bistatic_db": 0.045911381361599474,
     "required_cancellation_db": {
-     "T1s": 0.8002858646481101,
+     "T1s": 0.8002858646481119,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -6967,7 +6967,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -12.464773858057079,
     "echo_to_noise_db": 5.165828845863723,
-    "scattering_strength_bistatic_db": 5.0101415065997825,
+    "scattering_strength_bistatic_db": 5.010141506599783,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -7006,7 +7006,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -17.49804984577626,
     "echo_to_noise_db": 0.7234169987374486,
-    "scattering_strength_bistatic_db": 0.5813542149324729,
+    "scattering_strength_bistatic_db": 0.5813542149324733,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -7019,7 +7019,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -12.937822198785549,
     "echo_to_noise_db": 4.883063522269946,
-    "scattering_strength_bistatic_db": 5.066384752717031,
+    "scattering_strength_bistatic_db": 5.06638475271703,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -7058,7 +7058,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -15.981178696287506,
     "echo_to_noise_db": 1.5193196780001106,
-    "scattering_strength_bistatic_db": 1.7062242110788428,
+    "scattering_strength_bistatic_db": 1.706224211078843,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -7109,8 +7109,8 @@
     "echo_db": -17.610454624513018,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -15.380811895611807,
-    "echo_to_noise_db": 2.3770236433410155,
-    "scattering_strength_bistatic_db": 2.3318766698647115,
+    "echo_to_noise_db": 2.3770236433410172,
+    "scattering_strength_bistatic_db": 2.331876669864711,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -7170,7 +7170,7 @@
     }
    },
    "best": {
-    "direct_db": -1.461280356782382,
+    "direct_db": -1.4612803567823822,
     "echo_db": -13.742729864334375,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -12.281449507551994,
@@ -7214,7 +7214,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -18.24872285054943,
     "echo_to_noise_db": 0.18982295969268037,
-    "scattering_strength_bistatic_db": 0.35651830349612434,
+    "scattering_strength_bistatic_db": 0.3565183034961243,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -7223,10 +7223,10 @@
    },
    "best": {
     "direct_db": -1.7419137820895747,
-    "echo_db": -13.775960189649686,
+    "echo_db": -13.775960189649687,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -12.034046407560112,
-    "echo_to_noise_db": 6.067041359593359,
+    "echo_to_noise_db": 6.067041359593357,
     "scattering_strength_bistatic_db": 5.11555254060619,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -7274,10 +7274,10 @@
     }
    },
    "best": {
-    "direct_db": -1.5718645000466378,
+    "direct_db": -1.5718645000466376,
     "echo_db": -14.06485274240881,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -12.492988242362172,
+    "echo_to_direct_db": -12.492988242362173,
     "echo_to_noise_db": 5.778148806834235,
     "scattering_strength_bistatic_db": 5.136135538619595,
     "required_cancellation_db": {
@@ -7326,7 +7326,7 @@
     }
    },
    "best": {
-    "direct_db": -1.468359327711894,
+    "direct_db": -1.4683593277118936,
     "echo_db": -14.106473696943056,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -12.638114369231161,
@@ -7474,7 +7474,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -17.356785895423968,
     "echo_to_noise_db": 0.5094272031978466,
-    "scattering_strength_bistatic_db": 0.930651415944406,
+    "scattering_strength_bistatic_db": 0.9306514159444064,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -7578,7 +7578,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -16.050888175560004,
     "echo_to_noise_db": 1.6478728675632297,
-    "scattering_strength_bistatic_db": 2.1291732132379537,
+    "scattering_strength_bistatic_db": 2.1291732132379533,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -7599,7 +7599,7 @@
     },
     "receiver": "das084(x=188)",
     "range_uuv_rx_m": 67.1863081289633,
-    "bistatic_angle_deg": 3.7781977071617825
+    "bistatic_angle_deg": 3.7781977071617834
    }
   },
   {
@@ -7629,7 +7629,7 @@
     "echo_db": -18.13910057081518,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -15.309989389554495,
-    "echo_to_noise_db": 1.863827931071194,
+    "echo_to_noise_db": 1.8638279310711958,
     "scattering_strength_bistatic_db": 3.3650621680342834,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -7690,7 +7690,7 @@
     }
    },
    "best": {
-    "direct_db": -2.9664303351022845,
+    "direct_db": -2.9664303351022854,
     "echo_db": -17.042592898715128,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -14.076162563612844,
@@ -7838,7 +7838,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -15.89541873766661,
     "echo_to_noise_db": 1.1477206208613993,
-    "scattering_strength_bistatic_db": 3.2083159622298676,
+    "scattering_strength_bistatic_db": 3.208315962229867,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -7898,7 +7898,7 @@
     }
    },
    "best": {
-    "direct_db": -2.904396890304022,
+    "direct_db": -2.9043968903040214,
     "echo_db": -17.160241006558124,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -14.255844116254103,
@@ -7911,7 +7911,7 @@
     },
     "receiver": "das052(x=124)",
     "range_uuv_rx_m": 100.19231507456048,
-    "bistatic_angle_deg": 9.906752142952687
+    "bistatic_angle_deg": 9.906752142952689
    }
   },
   {
@@ -8042,7 +8042,7 @@
    "scattering_strength_back_db": -6.2618699369814355,
    "median": {
     "direct_db": -2.0615900230381845,
-    "echo_db": -34.67736422665733,
+    "echo_db": -34.67736422665734,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -32.74399594039702,
     "echo_to_noise_db": -14.766161550020549,
@@ -8054,16 +8054,16 @@
     }
    },
    "best": {
-    "direct_db": -2.6880881821048797,
+    "direct_db": -2.688088182104879,
     "echo_db": -33.14492755367254,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -30.456839371567657,
+    "echo_to_direct_db": -30.45683937156766,
     "echo_to_noise_db": -13.301926004429493,
     "scattering_strength_bistatic_db": -9.432353761496806,
     "required_cancellation_db": {
-     "T1s": 12.005858971425088,
-     "T2s": 8.995559014785275,
-     "T4s": 5.985259058145463
+     "T1s": 12.005858971425091,
+     "T2s": 8.995559014785279,
+     "T4s": 5.985259058145466
     },
     "receiver": "das121(x=262)",
     "range_uuv_rx_m": 65.70007610345668,
@@ -8106,7 +8106,7 @@
     }
    },
    "best": {
-    "direct_db": -2.5052963110887587,
+    "direct_db": -2.5052963110887596,
     "echo_db": -33.11031930931483,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -30.605022998226072,
@@ -8254,7 +8254,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -32.85552524704096,
     "echo_to_noise_db": -14.773476408446424,
-    "scattering_strength_bistatic_db": -9.105444281411803,
+    "scattering_strength_bistatic_db": -9.1054442814118,
     "required_cancellation_db": {
      "T1s": 14.404544846898386,
      "T2s": 11.394244890258573,
@@ -8327,7 +8327,7 @@
     },
     "receiver": "das114(x=248)",
     "range_uuv_rx_m": 58.365229375031156,
-    "bistatic_angle_deg": 5.057248532559082
+    "bistatic_angle_deg": 5.057248532559083
    }
   },
   {
@@ -8412,9 +8412,9 @@
     "echo_to_noise_db": -16.515780449185833,
     "scattering_strength_bistatic_db": -11.50303747807096,
     "required_cancellation_db": {
-     "T1s": 15.274668661159442,
-     "T2s": 12.26436870451963,
-     "T4s": 9.254068747879817
+     "T1s": 15.274668661159438,
+     "T2s": 12.264368704519626,
+     "T4s": 9.254068747879813
     }
    },
    "best": {
@@ -8616,17 +8616,17 @@
     "direct_db": -2.0748667398540874,
     "echo_db": -37.45618082477439,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -35.0238475785418,
+    "echo_to_direct_db": -35.023847578541805,
     "echo_to_noise_db": -17.509141677931492,
     "scattering_strength_bistatic_db": -12.139913999419349,
     "required_cancellation_db": {
-     "T1s": 16.57286717839923,
-     "T2s": 13.562567221759416,
-     "T4s": 10.552267265119603
+     "T1s": 16.572867178399232,
+     "T2s": 13.56256722175942,
+     "T4s": 10.552267265119607
     }
    },
    "best": {
-    "direct_db": -1.468359327711894,
+    "direct_db": -1.4683593277118936,
     "echo_db": -30.965597031164933,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -29.497237703453038,
@@ -8718,7 +8718,7 @@
    "scattering_strength_back_db": -6.2618699369814355,
    "median": {
     "direct_db": -2.0748667398540874,
-    "echo_db": -34.64596357275941,
+    "echo_db": -34.645963572759406,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -32.05505914245927,
     "echo_to_noise_db": -14.787498153272232,
@@ -8776,9 +8776,9 @@
     "echo_to_noise_db": -17.315036471208845,
     "scattering_strength_bistatic_db": -11.06268198805642,
     "required_cancellation_db": {
-     "T1s": 16.30758232647814,
-     "T2s": 13.297282369838328,
-     "T4s": 10.286982413198515
+     "T1s": 16.307582326478137,
+     "T2s": 13.297282369838324,
+     "T4s": 10.286982413198512
     }
    },
    "best": {
@@ -8886,7 +8886,7 @@
     }
    },
    "best": {
-    "direct_db": -1.6658252127194135,
+    "direct_db": -1.665825212719413,
     "echo_db": -31.3661062366141,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -29.70028102389469,
@@ -9240,13 +9240,13 @@
     "direct_db": -2.1983545361027748,
     "echo_db": -35.92904824774428,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -32.564746046875385,
+    "echo_to_direct_db": -32.56474604687538,
     "echo_to_noise_db": -16.068154651482807,
     "scattering_strength_bistatic_db": -9.609401294794623,
     "required_cancellation_db": {
-     "T1s": 14.113765646732812,
-     "T2s": 11.103465690093,
-     "T4s": 8.093165733453187
+     "T1s": 14.113765646732809,
+     "T2s": 11.103465690092996,
+     "T4s": 8.093165733453183
     }
    },
    "best": {
@@ -9263,7 +9263,7 @@
     },
     "receiver": "das015(x=50)",
     "range_uuv_rx_m": 150.0,
-    "bistatic_angle_deg": 7.815293546766918
+    "bistatic_angle_deg": 7.815293546766919
    }
   },
   {
@@ -9287,22 +9287,22 @@
    "track_fraction": 0.0,
    "range_ship_uuv_m": 141.4213562373095,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -27.356589396802608,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -25.325658208295813,
     "echo_to_noise_db": -7.368018557236054,
-    "scattering_strength_bistatic_db": -2.957958000965679,
+    "scattering_strength_bistatic_db": -2.9579580009656787,
     "required_cancellation_db": {
-     "T1s": 6.874677808153244,
-     "T2s": 3.8643778515134315,
-     "T4s": 0.854077894873619
+     "T1s": 6.874677808153246,
+     "T2s": 3.8643778515134333,
+     "T4s": 0.8540778948736207
     }
    },
    "best": {
-    "direct_db": -2.8424166863582774,
+    "direct_db": -2.842416686358278,
     "echo_db": -24.522296651892045,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.679879965533768,
@@ -9315,7 +9315,7 @@
     },
     "receiver": "das126(x=272)",
     "range_uuv_rx_m": 51.22499389946279,
-    "bistatic_angle_deg": 6.340191745909907
+    "bistatic_angle_deg": 6.340191745909908
    }
   },
   {
@@ -9339,14 +9339,14 @@
    "track_fraction": null,
    "range_ship_uuv_m": 120.26013470805694,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -27.556597042686064,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -25.770020430899052,
     "echo_to_noise_db": -7.664511980652874,
-    "scattering_strength_bistatic_db": -3.185380262345965,
+    "scattering_strength_bistatic_db": -3.1853802623459657,
     "required_cancellation_db": {
      "T1s": 7.319040030756483,
      "T2s": 4.30874007411667,
@@ -9359,7 +9359,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -22.209197212831647,
     "echo_to_noise_db": -5.085046364936645,
-    "scattering_strength_bistatic_db": -1.694824436476027,
+    "scattering_strength_bistatic_db": -1.6948244364760268,
     "required_cancellation_db": {
      "T1s": 3.758216812689078,
      "T2s": 0.7479168560492653,
@@ -9391,7 +9391,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 99.24716620639605,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -27.63456253118027,
@@ -9443,7 +9443,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 78.50159234053791,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -27.609102950630042,
@@ -9452,9 +9452,9 @@
     "echo_to_noise_db": -7.764328729661372,
     "scattering_strength_bistatic_db": -3.8528407996093907,
     "required_cancellation_db": {
-     "T1s": 7.096577559995557,
-     "T2s": 4.086277603355745,
-     "T4s": 1.0759776467159323
+     "T1s": 7.096577559995559,
+     "T2s": 4.086277603355747,
+     "T4s": 1.075977646715934
     }
    },
    "best": {
@@ -9463,7 +9463,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -22.125567280174874,
     "echo_to_noise_db": -4.6390242862265225,
-    "scattering_strength_bistatic_db": -1.6349713747115378,
+    "scattering_strength_bistatic_db": -1.6349713747115375,
     "required_cancellation_db": {
      "T1s": 3.6745868800323045,
      "T2s": 0.664286923392492,
@@ -9495,7 +9495,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 58.309518948453004,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -26.902521862277837,
@@ -9515,7 +9515,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.508535883262674,
     "echo_to_noise_db": -3.7404010738737163,
-    "scattering_strength_bistatic_db": -1.6107680189084697,
+    "scattering_strength_bistatic_db": -1.6107680189084694,
     "required_cancellation_db": {
      "T1s": 3.0575554831201046,
      "T2s": 0.047255526480292076,
@@ -9547,14 +9547,14 @@
    "track_fraction": null,
    "range_ship_uuv_m": 122.06555615733703,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -27.52222988320464,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -25.677089178586378,
-    "echo_to_noise_db": -7.525958198996465,
-    "scattering_strength_bistatic_db": -3.4282978048028383,
+    "echo_to_noise_db": -7.525958198996467,
+    "scattering_strength_bistatic_db": -3.428297804802839,
     "required_cancellation_db": {
      "T1s": 7.226108778443807,
      "T2s": 4.215808821803995,
@@ -9599,7 +9599,7 @@
    "track_fraction": 0.25,
    "range_ship_uuv_m": 102.04165815979276,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -27.68617548124265,
@@ -9627,7 +9627,7 @@
     },
     "receiver": "das115(x=250)",
     "range_uuv_rx_m": 59.26634795564849,
-    "bistatic_angle_deg": 3.3177811683349283
+    "bistatic_angle_deg": 3.3177811683349288
    }
   },
   {
@@ -9651,7 +9651,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 82.76472678623425,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -27.878112025118753,
@@ -9703,14 +9703,14 @@
    "track_fraction": null,
    "range_ship_uuv_m": 64.90377492873584,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -27.604421679543485,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -25.56163074060043,
     "echo_to_noise_db": -7.680653178842807,
-    "scattering_strength_bistatic_db": -4.805140175702497,
+    "scattering_strength_bistatic_db": -4.805140175702496,
     "required_cancellation_db": {
      "T1s": 7.1106503404578625,
      "T2s": 4.10035038381805,
@@ -9718,14 +9718,14 @@
     }
    },
    "best": {
-    "direct_db": -1.6156414656256057,
+    "direct_db": -1.6156414656256055,
     "echo_db": -22.951999922713718,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -21.33635845708811,
+    "echo_to_direct_db": -21.336358457088114,
     "echo_to_noise_db": -3.1089983734706728,
     "scattering_strength_bistatic_db": -1.5989650523609464,
     "required_cancellation_db": {
-     "T1s": 2.885378056945541,
+     "T1s": 2.8853780569455445,
      "T2s": 0.0,
      "T4s": 0.0
     },
@@ -9755,13 +9755,13 @@
    "track_fraction": null,
    "range_ship_uuv_m": 50.0,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0615900230381845,
     "echo_db": -26.85110310087299,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -24.802789794650707,
-    "echo_to_noise_db": -6.913235322499272,
+    "echo_to_noise_db": -6.913235322499265,
     "scattering_strength_bistatic_db": -4.792697746132864,
     "required_cancellation_db": {
      "T1s": 6.3518093945081375,
@@ -9770,7 +9770,7 @@
     }
    },
    "best": {
-    "direct_db": -1.461280356782382,
+    "direct_db": -1.4612803567823822,
     "echo_db": -22.31923675645039,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -20.85795639966801,
@@ -9807,7 +9807,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 107.70329614269008,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -28.118602779036962,
@@ -9859,7 +9859,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 90.34655499796325,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -28.390417292365196,
@@ -9868,9 +9868,9 @@
     "echo_to_noise_db": -8.46808020512677,
     "scattering_strength_bistatic_db": -4.683895439758361,
     "required_cancellation_db": {
-     "T1s": 8.00882677171831,
-     "T2s": 4.998526815078497,
-     "T4s": 1.9882268584386846
+     "T1s": 8.008826771718311,
+     "T2s": 4.998526815078499,
+     "T4s": 1.9882268584386864
     }
    },
    "best": {
@@ -9911,7 +9911,7 @@
    "track_fraction": 0.5,
    "range_ship_uuv_m": 75.16648189186454,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -28.264867444152884,
@@ -9926,12 +9926,12 @@
     }
    },
    "best": {
-    "direct_db": -1.468359327711894,
+    "direct_db": -1.4683593277118936,
     "echo_db": -22.685767464426586,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.217408136714692,
     "echo_to_noise_db": -2.8427659151835414,
-    "scattering_strength_bistatic_db": -1.601717058986185,
+    "scattering_strength_bistatic_db": -1.6017170589861853,
     "required_cancellation_db": {
      "T1s": 2.7664277365721226,
      "T2s": 0.0,
@@ -9963,18 +9963,18 @@
    "track_fraction": null,
    "range_ship_uuv_m": 63.73774391990981,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -27.641620052693327,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -25.602626724927394,
+    "echo_to_direct_db": -25.602626724927397,
     "echo_to_noise_db": -7.712438995327307,
     "scattering_strength_bistatic_db": -4.852538658513342,
     "required_cancellation_db": {
-     "T1s": 7.151646324784824,
-     "T2s": 4.141346368145012,
-     "T4s": 1.1310464115051992
+     "T1s": 7.151646324784826,
+     "T2s": 4.141346368145014,
+     "T4s": 1.131046411505201
     }
    },
    "best": {
@@ -9983,7 +9983,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.261020750505676,
     "echo_to_noise_db": -2.9529306140194542,
-    "scattering_strength_bistatic_db": -1.6043798110631677,
+    "scattering_strength_bistatic_db": -1.6043798110631675,
     "required_cancellation_db": {
      "T1s": 2.8100403503631064,
      "T2s": 0.0,
@@ -10015,7 +10015,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 58.309518948453004,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -26.966215470607594,
@@ -10035,7 +10035,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.508535883262674,
     "echo_to_noise_db": -3.7404010738737163,
-    "scattering_strength_bistatic_db": -1.6107680189084697,
+    "scattering_strength_bistatic_db": -1.6107680189084694,
     "required_cancellation_db": {
      "T1s": 3.0575554831201046,
      "T2s": 0.047255526480292076,
@@ -10067,18 +10067,18 @@
    "track_fraction": null,
    "range_ship_uuv_m": 100.4987562112089,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -28.780085705599664,
     "noise_db": -19.843001549243045,
-    "echo_to_direct_db": -26.714511685835138,
+    "echo_to_direct_db": -26.71451168583514,
     "echo_to_noise_db": -8.834800642006137,
-    "scattering_strength_bistatic_db": -4.849394424373622,
+    "scattering_strength_bistatic_db": -4.849394424373623,
     "required_cancellation_db": {
-     "T1s": 8.263531285692569,
-     "T2s": 5.253231329052756,
-     "T4s": 2.2429313724129436
+     "T1s": 8.263531285692572,
+     "T2s": 5.25323132905276,
+     "T4s": 2.242931372412947
     }
    },
    "best": {
@@ -10119,10 +10119,10 @@
    "track_fraction": null,
    "range_ship_uuv_m": 87.82084035125148,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
-    "echo_db": -28.6183288513743,
+    "echo_db": -28.618328851374297,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -26.583186666725066,
     "echo_to_noise_db": -8.707938241030627,
@@ -10171,7 +10171,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 79.05694150420949,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -28.07056896493644,
@@ -10186,7 +10186,7 @@
     }
    },
    "best": {
-    "direct_db": -1.6658252127194135,
+    "direct_db": -1.665825212719413,
     "echo_db": -23.089230299526335,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -21.423405086806923,
@@ -10223,7 +10223,7 @@
    "track_fraction": 0.75,
    "range_ship_uuv_m": 75.58108228915486,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -27.61986797359753,
@@ -10275,7 +10275,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 78.10249675906654,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -27.213745428778797,
@@ -10327,7 +10327,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 101.9803902718557,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -28.600049680580476,
@@ -10379,7 +10379,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 95.19716382329885,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -28.024022212498366,
@@ -10431,7 +10431,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 93.00537618869137,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -27.6834697670415,
@@ -10451,7 +10451,7 @@
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -22.084928535189878,
     "echo_to_noise_db": -4.540095463324121,
-    "scattering_strength_bistatic_db": -1.6601241050527595,
+    "scattering_strength_bistatic_db": -1.6601241050527593,
     "required_cancellation_db": {
      "T1s": 3.6339481350473086,
      "T2s": 0.6236481784074961,
@@ -10483,7 +10483,7 @@
    "track_fraction": null,
    "range_ship_uuv_m": 95.72094859538323,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -27.590063367294626,
@@ -10535,14 +10535,14 @@
    "track_fraction": 1.0,
    "range_ship_uuv_m": 102.95630140987001,
    "scattering_strength_forward_db": -1.5962445104247687,
-   "scattering_strength_back_db": -1.7573312832879115,
+   "scattering_strength_back_db": -1.757331283287911,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -27.995395691000255,
     "noise_db": -19.843001549243045,
     "echo_to_direct_db": -26.102200382653045,
     "echo_to_noise_db": -8.11675812017885,
-    "scattering_strength_bistatic_db": -3.482984513499229,
+    "scattering_strength_bistatic_db": -3.4829845134992294,
     "required_cancellation_db": {
      "T1s": 7.651219982510476,
      "T2s": 4.640920025870663,
@@ -10563,7 +10563,7 @@
     },
     "receiver": "das011(x=42)",
     "range_uuv_rx_m": 156.4736399525492,
-    "bistatic_angle_deg": 6.057407085345129
+    "bistatic_angle_deg": 6.05740708534513
    }
   },
   {
@@ -10607,7 +10607,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.26349326300932,
     "echo_to_noise_db": 4.663024639982041,
-    "scattering_strength_bistatic_db": 1.1689400265953582,
+    "scattering_strength_bistatic_db": 1.168940026595358,
     "required_cancellation_db": {
      "T1s": 1.4922807158126936,
      "T2s": 0.0,
@@ -10659,7 +10659,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.901946026682083,
     "echo_to_noise_db": 4.20531287790007,
-    "scattering_strength_bistatic_db": 1.2086120101387514,
+    "scattering_strength_bistatic_db": 1.2086120101387512,
     "required_cancellation_db": {
      "T1s": 2.130733479485457,
      "T2s": 0.0,
@@ -10698,7 +10698,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -19.13035290375498,
     "echo_to_noise_db": 1.8379310987054058,
-    "scattering_strength_bistatic_db": -0.148136068307961,
+    "scattering_strength_bistatic_db": -0.14813606830796097,
     "required_cancellation_db": {
      "T1s": 4.359140356558353,
      "T2s": 1.3488403999185437,
@@ -10748,12 +10748,12 @@
     "direct_db": -2.061590023038189,
     "echo_db": -21.010562501393114,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -18.265082003068493,
+    "echo_to_direct_db": -18.265082003068496,
     "echo_to_noise_db": 2.614389209301242,
     "scattering_strength_bistatic_db": 0.5454805444590272,
     "required_cancellation_db": {
-     "T1s": 3.4938694558718666,
-     "T2s": 0.4835694992320576,
+     "T1s": 3.49386945587187,
+     "T2s": 0.48356949923206116,
      "T4s": 0.0
     }
    },
@@ -10802,7 +10802,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.43411658534442,
     "echo_to_noise_db": 3.680987920821538,
-    "scattering_strength_bistatic_db": 1.0326119940077807,
+    "scattering_strength_bistatic_db": 1.0326119940077805,
     "required_cancellation_db": {
      "T1s": 2.6629040381477918,
      "T2s": 0.0,
@@ -10862,7 +10862,7 @@
     }
    },
    "best": {
-    "direct_db": -2.101759410639791,
+    "direct_db": -2.1017594106397905,
     "echo_db": -18.012962586948753,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.911203176308963,
@@ -11008,17 +11008,17 @@
     "direct_db": -2.061590023038189,
     "echo_db": -20.09553145215742,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -17.90247793087717,
+    "echo_to_direct_db": -17.902477930877165,
     "echo_to_noise_db": 3.537892150009089,
     "scattering_strength_bistatic_db": 0.7016197551853375,
     "required_cancellation_db": {
-     "T1s": 3.1312653836805406,
-     "T2s": 0.12096542704073165,
+     "T1s": 3.131265383680539,
+     "T2s": 0.12096542704072988,
      "T4s": 0.0
     }
    },
    "best": {
-    "direct_db": -1.5718645000466378,
+    "direct_db": -1.5718645000466376,
     "echo_db": -17.917280266937116,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.34541576689048,
@@ -11062,7 +11062,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.112782940272893,
     "echo_to_noise_db": 4.44840544666399,
-    "scattering_strength_bistatic_db": 0.7097109215982634,
+    "scattering_strength_bistatic_db": 0.7097109215982633,
     "required_cancellation_db": {
      "T1s": 2.3415703930762657,
      "T2s": 0.0,
@@ -11070,7 +11070,7 @@
     }
    },
    "best": {
-    "direct_db": -1.4612803567823787,
+    "direct_db": -1.461280356782379,
     "echo_db": -17.349586398770338,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.88830604198796,
@@ -11112,12 +11112,12 @@
     "direct_db": -2.074866739854092,
     "echo_db": -21.858138730119624,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -20.208739640708732,
+    "echo_to_direct_db": -20.208739640708735,
     "echo_to_noise_db": 1.8152995512632177,
     "scattering_strength_bistatic_db": -0.682186117283468,
     "required_cancellation_db": {
-     "T1s": 5.437527093512106,
-     "T2s": 2.427227136872297,
+     "T1s": 5.437527093512108,
+     "T2s": 2.4272271368722986,
      "T4s": 0.0
     }
    },
@@ -11372,12 +11372,12 @@
     "direct_db": -2.074866739854092,
     "echo_db": -21.542074708926375,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -19.457232641545893,
+    "echo_to_direct_db": -19.457232641545886,
     "echo_to_noise_db": 2.087793326370038,
-    "scattering_strength_bistatic_db": -0.0887678249349354,
+    "scattering_strength_bistatic_db": -0.08876782493493515,
     "required_cancellation_db": {
-     "T1s": 4.686020094349265,
-     "T2s": 1.6757201377094564,
+     "T1s": 4.686020094349262,
+     "T2s": 1.6757201377094528,
      "T4s": 0.0
     }
    },
@@ -11426,7 +11426,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.963191685333754,
     "echo_to_noise_db": 2.6248755919750106,
-    "scattering_strength_bistatic_db": 0.21828645443442887,
+    "scattering_strength_bistatic_db": 0.21828645443442884,
     "required_cancellation_db": {
      "T1s": 4.19197913813713,
      "T2s": 1.181679181497321,
@@ -11474,14 +11474,14 @@
    "scattering_strength_back_db": -2.13831825586096,
    "median": {
     "direct_db": -2.074866739854092,
-    "echo_db": -20.751536333414236,
+    "echo_db": -20.75153633341424,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.473538502550852,
     "echo_to_noise_db": 2.903928609066524,
-    "scattering_strength_bistatic_db": 0.6235057826697145,
+    "scattering_strength_bistatic_db": 0.6235057826697146,
     "required_cancellation_db": {
-     "T1s": 3.7023259553542243,
-     "T2s": 0.6920259987144153,
+     "T1s": 3.702325955354226,
+     "T2s": 0.6920259987144171,
      "T4s": 0.0
     }
    },
@@ -11499,7 +11499,7 @@
     },
     "receiver": "das086(x=192)",
     "range_uuv_rx_m": 66.2872536767062,
-    "bistatic_angle_deg": 7.125016348901756
+    "bistatic_angle_deg": 7.125016348901757
    }
   },
   {
@@ -11642,12 +11642,12 @@
     }
    },
    "best": {
-    "direct_db": -1.524175346145034,
+    "direct_db": -1.5241753461450338,
     "echo_db": -16.956398833803394,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.43222348765836,
     "echo_to_noise_db": 6.566370568385597,
-    "scattering_strength_bistatic_db": 1.3836638257896758,
+    "scattering_strength_bistatic_db": 1.3836638257896756,
     "required_cancellation_db": {
      "T1s": 0.6610109404617344,
      "T2s": 0.0,
@@ -11699,7 +11699,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.238439604728118,
     "echo_to_noise_db": 5.562368429035317,
-    "scattering_strength_bistatic_db": 1.3556996373459083,
+    "scattering_strength_bistatic_db": 1.355699637345908,
     "required_cancellation_db": {
      "T1s": 1.4672270575314919,
      "T2s": 0.0,
@@ -11803,7 +11803,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.6630411207619,
     "echo_to_noise_db": 3.2939067357670986,
-    "scattering_strength_bistatic_db": 1.2082068149073928,
+    "scattering_strength_bistatic_db": 1.208206814907393,
     "required_cancellation_db": {
      "T1s": 2.891828573565274,
      "T2s": 0.0,
@@ -11841,7 +11841,7 @@
     "echo_db": -22.749245950483605,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -19.68863018079893,
-    "echo_to_noise_db": 0.8733195144387551,
+    "echo_to_noise_db": 0.8733195144387587,
     "scattering_strength_bistatic_db": -0.11035139860539048,
     "required_cancellation_db": {
      "T1s": 4.917417633602307,
@@ -11886,15 +11886,15 @@
    "synchronous": true,
    "track_fraction": 0.0,
    "range_ship_uuv_m": 141.4213562373095,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -22.192205164461853,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -20.59918811041718,
     "echo_to_noise_db": 1.5476890733513269,
-    "scattering_strength_bistatic_db": -0.045472915849746096,
+    "scattering_strength_bistatic_db": -0.04547291584974609,
     "required_cancellation_db": {
      "T1s": 5.827975563220553,
      "T2s": 2.8176756065807442,
@@ -11938,15 +11938,15 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 120.26013470805694,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -20.79253252719615,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -19.199515473151475,
     "echo_to_noise_db": 2.977013825335412,
-    "scattering_strength_bistatic_db": 0.20853103763658443,
+    "scattering_strength_bistatic_db": 0.2085310376365844,
     "required_cancellation_db": {
      "T1s": 4.428302925954849,
      "T2s": 1.4180029693150402,
@@ -11959,7 +11959,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -13.407933796051582,
     "echo_to_noise_db": 7.5490140604774165,
-    "scattering_strength_bistatic_db": 5.008365548896422,
+    "scattering_strength_bistatic_db": 5.008365548896423,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -11990,15 +11990,15 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 99.24716620639605,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -19.245720666428628,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.491624844054485,
     "echo_to_noise_db": 4.456697039402616,
-    "scattering_strength_bistatic_db": 1.1567621625128897,
+    "scattering_strength_bistatic_db": 1.1567621625128899,
     "required_cancellation_db": {
      "T1s": 2.7204122968578606,
      "T2s": 0.0,
@@ -12042,8 +12042,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 78.50159234053791,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -18.310906655788898,
@@ -12071,7 +12071,7 @@
     },
     "receiver": "das106(x=232)",
     "range_uuv_rx_m": 89.36721994109473,
-    "bistatic_angle_deg": 7.3706694853227095
+    "bistatic_angle_deg": 7.37066948532271
    }
   },
   {
@@ -12094,8 +12094,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 58.309518948453004,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -17.183491983217465,
@@ -12115,7 +12115,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -12.827809736845541,
     "echo_to_noise_db": 8.698668359508845,
-    "scattering_strength_bistatic_db": 5.177895537589307,
+    "scattering_strength_bistatic_db": 5.177895537589308,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -12146,8 +12146,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 122.06555615733703,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -21.390796889774144,
@@ -12198,15 +12198,15 @@
    "synchronous": true,
    "track_fraction": 0.25,
    "range_ship_uuv_m": 102.04165815979276,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -19.71460254307484,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.109418894295136,
-    "echo_to_noise_db": 4.094430214683529,
-    "scattering_strength_bistatic_db": 0.7016713247259889,
+    "echo_to_noise_db": 4.0944302146835305,
+    "scattering_strength_bistatic_db": 0.7016713247259894,
     "required_cancellation_db": {
      "T1s": 3.3382063470985095,
      "T2s": 0.3279063904587005,
@@ -12227,7 +12227,7 @@
     },
     "receiver": "das112(x=244)",
     "range_uuv_rx_m": 56.73182528352142,
-    "bistatic_angle_deg": 8.693488612018186
+    "bistatic_angle_deg": 8.693488612018188
    }
   },
   {
@@ -12250,14 +12250,14 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 82.76472678623425,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -18.594595565646017,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.970213031367152,
-    "echo_to_noise_db": 5.088820418073604,
+    "echo_to_noise_db": 5.0888204180736025,
     "scattering_strength_bistatic_db": 2.43800036608316,
     "required_cancellation_db": {
      "T1s": 1.1990004841705248,
@@ -12302,8 +12302,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 64.90377492873584,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -17.64873929246859,
@@ -12318,7 +12318,7 @@
     }
    },
    "best": {
-    "direct_db": -1.5857183101144499,
+    "direct_db": -1.58571831011445,
     "echo_db": -14.25842806095142,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -12.67270975083697,
@@ -12354,8 +12354,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 50.0,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.061590023038189,
     "echo_db": -16.61671243562192,
@@ -12370,12 +12370,12 @@
     }
    },
    "best": {
-    "direct_db": -1.4612803567823787,
+    "direct_db": -1.461280356782379,
     "echo_db": -13.663664386438676,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -12.202384029656297,
     "echo_to_noise_db": 9.859105015750316,
-    "scattering_strength_bistatic_db": 5.20999286401505,
+    "scattering_strength_bistatic_db": 5.2099928640150495,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -12406,8 +12406,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 107.70329614269008,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -20.579807699758927,
@@ -12458,8 +12458,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 90.34655499796325,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -19.1719369887594,
@@ -12474,10 +12474,10 @@
     }
    },
    "best": {
-    "direct_db": -1.5718645000466378,
+    "direct_db": -1.5718645000466376,
     "echo_db": -13.981897717647364,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -12.410033217600725,
+    "echo_to_direct_db": -12.410033217600727,
     "echo_to_noise_db": 9.540871684541628,
     "scattering_strength_bistatic_db": 5.186902262752514,
     "required_cancellation_db": {
@@ -12510,8 +12510,8 @@
    "synchronous": true,
    "track_fraction": 0.5,
    "range_ship_uuv_m": 75.16648189186454,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -18.37907477121722,
@@ -12562,17 +12562,17 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 63.73774391990981,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -17.607923761092046,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -15.419117939506313,
+    "echo_to_direct_db": -15.419117939506311,
     "echo_to_noise_db": 6.084555824203447,
     "scattering_strength_bistatic_db": 2.99977006151037,
     "required_cancellation_db": {
-     "T1s": 0.6479053923096867,
+     "T1s": 0.6479053923096849,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -12614,8 +12614,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 58.309518948453004,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -17.217221998218307,
@@ -12635,7 +12635,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -12.827809736845541,
     "echo_to_noise_db": 8.698668359508845,
-    "scattering_strength_bistatic_db": 5.177895537589307,
+    "scattering_strength_bistatic_db": 5.177895537589308,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -12666,14 +12666,14 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 100.4987562112089,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -19.882786936329758,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.778599547508183,
-    "echo_to_noise_db": 3.7667044051412315,
+    "echo_to_noise_db": 3.7667044051412297,
     "scattering_strength_bistatic_db": 1.268363230076457,
     "required_cancellation_db": {
      "T1s": 3.0073870003115566,
@@ -12718,15 +12718,15 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 87.82084035125148,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -19.142678533590804,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.052586485132313,
     "echo_to_noise_db": 4.529880813624125,
-    "scattering_strength_bistatic_db": 1.9214506961254856,
+    "scattering_strength_bistatic_db": 1.9214506961254854,
     "required_cancellation_db": {
      "T1s": 2.2813739379356868,
      "T2s": 0.0,
@@ -12770,8 +12770,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 79.05694150420949,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -18.48465639340512,
@@ -12799,7 +12799,7 @@
     },
     "receiver": "das084(x=188)",
     "range_uuv_rx_m": 67.1863081289633,
-    "bistatic_angle_deg": 3.7781977071617825
+    "bistatic_angle_deg": 3.7781977071617834
    }
   },
   {
@@ -12822,8 +12822,8 @@
    "synchronous": true,
    "track_fraction": 0.75,
    "range_ship_uuv_m": 75.58108228915486,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -18.202580514006364,
@@ -12838,7 +12838,7 @@
     }
    },
    "best": {
-    "direct_db": -2.101759410639791,
+    "direct_db": -2.1017594106397905,
     "echo_db": -15.369018564178855,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -13.267259153539065,
@@ -12851,7 +12851,7 @@
     },
     "receiver": "das064(x=148)",
     "range_uuv_rx_m": 86.98563099730897,
-    "bistatic_angle_deg": 7.208789950411109
+    "bistatic_angle_deg": 7.208789950411111
    }
   },
   {
@@ -12874,8 +12874,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 78.10249675906654,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.074866739854092,
     "echo_db": -18.540083397366907,
@@ -12890,7 +12890,7 @@
     }
    },
    "best": {
-    "direct_db": -2.904396890304022,
+    "direct_db": -2.9043968903040214,
     "echo_db": -16.882789955585316,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -13.978393065281296,
@@ -12926,8 +12926,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 101.9803902718557,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -19.885749470142958,
@@ -12978,15 +12978,15 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 95.19716382329885,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -19.256621627317116,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.685397130239775,
     "echo_to_noise_db": 4.388361774775662,
-    "scattering_strength_bistatic_db": 2.816655087297478,
+    "scattering_strength_bistatic_db": 2.8166550872974776,
     "required_cancellation_db": {
      "T1s": 1.9141845830431485,
      "T2s": 0.0,
@@ -13030,8 +13030,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 93.00537618869137,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -18.940808442388345,
@@ -13046,10 +13046,10 @@
     }
    },
    "best": {
-    "direct_db": -2.2123988453222436,
+    "direct_db": -2.212398845322243,
     "echo_db": -15.570207880071262,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -13.357809034749017,
+    "echo_to_direct_db": -13.35780903474902,
     "echo_to_noise_db": 7.95256152211773,
     "scattering_strength_bistatic_db": 5.125973629440886,
     "required_cancellation_db": {
@@ -13082,8 +13082,8 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 95.72094859538323,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -19.191608153016997,
@@ -13098,12 +13098,12 @@
     }
    },
    "best": {
-    "direct_db": -2.8424166863582796,
+    "direct_db": -2.8424166863582787,
     "echo_db": -16.995621912907733,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -14.153205226549453,
+    "echo_to_direct_db": -14.153205226549455,
     "echo_to_noise_db": 6.527147489281258,
-    "scattering_strength_bistatic_db": 5.028255492931933,
+    "scattering_strength_bistatic_db": 5.028255492931932,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -13134,15 +13134,15 @@
    "synchronous": true,
    "track_fraction": 1.0,
    "range_ship_uuv_m": 102.95630140987001,
-   "scattering_strength_forward_db": 5.20999286401505,
-   "scattering_strength_back_db": -0.01701867800114468,
+   "scattering_strength_forward_db": 5.2099928640150495,
+   "scattering_strength_back_db": -0.017018678001144677,
    "median": {
     "direct_db": -2.1983545361027748,
     "echo_db": -20.233036464265176,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.117669309628546,
-    "echo_to_noise_db": 3.5473280658005972,
-    "scattering_strength_bistatic_db": 1.2269488203679642,
+    "echo_to_noise_db": 3.547328065800599,
+    "scattering_strength_bistatic_db": 1.226948820367964,
     "required_cancellation_db": {
      "T1s": 3.346456762431922,
      "T2s": 0.33615680579211293,
@@ -13194,7 +13194,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -32.08513585548763,
     "echo_to_noise_db": -10.440636862783265,
-    "scattering_strength_bistatic_db": -9.635001294548838,
+    "scattering_strength_bistatic_db": -9.635001294548836,
     "required_cancellation_db": {
      "T1s": 17.313923308291002,
      "T2s": 14.303623351651193,
@@ -13207,7 +13207,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -29.607793851972332,
     "echo_to_noise_db": -8.896488772065716,
-    "scattering_strength_bistatic_db": -10.733051421741802,
+    "scattering_strength_bistatic_db": -10.733051421741804,
     "required_cancellation_db": {
      "T1s": 14.836581304775706,
      "T2s": 11.826281348135897,
@@ -13359,15 +13359,15 @@
    },
    "best": {
     "direct_db": -0.8217642789221873,
-    "echo_db": -29.705113733772567,
+    "echo_db": -29.70511373377257,
     "noise_db": -29.712343095134198,
-    "echo_to_direct_db": -28.88334945485038,
-    "echo_to_noise_db": 0.007229361361630993,
+    "echo_to_direct_db": -28.883349454850382,
+    "echo_to_noise_db": 0.00722936136162744,
     "scattering_strength_bistatic_db": -4.895861619234552,
     "required_cancellation_db": {
-     "T1s": 14.112136907653753,
-     "T2s": 11.101836951013944,
-     "T4s": 8.091536994374131
+     "T1s": 14.112136907653756,
+     "T2s": 11.101836951013947,
+     "T4s": 8.091536994374135
     },
     "receiver": "hyd2(30,250)",
     "range_uuv_rx_m": 193.5523185084591,
@@ -13527,7 +13527,7 @@
     },
     "receiver": "das114(x=248)",
     "range_uuv_rx_m": 58.365229375031156,
-    "bistatic_angle_deg": 5.057248532559082
+    "bistatic_angle_deg": 5.057248532559083
    }
   },
   {
@@ -13558,7 +13558,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -33.69014080365781,
     "echo_to_noise_db": -12.806073204730595,
-    "scattering_strength_bistatic_db": -12.643969600295971,
+    "scattering_strength_bistatic_db": -12.643969600295973,
     "required_cancellation_db": {
      "T1s": 18.918928256461182,
      "T2s": 15.908628299821373,
@@ -13619,19 +13619,19 @@
    },
    "best": {
     "direct_db": -1.7219613684255561,
-    "echo_db": -29.77615544699283,
+    "echo_db": -29.776155446992828,
     "noise_db": -29.712343095134198,
-    "echo_to_direct_db": -28.054194078567274,
-    "echo_to_noise_db": -0.06381235185863332,
-    "scattering_strength_bistatic_db": -5.760349774119189,
+    "echo_to_direct_db": -28.05419407856727,
+    "echo_to_noise_db": -0.06381235185862977,
+    "scattering_strength_bistatic_db": -5.760349774119186,
     "required_cancellation_db": {
-     "T1s": 13.282981531370648,
-     "T2s": 10.27268157473084,
-     "T4s": 7.262381618091027
+     "T1s": 13.282981531370645,
+     "T2s": 10.272681574730836,
+     "T4s": 7.262381618091023
     },
     "receiver": "hyd2(30,250)",
     "range_uuv_rx_m": 193.5523185084591,
-    "bistatic_angle_deg": 141.1799242491831
+    "bistatic_angle_deg": 141.17992424918313
    }
   },
   {
@@ -13714,7 +13714,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -33.724747994138625,
     "echo_to_noise_db": -12.717284148765923,
-    "scattering_strength_bistatic_db": -11.894780021835398,
+    "scattering_strength_bistatic_db": -11.8947800218354,
     "required_cancellation_db": {
      "T1s": 18.953535446941995,
      "T2s": 15.943235490302186,
@@ -13774,7 +13774,7 @@
     }
    },
    "best": {
-    "direct_db": -1.5857183101144499,
+    "direct_db": -1.58571831011445,
     "echo_db": -30.6460452310291,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -29.060326920914648,
@@ -13974,7 +13974,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -36.561180210552855,
     "echo_to_noise_db": -16.22216413037414,
-    "scattering_strength_bistatic_db": -14.782943098090627,
+    "scattering_strength_bistatic_db": -14.782943098090628,
     "required_cancellation_db": {
      "T1s": 21.78996766335623,
      "T2s": 18.77966770671642,
@@ -14203,7 +14203,7 @@
     },
     "receiver": "das031(x=82)",
     "range_uuv_rx_m": 125.8729518204765,
-    "bistatic_angle_deg": 5.8381746219101585
+    "bistatic_angle_deg": 5.838174621910159
    }
   },
   {
@@ -14346,7 +14346,7 @@
     }
    },
    "best": {
-    "direct_db": -2.2693425277809998,
+    "direct_db": -2.269342527781,
     "echo_db": -32.3193755029632,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -30.050032975182198,
@@ -14386,7 +14386,7 @@
    "scattering_strength_back_db": -4.695578885383583,
    "median": {
     "direct_db": -2.1983545361027748,
-    "echo_db": -35.02043204826903,
+    "echo_db": -35.02043204826902,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -32.14637753005033,
     "echo_to_noise_db": -11.459713263527114,
@@ -14398,7 +14398,7 @@
     }
    },
    "best": {
-    "direct_db": -3.0284641416618507,
+    "direct_db": -3.028464141661851,
     "echo_db": -33.91151961747691,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -30.883055475815063,
@@ -14507,7 +14507,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -21.319363297898757,
     "echo_to_noise_db": -0.6080582179921414,
-    "scattering_strength_bistatic_db": -2.713260093847103,
+    "scattering_strength_bistatic_db": -2.7132600938471034,
     "required_cancellation_db": {
      "T1s": 6.548150750702131,
      "T2s": 3.5378507940623223,
@@ -14650,7 +14650,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -23.575011885544278,
     "echo_to_noise_db": -2.0443283535025856,
-    "scattering_strength_bistatic_db": -2.96996367079598,
+    "scattering_strength_bistatic_db": -2.9699636707959796,
     "required_cancellation_db": {
      "T1s": 8.803799338347654,
      "T2s": 5.793499381707845,
@@ -14658,12 +14658,12 @@
     }
    },
    "best": {
-    "direct_db": -2.3272116988437532,
+    "direct_db": -2.327211698843753,
     "echo_db": -24.116877714055747,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -21.789666015211992,
     "echo_to_noise_db": -0.594108311866755,
-    "scattering_strength_bistatic_db": -2.5801140836889913,
+    "scattering_strength_bistatic_db": -2.580114083688991,
     "required_cancellation_db": {
      "T1s": 7.018453468015366,
      "T2s": 4.008153511375557,
@@ -14767,7 +14767,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -20.782013783728083,
     "echo_to_noise_db": 0.5000077600311812,
-    "scattering_strength_bistatic_db": -2.637498304467542,
+    "scattering_strength_bistatic_db": -2.6374983044675426,
     "required_cancellation_db": {
      "T1s": 6.0108012365314565,
      "T2s": 3.0005012798916475,
@@ -14806,7 +14806,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -24.129537000526895,
     "echo_to_noise_db": -2.4101623805438788,
-    "scattering_strength_bistatic_db": -2.683296996377817,
+    "scattering_strength_bistatic_db": -2.6832969963778166,
     "required_cancellation_db": {
      "T1s": 9.358324453330267,
      "T2s": 6.348024496690458,
@@ -14827,7 +14827,7 @@
     },
     "receiver": "das114(x=248)",
     "range_uuv_rx_m": 58.365229375031156,
-    "bistatic_angle_deg": 5.057248532559082
+    "bistatic_angle_deg": 5.057248532559083
    }
   },
   {
@@ -14857,16 +14857,16 @@
     "echo_db": -26.096462091058953,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -23.932501126494145,
-    "echo_to_noise_db": -2.524479213127231,
+    "echo_to_noise_db": -2.524479213127229,
     "scattering_strength_bistatic_db": -3.296598923754666,
     "required_cancellation_db": {
-     "T1s": 9.16128857929752,
-     "T2s": 6.15098862265771,
-     "T4s": 3.1406886660178976
+     "T1s": 9.161288579297521,
+     "T2s": 6.150988622657712,
+     "T4s": 3.1406886660178994
     }
    },
    "best": {
-    "direct_db": -1.8501585635479076,
+    "direct_db": -1.8501585635479074,
     "echo_db": -23.130226550698634,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -21.280067987150726,
@@ -14962,7 +14962,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -24.376809350136952,
     "echo_to_noise_db": -2.8016363240447397,
-    "scattering_strength_bistatic_db": -5.183643434082914,
+    "scattering_strength_bistatic_db": -5.183643434082913,
     "required_cancellation_db": {
      "T1s": 9.605596802940326,
      "T2s": 6.595296846300517,
@@ -14970,7 +14970,7 @@
     }
    },
    "best": {
-    "direct_db": -1.4612803567823787,
+    "direct_db": -1.461280356782379,
     "echo_db": -21.993010474423443,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -20.531730117641064,
@@ -15014,7 +15014,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -24.257275149465826,
     "echo_to_noise_db": -2.4326236374449763,
-    "scattering_strength_bistatic_db": -2.6185728335587735,
+    "scattering_strength_bistatic_db": -2.618572833558773,
     "required_cancellation_db": {
      "T1s": 9.486062602269199,
      "T2s": 6.4757626456293895,
@@ -15066,7 +15066,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -24.456089054344048,
     "echo_to_noise_db": -3.045376107409801,
-    "scattering_strength_bistatic_db": -3.5140719368095024,
+    "scattering_strength_bistatic_db": -3.514071936809503,
     "required_cancellation_db": {
      "T1s": 9.684876507147424,
      "T2s": 6.674576550507615,
@@ -15074,7 +15074,7 @@
     }
    },
    "best": {
-    "direct_db": -1.5857183101144499,
+    "direct_db": -1.58571831011445,
     "echo_db": -22.334723296622478,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -20.749004986508027,
@@ -15183,7 +15183,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -20.933303093933286,
     "echo_to_noise_db": 1.0545548954988817,
-    "scattering_strength_bistatic_db": -2.538602483586088,
+    "scattering_strength_bistatic_db": -2.5386024835860876,
     "required_cancellation_db": {
      "T1s": 6.1620905467366605,
      "T2s": 3.1517905900968515,
@@ -15222,7 +15222,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -22.931450652728486,
     "echo_to_noise_db": -1.6933429887445612,
-    "scattering_strength_bistatic_db": -3.361126987626614,
+    "scattering_strength_bistatic_db": -3.3611269876266134,
     "required_cancellation_db": {
      "T1s": 8.16023810553186,
      "T2s": 5.149938148892051,
@@ -15273,7 +15273,7 @@
     "echo_db": -27.153505608232322,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -24.90868393979357,
-    "echo_to_noise_db": -3.5297900904205495,
+    "echo_to_noise_db": -3.5297900904205513,
     "scattering_strength_bistatic_db": -3.5603307181792374,
     "required_cancellation_db": {
      "T1s": 10.137471392596941,
@@ -15325,7 +15325,7 @@
     "echo_db": -27.38532826263711,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -25.421734323159516,
-    "echo_to_noise_db": -3.8290340816866397,
+    "echo_to_noise_db": -3.829034081686638,
     "scattering_strength_bistatic_db": -4.573595005460485,
     "required_cancellation_db": {
      "T1s": 10.65052177596289,
@@ -15588,22 +15588,22 @@
     "echo_to_noise_db": -2.62626207929142,
     "scattering_strength_bistatic_db": -4.929978222876249,
     "required_cancellation_db": {
-     "T1s": 9.790160453332573,
-     "T2s": 6.7798604966927645,
-     "T4s": 3.769560540052952
+     "T1s": 9.790160453332575,
+     "T2s": 6.779860496692766,
+     "T4s": 3.7695605400529537
     }
    },
    "best": {
     "direct_db": -1.7835703029169705,
-    "echo_db": -22.741044038991948,
+    "echo_db": -22.741044038991944,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -20.957473736074977,
-    "echo_to_noise_db": 0.7817253631970438,
+    "echo_to_direct_db": -20.957473736074974,
+    "echo_to_noise_db": 0.7817253631970473,
     "scattering_strength_bistatic_db": -2.572320646209123,
     "required_cancellation_db": {
-     "T1s": 6.186261188878351,
-     "T2s": 3.175961232238542,
-     "T4s": 0.16566127559872967
+     "T1s": 6.186261188878348,
+     "T2s": 3.1759612322385387,
+     "T4s": 0.16566127559872612
     },
     "receiver": "das092(x=204)",
     "range_uuv_rx_m": 55.664171600770274,
@@ -15646,12 +15646,12 @@
     }
    },
    "best": {
-    "direct_db": -2.2981684773772915,
+    "direct_db": -2.298168477377292,
     "echo_db": -24.045241441845825,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -21.747072964468533,
     "echo_to_noise_db": -0.522472039656833,
-    "scattering_strength_bistatic_db": -2.5771077806162834,
+    "scattering_strength_bistatic_db": -2.577107780616283,
     "required_cancellation_db": {
      "T1s": 6.975860417271907,
      "T2s": 3.9655604606320978,
@@ -15711,7 +15711,7 @@
     },
     "receiver": "das047(x=114)",
     "range_uuv_rx_m": 106.81058000029772,
-    "bistatic_angle_deg": 5.753808924070914
+    "bistatic_angle_deg": 5.753808924070915
    }
   },
   {
@@ -15742,7 +15742,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -24.36398119805164,
     "echo_to_noise_db": -3.674201442598511,
-    "scattering_strength_bistatic_db": -2.7097575142068013,
+    "scattering_strength_bistatic_db": -2.709757514206801,
     "required_cancellation_db": {
      "T1s": 9.592768650855016,
      "T2s": 6.582468694215207,
@@ -15786,7 +15786,7 @@
    "synchronous": true,
    "track_fraction": 0.0,
    "range_ship_uuv_m": 141.4213562373095,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
@@ -15838,7 +15838,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 120.26013470805694,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
@@ -15890,7 +15890,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 99.24716620639605,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
@@ -15898,7 +15898,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.770350002779786,
     "echo_to_noise_db": 2.0361849007482338,
-    "scattering_strength_bistatic_db": -1.1914353254603975,
+    "scattering_strength_bistatic_db": -1.1914353254603973,
     "required_cancellation_db": {
      "T1s": 3.9991374555831616,
      "T2s": 0.9888374989433526,
@@ -15906,12 +15906,12 @@
     }
    },
    "best": {
-    "direct_db": -2.1843102268833077,
+    "direct_db": -2.1843102268833072,
     "echo_db": -19.357356563326952,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.173046336443644,
     "echo_to_noise_db": 4.165412838862039,
-    "scattering_strength_bistatic_db": -0.26271617078291615,
+    "scattering_strength_bistatic_db": -0.2627161707829161,
     "required_cancellation_db": {
      "T1s": 2.401833789247018,
      "T2s": 0.0,
@@ -15919,7 +15919,7 @@
     },
     "receiver": "das104(x=228)",
     "range_uuv_rx_m": 68.9492567037528,
-    "bistatic_angle_deg": 21.42825364755937
+    "bistatic_angle_deg": 21.428253647559373
    }
   },
   {
@@ -15942,7 +15942,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 78.50159234053791,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
@@ -15963,7 +15963,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.0619895019923,
     "echo_to_noise_db": 4.438664072009143,
-    "scattering_strength_bistatic_db": -0.21409680309231333,
+    "scattering_strength_bistatic_db": -0.21409680309231335,
     "required_cancellation_db": {
      "T1s": 2.2907769547956747,
      "T2s": 0.0,
@@ -15994,7 +15994,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 58.309518948453004,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
@@ -16046,30 +16046,30 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 122.06555615733703,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
-    "echo_db": -22.12285073954311,
+    "echo_db": -22.122850739543114,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -20.5472256061297,
     "echo_to_noise_db": 1.5875873141544936,
-    "scattering_strength_bistatic_db": -1.8942151717304259,
+    "scattering_strength_bistatic_db": -1.8942151717304256,
     "required_cancellation_db": {
-     "T1s": 5.776013058933074,
-     "T2s": 2.7657131022932653,
+     "T1s": 5.776013058933076,
+     "T2s": 2.765713102293267,
      "T4s": 0.0
     }
    },
    "best": {
     "direct_db": -2.0748667398540874,
-    "echo_db": -18.018571113494794,
+    "echo_db": -18.01857111349479,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -15.943704373640706,
-    "echo_to_noise_db": 5.504198288694198,
+    "echo_to_direct_db": -15.943704373640703,
+    "echo_to_noise_db": 5.504198288694202,
     "scattering_strength_bistatic_db": -0.25698095773055885,
     "required_cancellation_db": {
-     "T1s": 1.1724918264440802,
+     "T1s": 1.1724918264440767,
      "T2s": 0.0,
      "T4s": 0.0
     },
@@ -16098,7 +16098,7 @@
    "synchronous": true,
    "track_fraction": 0.25,
    "range_ship_uuv_m": 102.04165815979276,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
@@ -16106,7 +16106,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -19.130088047251732,
     "echo_to_noise_db": 2.2217846241636767,
-    "scattering_strength_bistatic_db": -1.3856551658477052,
+    "scattering_strength_bistatic_db": -1.3856551658477043,
     "required_cancellation_db": {
      "T1s": 4.358875500055108,
      "T2s": 1.3485755434152988,
@@ -16114,7 +16114,7 @@
     }
    },
    "best": {
-    "direct_db": -1.8970715220608536,
+    "direct_db": -1.8970715220608534,
     "echo_db": -18.391457347387817,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.494385825326965,
@@ -16150,7 +16150,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 82.76472678623425,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
@@ -16166,7 +16166,7 @@
     }
    },
    "best": {
-    "direct_db": -1.721961368425553,
+    "direct_db": -1.7219613684255533,
     "echo_db": -18.353808844337006,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.631847475911453,
@@ -16202,7 +16202,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 64.90377492873584,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
@@ -16223,7 +16223,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.422622135351638,
     "echo_to_noise_db": 5.541377961558581,
-    "scattering_strength_bistatic_db": -0.14114991199896323,
+    "scattering_strength_bistatic_db": -0.1411499119989632,
     "required_cancellation_db": {
      "T1s": 1.651409588155012,
      "T2s": 0.0,
@@ -16254,7 +16254,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 50.0,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0615900230381854,
@@ -16270,12 +16270,12 @@
     }
    },
    "best": {
-    "direct_db": -1.4612803567823787,
+    "direct_db": -1.461280356782379,
     "echo_db": -17.432291366718374,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.971011009935996,
     "echo_to_noise_db": 6.090478035470618,
-    "scattering_strength_bistatic_db": -0.12866994247406527,
+    "scattering_strength_bistatic_db": -0.12866994247406524,
     "required_cancellation_db": {
      "T1s": 1.1997984627393699,
      "T2s": 0.0,
@@ -16306,7 +16306,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 107.70329614269008,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
@@ -16322,14 +16322,14 @@
     }
    },
    "best": {
-    "direct_db": -1.6838991649182118,
+    "direct_db": -1.6838991649182113,
     "echo_db": -17.332003939634518,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -15.648104774716305,
+    "echo_to_direct_db": -15.648104774716307,
     "echo_to_noise_db": 6.190765462554474,
-    "scattering_strength_bistatic_db": -0.18071269364920617,
+    "scattering_strength_bistatic_db": -0.1807126936492062,
     "required_cancellation_db": {
-     "T1s": 0.8768922275196793,
+     "T1s": 0.8768922275196811,
      "T2s": 0.0,
      "T4s": 0.0
     },
@@ -16358,7 +16358,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 90.34655499796325,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
@@ -16410,7 +16410,7 @@
    "synchronous": true,
    "track_fraction": 0.5,
    "range_ship_uuv_m": 75.16648189186454,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
@@ -16418,10 +16418,10 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.224124532289217,
     "echo_to_noise_db": 3.3468939336342984,
-    "scattering_strength_bistatic_db": -0.8029452004534564,
+    "scattering_strength_bistatic_db": -0.8029452004534562,
     "required_cancellation_db": {
-     "T1s": 3.4529119850925927,
-     "T2s": 0.4426120284527837,
+     "T1s": 3.452911985092589,
+     "T2s": 0.44261202845278014,
      "T4s": 0.0
     }
    },
@@ -16462,7 +16462,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 63.73774391990981,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
@@ -16472,7 +16472,7 @@
     "echo_to_noise_db": 3.789463643948592,
     "scattering_strength_bistatic_db": -0.6448890915403511,
     "required_cancellation_db": {
-     "T1s": 2.949116729016362,
+     "T1s": 2.9491167290163602,
      "T2s": 0.0,
      "T4s": 0.0
     }
@@ -16514,7 +16514,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 58.309518948453004,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
@@ -16566,7 +16566,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 100.4987562112089,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
@@ -16574,7 +16574,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -19.09539785488208,
     "echo_to_noise_db": 2.493957592632345,
-    "scattering_strength_bistatic_db": -1.1500463966299017,
+    "scattering_strength_bistatic_db": -1.1500463966299015,
     "required_cancellation_db": {
      "T1s": 4.324185307685456,
      "T2s": 1.3138853510456467,
@@ -16618,18 +16618,18 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 87.82084035125148,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
     "echo_db": -20.756197875726745,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -18.682263334217723,
+    "echo_to_direct_db": -18.682263334217726,
     "echo_to_noise_db": 2.903080650226041,
     "scattering_strength_bistatic_db": -0.9373607612489181,
     "required_cancellation_db": {
-     "T1s": 3.9110507870210967,
-     "T2s": 0.9007508303812877,
+     "T1s": 3.9110507870211,
+     "T2s": 0.9007508303812912,
      "T4s": 0.0
     }
    },
@@ -16670,7 +16670,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 79.05694150420949,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
@@ -16678,7 +16678,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.30451938307125,
     "echo_to_noise_db": 3.111165161493018,
-    "scattering_strength_bistatic_db": -0.6588642544449872,
+    "scattering_strength_bistatic_db": -0.6588642544449873,
     "required_cancellation_db": {
      "T1s": 3.5333068358746225,
      "T2s": 0.5230068792348135,
@@ -16722,7 +16722,7 @@
    "synchronous": true,
    "track_fraction": 0.75,
    "range_ship_uuv_m": 75.58108228915486,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
@@ -16738,7 +16738,7 @@
     }
    },
    "best": {
-    "direct_db": -1.921229289099896,
+    "direct_db": -1.9212292890998959,
     "echo_db": -18.859417324962294,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.9381880358624,
@@ -16774,7 +16774,7 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 78.10249675906654,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
     "direct_db": -2.0748667398540874,
@@ -16826,10 +16826,10 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 101.9803902718557,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -21.2424763742451,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -19.098525546875347,
@@ -16842,12 +16842,12 @@
     }
    },
    "best": {
-    "direct_db": -1.5241753461450323,
+    "direct_db": -1.5241753461450318,
     "echo_db": -17.034816319256954,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.510640973111922,
     "echo_to_noise_db": 6.487953082932037,
-    "scattering_strength_bistatic_db": -0.13799279167738343,
+    "scattering_strength_bistatic_db": -0.1379927916773834,
     "required_cancellation_db": {
      "T1s": 0.7394284259152961,
      "T2s": 0.0,
@@ -16878,10 +16878,10 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 95.19716382329885,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -21.12298365180924,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.755444153641015,
@@ -16930,10 +16930,10 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 93.00537618869137,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -21.292977454114222,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.605911517693382,
@@ -16959,7 +16959,7 @@
     },
     "receiver": "das082(x=184)",
     "range_uuv_rx_m": 68.30812543175226,
-    "bistatic_angle_deg": 18.349390231196566
+    "bistatic_angle_deg": 18.34939023119657
    }
   },
   {
@@ -16982,15 +16982,15 @@
    "synchronous": false,
    "track_fraction": null,
    "range_ship_uuv_m": 95.72094859538323,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -21.806978431154807,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.740350876512046,
     "echo_to_noise_db": 1.83497189114901,
-    "scattering_strength_bistatic_db": -0.6051034078915234,
+    "scattering_strength_bistatic_db": -0.6051034078915233,
     "required_cancellation_db": {
      "T1s": 3.969138329315422,
      "T2s": 0.9588383726756131,
@@ -17003,7 +17003,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.679098551970643,
     "echo_to_noise_db": 3.368448140024956,
-    "scattering_strength_bistatic_db": -0.3045796001010034,
+    "scattering_strength_bistatic_db": -0.3045796001010033,
     "required_cancellation_db": {
      "T1s": 2.907886004774017,
      "T2s": 0.0,
@@ -17034,10 +17034,10 @@
    "synchronous": true,
    "track_fraction": 1.0,
    "range_ship_uuv_m": 102.95630140987001,
-   "scattering_strength_forward_db": -0.12866994247406527,
+   "scattering_strength_forward_db": -0.12866994247406524,
    "scattering_strength_back_db": -2.848904790377522,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -22.54905496867263,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -19.300455866411443,
@@ -17146,7 +17146,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -18.233847720293134,
     "echo_to_noise_db": 3.8202204878847503,
-    "scattering_strength_bistatic_db": -0.24517111805292097,
+    "scattering_strength_bistatic_db": -0.24517111805292094,
     "required_cancellation_db": {
      "T1s": 3.4626351730965084,
      "T2s": 0.4523352164566994,
@@ -17249,7 +17249,7 @@
     "echo_db": -18.16168410433243,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.265417869943164,
-    "echo_to_noise_db": 5.485075238798519,
+    "echo_to_noise_db": 5.485075238798521,
     "scattering_strength_bistatic_db": 1.7332290792577396,
     "required_cancellation_db": {
      "T1s": 0.49420532274653706,
@@ -17259,10 +17259,10 @@
    },
    "best": {
     "direct_db": -2.1564970973467554,
-    "echo_db": -15.937890698798888,
+    "echo_db": -15.937890698798892,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -13.781393601452134,
-    "echo_to_noise_db": 7.584878703390103,
+    "echo_to_direct_db": -13.781393601452137,
+    "echo_to_noise_db": 7.5848787033901,
     "scattering_strength_bistatic_db": 3.293002709220872,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -17405,7 +17405,7 @@
     "echo_db": -18.996392386142187,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.178936298097465,
-    "echo_to_noise_db": 4.62293197392693,
+    "echo_to_noise_db": 4.622931973926928,
     "scattering_strength_bistatic_db": 0.2504925528404685,
     "required_cancellation_db": {
      "T1s": 2.407723750900839,
@@ -17570,7 +17570,7 @@
     }
    },
    "best": {
-    "direct_db": -1.4612803567823787,
+    "direct_db": -1.461280356782379,
     "echo_db": -14.067923100411473,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -12.606642743629095,
@@ -17622,7 +17622,7 @@
     }
    },
    "best": {
-    "direct_db": -1.721961368425553,
+    "direct_db": -1.7219613684255533,
     "echo_db": -14.052409289960249,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -12.330447921534695,
@@ -17635,7 +17635,7 @@
     },
     "receiver": "das115(x=250)",
     "range_uuv_rx_m": 41.23105625617661,
-    "bistatic_angle_deg": 7.765166018425306
+    "bistatic_angle_deg": 7.765166018425308
    }
   },
   {
@@ -17778,7 +17778,7 @@
     }
    },
    "best": {
-    "direct_db": -1.5241753461450323,
+    "direct_db": -1.5241753461450318,
     "echo_db": -14.525843483464806,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -13.001668137319774,
@@ -17873,7 +17873,7 @@
     "echo_db": -19.09869669017928,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.005890126346806,
-    "echo_to_noise_db": 4.5398603605401355,
+    "echo_to_noise_db": 4.539860360540134,
     "scattering_strength_bistatic_db": 0.7049259047106387,
     "required_cancellation_db": {
      "T1s": 2.234677579150178,
@@ -17978,7 +17978,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.732234785648384,
     "echo_to_noise_db": 5.6077859866274355,
-    "scattering_strength_bistatic_db": 1.8735133577545569,
+    "scattering_strength_bistatic_db": 1.8735133577545566,
     "required_cancellation_db": {
      "T1s": 0.9610222384517568,
      "T2s": 0.0,
@@ -17986,12 +17986,12 @@
     }
    },
    "best": {
-    "direct_db": -1.6316793046437579,
-    "echo_db": -14.77769652256691,
+    "direct_db": -1.6316793046437574,
+    "echo_db": -14.777696522566913,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -13.146017217923152,
-    "echo_to_noise_db": 8.745072879622082,
-    "scattering_strength_bistatic_db": 3.3719710316205957,
+    "echo_to_direct_db": -13.146017217923156,
+    "echo_to_noise_db": 8.745072879622079,
+    "scattering_strength_bistatic_db": 3.3719710316205953,
     "required_cancellation_db": {
      "T1s": 0.0,
      "T2s": 0.0,
@@ -18029,7 +18029,7 @@
     "echo_db": -18.033361755436566,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.23000632531031,
-    "echo_to_noise_db": 5.654597909995244,
+    "echo_to_noise_db": 5.654597909995246,
     "scattering_strength_bistatic_db": 2.616059985242353,
     "required_cancellation_db": {
      "T1s": 0.4587937781136837,
@@ -18082,7 +18082,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.945122587446438,
     "echo_to_noise_db": 5.13427181405088,
-    "scattering_strength_bistatic_db": 1.2436375780102276,
+    "scattering_strength_bistatic_db": 1.2436375780102273,
     "required_cancellation_db": {
      "T1s": 1.1739100402498126,
      "T2s": 0.0,
@@ -18129,7 +18129,7 @@
    "scattering_strength_forward_db": 3.3989274424419387,
    "scattering_strength_back_db": -1.0937280694979576,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -19.137049636939086,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.95760707439843,
@@ -18142,7 +18142,7 @@
     }
    },
    "best": {
-    "direct_db": -1.53491141275682,
+    "direct_db": -1.5349114127568197,
     "echo_db": -13.695291046086048,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -12.160379633329228,
@@ -18181,12 +18181,12 @@
    "scattering_strength_forward_db": 3.3989274424419387,
    "scattering_strength_back_db": -1.0937280694979576,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -18.76194414090188,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -16.262960152512846,
     "echo_to_noise_db": 4.916038469263018,
-    "scattering_strength_bistatic_db": 1.787699592464839,
+    "scattering_strength_bistatic_db": 1.7876995924648384,
     "required_cancellation_db": {
      "T1s": 1.4917476053162222,
      "T2s": 0.0,
@@ -18233,7 +18233,7 @@
    "scattering_strength_forward_db": 3.3989274424419387,
    "scattering_strength_back_db": -1.0937280694979576,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -18.71242088681047,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.767010502139613,
@@ -18285,24 +18285,24 @@
    "scattering_strength_forward_db": 3.3989274424419387,
    "scattering_strength_back_db": -1.0937280694979576,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -19.118643746386635,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -15.645440050572994,
     "echo_to_noise_db": 4.547698200340175,
     "scattering_strength_bistatic_db": 2.017569162576489,
     "required_cancellation_db": {
-     "T1s": 0.8742275033763685,
+     "T1s": 0.8742275033763667,
      "T2s": 0.0,
      "T4s": 0.0
     }
    },
    "best": {
-    "direct_db": -2.7188507013480434,
-    "echo_db": -17.20137287826476,
+    "direct_db": -2.718850701348043,
+    "echo_db": -17.201372878264756,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -14.482522176916717,
-    "echo_to_noise_db": 6.321396523924232,
+    "echo_to_direct_db": -14.482522176916714,
+    "echo_to_noise_db": 6.321396523924236,
     "scattering_strength_bistatic_db": 3.179764062744457,
     "required_cancellation_db": {
      "T1s": 0.0,
@@ -18337,11 +18337,11 @@
    "scattering_strength_forward_db": 3.3989274424419387,
    "scattering_strength_back_db": -1.0937280694979576,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -19.864361707326196,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -17.285251372257527,
-    "echo_to_noise_db": 3.756716042539754,
+    "echo_to_noise_db": 3.7567160425397557,
     "scattering_strength_bistatic_db": 0.6736972247141628,
     "required_cancellation_db": {
      "T1s": 2.5140388250609025,
@@ -18363,7 +18363,7 @@
     },
     "receiver": "das034(x=88)",
     "range_uuv_rx_m": 121.75385004179539,
-    "bistatic_angle_deg": 18.608396666989993
+    "bistatic_angle_deg": 18.608396666989997
    }
   },
   {
@@ -18402,7 +18402,7 @@
     }
    },
    "best": {
-    "direct_db": -2.811464322282373,
+    "direct_db": -2.8114643222823728,
     "echo_db": -35.67602698343784,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -32.86456266115547,
@@ -18448,9 +18448,9 @@
     "echo_to_noise_db": -13.746460677422391,
     "scattering_strength_bistatic_db": -14.582962224040099,
     "required_cancellation_db": {
-     "T1s": 20.39523364517484,
-     "T2s": 17.384933688535032,
-     "T4s": 14.37463373189522
+     "T1s": 20.395233645174844,
+     "T2s": 17.384933688535035,
+     "T4s": 14.374633731895223
     }
    },
    "best": {
@@ -18506,7 +18506,7 @@
     }
    },
    "best": {
-    "direct_db": -0.8217642789221855,
+    "direct_db": -0.8217642789221856,
     "echo_db": -33.75766902950198,
     "noise_db": -29.712343095134198,
     "echo_to_direct_db": -32.935904750579795,
@@ -18558,7 +18558,7 @@
     }
    },
    "best": {
-    "direct_db": -0.8217642789221855,
+    "direct_db": -0.8217642789221856,
     "echo_db": -32.36936227705142,
     "noise_db": -29.712343095134198,
     "echo_to_direct_db": -31.547597998129238,
@@ -18604,13 +18604,13 @@
     "echo_to_noise_db": -14.931085293189149,
     "scattering_strength_bistatic_db": -16.42801364906252,
     "required_cancellation_db": {
-     "T1s": 20.757586125709096,
-     "T2s": 17.747286169069287,
-     "T4s": 14.736986212429475
+     "T1s": 20.7575861257091,
+     "T2s": 17.74728616906929,
+     "T4s": 14.736986212429478
     }
    },
    "best": {
-    "direct_db": -0.8217642789221855,
+    "direct_db": -0.8217642789221856,
     "echo_db": -30.766540064760875,
     "noise_db": -29.712343095134198,
     "echo_to_direct_db": -29.94477578583869,
@@ -18654,7 +18654,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -35.47302279059427,
     "echo_to_noise_db": -14.0948838575538,
-    "scattering_strength_bistatic_db": -14.555641253171013,
+    "scattering_strength_bistatic_db": -14.555641253171014,
     "required_cancellation_db": {
      "T1s": 20.701810243397645,
      "T2s": 17.691510286757836,
@@ -18667,7 +18667,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -32.335957747966205,
     "echo_to_noise_db": -11.053936204206941,
-    "scattering_strength_bistatic_db": -14.566362979712524,
+    "scattering_strength_bistatic_db": -14.566362979712526,
     "required_cancellation_db": {
      "T1s": 17.56474520076958,
      "T2s": 14.55444524412977,
@@ -18708,9 +18708,9 @@
     "echo_to_noise_db": -14.89594529180447,
     "scattering_strength_bistatic_db": -15.380929774774819,
     "required_cancellation_db": {
-     "T1s": 21.344639535178917,
-     "T2s": 18.334339578539108,
-     "T4s": 15.324039621899296
+     "T1s": 21.344639535178914,
+     "T2s": 18.334339578539105,
+     "T4s": 15.324039621899292
     }
    },
    "best": {
@@ -18727,7 +18727,7 @@
     },
     "receiver": "das114(x=248)",
     "range_uuv_rx_m": 58.365229375031156,
-    "bistatic_angle_deg": 5.057248532559082
+    "bistatic_angle_deg": 5.057248532559083
    }
   },
   {
@@ -18766,12 +18766,12 @@
     }
    },
    "best": {
-    "direct_db": -1.721961368425553,
+    "direct_db": -1.7219613684255533,
     "echo_db": -33.50802052871168,
     "noise_db": -29.712343095134198,
     "echo_to_direct_db": -31.78605916028613,
     "echo_to_noise_db": -3.7956774335774845,
-    "scattering_strength_bistatic_db": -8.764991694520326,
+    "scattering_strength_bistatic_db": -8.764991694520328,
     "required_cancellation_db": {
      "T1s": 17.014846613089503,
      "T2s": 14.004546656449694,
@@ -18818,12 +18818,12 @@
     }
    },
    "best": {
-    "direct_db": -1.721961368425553,
+    "direct_db": -1.7219613684255533,
     "echo_db": -32.5220798872988,
     "noise_db": -29.712343095134198,
     "echo_to_direct_db": -30.800118518873248,
     "echo_to_noise_db": -2.8097367921646033,
-    "scattering_strength_bistatic_db": -9.269529035970727,
+    "scattering_strength_bistatic_db": -9.269529035970725,
     "required_cancellation_db": {
      "T1s": 16.028905971676622,
      "T2s": 13.018606015036813,
@@ -18831,7 +18831,7 @@
     },
     "receiver": "hyd2(30,250)",
     "range_uuv_rx_m": 193.5523185084591,
-    "bistatic_angle_deg": 141.1799242491831
+    "bistatic_angle_deg": 141.17992424918313
    }
   },
   {
@@ -18870,7 +18870,7 @@
     }
    },
    "best": {
-    "direct_db": -1.721961368425553,
+    "direct_db": -1.7219613684255533,
     "echo_db": -32.171209022205,
     "noise_db": -29.712343095134198,
     "echo_to_direct_db": -30.449247653779445,
@@ -19078,7 +19078,7 @@
     }
    },
    "best": {
-    "direct_db": -1.53491141275682,
+    "direct_db": -1.5349114127568197,
     "echo_db": -34.03444272021667,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -32.49953130745985,
@@ -19170,7 +19170,7 @@
    "scattering_strength_back_db": -8.116012563642505,
    "median": {
     "direct_db": -2.0748667398540874,
-    "echo_db": -43.403307629932655,
+    "echo_db": -43.40330762993266,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -40.19062109246229,
     "echo_to_noise_db": -19.872417571859835,
@@ -19286,7 +19286,7 @@
     }
    },
    "best": {
-    "direct_db": -1.6658252127194135,
+    "direct_db": -1.665825212719413,
     "echo_db": -34.32499144511909,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -32.65916623239968,
@@ -19328,17 +19328,17 @@
     "direct_db": -2.0748667398540874,
     "echo_db": -38.88065649616558,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -36.2068680659233,
+    "echo_to_direct_db": -36.206868065923295,
     "echo_to_noise_db": -15.197774353443815,
     "scattering_strength_bistatic_db": -16.12234728726148,
     "required_cancellation_db": {
-     "T1s": 21.435655518726673,
-     "T2s": 18.425355562086864,
-     "T4s": 15.415055605447051
+     "T1s": 21.43565551872667,
+     "T2s": 18.42535556208686,
+     "T4s": 15.415055605447048
     }
    },
    "best": {
-    "direct_db": -2.1843102268833077,
+    "direct_db": -2.1843102268833072,
     "echo_db": -35.381428290601974,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -33.19711806371867,
@@ -19429,7 +19429,7 @@
    "scattering_strength_forward_db": -14.478849528102423,
    "scattering_strength_back_db": -8.116012563642505,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -44.29726516004051,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -42.457538242199035,
@@ -19442,7 +19442,7 @@
     }
    },
    "best": {
-    "direct_db": -1.53491141275682,
+    "direct_db": -1.5349114127568197,
     "echo_db": -33.19975960539853,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -31.664848192641713,
@@ -19481,7 +19481,7 @@
    "scattering_strength_forward_db": -14.478849528102423,
    "scattering_strength_back_db": -8.116012563642505,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -41.36523995779778,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -39.129253196553826,
@@ -19533,12 +19533,12 @@
    "scattering_strength_forward_db": -14.478849528102423,
    "scattering_strength_back_db": -8.116012563642505,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -39.17732969957653,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -36.64806091255791,
     "echo_to_noise_db": -15.454901874045461,
-    "scattering_strength_bistatic_db": -16.206183439301384,
+    "scattering_strength_bistatic_db": -16.206183439301387,
     "required_cancellation_db": {
      "T1s": 21.87684836536128,
      "T2s": 18.86654840872147,
@@ -19546,16 +19546,16 @@
     }
    },
    "best": {
-    "direct_db": -2.2693425277809984,
-    "echo_db": -35.57447935833632,
+    "direct_db": -2.269342527780998,
+    "echo_db": -35.574479358336326,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -33.30513683055532,
-    "echo_to_noise_db": -12.051709956147327,
+    "echo_to_direct_db": -33.30513683055533,
+    "echo_to_noise_db": -12.051709956147334,
     "scattering_strength_bistatic_db": -14.542903705014083,
     "required_cancellation_db": {
-     "T1s": 18.533924283358694,
-     "T2s": 15.523624326718885,
-     "T4s": 12.513324370079072
+     "T1s": 18.5339242833587,
+     "T2s": 15.523624326718892,
+     "T4s": 12.51332437007908
     },
     "receiver": "das073(x=166)",
     "range_uuv_rx_m": 75.8023746329889,
@@ -19585,7 +19585,7 @@
    "scattering_strength_forward_db": -14.478849528102423,
    "scattering_strength_back_db": -8.116012563642505,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -38.28379718116234,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -35.347117124419555,
@@ -19637,7 +19637,7 @@
    "scattering_strength_forward_db": -14.478849528102423,
    "scattering_strength_back_db": -8.116012563642505,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -39.01196697606781,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -35.54137871987352,
@@ -19692,17 +19692,17 @@
     "direct_db": -2.0615900230381854,
     "echo_db": -28.40202609554177,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -26.360210539201987,
+    "echo_to_direct_db": -26.360210539201983,
     "echo_to_noise_db": -4.808926314364534,
-    "scattering_strength_bistatic_db": -4.85210253971413,
+    "scattering_strength_bistatic_db": -4.852102539714129,
     "required_cancellation_db": {
-     "T1s": 11.588997992005359,
-     "T2s": 8.57869803536555,
-     "T4s": 5.568398078725737
+     "T1s": 11.588997992005357,
+     "T2s": 8.578698035365548,
+     "T4s": 5.5683980787257354
     }
    },
    "best": {
-    "direct_db": -2.811464322282373,
+    "direct_db": -2.8114643222823728,
     "echo_db": -26.442303896248383,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -23.63083957396601,
@@ -19746,7 +19746,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -26.514362395964092,
     "echo_to_noise_db": -4.868187888984126,
-    "scattering_strength_bistatic_db": -5.789727263350471,
+    "scattering_strength_bistatic_db": -5.78972726335047,
     "required_cancellation_db": {
      "T1s": 11.743149848767466,
      "T2s": 8.732849892127657,
@@ -19910,7 +19910,7 @@
     }
    },
    "best": {
-    "direct_db": -0.8217642789221855,
+    "direct_db": -0.8217642789221856,
     "echo_db": -24.167528063459095,
     "noise_db": -29.712343095134198,
     "echo_to_direct_db": -23.34576378453691,
@@ -20027,7 +20027,7 @@
     },
     "receiver": "das114(x=248)",
     "range_uuv_rx_m": 58.365229375031156,
-    "bistatic_angle_deg": 5.057248532559082
+    "bistatic_angle_deg": 5.057248532559083
    }
   },
   {
@@ -20110,7 +20110,7 @@
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -27.227474769372176,
     "echo_to_noise_db": -6.392638330347065,
-    "scattering_strength_bistatic_db": -7.857716475148544,
+    "scattering_strength_bistatic_db": -7.857716475148545,
     "required_cancellation_db": {
      "T1s": 12.45626222217555,
      "T2s": 9.44596226553574,
@@ -20170,7 +20170,7 @@
     }
    },
    "best": {
-    "direct_db": -1.4612803567823787,
+    "direct_db": -1.461280356782379,
     "echo_db": -24.316069442495372,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -22.854789085712994,
@@ -20378,7 +20378,7 @@
     }
    },
    "best": {
-    "direct_db": -1.53491141275682,
+    "direct_db": -1.5349114127568197,
     "echo_db": -24.79089663736189,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -23.25598522460507,
@@ -20418,7 +20418,7 @@
    "scattering_strength_back_db": -3.01732020430874,
    "median": {
     "direct_db": -2.0748667398540874,
-    "echo_db": -28.252981880052793,
+    "echo_db": -28.25298188005279,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -25.697844445668814,
     "echo_to_noise_db": -4.721239826877287,
@@ -20576,17 +20576,17 @@
     "direct_db": -2.0748667398540874,
     "echo_db": -29.844186925522767,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -27.82894451177806,
-    "echo_to_noise_db": -6.2897492635442,
+    "echo_to_direct_db": -27.828944511778058,
+    "echo_to_noise_db": -6.289749263544197,
     "scattering_strength_bistatic_db": -8.34692274384152,
     "required_cancellation_db": {
-     "T1s": 13.057731964581436,
-     "T2s": 10.047432007941627,
-     "T4s": 7.037132051301814
+     "T1s": 13.057731964581432,
+     "T2s": 10.047432007941623,
+     "T4s": 7.0371320513018105
     }
    },
    "best": {
-    "direct_db": -1.6658252127194135,
+    "direct_db": -1.665825212719413,
     "echo_db": -25.081875306412996,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -23.416050093693585,
@@ -20638,7 +20638,7 @@
     }
    },
    "best": {
-    "direct_db": -2.1843102268833077,
+    "direct_db": -2.1843102268833072,
     "echo_db": -26.139946275911687,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -23.955636049028378,
@@ -20681,7 +20681,7 @@
     "echo_db": -28.112177606050956,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -25.721149977558007,
-    "echo_to_noise_db": -4.5212016114621605,
+    "echo_to_noise_db": -4.521201611462157,
     "scattering_strength_bistatic_db": -5.953609686407871,
     "required_cancellation_db": {
      "T1s": 10.949937430361382,
@@ -20729,7 +20729,7 @@
    "scattering_strength_forward_db": -5.7759528878928705,
    "scattering_strength_back_db": -3.01732020430874,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -30.847137350405895,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -28.704401352415786,
@@ -20742,16 +20742,16 @@
     }
    },
    "best": {
-    "direct_db": -1.53491141275682,
-    "echo_db": -23.95716995936588,
+    "direct_db": -1.5349114127568197,
+    "echo_db": -23.957169959365878,
     "noise_db": -23.52276940218899,
-    "echo_to_direct_db": -22.42225854660906,
-    "echo_to_noise_db": -0.43440055717688963,
+    "echo_to_direct_db": -22.422258546609058,
+    "echo_to_noise_db": -0.4344005571768861,
     "scattering_strength_bistatic_db": -5.795806456886661,
     "required_cancellation_db": {
-     "T1s": 7.651045999412435,
-     "T2s": 4.640746042772626,
-     "T4s": 1.6304460861328138
+     "T1s": 7.651045999412432,
+     "T2s": 4.640746042772623,
+     "T4s": 1.6304460861328103
     },
     "receiver": "das107(x=234)",
     "range_uuv_rx_m": 40.44749683231337,
@@ -20781,16 +20781,16 @@
    "scattering_strength_forward_db": -5.7759528878928705,
    "scattering_strength_back_db": -3.01732020430874,
    "median": {
-    "direct_db": -2.198354536102775,
-    "echo_db": -29.54131074605244,
+    "direct_db": -2.1983545361027748,
+    "echo_db": -29.541310746052435,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -27.762670477536197,
     "echo_to_noise_db": -5.951178592567956,
     "scattering_strength_bistatic_db": -8.451214118981483,
     "required_cancellation_db": {
-     "T1s": 12.991457930339571,
-     "T2s": 9.981157973699762,
-     "T4s": 6.97085801705995
+     "T1s": 12.991457930339573,
+     "T2s": 9.981157973699764,
+     "T4s": 6.9708580170599515
     }
    },
    "best": {
@@ -20833,7 +20833,7 @@
    "scattering_strength_forward_db": -5.7759528878928705,
    "scattering_strength_back_db": -3.01732020430874,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -28.75524262436517,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -26.737082282772533,
@@ -20846,12 +20846,12 @@
     }
    },
    "best": {
-    "direct_db": -2.2693425277809984,
+    "direct_db": -2.269342527780998,
     "echo_db": -26.335166501880135,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -24.065823974099136,
     "echo_to_noise_db": -2.812397099691143,
-    "scattering_strength_bistatic_db": -5.847797727992913,
+    "scattering_strength_bistatic_db": -5.847797727992912,
     "required_cancellation_db": {
      "T1s": 9.29461142690251,
      "T2s": 6.2843114702627005,
@@ -20885,7 +20885,7 @@
    "scattering_strength_forward_db": -5.7759528878928705,
    "scattering_strength_back_db": -3.01732020430874,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -28.57432460393934,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -26.22184184496991,
@@ -20937,7 +20937,7 @@
    "scattering_strength_forward_db": -5.7759528878928705,
    "scattering_strength_back_db": -3.01732020430874,
    "median": {
-    "direct_db": -2.198354536102775,
+    "direct_db": -2.1983545361027748,
     "echo_db": -29.633554202894054,
     "noise_db": -23.52276940218899,
     "echo_to_direct_db": -26.334148965132552,
@@ -20963,7 +20963,7 @@
     },
     "receiver": "das015(x=50)",
     "range_uuv_rx_m": 150.0,
-    "bistatic_angle_deg": 7.815293546766918
+    "bistatic_angle_deg": 7.815293546766919
    }
   }
  ],
@@ -21037,8 +21037,8 @@
      "best_case_t_s": 21.50581316760657,
      "worst_case_db": 10.624459378780259,
      "worst_case_t_s": 43.01162633521314,
-     "median_receiver_best_case_db": 11.103465690093,
-     "median_receiver_worst_case_db": 13.562567221759416
+     "median_receiver_best_case_db": 11.103465690092996,
+     "median_receiver_worst_case_db": 13.56256722175942
     }
    },
    "line": "dx=0.5 m, rigid cylinder a=0.5 m: required cancellation flat: best 3.1 dB (t=22 s), worst 5.7 dB (t=43 s), median receiver 5.8 to 7.2 dB; rolloff6: best 8.0 dB (t=22 s), worst 10.6 dB (t=43 s), median receiver 11.1 to 13.6 dB"

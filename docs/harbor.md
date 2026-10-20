@@ -128,7 +128,11 @@ prototype as the known-replica reference.
 The `harbor_bistatic_budget.py` script is analytical only (no FDTD): it compares idealized
 soft/rigid infinite-cylinder scattering with a simplified link budget before launching an
 expensive simulation. The rigid-cylinder case belongs to that theoretical budget and is not
-implemented as a rigid-body FDTD boundary.
+implemented as a rigid-body FDTD boundary. It writes `budget.json`, `budget.png` (required
+direct-path cancellation along the track for each grid, ship spectrum and cylinder model; best
+receiver solid, median dashed, unclipped so values below 0 dB show remaining headroom) and
+`budget_geometry.png` (plan view of the mid-track paths and the direct, echo and noise band
+levels along the DAS cable). `--n-fig` sets how many track positions the curves use.
 
 ## GPU
 
