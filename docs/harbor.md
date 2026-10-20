@@ -8,11 +8,12 @@ target's own emission and bistatic localization of a silent body from
 the echo of an AIS ship. The forward model reuses this package's FDTD
 solver; water-specific code lives in `src/acoustic_sim/water/`.
 
-**Status: the simulation, sensing and processing chain work and are tested.  The passive chain runs
-in real time (`water/streaming.py`: 0.70 s of compute per second of data on the 0.5 m datasets,
-latency about 1 s) and finds a radiating boat without AIS in 87 % of frames within 5 m; the echo chain
-finds one silent UUV lit by one ship (75 % of frames within 5 m), not yet the silent bodies of the
-multi ship scene, and the quiet UUVs of the 5 m harbor are not detected.**  See
+**Status: the simulation, sensing and processing chain work and are tested.  Both chains run in
+real time (`water/streaming.py`, about 0.7 s of compute per second of data on the 0.5 m datasets,
+latency 1 to 2 s): the passive chain finds a radiating boat without AIS in 87 % of frames within
+5 m, the echo chain one silent UUV lit by one ship in 79 %.  Not yet detected: the silent bodies of
+the multi ship scene (the other ships' direct paths dominate the echo map) and the quiet UUVs of the
+5 m harbor.**  See
 [What the chains find today](#what-the-chains-find-today).
 
 ## Scenario
@@ -356,6 +357,23 @@ one. Free field replicas are generated per bin by a phase recurrence in one fuse
 | multistatic (0.5 m, 0.5 s frames) | 0.70 s | 1.1 / 1.9 s | boat 87 % (1.6 m), tug 11 %, ferry 8 % |
 | harbor (5 m, 4 s frames) | 0.42 s | 0.9 / 1.8 s | nothing (as in batch: the UUVs are about 30 dB below the ships) |
 
+`StreamingEcho` is the echo chain (data reference, ECA with per sample delays, coherent map) step by
+step: every second the ship is refined in every frame that has arrived, its track fitted by a line over
+the past 4 s only and extrapolated, the reference beam formed on a 2 s buffer (it needs 0.4 s of samples
+ahead), the ECA run on the two newest 0.5 s blocks only (`eca_remove(blocks=...)`), and the new frames
+mapped in single precision with the channel replicas from one fused kernel (within 7e-6 of `green2d`
+collapsed). Without the quay image lags (`eca_images=False`, measured on the bistatic recording: 77 %
+of frames within 5 m of the UUV against 73 % with them, at half the ECA cost):
+
+| Dataset | Illuminator | Compute per s of data | Latency (median / max) | Found (frames with a detection within 5 m) |
+|---|---|---|---|---|
+| bistatic | ferry | 0.72 s | 1.6 / 2.3 s | silent UUV 79 % (2.9 m) |
+| multistatic | ferry | 0.70 s | 1.6 / 2.3 s | none of the ten bodies (the tug's direct path dominates; tug 33 %) |
+| multistatic | tug | 0.71 s | 1.6 / 2.3 s | pilings 2 to 3 % (the ferry's direct path dominates; ferry 32 %) |
+
+The batch coherent map uses the same phase recurrence replicas on the GPU (`propagation.green2d_bins`,
+within 1e-14): 4.9 s instead of 9.2 s on the fine bistatic dataset.
+
 **Scoreboard (stage 1, partial).** `water/scoreboard.py` implements the definitions of
 [Architecture, Scoreboard](architecture.md#scoreboard) and `examples/harbor_picture_stage1.py`
 runs it (tuning set seed 0, test set seeds 1 to 5). The run was stopped after the bistatic dataset
@@ -593,7 +611,7 @@ deliberately not started.
 | `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator` (free field by default, `_freefield` suffix; `simulator` for the dispersion corrected replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
 | `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the truth inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit, `--propagator simulator` the dispersion corrected replicas, `--cuda` the GPU chain); every result records its `provenance` | about 1.5 h of processing for both datasets |
 | `examples/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and a ferry-only check map given the truth | 6 FDTD runs (fine: about 1 h on the GPU) |
-| `examples/harbor_stream.py` | Real-time passive chain (`water/streaming.py`): feeds a recording in 0.25 s chunks, reports compute per second of data and latency, checks every frame against the true positions; `--dataset multistatic|harbor --cuda`; writes `output/harbor_stream/<dataset>/` | about 15 s (multistatic), 50 s (harbor) |
+| `examples/harbor_stream.py` | Real-time chains (`water/streaming.py`): feeds a recording in 0.25 s chunks, reports compute per second of data and latency, checks every frame against the true positions; `--dataset multistatic|harbor|bistatic --chain passive|echo [--source <ship>] --cuda`; writes `output/harbor_stream/<dataset>[_echo]/` | 15 to 50 s per run |
 | `examples/harbor_picture_stage1.py` | Harbor picture stage 1: the [scoreboard](architecture.md#scoreboard) on the bistatic, multistatic and 5 m harbor datasets, tuning set (noise seed 0) and test set (seeds 1 to 5, remixed from the cached gathers), passive and echo chains; `--dataset`, `--chain`, `--propagator {free_field,simulator}`, `--cuda`, `--workers`; writes `output/harbor_picture/stage1/` | about 1.2 h on the GPU (runs are cached in `cache/`) |
 | `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
 | `examples/harbor_train_classifier.py`, `examples/harbor_train_anomaly.py`, `examples/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |

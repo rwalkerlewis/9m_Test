@@ -1,0 +1,3 @@
+object,kind,radiates,ais,frames,top_peak_hit,any_peak_hit,median_error_m
+ferry,ship,True,True,61,0.000,0.000,
+uuv1,uuv,False,False,61,0.623,0.787,2.87

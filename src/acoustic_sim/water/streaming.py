@@ -39,7 +39,7 @@ from acoustic_sim.water.detection import (
     remove_common_mode,
 )
 from acoustic_sim.water.device import get_device
-from acoustic_sim.water.propagation import FreeFieldPropagator, green2d, resolve
+from acoustic_sim.water.propagation import FreeFieldPropagator, green2d, green2d_bins, resolve
 from acoustic_sim.water.sensors import SensorLayout
 from acoustic_sim.water.suppression import SuppressionConfig, predict_ships, project_out_ships, refine_ships
 
@@ -345,3 +345,328 @@ def _greens_kernel():
             """,
             "stream_greens")
     return _KERNEL
+
+
+# ----------------------------------------------------------------------
+# Echo chain
+# ----------------------------------------------------------------------
+
+@dataclass
+class EchoStreamConfig:
+    """Parameters of the streaming echo chain (the chain's own are in ``BistaticConfig``).
+
+    ``step_blocks``: ECA blocks (``eca_block_s``) cleaned per step; ``history_s``: samples kept before
+    the blocks being cleaned (the reference delays and the QC); ``lookahead_s``: samples needed after
+    them (the reference beam advances every channel by its range to the ship); ``max_peaks`` /
+    ``min_separation``: peaks reported per frame.
+    """
+
+    step_blocks: int = 2
+    history_s: float = 1.0
+    lookahead_s: float = 0.4
+    max_peaks: int = 3
+    min_separation: float = 20.0
+
+
+class StreamingEcho:
+    """Causal echo chain with one AIS ship as the illuminator: ``bistatic.run_bistatic`` with the data
+    reference, ECA with per sample delays and the coherent ``"snr"`` map, step by step.
+
+    Every step (``step_blocks`` ECA blocks): the ship is refined in every frame whose samples have
+    arrived (AIS predicted from the reports received), the track is fitted by a straight line over
+    the past ``track_smooth_s`` only and extrapolated ahead, the reference beam is formed on a short
+    buffer, the ECA cleans the newest blocks, and the frames inside them are mapped in single
+    precision with the free field replicas of ``propagation.green2d_bins``.
+    """
+
+    def __init__(self, layout: SensorLayout, fs: float, env: ChartEnvironment, bc, source: str,
+                 stc: EchoStreamConfig | None = None, grid: np.ndarray | None = None) -> None:
+        from acoustic_sim.water.bistatic import ReplicaModel, build_grid
+
+        if bc.reference != "data" or bc.removal != "eca" or not bc.eca_doppler or bc.method != "coherent":
+            raise ValueError("StreamingEcho runs the data reference, ECA with per sample delays and the coherent map")
+        if not isinstance(resolve(bc.propagator, bc.c), FreeFieldPropagator):
+            raise ValueError("StreamingEcho needs the free field propagator")
+        self.layout, self.fs, self.env, self.bc, self.source = layout, float(fs), env, bc, source
+        self.stc = stc or EchoStreamConfig()
+        self.dev = get_device(bc.use_cuda)
+        xp = self.dev.xp
+        self.nper, self.hop = int(round(bc.win_s * fs)), int(round(bc.hop_s * fs))
+        self.nb = int(round(bc.eca_block_s * fs))
+        f = np.fft.rfftfreq(self.nper, 1.0 / fs)
+        self.band = np.flatnonzero((f >= bc.f_lo) & (f <= bc.f_hi))[:: bc.bin_stride]
+        self.freqs = f[self.band]
+        self.ks = 2.0 * np.pi * self.freqs / bc.c
+        self.window = get_window("hann", self.nper)
+        self.grid = grid if grid is not None else build_grid(env, bc)
+        self.model = ReplicaModel(layout, bc.c, propagator=bc.propagator, xp=xp)
+        gs, ss = xp.asarray(self.grid, dtype=np.float32), xp.asarray(layout.sample_points, dtype=np.float32)
+        self.r_samples = xp.maximum(xp.hypot(gs[:, None, 0] - ss[None, :, 0], gs[:, None, 1] - ss[None, :, 1]), 1.0)
+        if xp is not np:
+            self._init_channel_greens()
+        self.raw = np.zeros((layout.n_receivers, 0))
+        self.raw0 = 0                                   # global index of raw[:, 0]
+        self.n_in = 0                                   # samples received
+        self.clean: dict[int, np.ndarray] = {}          # ECA block index -> cleaned samples (N, nb)
+        self.refd: dict[int, np.ndarray] = {}           # ECA block index -> reference samples (nb,)
+        self.track: dict[int, tuple[float, np.ndarray, bool]] = {}   # frame -> (t, refined xy, present)
+        self.next_block = 0                             # first ECA block not cleaned
+        self.next_frame = 0                             # first frame not mapped
+
+    def _init_channel_greens(self) -> None:
+        """Tables of :meth:`_channel_greens`: per channel its (up to three) sample points and the weights of
+        ``SensorLayout.collapse`` (1, -2, 1 for a strain channel, 1 for a pressure one), and the sample point
+        pairs that need the exact Hankel function at the lowest bin, sorted by range."""
+        xp = self.dev.xp
+        sidx, coef, start = [], [], 0
+        for c in self.layout.cables:
+            for ch in range(c.n_channels):
+                if c.is_strain:
+                    sidx.append([start + 3 * ch, start + 3 * ch + 1, start + 3 * ch + 2])
+                    coef.append([1.0, -2.0, 1.0])
+                else:
+                    sidx.append([start + ch] * 3)
+                    coef.append([1.0, 0.0, 0.0])
+            start += c.n_samples
+        for h in range(self.layout.n_hydrophones):
+            sidx.append([start + h] * 3)
+            coef.append([1.0, 0.0, 0.0])
+        sidx, coef = np.array(sidx, dtype=np.int32), np.array(coef, dtype=np.float32)
+        owner = np.empty(self.layout.n_samples, dtype=np.int64)
+        ocoef = np.zeros(self.layout.n_samples, dtype=np.float32)
+        for chn in range(len(sidx)):
+            for j in range(3):
+                if coef[chn, j] != 0.0:
+                    owner[sidx[chn, j]], ocoef[sidx[chn, j]] = chn, coef[chn, j]
+        self._sidx, self._coef = xp.asarray(sidx.ravel()), xp.asarray(coef.ravel())
+        r = self.r_samples
+        g_n, s_n = xp.nonzero(r < 8.0 / float(self.ks[0]))
+        rn = r[g_n, s_n]
+        order = xp.argsort(rn)
+        g_n, s_n, rn = g_n[order], s_n[order], rn[order]
+        self._near = (g_n, s_n, rn, xp.asarray(owner)[s_n], xp.asarray(ocoef)[s_n])
+        self._near_r = self.dev.asnumpy(rn)
+
+    def _channel_greens(self, w):
+        """Replicas ``collapse(green2d(k r)) * w`` (G, N) of every scanned bin, in order: one fused kernel per
+        bin evaluates the three sample points of each channel from the range table (asymptotic series of
+        ``propagation.green2d``), combines them as ``SensorLayout.collapse`` does and applies the weight;
+        where ``k r < 8`` the difference to the exact Hankel function is then added."""
+        xp = self.dev.xp
+        if xp is np:
+            for k in self.ks:
+                yield (self.layout.collapse(green2d(k * self.r_samples, np), np) * w[None, :]).astype(np.complex64)
+            return
+        G, S = self.r_samples.shape
+        N = self.layout.n_receivers
+        kern = _channel_kernel()
+        g_n, s_n, rn, own, oc = self._near
+        wf = w.astype(np.float32)
+        for k in self.ks:
+            amp = np.float32(np.sqrt(2.0 / (np.pi * k)))
+            out = xp.empty((G, N), dtype=np.complex64)
+            kern(self.r_samples, self._sidx, self._coef, wf, np.float32(k), amp, np.int32(S), np.int32(N), out)
+            m = int(np.searchsorted(self._near_r, 8.0 / k))
+            if m:
+                r_m = rn[:m]
+                ir = 1.0 / r_m
+                asym = (xp.exp(-1j * (k * r_m - np.pi / 4.0)) * (1.0 - 9.0 * ir ** 2 / (128.0 * k * k) + 1j * ir / (8.0 * k))
+                        * amp / xp.sqrt(r_m))
+                delta = ((green2d(k * r_m, xp) - asym) * (wf[own[:m]] * oc[:m])).astype(np.complex64)
+                ov = out.view(np.float32)                                              # (G, 2N): real, imag interleaved
+                xp.add.at(ov, (g_n[:m], 2 * own[:m]), delta.real)
+                xp.add.at(ov, (g_n[:m], 2 * own[:m] + 1), delta.imag)
+            yield out
+
+    def push(self, samples: np.ndarray, reports: AISReports) -> list[FrameResult]:
+        """Append *samples* (N, n); *reports* are the AIS reports received so far (only the source's are used)."""
+        self.raw = np.concatenate([self.raw, np.asarray(samples, dtype=np.float64)], axis=1)
+        self.n_in += samples.shape[1]
+        rep = _reports_until(reports, self.n_in / self.fs)
+        m = rep.vessel == self.source
+        rep = AISReports(rep.vessel[m], rep.t[m], rep.xy[m], rep.sog[m], rep.cog[m])
+        out = []
+        look = int(round(self.stc.lookahead_s * self.fs))
+        while (self.next_block + self.stc.step_blocks) * self.nb + look <= self.n_in:
+            out += self._step(rep)
+        keep_from = max(0, self.next_block * self.nb - int(round(self.stc.history_s * self.fs)) - self.nper)
+        if keep_from > self.raw0:
+            self.raw = self.raw[:, keep_from - self.raw0:]
+            self.raw0 = keep_from
+        return out
+
+    # ------------------------------------------------------------------
+
+    def _raw(self, a: int, z: int) -> np.ndarray:
+        return self.raw[:, a - self.raw0:z - self.raw0]
+
+    def _refine(self, rep: AISReports, weights: np.ndarray) -> None:
+        """Refine the ship in every frame whose samples have arrived and that is not refined yet."""
+        from acoustic_sim.water.bistatic import Spectra, ship_positions
+
+        if len(rep) == 0:
+            return
+        k0 = max(self.track) + 1 if self.track else 0
+        k1 = (self.n_in - self.nper) // self.hop
+        ks = [k for k in range(k0, k1 + 1) if k * self.hop >= self.raw0]
+        if not ks:
+            return
+        X = np.stack([self._spectrum(self._raw(k * self.hop, k * self.hop + self.nper), weights) for k in ks], axis=2)
+        sp = Spectra(X, self.freqs, (np.array(ks) * self.hop + self.nper / 2.0) / self.fs, weights, self.fs, self.bc.win_s)
+        self.model.weights = weights
+        ship = ship_positions(sp, rep, self.model, self.bc, vessel=self.source)
+        for j, k in enumerate(ks):
+            self.track[k] = (float(sp.times[j]), ship.refined[j].copy(), bool(ship.present[j]))
+
+    def _spectrum(self, seg: np.ndarray, weights: np.ndarray) -> np.ndarray:
+        """Band spectrum (N, F) of one frame after common mode removal (as ``bistatic.stft``)."""
+        x = remove_common_mode(seg, self.layout, weights)
+        return np.fft.rfft(x * self.window, axis=1)[:, self.band] * weights[:, None]
+
+    def _smoothed(self, t: np.ndarray) -> np.ndarray:
+        """Ship position at times *t* from the causal track: at each frame the straight line fitted to the
+        refined positions of the past ``track_smooth_s`` evaluated at that frame, interpolated between
+        frames and extrapolated from the newest line beyond the newest frame."""
+        ks = sorted(k for k, v in self.track.items() if v[2])
+        tt = np.array([self.track[k][0] for k in ks])
+        xy = np.array([self.track[k][1] for k in ks])
+        T = self.bc.track_smooth_s
+        sm = xy.copy()
+        line = (xy[-1], np.zeros(2))
+        for j in range(len(ks)):
+            m = (tt <= tt[j]) & (tt >= tt[j] - T)
+            if m.sum() >= 3:
+                A = np.column_stack([np.ones(m.sum()), tt[m] - tt[j]])
+                coef, *_ = np.linalg.lstsq(A, xy[m], rcond=None)
+                sm[j] = coef[0]
+                if j == len(ks) - 1:
+                    line = (coef[0], coef[1])
+        out = np.column_stack([np.interp(t, tt, sm[:, 0]), np.interp(t, tt, sm[:, 1])])
+        late = t > tt[-1]
+        out[late] = line[0][None, :] + np.outer(t[late] - tt[-1], line[1])
+        return out
+
+    def _step(self, rep: AISReports) -> list[FrameResult]:
+        from acoustic_sim.water.bistatic import eca_remove, make_reference
+
+        t0 = time.perf_counter()
+        xp, dev, bc, stc = self.dev.xp, self.dev, self.bc, self.stc
+        b0, b1 = self.next_block, self.next_block + stc.step_blocks
+        self.next_block = b1
+        h_blocks = int(np.ceil(stc.history_s / bc.eca_block_s))
+        a = max(b0 - h_blocks, 0) * self.nb                                                # buffer start, on a block boundary
+        a = max(a, int(np.ceil(self.raw0 / self.nb)) * self.nb)
+        z = min(b1 * self.nb + int(round(stc.lookahead_s * self.fs)), self.n_in)
+        buf = self._raw(a, z)
+        weights = channel_weights(buf, self.layout, ProcessingConfig(win_s=bc.win_s, hop_s=bc.hop_s))
+        self._refine(rep, weights)
+        if not any(v[2] for v in self.track.values()):
+            for b in range(b0, b1):
+                self.clean[b] = self._raw(b * self.nb, (b + 1) * self.nb)
+                self.refd[b] = np.zeros(self.nb)
+            return self._frames(t0, weights, rep_live=False)
+        t_s = (a + np.arange(z - a)) / self.fs
+        ship_t = self._smoothed(t_s)
+        nblk = int(np.ceil((z - a) / self.nb))
+        ship_b = ship_t[np.minimum(np.arange(nblk) * self.nb + self.nb // 2, z - a - 1)]
+        x = buf                                            # as run_bistatic: reference and ECA on the traces,
+        chans = np.flatnonzero(weights > 0)                # the common mode removed in the STFT
+        waveform = make_reference(x, self.layout, self.fs, ship_b, bc.eca_block_s, bc, chans, ship_t=ship_t)
+        rel = set(range(b0 - a // self.nb, b1 - a // self.nb))
+        cleaned = eca_remove([x], waveform, self.layout, self.fs, ship_b, [], bc.eca_block_s, bc, ship_t=ship_t, blocks=rel)[0]
+        for b in range(b0, b1):
+            lo = b * self.nb - a
+            self.clean[b] = cleaned[:, lo:lo + self.nb]
+            self.refd[b] = waveform[lo:lo + self.nb]
+        return self._frames(t0, weights, rep_live=True)
+
+    def _frames(self, t0: float, weights: np.ndarray, rep_live: bool) -> list[FrameResult]:
+        """Map every frame whose samples are all cleaned."""
+        xp, dev, bc, stc = self.dev.xp, self.dev, self.bc, self.stc
+        done = self.next_block * self.nb
+        k1 = (done - self.nper) // self.hop
+        ks = [k for k in range(self.next_frame, k1 + 1)]
+        self.next_frame = max(self.next_frame, k1 + 1)
+        first = (ks[0] if ks else self.next_frame) * self.hop // self.nb          # oldest block still needed
+        for b in [b for b in self.clean if b < first]:
+            self.clean.pop(b)
+            self.refd.pop(b)
+        if not ks:
+            return []
+        times = (np.array(ks) * self.hop + self.nper / 2.0) / self.fs
+        present = np.array([k in self.track and self.track[k][2] for k in ks]) & rep_live
+        ship = np.array([self.track[k][1] if k in self.track else [np.nan, np.nan] for k in ks])
+        B = np.zeros((len(self.grid), len(ks)))
+        live = np.flatnonzero(present)
+        if len(live):
+            X = np.empty((self.layout.n_receivers, len(self.band), len(live)), dtype=np.complex64)
+            R = np.empty((len(self.band), len(live)), dtype=np.complex64)
+            for j, i in enumerate(live):
+                s0 = ks[i] * self.hop
+                seg = np.concatenate([self.clean[b] for b in range(s0 // self.nb, (s0 + self.nper - 1) // self.nb + 1)], axis=1)
+                ref = np.concatenate([self.refd[b] for b in range(s0 // self.nb, (s0 + self.nper - 1) // self.nb + 1)])
+                o = s0 - (s0 // self.nb) * self.nb
+                X[:, :, j] = self._spectrum(seg[:, o:o + self.nper], weights)
+                R[:, j] = np.fft.rfft(ref[o:o + self.nper] * self.window)[self.band]
+            Xd, Rd = xp.asarray(X), xp.asarray(R)
+            wd = xp.asarray(weights, dtype=np.float32)
+            sp_ = xp.asarray(ship[live], dtype=np.float32)
+            gs = xp.asarray(self.grid, dtype=np.float32)
+            r_path = xp.maximum(xp.hypot(gs[:, None, 0] - sp_[None, :, 0], gs[:, None, 1] - sp_[None, :, 1]), 1.0)
+            gen_a = self._channel_greens(wd)
+            gen_p = green2d_bins(r_path, self.ks, xp)
+            Z = xp.zeros((len(self.grid), len(live)), dtype=np.complex64)
+            W = xp.zeros((len(self.grid), len(live)), dtype=np.float32)
+            for i in range(len(self.ks)):
+                A = next(gen_a)
+                path = next(gen_p)
+                norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=1), 1e-30)
+                Y = A.conj() @ Xd[:, i, :]
+                r_i = Rd[i][None, :]
+                Z += Y * xp.conj(path) * xp.conj(r_i) / norm[:, None]
+                W += (xp.abs(path) ** 2 * xp.abs(r_i) ** 2 / norm[:, None]).astype(np.float32)
+            Bl = xp.abs(Z) ** 2 / xp.maximum(W, 1e-30)
+            B[:, live] = dev.asnumpy(Bl).astype(np.float64)
+            for j, i in enumerate(live):
+                B[np.hypot(*(self.grid - ship[i]).T) < bc.exclusion_radius, i] = 0.0
+        compute = time.perf_counter() - t0
+        out = []
+        for j, k in enumerate(ks):
+            g = _nms(B[:, j], self.grid, stc.min_separation, stc.max_peaks, 0.0) if present[j] else []
+            frame_end = (k * self.hop + self.nper) / self.fs
+            out.append(FrameResult(float(times[j]), self.grid[g], B[g, j], {self.source: ship[j]} if present[j] else {},
+                                   compute, float(self.n_in / self.fs - frame_end + compute)))
+        return out
+
+
+_CHANNEL_KERNEL = None
+
+
+def _channel_kernel():
+    """Fused kernel of :meth:`StreamingEcho._channel_greens`: out[g, c] = w[c] sum_j coef[c, j] G_k(r[g, s_cj])
+    with the asymptotic ``H0^(2)`` of ``propagation.green2d``."""
+    global _CHANNEL_KERNEL
+    if _CHANNEL_KERNEL is None:
+        import cupy
+
+        _CHANNEL_KERNEL = cupy.ElementwiseKernel(
+            "raw float32 r, raw int32 sidx, raw float32 coef, raw float32 w, float32 k, float32 amp, int32 S, int32 N",
+            "complex64 out",
+            """
+            int g = i / N, c = i % N;
+            float re = 0.0f, im = 0.0f;
+            for (int j = 0; j < 3; j++) {
+                float cf = coef[3 * c + j];
+                if (cf == 0.0f) continue;
+                float rr = r[(long long)g * S + sidx[3 * c + j]];
+                float u = 1.0f / rr;
+                float sr = 1.0f - 9.0f * u * u / (128.0f * k * k), si = u / (8.0f * k);
+                float s, co;
+                sincosf(k * rr - 0.78539816339744831f, &s, &co);           // exp(-i (k r - pi/4)) = co - i s
+                float a = cf * amp * rsqrtf(rr);
+                re += a * (co * sr + s * si);
+                im += a * (co * si - s * sr);
+            }
+            out = complex<float>(re * w[c], im * w[c]);
+            """, "stream_channel_greens")
+    return _CHANNEL_KERNEL

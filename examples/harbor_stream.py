@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Run the passive chain in real time on a recording and check every frame against the true positions.
+"""Run a chain in real time on a recording and check every frame against the true positions.
+
+``--chain passive`` (``StreamingPassive``: radiating objects) or ``--chain echo`` (``StreamingEcho``: silent
+bodies lit by the AIS ship ``--source``, default the first reporting ship).
 
 The traces are fed to ``water.streaming.StreamingPassive`` in chunks of ``--chunk`` seconds, as they
 would arrive from the interrogator, with the AIS reports received so far.  Every frame's peaks are
@@ -11,7 +14,7 @@ Outputs in ``--out/<dataset>/``: ``detections.csv``, ``check.csv``, ``check.png`
 
 Usage::
 
-    python examples/harbor_stream.py --dataset multistatic|harbor [--cuda]
+    python examples/harbor_stream.py --dataset multistatic|harbor|bistatic [--chain passive|echo] [--cuda]
 """
 
 from __future__ import annotations
@@ -34,7 +37,9 @@ sys.path.insert(0, str(ROOT / "src"))
 from acoustic_sim.contract import Observation, Truth  # noqa: E402
 from acoustic_sim.water.detection import ProcessingConfig  # noqa: E402
 from acoustic_sim.water.propagation import FreeFieldPropagator  # noqa: E402
-from acoustic_sim.water.streaming import StreamConfig, StreamingPassive  # noqa: E402
+from acoustic_sim.water.ais import AISReports  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig  # noqa: E402
+from acoustic_sim.water.streaming import EchoStreamConfig, StreamConfig, StreamingEcho, StreamingPassive  # noqa: E402
 from acoustic_sim.water.suppression import SuppressionConfig  # noqa: E402
 
 DATASETS = {
@@ -45,35 +50,45 @@ DATASETS = {
                     dict(block_frames=4, history_s=5.0, warmup_s=1.0, interference_every=16)),
     "harbor": ("output/harbor/dataset", (12.0, 78.0), dict(grid_dx=5.0), 150.0, dict(),
                dict(block_frames=1, history_s=30.0, warmup_s=8.0)),
+    "bistatic": ("output/harbor_bistatic/fine/dataset", (100.0, 760.0), None, None, None, None),
 }
+# Echo chain: the stage 0 / stage 1 settings, without the quay image lags (measured on the bistatic recording:
+# 77 % of frames within 5 m of the UUV without them, 73 % with them, at half the ECA cost).
+ECHO = dict(win_s=0.5, hop_s=0.25, grid_dx=2.0, coherent_norm="snr", map_scale="none", exclusion_radius=25.0,
+            eca_doppler=True, track_smooth_s=4.0, eca_images=False)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dataset", required=True, choices=list(DATASETS))
+    ap.add_argument("--chain", default="passive", choices=("passive", "echo"))
+    ap.add_argument("--source", default=None, help="echo: the illuminating AIS ship (default: the first reporting)")
     ap.add_argument("--cuda", action="store_true")
     ap.add_argument("--chunk", type=float, default=0.25, help="seconds of data per push")
     ap.add_argument("--hit", type=float, default=5.0)
     ap.add_argument("--out", default="output/harbor_stream")
     args = ap.parse_args()
     path, band, pcd, edge, scd, std = DATASETS[args.dataset]
-    out = ROOT / args.out / args.dataset
+    out = ROOT / args.out / (args.dataset if args.chain == "passive" else f"{args.dataset}_echo")
     out.mkdir(parents=True, exist_ok=True)
     obs = Observation.load(ROOT / f"{path}.observation.npz")
     env = obs.environment
     x0, x1, y0, y1 = env.extent
     prop = FreeFieldPropagator.from_environment(env)
-    pc = ProcessingConfig(f_lo=band[0], f_hi=band[1], c=prop.c, propagator=prop, use_cuda=args.cuda,
-                          grid_bounds=(x0 + edge, x1 - edge, y0 + edge, y1 - edge), **pcd)
-    det = StreamingPassive(obs.geometry, obs.fs, env, pc, SuppressionConfig(**scd), StreamConfig(**std))
+    if args.chain == "passive":
+        pc = ProcessingConfig(f_lo=band[0], f_hi=band[1], c=prop.c, propagator=prop, use_cuda=args.cuda,
+                              grid_bounds=(x0 + edge, x1 - edge, y0 + edge, y1 - edge), **pcd)
+        det = StreamingPassive(obs.geometry, obs.fs, env, pc, SuppressionConfig(**scd), StreamConfig(**std))
+    else:
+        bc = BistaticConfig(f_lo=band[0], f_hi=band[1], c=prop.c, propagator=prop, use_cuda=args.cuda, **ECHO)
+        det = StreamingEcho(obs.geometry, obs.fs, env, bc, args.source or obs.reports.vessels[0], EchoStreamConfig())
 
     n = int(round(args.chunk * obs.fs))
-    frames = []
+    frames = []                                               # (passive chain: every frame; echo chain: from the first AIS report)
     for s0 in range(0, obs.traces.shape[1], n):
         t_now = (s0 + n) / obs.fs
         rep = obs.reports
         m = rep.t <= t_now                                       # the reports received by now
-        from acoustic_sim.water.ais import AISReports
         frames += det.push(obs.traces[:, s0:s0 + n], AISReports(rep.vessel[m], rep.t[m], rep.xy[m], rep.sog[m], rep.cog[m]))
     T = obs.traces.shape[1] / obs.fs
     blocks = {}
@@ -81,6 +96,8 @@ def main() -> None:
         blocks[f.compute_s] = 1
     compute = sum(blocks)
     lat = np.array([f.latency_s for f in frames])
+    if args.chain == "echo":                                   # the echo chain has frames only once its illuminator reports
+        frames = [f for f in frames if f.ships]
 
     truth = Truth.load(ROOT / f"{path}.truth.npz")             # read only from here on, for the check
     ids = list(truth.tracks)
@@ -117,7 +134,7 @@ def main() -> None:
             w.writerow([oid, p["kind"], p["radiates"], p["ais"], p["frames"], f"{p['top_peak_hit']:.3f}", f"{p['any_peak_hit']:.3f}",
                         "" if p["median_error_m"] is None else f"{p['median_error_m']:.2f}"])
 
-    print(f"{args.dataset}: {len(frames)} frames from t = {summary['first_frame_t']:.2f} s; compute {compute:.1f} s for {T:.0f} s of data "
+    print(f"{args.dataset} {args.chain}: {len(frames)} frames from t = {summary['first_frame_t']:.2f} s; compute {compute:.1f} s for {T:.0f} s of data "
           f"({compute / T:.2f} s per s: {'real time' if compute < T else 'NOT real time'}); latency median {np.median(lat):.2f} s, "
           f"max {lat.max():.2f} s; {false:.2f} detections per frame > 10 m from every object")
     print(f"  {'object':14s} {'kind':7s} {'rad':4s} {'AIS':4s} {'top peak hit':>13s} {'any peak hit':>13s} {'median err':>11s}")
@@ -143,7 +160,7 @@ def main() -> None:
     ax.set_ylim(y0, y1)
     ax.set_aspect("equal")
     ax.legend(fontsize=7, loc="lower left")
-    ax.set_title(f"{args.dataset}: streaming passive chain, {compute / T:.2f} s compute per s of data, latency median "
+    ax.set_title(f"{args.dataset}: streaming {args.chain} chain, {compute / T:.2f} s compute per s of data, latency median "
                  f"{np.median(lat):.2f} s\n% = frames with a detection within {args.hit:g} m", fontsize=9)
     fig.savefig(out / "check.png", dpi=110, bbox_inches="tight")
 

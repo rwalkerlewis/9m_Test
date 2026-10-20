@@ -41,7 +41,7 @@ from acoustic_sim.water.motion import (  # noqa: F401  (moved; re-exported for t
     _motion_integrate_vectorized,
     motion_integrate,
 )
-from acoustic_sim.water.propagation import green2d, resolve
+from acoustic_sim.water.propagation import FreeFieldPropagator, green2d, green2d_bins, resolve
 from acoustic_sim.water.sensors import SensorLayout
 
 METHODS = ("bartlett", "bartlett_phat", "coherent", "mvdr", "music")
@@ -646,6 +646,7 @@ def eca_remove(
     block_s: float,
     bc: BistaticConfig,
     ship_t: np.ndarray | None = None,
+    blocks: set[int] | None = None,
 ) -> list[np.ndarray]:
     """Extensive cancellation (least squares projection on delayed copies of the reference).
 
@@ -664,18 +665,19 @@ def eca_remove(
     ``bc.impl = "vectorized"`` builds the regressor matrices of all channels of a block from
     strided views of the (padded, resampled) reference and solves the normal equations of the
     channels with the same lag count together (:func:`_project_out_batched`); the reference loop
-    is :func:`_eca_remove_reference`.
+    is :func:`_eca_remove_reference`.  *blocks* (indices) restricts the cancellation to those blocks (the
+    others are returned unchanged): the real-time chain cleans only the newest blocks of its buffer.
     """
     if bc.impl == "reference":
-        return _eca_remove_reference(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t)
+        return _eca_remove_reference(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, blocks)
     xp = _xp(bc)
     if xp is not np and bc.reference == "true_waveform" and ship_t is not None:
         # True-waveform-driven per-sample-delay normal equations can be ill-conditioned enough that
         # cuSOLVER and LAPACK produce materially different projections. Keep this rare path
         # on the CPU so the GPU implementation meets the reference accuracy contract.
         cpu_bc = replace(bc, use_cuda=False)
-        return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, cpu_bc, ship_t)
-    return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t)
+        return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, cpu_bc, ship_t, blocks=blocks)
+    return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, blocks=blocks)
 
 
 def _project_out_batched(S, segs, loading: float = 1e-14):
@@ -748,7 +750,8 @@ def _eca_lags(nominal: np.ndarray, half: int, hi: int) -> list[np.ndarray]:
     return out
 
 
-def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, chunk: int = 32) -> list[np.ndarray]:
+def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, chunk: int = 32,
+                           blocks: set[int] | None = None) -> list[np.ndarray]:
     xp = _xp(bc)
     from_window = xp.lib.stride_tricks.sliding_window_view
     n = traces[0].shape[1]
@@ -765,6 +768,8 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
         j_all = xp.arange(n, dtype=float)
         rec_d = xp.asarray(rec)
     for b in range(len(ship_xy)):
+        if blocks is not None and b not in blocks:
+            continue
         lo, hi = b * nb, min((b + 1) * nb, n)
         if hi <= lo:
             break
@@ -819,6 +824,7 @@ def _eca_remove_reference(
     block_s: float,
     bc: BistaticConfig,
     ship_t: np.ndarray | None = None,
+    blocks: set[int] | None = None,
 ) -> list[np.ndarray]:
     """The original per channel loop of :func:`eca_remove` (``impl = "reference"``).
 
@@ -844,6 +850,8 @@ def _eca_remove_reference(
     ref_up = resample(ref, n * UPSAMPLE) if ship_t is not None else None
     j_up = np.arange(n * UPSAMPLE, dtype=float)
     for b in range(len(ship_xy)):
+        if blocks is not None and b not in blocks:
+            continue
         lo, hi = b * nb, min((b + 1) * nb, n)
         if hi <= lo:
             break
@@ -1045,8 +1053,20 @@ def _bistatic_map_vectorized(clean, ship, ref, grid, model, bc, method, frame_ch
     X_d = xp.asarray(clean.X)
     w_d = xp.asarray(clean.weights)
     ref_d = xp.asarray(ref) if ref is not None else None
-    for i, kk in enumerate(clean.wavenumbers / bc.c):
-        A = model(grid, kk)                                                                 # (G, N)
+    ks = clean.wavenumbers / bc.c
+    # Free field on the GPU: the replicas of successive bins by phase recurrence (green2d_bins, ~1e-14).
+    fast = xp is not np and isinstance(model.propagator, FreeFieldPropagator)
+    if fast:
+        gen_a = green2d_bins(model._geometry(grid, model.samples)[0], ks, xp)
+        gen_p = green2d_bins(model._geometry(grid, ship_p)[0], ks, xp) if method == "coherent" and len(present) else None
+        w_rep = model._weights_d()
+    for i, kk in enumerate(ks):
+        if fast:
+            A = model.layout.collapse(next(gen_a), xp)
+            if w_rep is not None:
+                A = A * w_rep[None, :]
+        else:
+            A = model(grid, kk)                                                             # (G, N)
         norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=1), 1e-30)
         Xi = X_d[:, i, :]                                                                   # (N, K)
         if method in ("bartlett", "bartlett_phat"):
@@ -1056,7 +1076,7 @@ def _bistatic_map_vectorized(clean, ship, ref, grid, model, bc, method, frame_ch
             if len(present) == 0:
                 continue
             Y = A.conj() @ Xi                                                               # (G, K)
-            path = model.paths(grid, ship_p, kk)                                            # (G, Kp)
+            path = next(gen_p) if fast else model.paths(grid, ship_p, kk)                   # (G, Kp)
             r_i = ref_d[i, present_d][None, :]
             Z[:, present_d] += Y[:, present_d] * xp.conj(path) * xp.conj(r_i) / norm[:, None]
             W[:, present_d] += xp.abs(path) ** 2 * xp.abs(r_i) ** 2 / norm[:, None]

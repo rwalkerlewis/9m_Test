@@ -40,6 +40,57 @@ def green2d(kr, xp=np):
     return xp.where(near, h_near, h_far)
 
 
+def green2d_bins(r, ks, xp=np, exact_every: int = 16):
+    """``green2d(k r)`` for the evenly spaced, increasing wavenumbers *ks*, one array per ``next()``.
+
+    On the GPU the phase ``exp(-i k r)`` advances by one complex multiply per wavenumber (re-anchored
+    to the exact phase every *exact_every* wavenumbers) and the amplitude and asymptotic series come
+    from cached ``1 / sqrt(r)`` and ``1 / r`` in one fused kernel; the exact Hankel function replaces
+    them where ``k r < 8``.  The dtype follows *r* (float32 -> complex64, float64 -> complex128).  On the
+    CPU it is :func:`green2d` per wavenumber.
+    """
+    ks = np.asarray(ks, dtype=float)
+    if xp is np or len(ks) < 2 or not np.allclose(np.diff(ks), ks[1] - ks[0], rtol=1e-9, atol=0.0):
+        for k in ks:
+            yield green2d(k * r, xp)
+        return
+    single = r.dtype == np.float32
+    cdt = np.complex64 if single else np.complex128
+    kern = _green_bins_kernel(single)
+    isr, ir = 1.0 / xp.sqrt(r), 1.0 / r
+    step = xp.exp(-1j * (ks[1] - ks[0]) * r).astype(cdt)
+    near = xp.nonzero(r < 8.0 / ks[0])
+    rn = r[near]
+    phase = None
+    for j, k in enumerate(ks):
+        if j % exact_every == 0:
+            phase = xp.exp(-1j * (k * r - np.pi / 4.0)).astype(cdt)
+        out = xp.empty_like(phase)
+        kern(phase, step, isr, ir, r.dtype.type(k), r.dtype.type(np.sqrt(2.0 / (np.pi * k))), out, phase)
+        if len(rn):
+            out[near] = xp.where(k * rn < 8.0, green2d(k * rn, xp), out[near]).astype(cdt)
+        yield out
+
+
+_GREEN_KERNELS: dict = {}
+
+
+def _green_bins_kernel(single: bool):
+    if single not in _GREEN_KERNELS:
+        import cupy
+
+        f, c = ("float32", "complex64") if single else ("float64", "complex128")
+        t = "float" if single else "double"
+        _GREEN_KERNELS[single] = cupy.ElementwiseKernel(
+            f"{c} ph, {c} step, {f} isr, {f} ir, {f} k, {f} amp", f"{c} g, {c} ph_out",
+            f"""
+            complex<{t}> series(1 - 9 * ir * ir / (128 * k * k), ir / (8 * k));
+            g = ph * series * (amp * isr);
+            ph_out = ph * step;
+            """, f"green_bins_{t}")
+    return _GREEN_KERNELS[single]
+
+
 def pair_geometry(sources_xy, receivers_xy, xp=np, dtype=np.float64, min_range: float = 1.0):
     """Ranges ``r`` (P, N), clamped to *min_range*, and angles ``theta = atan2(|dy|, |dx|)`` from the grid axes."""
     s = xp.asarray(np.atleast_2d(np.asarray(sources_xy, dtype=float)), dtype=dtype)

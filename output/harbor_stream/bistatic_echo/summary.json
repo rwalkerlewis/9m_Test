@@ -1,0 +1,33 @@
+{
+  "dataset": "bistatic",
+  "record_s": 20.0,
+  "frames": 61,
+  "first_frame_t": 3.75,
+  "compute_s": 14.309971208005663,
+  "compute_per_second_of_data": 0.7154985604002831,
+  "latency_s": {
+    "median": 1.6404419499995129,
+    "max": 2.313877713000693
+  },
+  "false_detections_per_frame": 2.1639344262295084,
+  "objects": {
+    "ferry": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "frames": 61,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "uuv1": {
+      "kind": "uuv",
+      "radiates": false,
+      "ais": false,
+      "frames": 61,
+      "top_peak_hit": 0.6229508196721312,
+      "any_peak_hit": 0.7868852459016393,
+      "median_error_m": 2.869607784100298
+    }
+  }
+}
