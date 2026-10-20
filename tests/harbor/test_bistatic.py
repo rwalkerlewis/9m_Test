@@ -13,7 +13,7 @@ from acoustic_sim.water.bistatic import (
     BistaticConfig,
     ReplicaModel,
     ShipTrack,
-    Truth,
+    Diagnostics,
     _fractional_delay,
     clutter_images,
     eca_remove,
@@ -114,8 +114,8 @@ def test_run_bistatic_end_to_end_reports_eca_depth_and_finds_the_body(scene):
     bc = BistaticConfig(reference="oracle", removal="eca", method="coherent", c=C, grid_dx=5.0, edge=20.0,
                         exclusion_radius=30.0, refine=False)
     sp = stft(traces, layout, FS, bc, F_MAX)
-    truth = Truth(ship_xy=np.repeat(SHIP[None], len(sp.times), axis=0), components={"direct:ship": direct, "scattered:ship>body": echo})
-    run = run_bistatic(traces, layout, FS, env, ais, bc, F_MAX, oracle_signal=s, truth=truth)
+    truth = Diagnostics(ship_xy=np.repeat(SHIP[None], len(sp.times), axis=0), components={"direct:ship": direct, "scattered:ship>body": echo})
+    run = run_bistatic(traces, layout, FS, env, ais, bc, F_MAX, oracle_signal=s, diagnostics=truth)
     assert run.eca is not None
     assert np.median(run.eca.removed_db) > 25.0
     assert np.median(run.eca.echo_lost_db) < 1.0

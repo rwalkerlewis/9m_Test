@@ -1,11 +1,14 @@
-"""Two-stage empirical localiser: analytic MFP first-pass -> FDTD replica refinement.
+"""Two-stage empirical localiser: analytic MFP first-pass -> empirical replica refinement.
+
+The replicas are measured transfer functions (for synthetic data: FDTD runs), so a localiser is
+simulator knowledge on synthetic data and every run that uses one says so in its provenance
+(``"empirical_replicas"``).
 
 Two replica modes
 -----------------
 ``vessel_path``
-    Loads the per-vessel unit gathers written by ``render_vessel_gathers`` (from the
-    M2 dataset cache), computes their RFFT, and uses each vessel track's midpoint as the
-    nominal source position.  Works wherever a cached vessel passed nearby a candidate.
+    The per-vessel unit gathers of the dataset's own FDTD run; built by the forward model, so it lives
+    in ``water/diagnostics.py`` (:class:`~acoustic_sim.water.diagnostics.VesselPathLocaliser`).
 
 ``grid_survey``
     Loads per-cell RFFT snapshots produced by ``examples/harbor_survey_grid.py``, stored
@@ -159,64 +162,9 @@ class EmpiricalLocaliser:
         return spec[:, band].astype(np.complex64), freqs[band]
 
     def _build_vessel_path(self) -> None:
-        """Build replica store from M2 vessel-track unit gathers.
-
-        Loads ``cache_dir.parent/dataset.npz`` for track positions, then calls
-        ``render_vessel_gathers`` (which reads from the cache) to obtain traces.
-        """
-        dataset_path = self.cache_dir.parent / "dataset.npz"
-        if not dataset_path.exists():
-            raise FileNotFoundError(
-                f"vessel_path mode requires the dataset NPZ at {dataset_path}. "
-                "Run harbor_m2_dataset.py first."
-            )
-
-        # ---- load dataset header to recover scenario config + tracks ----
-        with np.load(dataset_path) as d:
-            header = json.loads(str(d["header"]))
-            track_xy = {}
-            for k in header["tracks"]:
-                track_xy[k] = d[f"track_{k}_xy"]    # (T_steps, 2)
-
-        # Import lazily to avoid circular-import issues at module level.
-        from acoustic_sim.water.dataset import render_vessel_gathers
-        from acoustic_sim.water.scenario import (
-            HarborScenarioConfig,
-            build_environment,
-            build_layout,
-        )
-
-        cfg = HarborScenarioConfig.from_dict(header["config"])
-        env = build_environment(cfg)
-        layout = build_layout(cfg, env)
-        from acoustic_sim.water.vessels import build_track
-        tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in cfg.vessels}
-        gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=self.cache_dir)
-
-        all_xy, all_H, common_freqs = [], [], None
-        for vessel_id, gather in gathers.items():
-            # For scattered gathers (key contains ">") use the radiating vessel's midpoint.
-            if ">" in vessel_id:
-                src_id = vessel_id.split(">")[0]
-            else:
-                src_id = vessel_id
-            if src_id not in track_xy:
-                continue
-            xy_path = track_xy[src_id]       # (T_steps, 2)
-            midpoint = xy_path[len(xy_path) // 2]
-
-            H, freqs = self._rfft_band(gather.traces)
-            all_xy.append(midpoint)
-            all_H.append(H)
-            if common_freqs is None:
-                common_freqs = freqs
-
-        if not all_xy:
-            raise RuntimeError("No vessel gathers found in cache_dir.")
-
-        self._source_xy = np.array(all_xy, dtype=float)   # (G, 2)
-        self._H = np.stack(all_H, axis=0)                 # (G, N, F)
-        self._freqs = common_freqs
+        raise NotImplementedError(
+            "vessel_path replicas are rendered by the forward model (FDTD gathers of the dataset's own "
+            "vessels): use acoustic_sim.water.diagnostics.VesselPathLocaliser")
 
     def _build_grid_survey(self) -> None:
         """Build replica store from ``cache_dir/survey_cache/{ix}_{iy}.npz`` files."""

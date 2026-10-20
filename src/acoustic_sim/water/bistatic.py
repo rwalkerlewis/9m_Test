@@ -31,17 +31,17 @@ import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 from scipy.signal import get_window, resample
 
+from acoustic_sim.contract import ChartEnvironment, Propagator, Provenance
 from acoustic_sim.water.ais import AISReports
-from acoustic_sim.water.detection import DetectionSet, ScanResult, _nms, channel_weights, green2d, remove_common_mode
+from acoustic_sim.water.detection import DetectionSet, ScanResult, _nms, channel_weights, remove_common_mode
 from acoustic_sim.water.detection import ProcessingConfig
 from acoustic_sim.water.device import get_device
-from acoustic_sim.water.dispersion import DispersionModel, replica_wavenumbers
-from acoustic_sim.water.environment import HarborEnvironment
 from acoustic_sim.water.motion import (  # noqa: F401  (moved; re-exported for the old path)
     _motion_integrate_reference,
     _motion_integrate_vectorized,
     motion_integrate,
 )
+from acoustic_sim.water.propagation import green2d, resolve
 from acoustic_sim.water.sensors import SensorLayout
 
 METHODS = ("bartlett", "bartlett_phat", "coherent", "mvdr", "music")
@@ -118,9 +118,11 @@ class BistaticConfig:
         Signal subspace rank for MUSIC.
     min_separation, max_peaks : float, int
         Peak extraction per frame.
-    dispersion : DispersionModel | None
-        Numerical dispersion of the FDTD scheme that produced the data (``dispersion.for_scenario``);
-        ``None`` for real data.
+    propagator : Propagator | None
+        Replica model (:class:`acoustic_sim.contract.Propagator`).  ``None`` is the blind
+        ``FreeFieldPropagator(c)``; ``water.diagnostics.SimulatorAwarePropagator.from_truth`` follows the
+        numerical dispersion of the FDTD scheme that produced the data (simulator knowledge, flagged in
+        the run's provenance).
     impl : str
         ``"vectorized"`` (default): the replica tables are built once per bin and reused across
         frames, the coherent, MVDR and MUSIC maps run over all frames at once, the ECA builds the
@@ -163,7 +165,7 @@ class BistaticConfig:
     music_rank: int = 3
     min_separation: float = 20.0
     max_peaks: int = 3
-    dispersion: DispersionModel | None = None
+    propagator: Propagator | None = field(default=None, repr=False)
     impl: str = "vectorized"
     use_cuda: bool = False
 
@@ -253,11 +255,13 @@ def oracle_spectra(signal: np.ndarray, fs: float, sp: Spectra) -> np.ndarray:
 class ReplicaModel:
     """Replicas ``a(x, f)`` (P, N) for points *x*: Green's function at the sample points, collapsed.
 
-    With *dispersion* (a :class:`DispersionModel` of the FDTD scheme that produced the data) the
-    wavenumber of every point to sample pair follows the scheme's direction dependent numerical
-    value instead of ``w / c``; on a coarse grid (4 cells per wavelength) the numerical phase
-    speed is 1 to 2 percent off and direction dependent, which shifts a bistatic fix by metres.
-    Leave it ``None`` for real data.  *k* passed to the calls is the free field ``w / c``.
+    The Green's function comes from *propagator* (:class:`acoustic_sim.contract.Propagator`; ``None``
+    is the blind free field at *c*).  An analytic propagator that ``needs_angles`` (the simulator
+    aware one of ``water/diagnostics.py``) gives every point to sample pair the FDTD scheme's
+    direction dependent numerical wavenumber instead of ``w / c``; on a coarse grid (4 cells per
+    wavelength) the numerical phase speed is 1 to 2 percent off, which shifts a bistatic fix by
+    metres.  A non analytic propagator is evaluated through its ``greens``.  *k* passed to the calls
+    is the free field ``w / c``.
 
     *xp* is the array module (NumPy, or CuPy for the GPU chain): the replicas come back as arrays
     of that module; points and sources are always given as host arrays.  :meth:`many` evaluates
@@ -266,11 +270,11 @@ class ReplicaModel:
     """
 
     def __init__(self, layout: SensorLayout, c: float, min_range: float = 1.0,
-                 dispersion: DispersionModel | None = None, xp=np) -> None:
+                 propagator: Propagator | None = None, xp=np) -> None:
         self.layout, self.c, self.min_range = layout, c, min_range
         self.samples = layout.sample_points
         self.weights = None
-        self.dispersion = dispersion
+        self.propagator = resolve(propagator, c)
         self.xp = xp
         self._cache: dict[tuple, tuple] = {}          # geometry key -> (r, theta); a few recent entries
         self._weights_cache: tuple | None = None
@@ -288,7 +292,7 @@ class ReplicaModel:
         dx = pts_d[:, None, 0] - tgt_d[None, :, 0]
         dy = pts_d[:, None, 1] - tgt_d[None, :, 1]
         r = xp.maximum(xp.hypot(dx, dy), self.min_range)
-        theta = xp.arctan2(xp.abs(dy), xp.abs(dx)) if self.dispersion is not None else None
+        theta = xp.arctan2(xp.abs(dy), xp.abs(dx)) if self.propagator.needs_angles else None
         if len(self._cache) >= 4:                       # the scan grid geometry must survive the per frame path calls
             del self._cache[next(iter(self._cache))]
         self._cache[key] = (r, theta)
@@ -298,19 +302,27 @@ class ReplicaModel:
         """``k r`` (B, P, M) for the wavenumbers *ks* (B,) on one geometry."""
         r, theta = self._geometry(pts, targets)
         ks = np.atleast_1d(np.asarray(ks, dtype=float))
-        if self.dispersion is None:
+        if not self.propagator.needs_angles:
             return self.xp.asarray(ks)[:, None, None] * r
         f = ks * self.c / (2.0 * np.pi)
-        kk = replica_wavenumbers(self.dispersion, f, self.c, theta, self.xp)
+        kk = self.propagator.wavenumbers(f, theta, self.xp)
         return kk * r
 
     def _kr(self, pts: np.ndarray, targets: np.ndarray, k: float):
         r, theta = self._geometry(pts, targets)
-        if self.dispersion is None:
+        if not self.propagator.needs_angles:
             return k * r
         f = k * self.c / (2.0 * np.pi)
-        kk = replica_wavenumbers(self.dispersion, [f], self.c, theta, self.xp)[0]
+        kk = self.propagator.wavenumbers([f], theta, self.xp)[0]
         return kk * r
+
+    def _green(self, pts: np.ndarray, targets: np.ndarray, ks):
+        """Green's functions (B, P, M) for the free field wavenumbers *ks* (B,): the analytic loop, or
+        the propagator's ``greens`` for a non analytic one."""
+        if self.propagator.analytic:
+            return green2d(self._kr_many(pts, targets, ks), self.xp)
+        f = np.atleast_1d(np.asarray(ks, dtype=float)) * self.c / (2.0 * np.pi)
+        return self.propagator.greens(pts, targets, f, self.xp)
 
     def _weights_d(self):
         if self.weights is None:
@@ -321,7 +333,8 @@ class ReplicaModel:
 
     def __call__(self, pts: np.ndarray, k: float):
         pts = np.atleast_2d(np.asarray(pts, dtype=float))
-        a = self.layout.collapse(green2d(self._kr(pts, self.samples, k), self.xp), self.xp)
+        g = green2d(self._kr(pts, self.samples, k), self.xp) if self.propagator.analytic else self._green(pts, self.samples, [k])[0]
+        a = self.layout.collapse(g, self.xp)
         w = self._weights_d()
         if w is not None:
             a = a * w[None, :]
@@ -330,7 +343,7 @@ class ReplicaModel:
     def many(self, pts: np.ndarray, ks: np.ndarray):
         """Replicas (B, P, N) of *pts* for the wavenumbers *ks* (B,), one geometry evaluation."""
         pts = np.atleast_2d(np.asarray(pts, dtype=float))
-        a = self.layout.collapse(green2d(self._kr_many(pts, self.samples, ks), self.xp), self.xp)
+        a = self.layout.collapse(self._green(pts, self.samples, ks), self.xp)
         w = self._weights_d()
         if w is not None:
             a = a * w[None, None, :]
@@ -338,19 +351,21 @@ class ReplicaModel:
 
     def path(self, pts: np.ndarray, src: np.ndarray, k: float):
         """Free field path factor ``H0^(2)(k |x - s|)`` (P,) from *src* to *pts*."""
-        pts = np.atleast_2d(np.asarray(pts, dtype=float))
-        return green2d(self._kr(pts, np.atleast_2d(np.asarray(src, dtype=float)), k), self.xp)[:, 0]
+        return self.paths(pts, src, k)[:, 0]
 
     def paths(self, pts: np.ndarray, srcs: np.ndarray, k: float):
         """Path factors (P, M) from every source in *srcs* (M, 2) to *pts*."""
         pts = np.atleast_2d(np.asarray(pts, dtype=float))
-        return green2d(self._kr(pts, np.atleast_2d(np.asarray(srcs, dtype=float)), k), self.xp)
+        srcs = np.atleast_2d(np.asarray(srcs, dtype=float))
+        if not self.propagator.analytic:
+            return self._green(pts, srcs, [k])[0]
+        return green2d(self._kr(pts, srcs, k), self.xp)
 
 
 replicas = ReplicaModel  # alias used in the docs
 
 
-def build_grid(env: HarborEnvironment, bc: BistaticConfig) -> np.ndarray:
+def build_grid(env: ChartEnvironment, bc: BistaticConfig) -> np.ndarray:
     x0, x1, y0, y1 = env.extent
     xs = np.arange(x0 + bc.edge, x1 - bc.edge + 1e-6, bc.grid_dx)
     ys = np.arange(y0 + bc.edge, y1 - bc.edge + 1e-6, bc.grid_dx)
@@ -370,6 +385,7 @@ class ShipTrack:
     refined: np.ndarray       # (K, 2)
     present: np.ndarray       # (K,) bool
     score: np.ndarray         # (K,) refinement peak / mean
+    oracle: bool = False      # positions are the exact track (``ship_positions(truth=...)``), not AIS
 
 
 def _phat(X: np.ndarray) -> np.ndarray:
@@ -380,11 +396,15 @@ def ship_positions(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: Bistat
                    truth: np.ndarray | None = None) -> ShipTrack:
     """AIS prediction per frame, refined by a PHAT Bartlett search in a window around it.
 
-    *truth* (K, 2) replaces the AIS prediction (for ablations: exact position, no refinement).
+    *truth* (K, 2) replaces the AIS prediction (for ablations: exact position, no refinement); the
+    track is then marked ``oracle`` and every run built on it says so in its provenance.
     """
     if bc.impl == "reference":
-        return _ship_positions_reference(sp, ais, model, bc, vessel, truth)
-    return _ship_positions_vectorized(sp, ais, model, bc, vessel, truth)
+        ship = _ship_positions_reference(sp, ais, model, bc, vessel, truth)
+    else:
+        ship = _ship_positions_vectorized(sp, ais, model, bc, vessel, truth)
+    ship.oracle = truth is not None
+    return ship
 
 
 def _ship_track_prelude(sp: Spectra, ais: AISReports, bc: BistaticConfig, vessel: str | None, truth: np.ndarray | None):
@@ -456,7 +476,7 @@ def _ship_positions_reference(sp: Spectra, ais: AISReports, model: ReplicaModel,
     return ShipTrack(vid, pred, refined, present, score)
 
 
-def clutter_images(env: HarborEnvironment, s: np.ndarray, max_range: float = 400.0) -> np.ndarray:
+def clutter_images(env: ChartEnvironment, s: np.ndarray, max_range: float = 400.0) -> np.ndarray:
     """Image positions of the source *s* in the nearest land along the four grid directions.
 
     The quays are pressure release walls, so the first order reflections of the ship are
@@ -958,6 +978,7 @@ class BistaticRun:
     dets: DetectionSet | None = None
     eca: "ECAReport | None" = None  # cancellation depth per channel (needs truth components)
     reference: np.ndarray | None = None   # time domain reference waveform used
+    provenance: Provenance = field(default_factory=Provenance)
 
 
 def _csm(X: np.ndarray, k: int, window: int, loading: float) -> np.ndarray:
@@ -1144,7 +1165,7 @@ def eca_stage(
     traces: np.ndarray,
     layout: SensorLayout,
     fs: float,
-    env: HarborEnvironment,
+    env: ChartEnvironment,
     sp: Spectra,
     ship: ShipTrack,
     bc: BistaticConfig,
@@ -1179,37 +1200,53 @@ def eca_stage(
 
 
 @dataclass
-class Truth:
-    """Optional truth for ablations and diagnostics."""
+class Diagnostics:
+    """Oracle inputs for ablations and diagnostics (every one is flagged in the run's provenance)."""
 
     ship_xy: np.ndarray | None = None          # exact ship positions at the frame times (K, 2)
     components: dict[str, np.ndarray] | None = None   # truth components to pass through the same cancellation
+
+
+def bistatic_provenance(bc: BistaticConfig, ship: ShipTrack, diagnostics: Diagnostics,
+                        provenance: Provenance | None) -> Provenance:
+    """The caller's *provenance* plus the oracle inputs and simulator knowledge of this run."""
+    oracle = []
+    if bc.reference == "oracle":
+        oracle.append("waveform")
+    if ship.oracle:
+        oracle.append("track")
+    if diagnostics.components and bc.removal == "eca":
+        oracle.append("components")
+    return (provenance or Provenance()).with_flags(oracle, resolve(bc.propagator, bc.c).knowledge)
 
 
 def run_bistatic(
     traces: np.ndarray,
     layout: SensorLayout,
     fs: float,
-    env: HarborEnvironment,
+    env: ChartEnvironment,
     ais: AISReports,
     bc: BistaticConfig,
     f_max: float,
     grid: np.ndarray | None = None,
     oracle_signal: np.ndarray | None = None,
-    truth: Truth | None = None,
+    diagnostics: Diagnostics | None = None,
     floor: float = 0.0,
+    provenance: Provenance | None = None,
 ) -> BistaticRun:
     """The whole chain on one set of traces.
 
     *oracle_signal* is the true illuminator waveform at the emission time (for
-    ``reference="oracle"``); ``truth.ship_xy`` bypasses AIS and refinement; ``truth.components``
-    go through the same ECA projection and their residual energies are reported in
-    ``run.eca`` (cancellation depth and echo loss per channel).  Peaks above *floor* are
-    returned (threshold later).
+    ``reference="oracle"``); ``diagnostics.ship_xy`` bypasses AIS and refinement;
+    ``diagnostics.components`` go through the same ECA projection and their residual energies are
+    reported in ``run.eca`` (cancellation depth and echo loss per channel).  Peaks above *floor*
+    are returned (threshold later).  *provenance* is what the caller knows about *traces* (synthetic
+    or recorded, held out, oracle inputs used to build them, e.g. ``"direct_removal"``); the run adds
+    its own oracle inputs and the propagator's simulator knowledge (``run.provenance``).
     """
-    truth = truth or Truth()
+    truth = diagnostics or Diagnostics()
     sp = stft(traces, layout, fs, bc, f_max)
-    model = ReplicaModel(layout, bc.c, dispersion=bc.dispersion, xp=_xp(bc))
+    model = ReplicaModel(layout, bc.c, propagator=bc.propagator, xp=_xp(bc))
     model.weights = sp.weights
     ship = ship_positions(sp, ais, model, bc, truth=truth.ship_xy)
     grid = grid if grid is not None else build_grid(env, bc)
@@ -1240,4 +1277,5 @@ def run_bistatic(
     B[exclusion(grid, ship, bc.exclusion_radius)] = 0.0
     scan = ScanResult(grid, sp.times, B, {}, np.zeros(len(sp.freqs), int))
     dets = extract_peaks(B, grid, sp.times, bc, floor)
-    return BistaticRun(sp, clean, ship, ref, grid, scan, Z, dets, report, waveform)
+    return BistaticRun(sp, clean, ship, ref, grid, scan, Z, dets, report, waveform,
+                       bistatic_provenance(bc, ship, truth, provenance))
