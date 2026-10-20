@@ -341,6 +341,18 @@ Not detected anywhere: the second UUV, the diver, the pilings, the moored hull, 
 the 5 m dataset, and every silent body in the multi illuminator scene, where the direct paths of the
 ships that do not illuminate are left in the traces and swamp the echo map.
 
+**Real time** (`water/streaming.py`, `examples/harbor_stream.py`). `StreamingPassive` is the passive
+chain made causal and frame by frame: the traces arrive in 0.25 s chunks with the AIS reports received
+so far; channel QC, noise floors and the interference projector use only the last seconds; AIS is
+dead reckoned from past reports; the adaptive ship projection uses the frames ending at the current
+one. Free field replicas are generated per bin by a phase recurrence in one fused GPU kernel (within
+3e-7 of `green2d`). On the Quadro RTX 4000, checked against the true positions:
+
+| Dataset | Compute per s of data | Latency (median / max) | Found (frames with a detection within 5 m) |
+|---|---|---|---|
+| multistatic (0.5 m, 0.5 s frames) | 0.70 s | 1.1 / 1.9 s | boat 87 % (1.6 m), tug 11 %, ferry 8 % |
+| harbor (5 m, 4 s frames) | 0.42 s | 0.9 / 1.8 s | nothing (as in batch: the UUVs are about 30 dB below the ships) |
+
 **Scoreboard (stage 1, partial).** `water/scoreboard.py` implements the definitions of
 [Architecture, Scoreboard](architecture.md#scoreboard) and `examples/harbor_picture_stage1.py`
 runs it (tuning set seed 0, test set seeds 1 to 5). The run was stopped after the bistatic dataset
@@ -578,6 +590,7 @@ deliberately not started.
 | `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator` (free field by default, `_freefield` suffix; `simulator` for the dispersion corrected replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
 | `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the truth inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit, `--propagator simulator` the dispersion corrected replicas, `--cuda` the GPU chain); every result records its `provenance` | about 1.5 h of processing for both datasets |
 | `examples/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and a ferry-only check map given the truth | 6 FDTD runs (fine: about 1 h on the GPU) |
+| `examples/harbor_stream.py` | Real-time passive chain (`water/streaming.py`): feeds a recording in 0.25 s chunks, reports compute per second of data and latency, checks every frame against the true positions; `--dataset multistatic|harbor --cuda`; writes `output/harbor_stream/<dataset>/` | about 15 s (multistatic), 50 s (harbor) |
 | `examples/harbor_picture_stage1.py` | Harbor picture stage 1: the [scoreboard](architecture.md#scoreboard) on the bistatic, multistatic and 5 m harbor datasets, tuning set (noise seed 0) and test set (seeds 1 to 5, remixed from the cached gathers), passive and echo chains; `--dataset`, `--chain`, `--propagator {free_field,simulator}`, `--cuda`, `--workers`; writes `output/harbor_picture/stage1/` | about 1.2 h on the GPU (runs are cached in `cache/`) |
 | `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
 | `examples/harbor_train_classifier.py`, `examples/harbor_train_anomaly.py`, `examples/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |

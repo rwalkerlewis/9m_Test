@@ -22,7 +22,7 @@ PKG = SRC / "acoustic_sim"
 PROCESSING = [
     "water/detection.py", "water/suppression.py", "water/occupancy.py", "water/bistatic.py",
     "water/motion.py", "water/localiser.py", "water/classifier.py", "water/evaluate.py",
-    "water/propagation.py", "water/ais.py", "water/sensors.py", "water/scoreboard.py",
+    "water/propagation.py", "water/ais.py", "water/sensors.py", "water/scoreboard.py", "water/streaming.py",
     "air/detection/*.py", "air/processor.py", "air/tracker.py", "air/fire_control.py",
     # ml inference paths (training and data generation are forward side or offline)
     "ml/features.py", "ml/acoustic_classifier.py", "ml/fusion_classifier.py", "ml/maneuver_classifier.py",

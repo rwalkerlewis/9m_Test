@@ -1,0 +1,78 @@
+{
+  "dataset": "harbor",
+  "record_s": 120.0,
+  "frames": 56,
+  "first_frame_t": 8.0,
+  "compute_s": 50.622127604001435,
+  "compute_per_second_of_data": 0.4218510633666786,
+  "latency_s": {
+    "median": 0.8849592930000654,
+    "max": 1.7998088849999476
+  },
+  "false_detections_per_frame": 2.9107142857142856,
+  "objects": {
+    "ferry": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "frames": 56,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "tug": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "frames": 56,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "moored": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "frames": 56,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "uuv1": {
+      "kind": "uuv",
+      "radiates": true,
+      "ais": false,
+      "frames": 56,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "uuv2": {
+      "kind": "uuv",
+      "radiates": true,
+      "ais": false,
+      "frames": 56,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "diver": {
+      "kind": "diver",
+      "radiates": true,
+      "ais": false,
+      "frames": 56,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "static_scatter": {
+      "kind": "uuv",
+      "radiates": false,
+      "ais": false,
+      "frames": 56,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    }
+  }
+}

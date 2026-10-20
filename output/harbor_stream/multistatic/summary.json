@@ -1,0 +1,132 @@
+{
+  "dataset": "multistatic",
+  "record_s": 20.0,
+  "frames": 76,
+  "first_frame_t": 0.25,
+  "compute_s": 14.041456861999905,
+  "compute_per_second_of_data": 0.7020728430999952,
+  "latency_s": {
+    "median": 1.1373596790008378,
+    "max": 1.8962308469999698
+  },
+  "false_detections_per_frame": 1.7236842105263157,
+  "objects": {
+    "ferry": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.07894736842105263,
+      "median_error_m": 1.1180339887499025
+    },
+    "tug": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "frames": 76,
+      "top_peak_hit": 0.05263157894736842,
+      "any_peak_hit": 0.10526315789473684,
+      "median_error_m": 3.651745515954521
+    },
+    "boat": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.7236842105263158,
+      "any_peak_hit": 0.868421052631579,
+      "median_error_m": 1.5992841627619998
+    },
+    "uuv1": {
+      "kind": "uuv",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "uuv2": {
+      "kind": "uuv",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "diver": {
+      "kind": "diver",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "piling1": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "piling2": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "piling3": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "piling4": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "piling5": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "piling6": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.0,
+      "median_error_m": null
+    },
+    "moored": {
+      "kind": "ship",
+      "radiates": false,
+      "ais": false,
+      "frames": 76,
+      "top_peak_hit": 0.0,
+      "any_peak_hit": 0.013157894736842105,
+      "median_error_m": 2.8284271247461903
+    }
+  }
+}
