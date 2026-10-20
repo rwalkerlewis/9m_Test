@@ -356,3 +356,39 @@ def test_processing_runs_on_an_observation_built_from_plain_arrays(tmp_path):
                             SuppressionConfig(refine_half=6.0, refine_step=2.0, min_significance=2.0), floor=0.0, provenance=prov)
     assert passive.provenance.blind and len(passive.scan.times) > 0
     assert passive.ships.ids == ["ship"]
+
+
+def test_a_greens_only_propagator_fits_the_protocol():
+    """A non analytic propagator (only ``greens`` / ``path``, as a later Helmholtz replica library) drives
+    the bistatic, passive and suppression chains; wrapping the free field gives the free field result."""
+    from acoustic_sim.contract import ChartEnvironment
+    from acoustic_sim.water.bistatic import BistaticConfig, run_bistatic
+    from acoustic_sim.water.detection import ProcessingConfig, run_detection
+    from acoustic_sim.water.propagation import FreeFieldPropagator
+    from acoustic_sim.water.suppression import SuppressionConfig, run_ais_aware
+
+    class GreensOnly:
+        analytic, needs_angles, knowledge = False, False, ()
+
+        def __init__(self, c):
+            self.c, self._free = c, FreeFieldPropagator(c)
+
+        def greens(self, sources_xy, receivers_xy, freqs, xp=np, dtype=np.float64):
+            return self._free.greens(sources_xy, receivers_xy, freqs, xp, dtype)
+
+        def path(self, points_xy, source_xy, freqs, xp=np, dtype=np.float64):
+            return self._free.path(points_xy, source_xy, freqs, xp, dtype)
+
+    rec = _field_recording()
+    chart = ChartEnvironment(water=np.ones((len(rec["y"]), len(rec["x"])), bool), depth=np.zeros((len(rec["y"]), len(rec["x"]))),
+                             x=rec["x"], y=rec["y"], c_nominal=rec["c"])
+    args = (rec["traces"], rec["layout"], rec["fs"], chart)
+    maps = {}
+    for name, prop in (("analytic", None), ("greens", GreensOnly(rec["c"]))):
+        bc = BistaticConfig(c=rec["c"], propagator=prop, f_lo=80.0, f_hi=450.0, grid_dx=10.0, edge=20.0, removal="none")
+        pc = ProcessingConfig(win_s=0.5, hop_s=0.25, f_lo=80.0, f_hi=450.0, c=rec["c"], propagator=prop, grid_dx=20.0,
+                              grid_margin=0.0, grid_bounds=(20.0, 380.0, 20.0, 380.0), min_range=1.0, refine_dx=4.0, refine_half=4.0)
+        maps[name] = (run_bistatic(*args, rec["reports"], bc, 450.0).scan.B, run_detection(*args, pc).scan.B,
+                      run_ais_aware(*args, rec["reports"], pc, SuppressionConfig(refine_half=4.0, refine_step=2.0), floor=0.0).scan.B)
+    for a, b in zip(maps["analytic"], maps["greens"]):
+        np.testing.assert_allclose(b, a, rtol=1e-5, atol=1e-6 * np.abs(a).max())
