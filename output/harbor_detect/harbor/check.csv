@@ -1,0 +1,8 @@
+chain,object,kind,radiates,ais,frames,top_peak_hit,any_peak_hit,median_error_m
+passive,ferry,ship,True,True,59,0.017,0.017,3.00
+passive,tug,ship,True,True,59,0.000,0.034,4.00
+passive,moored,ship,True,True,59,0.000,0.000,
+passive,uuv1,uuv,True,False,59,0.000,0.000,
+passive,uuv2,uuv,True,False,59,0.000,0.000,
+passive,diver,diver,True,False,59,0.000,0.000,
+passive,static_scatter,uuv,False,False,59,0.000,0.000,
