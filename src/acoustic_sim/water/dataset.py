@@ -1,14 +1,20 @@
-"""Scenario simulation: per-vessel FDTD gathers + noise + AIS -> labelled dataset."""
+"""Scenario simulation: per-vessel FDTD gathers + noise + AIS -> labelled dataset.
+
+A dataset is written as two files of the sensing contract (``acoustic_sim.contract``):
+``<name>.observation.npz`` (what a deployed system records and knows) and ``<name>.truth.npz``
+(everything else).  :meth:`HarborDataset.load` reads that pair and the old single ``<name>.npz``.
+"""
 
 from __future__ import annotations
 
 import json
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import numpy as np
 
+from acoustic_sim.contract import Observation, Truth, contract_paths
 from acoustic_sim.water.ais import AISReports, generate_ais
 from acoustic_sim.water.environment import HarborEnvironment
 from acoustic_sim.water.fdtd_runner import Gather, _fused_available, simulate_source, simulate_sources
@@ -22,7 +28,12 @@ from acoustic_sim.water.vessels import Track, VesselConfig, build_track
 
 @dataclass
 class HarborDataset:
-    """Everything a detector sees (``traces``, ``ais``, ``layout``) and the ground truth (``tracks``)."""
+    """The forward side's convenience object: observation and truth in one place.
+
+    The processing side gets :attr:`observation` (traces, sample rate, geometry, public chart, AIS,
+    band) and scoring gets :attr:`truth` (tracks, components, gains, dead channels, the scenario and
+    solver config); :meth:`save` writes them as two files.
+    """
 
     cfg: HarborScenarioConfig
     layout: SensorLayout
@@ -38,6 +49,10 @@ class HarborDataset:
     """Scaled noise-free parts of ``clean``: ``"direct:<vessel>"`` for each radiating vessel and
     ``"scattered:<vessel>><body>"`` for the field of *vessel* scattered by *body*, plus
     ``"noise"`` (the measurement minus the clean field).  Truth for measuring processing gain."""
+    env: HarborEnvironment | None = field(default=None, repr=False)
+    """Forward model environment (default: built from ``cfg``); its public chart goes into the observation."""
+    _geometry: SensorLayout | None = field(default=None, repr=False)
+    _environment: object | None = field(default=None, repr=False)
 
     @property
     def t(self) -> np.ndarray:
@@ -48,7 +63,44 @@ class HarborDataset:
         """Vessels with no AIS (the detection targets)."""
         return [k for k, tr in self.tracks.items() if not tr.ais]
 
-    def save(self, path: str | Path) -> None:
+    # ------------------------------------------------------------------
+    # The contract
+    # ------------------------------------------------------------------
+
+    @property
+    def observation(self) -> Observation:
+        """What the processing side may read: traces, ``fs``, the layout (with its DAS mode and gauge
+        length), the public chart, the AIS reports, and the band of the recording in ``meta``."""
+        if self._environment is None:
+            env = self.env if self.env is not None else build_environment(self.cfg)
+            self._environment = env.public()
+        env = self._environment
+        f_max = float(f_max_for_grid(env.dx))
+        geometry = self._geometry if self._geometry is not None else self.layout
+        return Observation(self.traces, float(self.fs), geometry, env, self.ais, 0.0, {
+            "instrument": "synthetic: DAS cables and hydrophones (" + ", ".join(
+                f"{c.name}: {c.das_mode}" for c in geometry.cables) + ")",
+            "units": "Pa (pressure channels); second difference of pressure over the gauge length (strain channels)",
+            "band_hz": [0.0, f_max],
+        })
+
+    @property
+    def truth(self) -> Truth:
+        """Everything else: tracks, components, gains, dead channels, scenario and solver config."""
+        fdtd = asdict(self.cfg.fdtd)
+        fdtd.update(dt=float(self.cfg.fdtd.dt), n_steps=int(self.cfg.fdtd.n_steps))
+        return Truth(tracks=self.tracks, components=self.components, gain=self.gain, dead=self.dead,
+                     scenario=self.cfg.to_dict(), fdtd=fdtd, meta=self.meta, clean=self.clean)
+
+    def save(self, path: str | Path) -> tuple[Path, Path]:
+        """Write ``<name>.observation.npz`` and ``<name>.truth.npz`` for *path* ``<name>.npz``."""
+        obs_path, truth_path = contract_paths(path)
+        self.observation.save(obs_path)
+        self.truth.save(truth_path)
+        return obs_path, truth_path
+
+    def save_legacy(self, path: str | Path) -> None:
+        """The old single file format (observation and truth together); kept for tests and tools."""
         arrays: dict[str, np.ndarray] = {
             "traces": self.traces, "fs": np.float64(self.fs),
             "ais_vessel": self.ais.vessel, "ais_t": self.ais.t, "ais_xy": self.ais.xy,
@@ -76,6 +128,21 @@ class HarborDataset:
 
     @classmethod
     def load(cls, path: str | Path) -> "HarborDataset":
+        """Load ``<name>.npz`` (the old single file, if it exists) or the pair ``<name>.observation.npz``
+        and ``<name>.truth.npz`` (*path* may name either of them)."""
+        p = Path(path)
+        if p.exists() and not p.name.endswith((".observation.npz", ".truth.npz")):
+            return cls._load_legacy(p)
+        obs_path, truth_path = contract_paths(p)
+        if not obs_path.exists():
+            raise FileNotFoundError(f"no dataset at {p} (neither the file nor {obs_path.name} / {truth_path.name})")
+        obs, truth = Observation.load(obs_path), Truth.load(truth_path)
+        return cls(cfg=HarborScenarioConfig.from_dict(truth.scenario), layout=obs.geometry, fs=obs.fs, traces=obs.traces,
+                   tracks=truth.tracks, ais=obs.reports, clean=truth.clean, gain=truth.gain, dead=truth.dead,
+                   meta=truth.meta, components=truth.components, _environment=obs.environment)
+
+    @classmethod
+    def _load_legacy(cls, path: Path) -> "HarborDataset":
         with np.load(path) as d:
             header = json.loads(str(d["header"]))
             cfg = HarborScenarioConfig.from_dict(header["config"])
@@ -98,7 +165,21 @@ class HarborDataset:
                 dead=d["dead"] if "dead" in d else None,
                 meta=header["meta"],
                 components={k[5:]: d[k] for k in d.files if k.startswith("comp:")} or None,
+                _geometry=_with_cable_modes(layout, cfg),
             )
+
+
+def _with_cable_modes(layout: SensorLayout, cfg: HarborScenarioConfig) -> SensorLayout:
+    """The old header dropped the DAS mode and gauge length: take them from the scenario's cable of the same name."""
+    modes = {c.name: (c.das_mode, c.gauge_length) for c in cfg.cables}
+    return SensorLayout(cables=[Cable(c.name, c.waypoints, c.channel_spacing, *modes.get(c.name, (c.das_mode, c.gauge_length)))
+                                for c in layout.cables], hydrophones=layout.hydrophones)
+
+
+def split_dataset(path: str | Path) -> tuple[Path, Path]:
+    """Write ``<name>.observation.npz`` and ``<name>.truth.npz`` next to an old single file ``<name>.npz``
+    (``python -m acoustic_sim.contract split``).  The old file is left in place."""
+    return HarborDataset.load(path).save(path)
 
 
 # ----------------------------------------------------------------------
@@ -217,8 +298,14 @@ def assemble_dataset(
     keep_clean: bool = True,
     scatter_gain: dict[str, float] | None = None,
     keep_components: bool = False,
+    env: HarborEnvironment | None = None,
+    out: str | Path | None = None,
 ) -> HarborDataset:
     """Mix cached unit-level gathers into a noisy dataset.
+
+    *env* is the forward environment the gathers were run on (default: built from *cfg*); its public
+    chart is the observation's environment.  With *out* (``<name>.npz``) the observation and truth files
+    are written (:meth:`HarborDataset.save`).
 
     *levels* overrides ``level_pa`` per vessel (``0`` removes a vessel as a source), which
     allows level sweeps and ablations without re-running FDTD.  *scatter_gain* scales the
@@ -273,14 +360,18 @@ def assemble_dataset(
     if keep_components:
         comps["noise"] = (traces.astype(np.float64) - real.gain[:, None] * clean).astype(np.float32)
     ais = generate_ais({k: t for k, t in used.items() if t.level_pa > 0}, cfg.ais, rng_ais)
-    return HarborDataset(
+    ds = HarborDataset(
         cfg=cfg, layout=layout, fs=fs, traces=traces, tracks=used, ais=ais,
         clean=clean.astype(np.float32) if keep_clean else None,
         gain=real.gain, dead=real.dead,
         meta={"shipping_azimuth_deg": real.shipping_azimuth_deg.tolist(),
               "bodies": bodies, "scatter_gain": {b: scatter_gain.get(b, 1.0) for b in bodies}},
         components=comps or None,
+        env=env,
     )
+    if out is not None:
+        ds.save(out)
+    return ds
 
 
 def simulate_scenario(
@@ -292,10 +383,12 @@ def simulate_scenario(
     seed: int | None = None,
     levels: dict[str, float] | None = None,
     keep_components: bool = False,
+    out: str | Path | None = None,
 ) -> HarborDataset:
-    """End-to-end: tracks -> FDTD gathers -> mix with noise -> AIS."""
+    """End-to-end: tracks -> FDTD gathers -> mix with noise -> AIS (and, with *out*, the two files)."""
     env = env if env is not None else build_environment(cfg)
     layout = layout if layout is not None else build_layout(cfg, env)
     tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in cfg.vessels}
     gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=cache_dir, workers=workers)
-    return assemble_dataset(cfg, layout, tracks, gathers, seed=seed, levels=levels, keep_components=keep_components)
+    return assemble_dataset(cfg, layout, tracks, gathers, seed=seed, levels=levels, keep_components=keep_components,
+                            env=env, out=out)
