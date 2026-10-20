@@ -6,18 +6,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
 
-from acoustic_sim.water.environment import HarborEnvironment
+from acoustic_sim.contract import ChartEnvironment
 from acoustic_sim.water.sensors import SensorLayout
 
 
 def plot_harbor(
-    env: HarborEnvironment,
+    env: ChartEnvironment,
     layout: SensorLayout | None = None,
     ax: plt.Axes | None = None,
     show_depth: bool = True,
     sponge_cells: int | None = None,
 ):
     """Map of land (grey), water depth (blue), cables and hydrophones.
+
+    *env* is the public chart (``ChartEnvironment``) or the forward ``HarborEnvironment``.
 
     *sponge_cells* optionally outlines the absorbing grid-edge layer.
     """

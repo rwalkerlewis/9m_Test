@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
+from acoustic_sim.contract import Track  # noqa: F401  (a contract type; re-exported for the old path)
 from acoustic_sim.water.environment import HarborEnvironment
 
 KINDS = ("ship", "uuv", "diver", "static")
@@ -82,31 +83,6 @@ class VesselConfig:
     def is_body(self) -> bool:
         """True if the vessel is a scattering body in the FDTD."""
         return self.body_length > 0
-
-
-@dataclass
-class Track:
-    """Ground-truth trajectory sampled on a regular time grid."""
-
-    id: str
-    kind: str
-    ais: bool
-    t: np.ndarray                  # (M,) seconds
-    xy: np.ndarray                 # (M, 2) metres
-    speed: np.ndarray              # (M,) m/s
-    active: np.ndarray             # (M,) bool, vessel moving and radiating
-    level_pa: float = 1.0
-    meta: dict = field(default_factory=dict)
-
-    def position_at(self, t: np.ndarray | float) -> np.ndarray:
-        t = np.atleast_1d(np.asarray(t, dtype=float))
-        return np.column_stack([np.interp(t, self.t, self.xy[:, 0]), np.interp(t, self.t, self.xy[:, 1])])
-
-    def speed_at(self, t: np.ndarray | float) -> np.ndarray:
-        return np.interp(np.atleast_1d(np.asarray(t, dtype=float)), self.t, self.speed)
-
-    def active_at(self, t: np.ndarray | float) -> np.ndarray:
-        return np.interp(np.atleast_1d(np.asarray(t, dtype=float)), self.t, self.active.astype(float)) > 0.5
 
 
 def build_track(

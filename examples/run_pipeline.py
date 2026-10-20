@@ -20,6 +20,13 @@ CLI flags:
 With all ML options disabled (the default), the pipeline produces
 identical results to a signal-processing-only baseline.
 
+Sensing contract: the simulation directory is split into an ``Observation`` (traces, sample rate,
+microphone positions, nominal sound speed and wind) and a ``Truth`` (the source trajectory and the
+solver parameters).  The bearing, range and tracking stages receive only the observation.  The truth
+enters through scoring (``evaluate_results``, hit scoring) and plotting, and through three oracle
+set-up steps of ``acoustic_sim.air.diagnostics`` (RMS range calibration, the auto range method, the
+source altitude), which are flagged in ``results_*.json`` under ``provenance`` and on every figure.
+
 Usage::
 
     # Baseline (no ML)
@@ -57,6 +64,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from acoustic_sim.air.diagnostics import oracle_altitude, oracle_cpa_distance, truth_trajectory
+from acoustic_sim.contract import AirEnvironment, MicArray, Observation, Provenance, Truth
 from acoustic_sim.air.detection import (
     DetectionEngine,
     WindowDetection,
@@ -180,77 +189,45 @@ def load_config(config_path: Path | None) -> dict:
 # Data Loading (identical to baseline)
 # ============================================================================
 
-def load_simulation(sim_dir: Path) -> dict:
-    """Load traces and metadata; promote 2-D mic positions to 3-D."""
+SOLVER_KEYS = ("dx", "dt", "n_steps", "total_time", "fd_order", "grid_shape", "use_cuda", "damping_width",
+               "damping_max", "air_absorption", "snapshot_interval")
+
+
+def load_simulation(sim_dir: Path) -> tuple[Observation, Truth]:
+    """Split a simulation directory (``traces.npy`` + ``metadata.json``) into the contract's two parts.
+
+    The observation carries what a deployed array would have: the traces, the sample rate, the
+    microphone positions (2-D or 3-D, as recorded), the nominal sound speed and the wind.  Everything
+    else in the metadata (source path, signal, domain internals, solver parameters) is truth.
+    """
     traces = np.load(sim_dir / "traces.npy")
     with open(sim_dir / "metadata.json") as f:
         metadata = json.load(f)
+    env = AirEnvironment(
+        c_nominal=float(metadata.get("velocity", 343.0)),
+        wind=(float(metadata.get("wind_vx", 0.0)), float(metadata.get("wind_vy", 0.0)), float(metadata.get("wind_vz", 0.0))),
+        terrain=metadata.get("domain"),
+        extent=tuple(float(metadata[k]) for k in ("x_min", "x_max", "y_min", "y_max")) if "x_min" in metadata else None,
+    )
+    obs = Observation.from_arrays(traces, 1.0 / metadata["dt"], MicArray(np.array(metadata["receiver_positions"], dtype=np.float64)),
+                                  environment=env, meta={"instrument": "synthetic microphone array", "units": "Pa"})
+    truth = Truth(scenario=metadata, fdtd={k: metadata[k] for k in SOLVER_KEYS if k in metadata},
+                  meta={"sim_dir": str(sim_dir)})
+    return obs, truth
 
-    mic_positions = np.array(metadata["receiver_positions"], dtype=np.float64)
+
+def array_positions(obs: Observation) -> tuple[np.ndarray, bool]:
+    """Microphone positions promoted to 3-D (z = 0 for a planar array) and whether they were 3-D."""
+    mic_positions = obs.geometry.positions()
     is_3d = mic_positions.shape[1] >= 3
     if not is_3d:
-        mic_positions = np.column_stack(
-            [mic_positions, np.zeros(mic_positions.shape[0])]
-        )
-
-    return {
-        "traces": traces,
-        "mic_positions": mic_positions,
-        "metadata": metadata,
-        "dt": metadata["dt"],
-        "duration": traces.shape[1] * metadata["dt"],
-        "is_3d": is_3d,
-    }
+        mic_positions = np.column_stack([mic_positions, np.zeros(mic_positions.shape[0])])
+    return mic_positions, is_3d
 
 
-def compute_ground_truth(metadata: dict, source_speed: float,
-                         sim_dir: Path | None = None):
-    """Build a ground-truth trajectory returning ``(x, y, z)``."""
-    # -- Erratic trajectory from file --
-    traj_file = metadata.get("source_trajectory_file")
-    if traj_file and sim_dir is not None:
-        traj_path = sim_dir / traj_file
-        if traj_path.exists():
-            traj = np.load(str(traj_path))
-            dt_sim = metadata["dt"]
-            duration = (traj.shape[0] - 1) * dt_sim
-
-            def trajectory(t: float) -> tuple[float, float, float]:
-                frac = min(max(t / duration, 0.0), 1.0) if duration > 0 else 0.0
-                idx_f = frac * (traj.shape[0] - 1)
-                i0 = int(idx_f)
-                i1 = min(i0 + 1, traj.shape[0] - 1)
-                w = idx_f - i0
-                pos = traj[i0] * (1.0 - w) + traj[i1] * w
-                return float(pos[0]), float(pos[1]), float(pos[2])
-
-            return trajectory, duration
-
-    start_x = metadata.get("source_x", -40.0)
-    start_y = metadata.get("source_y", 0.0)
-    start_z = metadata.get("source_z", 0.0)
-    end_x = metadata.get("source_x1", -start_x)
-    end_y = metadata.get("source_y1", start_y)
-    end_z = metadata.get("source_z1", start_z)
-
-    has_z = "source_z" in metadata
-    arc_height = metadata.get("source_arc_height", 0.0)
-    horiz_dist = math.hypot(end_x - start_x, end_y - start_y)
-    duration = horiz_dist / source_speed if source_speed > 0 else 3.0
-
-    def trajectory(t: float) -> tuple[float, float, float]:
-        frac = min(max(t / duration, 0.0), 1.0)
-        x = start_x + (end_x - start_x) * frac
-        if has_z:
-            y = (start_y + (end_y - start_y) * frac
-                 + arc_height * 4.0 * frac * (1.0 - frac))
-        else:
-            y_base = start_y + (end_y - start_y) * frac
-            y = y_base + arc_height * math.sin(math.pi * frac)
-        z = start_z + (end_z - start_z) * frac
-        return x, y, z
-
-    return trajectory, duration
+def compute_ground_truth(truth: Truth, source_speed: float):
+    """The true trajectory ``(x, y, z)(t)`` and its duration, for scoring and plotting only."""
+    return truth_trajectory(truth, source_speed)
 
 
 # ============================================================================
@@ -350,11 +327,13 @@ def load_ml_models(cfg_ml: dict) -> dict:
 def evaluate_results(
     detections: list[dict],
     fire_decisions: list[dict],
-    ground_truth_fn,
+    truth: Truth,
+    source_speed: float,
     array_center: np.ndarray,
     hit_threshold: float,
 ) -> dict:
-    """Compute bearing / range / miss-distance metrics."""
+    """Compute bearing / range / miss-distance metrics against the truth trajectory (scoring)."""
+    ground_truth_fn, _ = compute_ground_truth(truth, source_speed)
     cx, cy = array_center[0], array_center[1]
     bearing_errors: list[float] = []
     range_errors: list[float] = []
@@ -487,24 +466,25 @@ def run_pipeline(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # -- load ----------------------------------------------------------------
-    data = load_simulation(sim_dir)
-    traces = data["traces"]
-    mic_positions = data["mic_positions"]
-    dt_sim = data["dt"]
-    metadata = data["metadata"]
-    is_3d = data["is_3d"]
+    # -- load: the observation for processing, the truth for scoring --------
+    obs, truth = load_simulation(sim_dir)
+    traces = obs.traces
+    mic_positions, is_3d = array_positions(obs)
+    fs = obs.fs
+    dt_sim = 1.0 / fs
     n_mics, n_samples = traces.shape
-    fs = 1.0 / dt_sim
+    provenance = Provenance(data="forward_model")
 
     array_center = mic_positions.mean(axis=0)
     weapon_pos = array_center.copy()
 
-    ground_truth_fn, src_duration = compute_ground_truth(metadata, source_speed,
-                                                          sim_dir=sim_dir)
     source_z_est = cfg_src["altitude_estimate_m"]
     if source_z_est is None:
-        source_z_est = float(metadata.get("source_z", 0.0))
+        # Oracle: the scenario's altitude (a 2-D scenario has none: z = 0, no truth used).
+        z_true = oracle_altitude(truth)
+        source_z_est = 0.0 if z_true is None else z_true
+        if z_true is not None:
+            provenance = provenance.with_flags(["altitude"])
 
     dim = "3-D" if is_3d else "2-D"
     print("=" * 60)
@@ -563,7 +543,7 @@ def run_pipeline(
           f"hop: {hop_sec * 1e3:.1f} ms, {n_windows} windows")
 
     # -- detection engine -----------------------------------------------------
-    c_sound = float(metadata.get("velocity", 343.0))
+    c_sound = obs.environment.c_nominal
     bearing_method = cfg_bf.get("method", "srp_phat")
     max_sources = cfg_bf.get("max_sources", 1)
     cfg_rng = cfg.get("ranging", {})
@@ -577,11 +557,12 @@ def run_pipeline(
     peak_rms = float(rms_profile.max())
     peak_idx = int(np.argmax(rms_profile))
     peak_t = (peak_idx * hop + win_len / 2) * dt_sim
-    gt_peak = ground_truth_fn(peak_t)
-    cpa_dist = max(float(np.linalg.norm(np.array(gt_peak) - array_center)), 1.0)
+    # Oracle: the true distance at the RMS peak (RMS calibration and the auto range method).
+    cpa_dist = oracle_cpa_distance(truth, source_speed, peak_t, array_center)
 
     # -- auto-select range method --
     if range_method == "auto":
+        provenance = provenance.with_flags(["range_method"])
         cpa_threshold = cfg_rng.get("auto_cpa_threshold_m", 3.0)
         if cpa_dist <= cpa_threshold:
             range_method = "tdoa"
@@ -619,6 +600,7 @@ def run_pipeline(
         range_kwargs=range_kwargs,
         tracker_min_detections=min_track_det,
         tracker_max_history=max_track_hist,
+        provenance=provenance,
     )
 
     print(f"       Bearing: {bearing_method}"
@@ -626,7 +608,7 @@ def run_pipeline(
           + f"\n       Available methods: {available_bearing_methods()}")
 
     if range_method == "rms":
-        engine.calibrate_range(peak_rms, cpa_dist)
+        engine.calibrate_range(peak_rms, cpa_dist, oracle=True)
         print(f"       RMS cal: peak={peak_rms:.6f}, CPA dist={cpa_dist:.1f} m")
 
     # -- main loop -----------------------------------------------------------
@@ -652,6 +634,12 @@ def run_pipeline(
 
     # Maneuver-aware fire control state.
     ml_hit_threshold_mult = 1.0    # Multiply effective hit threshold
+
+    # Hit scoring: each shot's closest approach to the true trajectory (scoring, not processing).  With
+    # max_hits > 0 the run stops after max_hits scored hits, so the truth decides how many windows run.
+    ground_truth_fn, src_duration = compute_ground_truth(truth, source_speed)
+    if max_hits > 0:
+        engine.provenance.oracle_inputs = engine.provenance.with_flags(["hit_feedback"]).oracle_inputs
 
     pos = 0
     while pos + win_len <= n_samples:
@@ -995,7 +983,8 @@ def run_pipeline(
     # -- results -------------------------------------------------------------
     wall_times = np.array(wall_times_list)
     metrics = evaluate_results(all_detections, all_fire_decisions,
-                               ground_truth_fn, array_center, hit_threshold)
+                               truth, source_speed, array_center, hit_threshold)
+    provenance = engine.provenance
 
     n_detected = metrics["n_detections"]
     n_shots = metrics["shots_fired"]
@@ -1070,11 +1059,13 @@ def run_pipeline(
         array_center, weapon_pos, is_3d, hop_sec,
         hit_threshold, metrics,
         output_dir / f"pipeline_summary{suffix}.png",
+        provenance=provenance,
     )
     plot_radial_engagement(
         all_fire_decisions, ground_truth_fn, src_duration,
         weapon_pos, is_3d, cfg_fc,
         output_path=output_dir / f"radial_engagement{suffix}.png",
+        provenance=provenance,
     )
     print(f"\n[DIAGNOSTIC] Running beamformer comparison ...")
     plot_beamformer_diagnostic(
@@ -1082,6 +1073,7 @@ def run_pipeline(
         ground_truth_fn, src_duration,
         array_center, engine.bearing_estimator, cfg_det,
         output_path=output_dir / f"beamformer_diagnostic{suffix}.png",
+        provenance=provenance,
     )
 
     # -- JSON ----------------------------------------------------------------
@@ -1100,6 +1092,7 @@ def run_pipeline(
         "mean_miss_m": mean_miss if not math.isnan(mean_miss) else None,
         "min_miss_m": min(miss_dists) if miss_dists else None,
         "max_miss_m": max(miss_dists) if miss_dists else None,
+        "provenance": provenance.to_dict(),
         "timing": {
             "hop_ms": hop_sec * 1e3,
             "mean_latency_us": float(wall_times.mean() * 1e6),

@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from acoustic_sim.contract import ChartEnvironment, Provenance
 from acoustic_sim.water.ais import AISReports
 from acoustic_sim.water.detection import (
     DetectionSet,
@@ -37,9 +38,9 @@ from acoustic_sim.water.detection import (
     green2d,
     preprocess,
     rewhiten,
+    run_provenance,
 )
-from acoustic_sim.water.dispersion import replica_wavenumbers
-from acoustic_sim.water.environment import HarborEnvironment
+from acoustic_sim.water.propagation import resolve
 from acoustic_sim.water.sensors import SensorLayout
 
 
@@ -133,8 +134,12 @@ def _replicas(rec, pts: np.ndarray, wh: Whitened, bins, pc: ProcessingConfig):
     dx = p[:, None, 0] - rec[None, :, 0]
     dy = p[:, None, 1] - rec[None, :, 1]
     r = xp.maximum(xp.hypot(dx, dy), pc.min_range)
-    k = replica_wavenumbers(pc.dispersion, wh.freqs[bins], pc.c, xp.arctan2(xp.abs(dy), xp.abs(dx)), xp, dev.fdtype)
-    a = green2d(k * r[None], xp)
+    prop = resolve(pc.propagator, pc.c)
+    if prop.analytic:
+        k = prop.wavenumbers(wh.freqs[bins], xp.arctan2(xp.abs(dy), xp.abs(dx)), xp, dev.fdtype)
+        a = green2d(k * r[None], xp)
+    else:
+        a = prop.greens(pts, dev.asnumpy(rec), wh.freqs[bins], xp, dev.fdtype)
     sig = wh.sigma[:, _bin_index(bins, xp)].T                                # (B, N)
     return (a / sig[:, None, :] * wh.weights_d[None, None, :]).astype(dev.cdtype)
 
@@ -263,6 +268,7 @@ class AISAwareRun:
     scanner: MatchedFieldScanner
     scan: ScanResult             # map with the ship-exclusion zones zeroed
     dets: DetectionSet
+    provenance: Provenance = field(default_factory=Provenance)
 
 
 def _check_mode(sc: SuppressionConfig) -> None:
@@ -274,14 +280,18 @@ def run_ais_aware(
     traces: np.ndarray,
     layout: SensorLayout,
     fs: float,
-    env: HarborEnvironment,
+    env: ChartEnvironment,
     ais: AISReports,
     pc: ProcessingConfig,
     sc: SuppressionConfig | None = None,
     floor: float = 1e18,
     grid: np.ndarray | None = None,
+    provenance: Provenance | None = None,
 ) -> AISAwareRun:
-    """Pre-process, suppress the AIS ships, scan and extract peaks above *floor*."""
+    """Pre-process, suppress the AIS ships, scan and extract peaks above *floor*.
+
+    *provenance* is what the caller knows about the data; the run adds the simulator knowledge of *pc*.
+    """
     sc = sc or SuppressionConfig()
     _check_mode(sc)
     wh = preprocess(traces, layout, fs, pc)
@@ -299,4 +309,4 @@ def run_ais_aware(
     if est.ids:
         scan.B[est.exclusion_mask(scanner.grid, sc.exclusion_radius)] = 0.0
     dets = extract_detections(scanner, wh_clean, scan, floor)
-    return AISAwareRun(wh, wh_clean, est, scanner, scan, dets)
+    return AISAwareRun(wh, wh_clean, est, scanner, scan, dets, run_provenance(pc, provenance))

@@ -45,13 +45,31 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from acoustic_sim.water import HarborDataset, HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
-from acoustic_sim.water.bistatic import BistaticConfig, ReplicaModel, Truth, eca_stage, run_bistatic, ship_positions, stft  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, ReplicaModel, eca_stage, run_bistatic, ship_positions, stft  # noqa: E402
 try:
     from acoustic_sim.water.bistatic import _xp as _bistatic_xp  # noqa: E402
 except ImportError:  # the original code
     _bistatic_xp = None
 from acoustic_sim.water.dataset import assemble_dataset, make_scatterer, render_vessel_gathers, vessel_injection  # noqa: E402
 from acoustic_sim.water.dispersion import for_scenario  # noqa: E402
+
+try:  # the sensing contract API (propagator, diagnostics)
+    from acoustic_sim.water.bistatic import Diagnostics as _Diagnostics  # noqa: E402
+    from acoustic_sim.water.diagnostics import SimulatorAwarePropagator  # noqa: E402
+
+    def replica_options(env, fdtd_cfg) -> dict:
+        return {"propagator": SimulatorAwarePropagator.from_scenario(env, fdtd_cfg)}
+
+    def diagnostics_option(d) -> dict:
+        return {"diagnostics": d}
+except ImportError:  # older commits (dispersion=, truth=)
+    from acoustic_sim.water.bistatic import Truth as _Diagnostics  # noqa: E402
+
+    def replica_options(env, fdtd_cfg) -> dict:
+        return {"dispersion": for_scenario(env, fdtd_cfg)}
+
+    def diagnostics_option(d) -> dict:
+        return {"truth": d}
 from acoustic_sim.water.fdtd_runner import HarborFDTDSolver, simulate_source  # noqa: E402
 from acoustic_sim.water.noise import generate_noise  # noqa: E402
 from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
@@ -272,14 +290,14 @@ def run_proc_case(name: str, ds: HarborDataset, env, layout, f_max: float, args)
     oracle = ferry.level_pa * vessel_injection(ferry, ds.tracks["ferry"], env, cfg) if reference == "oracle" else None
     bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference=reference,
                         removal="eca" if direct_in else "none", method="coherent", coherent_norm="snr",
-                        exclusion_radius=25.0, dispersion=for_scenario(env, cfg.fdtd), eca_doppler=doppler,
+                        exclusion_radius=25.0, **replica_options(env, cfg.fdtd), eca_doppler=doppler,
                         track_smooth_s=smooth if doppler else 0.0, **bistatic_options(args))
     sp = stft(traces, layout, ds.fs, bc, f_max)
-    truth = Truth(ship_xy=ds.tracks["ferry"].position_at(sp.times) if exact else None,
+    truth = _Diagnostics(ship_xy=ds.tracks["ferry"].position_at(sp.times) if exact else None,
                   components={"direct:ferry": direct, "scattered:ferry>uuv1": echo} if direct_in else None)
     sync_gpu()
     t0 = time.perf_counter()
-    run = run_bistatic(traces, layout, ds.fs, env, ds.ais, bc, f_max, oracle_signal=oracle, truth=truth)
+    run = run_bistatic(traces, layout, ds.fs, env, ds.ais, bc, f_max, oracle_signal=oracle, **diagnostics_option(truth))
     sync_gpu()
     wall = time.perf_counter() - t0
     B, grid, times = run.scan.B, run.grid, run.sp.times
@@ -342,10 +360,10 @@ def run_eca_case(name: str, args) -> tuple[dict, dict]:
     traces = noise.apply(direct).astype(np.float64)
     ais = cd.ais_from_start(v.id, tr, "moving", cfg.ais, np.random.default_rng(sum(map(ord, v.id))))
     bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, removal="eca", reference="data",
-                        dispersion=for_scenario(env, cfg.fdtd), eca_doppler=doppler, track_smooth_s=smooth,
+                        **replica_options(env, cfg.fdtd), eca_doppler=doppler, track_smooth_s=smooth,
                         **bistatic_options(args))
     sp = stft(traces, layout, fs, bc, f_max)
-    model = ReplicaModel(layout, bc.c, dispersion=bc.dispersion, **({"xp": _bistatic_xp(bc)} if _bistatic_xp else {}))
+    model = ReplicaModel(layout, bc.c, **({"propagator": bc.propagator} if hasattr(bc, "propagator") else {"dispersion": bc.dispersion}), **({"xp": _bistatic_xp(bc)} if _bistatic_xp else {}))
     model.weights = sp.weights
     sync_gpu()
     t0 = time.perf_counter()
@@ -511,7 +529,7 @@ def main() -> None:
                     ds, t_render = rerender_fine_dataset(args, out_root / f"cache_{args.tag}")
                     results["rerender"] = {"fine_dataset_render_s": t_render}
                     say(f"[bench] fine dataset rerendered with the current solver options in {t_render:.1f} s")
-                elif not FINE_DATASET.exists():
+                elif not (FINE_DATASET.exists() or FINE_DATASET.with_name("dataset.observation.npz").exists()):
                     say(f"[bench] {FINE_DATASET} missing, skipping {name}")
                     continue
                 else:

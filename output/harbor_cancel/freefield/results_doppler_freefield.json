@@ -1,0 +1,225 @@
+{
+  "criterion": "median ECA depth over live cable channels, 100 to 760 Hz, data reference >= 20.0 dB",
+  "interpretation_fixed_in_advance": [
+    "low at every range for the stationary source: reference or removal method",
+    "low only at the shortest range: near field channels",
+    "stationary passes, moving fails: moving source representation or ECA block length"
+  ],
+  "provenance": {
+    "data": {
+      "oracle_inputs": [
+        "components"
+      ],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "oracle": {
+      "oracle_inputs": [
+        "waveform",
+        "components"
+      ],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "oracle_exact": {
+      "oracle_inputs": [
+        "waveform",
+        "track",
+        "components"
+      ],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    }
+  },
+  "simulated_time_s": 10.0,
+  "gate_m": 0.0,
+  "eca_block_s": 0.5,
+  "eca_halfwidth_s": 0.004,
+  "speed_m_s": 4.0,
+  "cases": [
+    {
+      "range_target_m": 200.0,
+      "mode": "stationary",
+      "start_xy": [
+        85.0,
+        253.0
+      ],
+      "range_min_m": 193.00259065618783,
+      "range_max_m": 193.00259065618783,
+      "data": {
+        "cable_median_db": 2.493750995682975,
+        "cable_p10_db": 2.2059501129959576,
+        "hydrophone_median_db": 1.341368215764465,
+        "position_error_median_m": 18.158780402754818
+      },
+      "oracle": {
+        "cable_median_db": 1.089508741497441,
+        "cable_p10_db": 0.40470284996844247,
+        "hydrophone_median_db": -0.8959358133181551,
+        "position_error_median_m": 18.158780402754818
+      },
+      "oracle_exact": {
+        "cable_median_db": 31.529827021098548,
+        "cable_p10_db": 19.29139260085159,
+        "hydrophone_median_db": 16.702426323399,
+        "position_error_median_m": 0.0
+      },
+      "pass": false
+    },
+    {
+      "range_target_m": 200.0,
+      "mode": "moving",
+      "start_xy": [
+        85.0,
+        253.0
+      ],
+      "range_min_m": 193.0000001559116,
+      "range_max_m": 193.0025852361407,
+      "data": {
+        "cable_median_db": 4.593753162721907,
+        "cable_p10_db": 3.228725416463948,
+        "hydrophone_median_db": 2.4050430317877804,
+        "position_error_median_m": 6.889868794030776
+      },
+      "oracle": {
+        "cable_median_db": 5.59831942111928,
+        "cable_p10_db": 5.272978159213651,
+        "hydrophone_median_db": 5.036605352131013,
+        "position_error_median_m": 6.889868794030776
+      },
+      "oracle_exact": {
+        "cable_median_db": 24.366745363206988,
+        "cable_p10_db": 17.26992267435007,
+        "hydrophone_median_db": 15.720813730676962,
+        "position_error_median_m": 0.0
+      },
+      "pass": false
+    },
+    {
+      "range_target_m": 100.0,
+      "mode": "stationary",
+      "start_xy": [
+        139.0,
+        159.0
+      ],
+      "range_min_m": 99.00505037623081,
+      "range_max_m": 99.00505037623081,
+      "data": {
+        "cable_median_db": 19.89362124770372,
+        "cable_p10_db": 7.9720280068627485,
+        "hydrophone_median_db": 5.689165306928963,
+        "position_error_median_m": 0.43267299038945634
+      },
+      "oracle": {
+        "cable_median_db": 41.49706552590929,
+        "cable_p10_db": 21.25673588126837,
+        "hydrophone_median_db": 12.111541058424955,
+        "position_error_median_m": 0.43267299038945634
+      },
+      "oracle_exact": {
+        "cable_median_db": 42.2057584690794,
+        "cable_p10_db": 21.28003213862017,
+        "hydrophone_median_db": 11.801911774496665,
+        "position_error_median_m": 0.0
+      },
+      "pass": false
+    },
+    {
+      "range_target_m": 100.0,
+      "mode": "moving",
+      "start_xy": [
+        139.0,
+        159.0
+      ],
+      "range_min_m": 99.00000030394882,
+      "range_max_m": 99.00503981027299,
+      "data": {
+        "cable_median_db": 7.276081407938792,
+        "cable_p10_db": 5.611075483190066,
+        "hydrophone_median_db": 3.851813728775928,
+        "position_error_median_m": 1.36613568874396
+      },
+      "oracle": {
+        "cable_median_db": 6.728645128388577,
+        "cable_p10_db": 4.212514601257537,
+        "hydrophone_median_db": 7.540664236657352,
+        "position_error_median_m": 1.36613568874396
+      },
+      "oracle_exact": {
+        "cable_median_db": 24.64828861470233,
+        "cable_p10_db": 20.425771339467122,
+        "hydrophone_median_db": 11.729702992586244,
+        "position_error_median_m": 0.0
+      },
+      "pass": false
+    },
+    {
+      "range_target_m": 30.0,
+      "mode": "stationary",
+      "start_xy": [
+        139.0,
+        89.0
+      ],
+      "range_min_m": 29.017236257093817,
+      "range_max_m": 29.017236257093817,
+      "data": {
+        "cable_median_db": 6.758779367241555,
+        "cable_p10_db": 1.2135134730327244,
+        "hydrophone_median_db": 2.919321112760432,
+        "position_error_median_m": 5.602158249534766
+      },
+      "oracle": {
+        "cable_median_db": 6.826626092407676,
+        "cable_p10_db": 6.518982161929929,
+        "hydrophone_median_db": 8.461761939116855,
+        "position_error_median_m": 5.602158249534766
+      },
+      "oracle_exact": {
+        "cable_median_db": 50.60026881432351,
+        "cable_p10_db": 30.135799639484187,
+        "hydrophone_median_db": 13.947691039532767,
+        "position_error_median_m": 0.0
+      },
+      "pass": false
+    },
+    {
+      "range_target_m": 30.0,
+      "mode": "moving",
+      "start_xy": [
+        139.0,
+        89.0
+      ],
+      "range_min_m": 29.000001037618315,
+      "range_max_m": 29.01720020666594,
+      "data": {
+        "cable_median_db": 5.613552687383457,
+        "cable_p10_db": 4.705409260555662,
+        "hydrophone_median_db": 3.699523770754056,
+        "position_error_median_m": 1.1947376063121338
+      },
+      "oracle": {
+        "cable_median_db": 6.8776576113565095,
+        "cable_p10_db": 6.494862611415402,
+        "hydrophone_median_db": 8.516138360653771,
+        "position_error_median_m": 1.1947376063121338
+      },
+      "oracle_exact": {
+        "cable_median_db": 21.46665005613671,
+        "cable_p10_db": 19.608956771106193,
+        "hydrophone_median_db": 13.844224865547305,
+        "position_error_median_m": 0.0
+      },
+      "pass": false
+    }
+  ],
+  "assumptions": [
+    "single source alone (no echo, no other ships)",
+    "AIS reports every interval from t = 0, no dropouts, scenario position error",
+    "scenario noise model"
+  ],
+  "eca_doppler": true,
+  "track_smooth_s": 0.0
+}

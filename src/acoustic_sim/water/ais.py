@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from acoustic_sim.water.vessels import Track
+from acoustic_sim.contract import Track
 
 
 @dataclass

@@ -33,6 +33,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from acoustic_sim.contract import annotate_figure  # noqa: E402
 from acoustic_sim.water import (  # noqa: E402
     HarborScenarioConfig,
     assemble_dataset,
@@ -78,6 +79,8 @@ def main() -> None:
     # ---- empirical localiser (optional) ----------------------------------------
     empirical_loc = None
     if args.empirical_refine is not None:
+        # Either way the replicas are FDTD renders: simulator knowledge, flagged in every run's provenance.
+        from acoustic_sim.water.diagnostics import VesselPathLocaliser  # noqa: E402
         from acoustic_sim.water.localiser import EmpiricalLocaliser  # noqa: E402
         if args.empirical_refine == "grid_survey":
             if not (out / "survey_cache").exists():
@@ -87,14 +90,12 @@ def main() -> None:
                 mode="grid_survey",
             )
         else:
-            empirical_loc = EmpiricalLocaliser(
-                cache_dir=out / "cache", layout=None, fs=0.0, pc=ProcessingConfig(),
-                mode="vessel_path",
-            )
+            empirical_loc = VesselPathLocaliser(cache_dir=out / "cache", layout=None, fs=0.0, pc=ProcessingConfig())
         # Defer build() until after cfg/layout/fs are known (done below).
 
     env = build_environment(cfg)
     layout = build_layout(cfg, env)
+    chart = env.public()          # what the processing knows of the environment
     tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in cfg.vessels}
     gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=out / "cache")
 
@@ -110,7 +111,7 @@ def main() -> None:
     zero = {v.id: 0.0 for v in cfg.vessels}
 
     base = ProcessingConfig(use_cuda=args.cuda)
-    grid = build_grid(env, base)
+    grid = build_grid(chart, base)
     print(f"scan grid: {len(grid)} cells, {layout.n_receivers} receivers")
 
     results: dict = {"pfa": args.pfa, "uuv_level_pa": uuv_level, "configs": {}}
@@ -122,7 +123,7 @@ def main() -> None:
         maxima = []
         for s in range(args.cal_seeds):
             ds = assemble_dataset(cfg, layout, tracks, gathers, seed=1000 + s, levels=zero, keep_clean=False)
-            run = run_detection(ds.traces, layout, ds.fs, env, pc_cal, floor=1e18, grid=grid)
+            run = run_detection(ds.traces, layout, ds.fs, chart, pc_cal, floor=1e18, grid=grid)
             maxima.append(run.scan.frame_max)
         maxima = np.concatenate(maxima)
         thr = threshold_from_maxima(maxima, args.pfa)
@@ -138,21 +139,21 @@ def main() -> None:
             ds = assemble_dataset(cfg, layout, tracks, gathers, seed=args.eval_seed,
                                   levels={**UUV_ONLY, uuv_id: level}, keep_clean=False)
             if args.suppress:
-                run = run_ais_aware(ds.traces, layout, ds.fs, env, ds.ais,
+                run = run_ais_aware(ds.traces, layout, ds.fs, chart, ds.ais,
                                     ProcessingConfig(sensor_groups=CONFIGS[name], line_halfwidth=4,
                                                      use_cuda=args.cuda,
                                                      empirical_localiser=empirical_loc),
                                     floor=0.5 * thr, grid=grid)
                 dets_obj = run.dets
             else:
-                run_obj = run_detection(ds.traces, layout, ds.fs, env,
+                run_obj = run_detection(ds.traces, layout, ds.fs, chart,
                                         ProcessingConfig(sensor_groups=CONFIGS[name],
                                                          use_cuda=args.cuda,
                                                          empirical_localiser=empirical_loc),
                                         floor=0.5 * thr, grid=grid)
                 dets_obj = run_obj.dets
                 run = run_obj
-            sc = score_detections(dets_obj, ds.tracks, layout, run.wh.times, thr)
+            sc = score_detections(dets_obj, ds.truth, layout, run.wh.times, thr)
             db = 20 * np.log10(level)
             entry["levels"][f"{fac}"] = {
                 "level_db_re_1pa_100m": db, "pd": sc.pd(uuv_id), "rmse_m": sc.rmse(uuv_id),
@@ -172,12 +173,12 @@ def main() -> None:
             level = uuv_level * fac
             ds = assemble_dataset(cfg, layout, tracks, gathers, seed=args.eval_seed,
                                   levels={**UUV_ONLY, uuv_id: level}, keep_clean=False)
-            run = run_ais_aware(ds.traces, layout, ds.fs, env, ds.ais,
+            run = run_ais_aware(ds.traces, layout, ds.fs, chart, ds.ais,
                                 ProcessingConfig(sensor_groups=None, line_halfwidth=4,
                                                  use_cuda=args.cuda,
                                                  empirical_localiser=empirical_loc),
                                 floor=0.5 * thr_fused, grid=grid)
-            sc = score_detections(run.dets, ds.tracks, layout, run.wh.times, thr_fused)
+            sc = score_detections(run.dets, ds.truth, layout, run.wh.times, thr_fused)
             db = 20 * np.log10(level)
             entry_sup["levels"][f"{fac}"] = {
                 "level_db_re_1pa_100m": db, "pd": sc.pd(uuv_id), "rmse_m": sc.rmse(uuv_id),
@@ -195,10 +196,10 @@ def main() -> None:
         thr = results["configs"]["fused"]["threshold"]
         ds = assemble_dataset(cfg, layout, tracks, gathers, seed=args.eval_seed, keep_clean=False)
         if args.suppress:
-            run = run_ais_aware(ds.traces, layout, ds.fs, env, ds.ais, pc, floor=0.5 * thr, grid=grid)
+            run = run_ais_aware(ds.traces, layout, ds.fs, chart, ds.ais, pc, floor=0.5 * thr, grid=grid)
         else:
-            run = run_detection(ds.traces, layout, ds.fs, env, pc, floor=0.5 * thr, grid=grid)
-        sc = score_detections(run.dets, ds.tracks, layout, run.wh.times, thr, targets=list(tracks))
+            run = run_detection(ds.traces, layout, ds.fs, chart, pc, floor=0.5 * thr, grid=grid)
+        sc = score_detections(run.dets, ds.truth, layout, run.wh.times, thr, targets=list(tracks))
         results["all_vessels_fused"] = {
             vid: {"pd": sc.pd(vid), "rmse_m": sc.rmse(vid)} for vid in tracks
         } | {"fa_per_frame": sc.false_alarms_per_frame}
@@ -218,6 +219,7 @@ def main() -> None:
         localiser_rmse[args.empirical_refine] = results["configs"]["fused"]["levels"].get(fac_key, {}).get("rmse_m", None)
         results["localiser_rmse"] = localiser_rmse
 
+    results["provenance"] = next(iter(runs.values()))[1].provenance.to_dict() if runs else None
     (out / "m3_results.json").write_text(json.dumps(results, indent=2, default=float))
 
     # ---- figures ---------------------------------------------------------------
@@ -235,6 +237,8 @@ def main() -> None:
     for a in ax:
         a.grid(alpha=0.3)
         a.legend()
+    if runs:
+        annotate_figure(fig, next(iter(runs.values()))[1].provenance)
     fig.savefig(out / "m3_pd_vs_level.png", dpi=100, bbox_inches="tight")
 
     for key, fname, title in [(("fused", 1.0), "m3_uuv_only.png", "UUV only (fused sensors)"),
@@ -252,6 +256,7 @@ def main() -> None:
         plt.colorbar(sc_, ax=ax, label="detection time [s]", shrink=0.6, location="left")
         ax.set_title(title)
         ax.legend(loc="upper left", fontsize=8)
+        annotate_figure(fig, run.provenance)
         fig.savefig(out / fname, dpi=100, bbox_inches="tight")
     print("wrote", out)
 

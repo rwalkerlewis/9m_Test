@@ -29,11 +29,10 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from scipy.signal import get_window
-from scipy.special import hankel2
 
+from acoustic_sim.contract import ChartEnvironment, Propagator, Provenance
 from acoustic_sim.water.device import CPU, Device, get_device
-from acoustic_sim.water.dispersion import DispersionModel, replica_wavenumbers
-from acoustic_sim.water.environment import HarborEnvironment
+from acoustic_sim.water.propagation import green2d, resolve  # noqa: F401  (green2d re-exported for the old path)
 from acoustic_sim.water.sensors import SensorLayout
 
 
@@ -83,11 +82,13 @@ class ProcessingConfig:
     use_cuda : bool
         Run the whole chain on the GPU (CuPy, single precision); falls back to the CPU
         with a warning when CuPy or a GPU is unavailable.
-    dispersion : DispersionModel | None
-        If given, replicas use the numerical (direction-dependent) wavenumber of the FDTD scheme
-        that produced the data instead of ``2 pi f / c`` (``c`` is then the model's).  Grid
-        dispersion otherwise limits how well any replica matches simulated data (see
-        ``harbor.dispersion``).  Leave ``None`` for real data.
+    propagator : Propagator | None
+        Replica model (:class:`acoustic_sim.contract.Propagator`).  ``None`` is the blind
+        ``FreeFieldPropagator(c)`` (``water/propagation.py``).  The FDTD scheme's numerical,
+        direction dependent wavenumber is ``water.diagnostics.SimulatorAwarePropagator``, built from
+        the :class:`~acoustic_sim.contract.Truth`; it is simulator knowledge and the results say so.
+    empirical_localiser : EmpiricalLocaliser | None
+        Optional refinement against FDTD rendered replicas (``water/localiser.py``; simulator knowledge).
     line_halfwidth : int
         Line enhancement.  If > 0, the matched-field output of every cell is compared
         with its running median over ``2 * line_halfwidth + 1`` neighbouring scanned
@@ -121,7 +122,7 @@ class ProcessingConfig:
     n_lines: int = 8
     use_cuda: bool = False
     line_halfwidth: int = 0
-    dispersion: DispersionModel | None = None
+    propagator: Propagator | None = field(default=None, repr=False)
     empirical_localiser: object | None = field(default=None, repr=False)
 
 
@@ -238,37 +239,24 @@ def preprocess(traces: np.ndarray, layout: SensorLayout, fs: float, cfg: Process
     )
 
 
+def knowledge(cfg: ProcessingConfig) -> list[str]:
+    """Simulator knowledge *cfg* brings into a result (its propagator, an empirical localiser)."""
+    out = list(resolve(cfg.propagator, cfg.c).knowledge)
+    if cfg.empirical_localiser is not None:
+        out.append("empirical_replicas")
+    return out
+
+
+def run_provenance(cfg: ProcessingConfig, provenance: Provenance | None) -> Provenance:
+    """The caller's *provenance* (default: synthetic data, not held out) plus what *cfg* knows."""
+    return (provenance or Provenance()).with_flags(simulator_knowledge=knowledge(cfg))
+
+
 # ----------------------------------------------------------------------
 # Scan
 # ----------------------------------------------------------------------
 
-def green2d(kr, xp=np):
-    """Conjugate 2-D Green's function ``H0^(2)(kr)`` (exact for small kr, asymptotic otherwise).
-
-    *xp* is the array module of *kr* (NumPy or CuPy).  The CuPy branch evaluates both
-    regimes everywhere and selects with ``where``, which is faster than masking on a GPU.
-    """
-    if xp is np:
-        kr = np.asarray(kr)
-        out = np.empty(kr.shape, dtype=np.complex128 if kr.dtype == np.float64 else np.complex64)
-        near = kr < 8.0
-        out[near] = hankel2(0, kr[near])
-        far = kr[~near]
-        series = 1.0 + 1j / (8.0 * far) - 9.0 / (128.0 * far ** 2)   # Hankel asymptotic series (H^(2))
-        out[~near] = np.sqrt(2.0 / (np.pi * far)) * np.exp(-1j * (far - np.pi / 4.0)) * series
-        return out
-    from cupyx.scipy.special import j0, y0
-
-    near = kr < 8.0
-    kn = xp.where(near, kr, 1.0).astype(kr.dtype)
-    kf = xp.where(near, 8.0, kr).astype(kr.dtype)
-    h_near = j0(kn) - 1j * y0(kn)
-    series = 1.0 + 1j / (8.0 * kf) - 9.0 / (128.0 * kf ** 2)
-    h_far = xp.sqrt(2.0 / (np.pi * kf)) * xp.exp(-1j * (kf - np.pi / 4.0)) * series
-    return xp.where(near, h_near, h_far)
-
-
-def build_grid(env: HarborEnvironment, cfg: ProcessingConfig, edge: float = 150.0) -> np.ndarray:
+def build_grid(env: ChartEnvironment, cfg: ProcessingConfig, edge: float = 150.0) -> np.ndarray:
     """Scan grid ``(G, 2)`` of water cells at least ``grid_margin`` from land."""
     x0, x1, y0, y1 = cfg.grid_bounds or (env.extent[0] + edge, env.extent[1] - edge,
                                          env.extent[2] + edge, env.extent[3] - edge)
@@ -299,6 +287,7 @@ class MatchedFieldScanner:
         self.layout, self.grid, self.cfg = layout, np.asarray(grid), cfg
         self.dev = get_device(cfg.use_cuda)
         self.rec = self.dev.xp.asarray(layout.receivers, dtype=self.dev.fdtype)
+        self.propagator = resolve(cfg.propagator, cfg.c)
 
     def _geometry(self, xy):
         """``(r, theta)`` of source points *xy* (host or device) to all receivers, both ``(P, N)`` on the device.
@@ -310,13 +299,18 @@ class MatchedFieldScanner:
         dx = xy[:, None, 0] - self.rec[None, :, 0]
         dy = xy[:, None, 1] - self.rec[None, :, 1]
         r = xp.maximum(xp.hypot(dx, dy), self.cfg.min_range)  # the Green's function is singular at r = 0
-        return r, xp.arctan2(xp.abs(dy), xp.abs(dx))
+        return r, xp.arctan2(xp.abs(dy), xp.abs(dx)), xy
 
     def _replicas(self, geom, wh: Whitened, i: int):
         """Whitened replicas ``(G, N)`` for bin *i*."""
-        r, theta = geom
-        k = replica_wavenumbers(self.cfg.dispersion, [wh.freqs[i]], self.cfg.c, theta, self.dev.xp, self.dev.fdtype)[0]
-        a = green2d(k * r, self.dev.xp) / wh.sigma[None, :, i] * wh.weights_d[None, :]
+        r, theta, xy = geom
+        prop = self.propagator
+        if prop.analytic:
+            k = prop.wavenumbers([wh.freqs[i]], theta, self.dev.xp, self.dev.fdtype)[0]
+            g = green2d(k * r, self.dev.xp)
+        else:
+            g = prop.greens(self.dev.asnumpy(xy), self.layout.receivers, [wh.freqs[i]], self.dev.xp, self.dev.fdtype)[0]
+        a = g / wh.sigma[None, :, i] * wh.weights_d[None, :]
         return a.astype(self.dev.cdtype)
 
     def _interference(self, Zi, weights: np.ndarray):
@@ -522,19 +516,25 @@ class DetectionRun:
     scan: ScanResult
     scanner: MatchedFieldScanner
     dets: DetectionSet
+    provenance: Provenance = field(default_factory=Provenance)
 
 
 def run_detection(
     traces: np.ndarray,
     layout: SensorLayout,
     fs: float,
-    env: HarborEnvironment,
+    env: ChartEnvironment,
     cfg: ProcessingConfig,
     floor: float = 0.0,
     grid: np.ndarray | None = None,
+    provenance: Provenance | None = None,
 ) -> DetectionRun:
-    """Pre-process, scan and extract peaks above *floor* (use a low floor, threshold later)."""
+    """Pre-process, scan and extract peaks above *floor* (use a low floor, threshold later).
+
+    *provenance* is what the caller knows about the data (synthetic or recorded, held out, oracle
+    inputs it used to build *traces*); the run adds the simulator knowledge of *cfg*.
+    """
     wh = preprocess(traces, layout, fs, cfg)
     scanner = MatchedFieldScanner(layout, grid if grid is not None else build_grid(env, cfg), cfg)
     scan = scanner.scan(wh)
-    return DetectionRun(wh, scan, scanner, extract_detections(scanner, wh, scan, floor))
+    return DetectionRun(wh, scan, scanner, extract_detections(scanner, wh, scan, floor), run_provenance(cfg, provenance))

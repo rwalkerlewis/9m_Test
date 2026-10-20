@@ -465,7 +465,9 @@ python examples/harbor_bistatic_demo.py \
 
 The demo intentionally uses an oracle ferry waveform/track and subtracts the truth direct-path
 component, so read it as an idealized echo-localization experiment, not blind operational
-detection. For analytical free-field references, run `examples/harbor_mfp_demo.py`; to apply
+detection (`demo_summary.json` lists these under `provenance`). New datasets are written as
+`dataset.observation.npz` and `dataset.truth.npz`; `--dataset` may name the old single file or the
+pair. For analytical free-field references, run `examples/harbor_mfp_demo.py`; to apply
 that style of model to a saved harbor dataset, see `examples/harbor_mfp_domain.py`. Other visual
 examples include `harbor_m1_uuv_video.py`, `harbor_domain_video.py`,
 `harbor_stack_movie.py`, and `harbor_presentation.py`.
@@ -547,6 +549,6 @@ Tests that need PyTorch skip without it, and GPU-parametrized tests skip without
 CI (`.github/workflows/tests.yml`) runs a fast CPU-only subset on Python 3.10 and 3.13:
 
 ```bash
-python -m pytest -q tests/test_package_layout.py tests/harbor/test_dispersion.py \
+python -m pytest -q tests/test_package_layout.py tests/test_contract.py tests/harbor/test_dispersion.py \
     tests/test_fdtd_3d.py::test_cfl tests/test_fdtd_3d.py::test_propagation
 ```

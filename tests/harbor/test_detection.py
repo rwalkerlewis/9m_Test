@@ -28,6 +28,7 @@ from acoustic_sim.water.detection import (
     threshold_from_maxima,
 )
 from acoustic_sim.water.evaluate import associate, score_detections
+from acoustic_sim.contract import Truth
 
 FS = 600.0
 
@@ -130,20 +131,20 @@ def test_score_pd_rmse_false_alarms_and_threshold():
         (3, 8.0, 180.0 + 5.0, 700.0, 40),        # near the ship, not the UUV -> "other"
         (3, 8.0, 180.0, 200.0, 5),               # below threshold, ignored
     ])
-    sc = score_detections(d, {"v": tr, "ship": ais_ship}, layout, times, threshold=10.0, targets=["v"], gate=50.0)
+    sc = score_detections(d, Truth(tracks={"v": tr, "ship": ais_ship}), layout, times, threshold=10.0, targets=["v"], gate=50.0)
     assert sc.pd("v") == pytest.approx(0.5)
     assert sc.rmse("v") == pytest.approx(np.sqrt((16 + 36) / 2))
     assert sc.n_false == 1 and sc.n_other == 1
     assert sc.false_alarms_per_frame == pytest.approx(0.25)
     assert sc.pd("v", (0, 1e6)) == 0.5 and np.isnan(sc.pd("v", (1e6, 2e6)))
-    assert score_detections(d, {"v": tr, "ship": ais_ship}, layout, times, threshold=1.0, targets=["v"]).pd("v") == 0.75
+    assert score_detections(d, Truth(tracks={"v": tr, "ship": ais_ship}), layout, times, threshold=1.0, targets=["v"]).pd("v") == 0.75
 
 
 def test_absent_vessels_are_not_associable():
     tr = _truth_track(level=0.0)
     d = _dets([(0, 2.0, 120.0, 200.0, 40)])
     layout = SensorLayout(hydrophones=np.array([[0.0, 0.0]]))
-    sc = score_detections(d, {"v": tr}, layout, np.array([2.0]), threshold=10.0)
+    sc = score_detections(d, Truth(tracks={"v": tr}), layout, np.array([2.0]), threshold=10.0)
     assert sc.n_false == 1 and sc.rows == []
 
 

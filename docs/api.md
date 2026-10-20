@@ -596,34 +596,38 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
   several sources through the same harbor, batched on the GPU (`HarborFDTDBatch`) when the fused
   kernel is available.  `cfl_dt(env, ...)` gives the solver's stable time step.
 * `HarborDataset` — scenario configuration, layout, sample rate, noisy traces, truth tracks,
-  AIS, and optional clean/gain/dead-channel/component arrays. `.save(path)` and
-  `.load(path)` use compressed NPZ.
+  AIS, and optional clean/gain/dead-channel/component arrays. `.observation` and `.truth` give
+  the two sides of the sensing contract; `.save("<name>.npz")` writes `<name>.observation.npz` and
+  `<name>.truth.npz`, and `.load(path)` reads that pair or an old single `<name>.npz`
+  (`python -m acoustic_sim.contract split <name>.npz` converts one).
 * `render_vessel_gathers(cfg, env, layout, tracks, cache_dir=None, workers=1,
   include_silent=False, combined_bodies=False)` — generate direct and per-body scattered
   unit-level gathers.
 * `assemble_dataset(cfg, layout, tracks, gathers, seed=None, levels=None, noise=None,
-  keep_clean=True, scatter_gain=None, keep_components=False)` — mix cached fields with
+  keep_clean=True, scatter_gain=None, keep_components=False, env=None, out=None)` — mix cached fields with
   noise/AIS; `levels` and `scatter_gain` enable parameter sweeps without new FDTD solves.
 * `simulate_scenario(cfg, env=None, layout=None, cache_dir=None, workers=1, seed=None,
-  levels=None, keep_components=False)` — end-to-end convenience wrapper.
+  levels=None, keep_components=False, out=None)` — end-to-end convenience wrapper (`out` writes the two files).
 
 ### Passive detection and bistatic processing
 
 * `ProcessingConfig` — passive STFT band/window, channel QC, grid, interference rejection,
-  extraction, GPU and dispersion controls.
+  extraction, GPU and the replica model (`propagator`: `None` is the blind free field).
 * `build_grid(env, cfg, edge=150.0)` / `run_detection(traces, layout, fs, env, cfg, floor=0.0,
-  grid=None)` from `acoustic_sim.water.detection` — construct the passive scan grid and run
+  grid=None, provenance=None)` from `acoustic_sim.water.detection` — construct the passive scan grid and run
   matched-field detection.
 * `threshold_from_maxima(maxima, pfa, tail_quantile=0.7)` — estimate a CFAR score threshold
   from noise-only per-frame map maxima.
-* `SuppressionConfig` and `run_ais_aware(traces, layout, fs, env, ais, pc, sc=None, ...)` from
+* `SuppressionConfig` and `run_ais_aware(traces, layout, fs, env, ais, pc, sc=None, floor=1e18, grid=None,
+  provenance=None)` from
   `acoustic_sim.water.suppression` — refine reported ship positions, project ship energy out of
   the data, re-whiten, and rerun the passive scan.
 * `BistaticConfig` — bistatic STFT, reference, direct-path removal, processor, grid, peak and
-  dispersion settings.
+  replica model (`propagator`) settings.
 * `build_grid(env, bc)` / `run_bistatic(traces, layout, fs, env, ais, bc, f_max, grid=None,
-  oracle_signal=None, truth=None, floor=0.0)` from `acoustic_sim.water.bistatic` — form bistatic
-  scan maps and extracted peaks.  Its stages are public too: `stft`, `ship_positions`,
+  oracle_signal=None, diagnostics=None, floor=0.0, provenance=None)` from
+  `acoustic_sim.water.bistatic` — form bistatic scan maps and extracted peaks; `Diagnostics(ship_xy,
+  components)` holds the oracle inputs, and `run.provenance` lists every one used.  Its stages are public too: `stft`, `ship_positions`,
   `eca_stage` (time-domain direct-path removal), `bistatic_map`, `extract_peaks`, and
   `ReplicaModel`.
 * `motion_integrate(Z, grid, times, speeds, coherent=True, impl="vectorized", use_cuda=False)`
@@ -632,31 +636,37 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
   per-velocity peaks.
 * `OccupancyConfig` / `OccupancyGrid(grid, cfg=None)` — track-before-detect over map frames;
   `.run(B, times, snapshot_frames=())` returns `OccupancyHistory`.
-* `for_scenario(env, fdtd_cfg)` from `acoustic_sim.water.dispersion` — build FDTD-specific
-  numerical-dispersion correction. Use for simulated data only, not as a real-water model.
-* `score_detections(dets, tracks, layout, frame_times, threshold, targets=None, gate=100.0,
-  present=None)` from `acoustic_sim.water.evaluate` — associate detections to truth tracks and
-  report probability of detection, localization error, false alarms, and other-vessel
-  detections.
+* `FreeFieldPropagator(c)` from `acoustic_sim.water.propagation` — the blind replica model;
+  `SimulatorAwarePropagator.from_truth(truth)` from `acoustic_sim.water.diagnostics` — FDTD-specific
+  numerical-dispersion correction (simulator knowledge). Use it for simulated data only, not as a
+  real-water model.
+* `score_detections(dets, truth, layout, frame_times, threshold, targets=None, gate=100.0,
+  present=None)` and `truth_labels(dets, truth, gate=100.0)` from `acoustic_sim.water.evaluate` —
+  associate detections to the tracks of the `Truth` and report probability of detection,
+  localization error, false alarms, and other-vessel detections; the labels a classifier is scored
+  against.
 
 ### Other water modules
 
 | Module | Main symbols |
 |--------|--------------|
 | `water/signatures.py` | `make_reference_signal(kind, speed, active, fs, seed, f_max=...)`, `ship_reference`, `uuv_reference`, `diver_reference` — unit-level source signatures and level calibration |
-| `water/vessels.py` | `VesselConfig`, `Track`, `build_track(vcfg, total_time, env=None, ...)` — vessel settings and ground-truth tracks |
+| `water/vessels.py` | `VesselConfig`, `build_track(vcfg, total_time, env=None, ...)` — vessel settings and ground-truth tracks (`Track` lives in `acoustic_sim.contract`) |
 | `water/ais.py` | `AISConfig`, `AISReports`, `AISTrack`, `generate_ais(tracks, cfg, rng)` — noisy AIS reports and prediction |
 | `water/noise.py` | `NoiseConfig`, `NoiseRealisation`, `generate_noise(layout, fs, n_steps, cfg, rng)` — ambient, shipping and instrument noise, channel gains and faults |
 | `water/scatterer.py`, `water/fdtd_cuda_bodies.py` | `Scatterer`, `make_scatterer(vcfg, track)`; `DeviceBodyMasks` — moving bodies in the harbor FDTD (host or on-device masks) |
 | `water/cylinder.py` | `line_source_scattered`, `partial_wave_coefficients` — analytic cylinder scattering used for validation |
-| `water/dispersion.py` | `DispersionModel`, `replica_wavenumbers`, `for_scenario` — FDTD numerical-dispersion-aware replicas |
-| `water/localiser.py` | `EmpiricalLocaliser` — analytic MFP first pass refined with FDTD replicas |
+| `water/dispersion.py` | `DispersionModel`, `replica_wavenumbers`, `for_scenario` — the FDTD scheme's numerical wavenumber (forward side) |
+| `water/diagnostics.py` | `SimulatorAwarePropagator`, `VesselPathLocaliser`, `oracle_illuminator` — forward model knowledge on the inference path, flagged in the provenance |
+| `water/localiser.py` | `EmpiricalLocaliser` — analytic MFP first pass refined with survey replicas |
 | `water/classifier.py` | `HarborClassifier.load(cnn_path, cvae_path, device="cpu")` — CNN label + CVAE anomaly score (needs `[ml]`) |
 | `water/device.py` | `get_device(use_cuda=False)`, `Device` — CPU / CuPy selection and dtype policy |
 | `water/plotting.py` | `plot_harbor(env, layout=None, ax=None, show_depth=True, sponge_cells=None)` — harbor map |
 
 The `run_bistatic` oracle options and the FDTD demonstration's truth-based direct-path removal
-are experimental controls, not blind-sensing inputs. See [Harbor](harbor.md) for definitions,
+are experimental controls, not blind-sensing inputs, and the run's `provenance` says so.
+`acoustic_sim.contract` (`Observation`, `Truth`, `Provenance`, `Observation.from_arrays`) is
+described in [Architecture](architecture.md#sensing-contract). See [Harbor](harbor.md) for definitions,
 workflow examples, and model limitations.
 
 ---

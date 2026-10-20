@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Bistatic demo: a silent UUV located from the ferry's echo on the DAS cable (pitch figures).
 
-Idealised, and said so on every figure: the ferry's direct path is removed with the dataset's
-truth component (perfect cancellation), the ferry waveform and position are known (oracle
-reference, exact track).  What remains is real: an FDTD simulated echo of a 1 m x 3 m soft body
+Idealised, and said so on every figure and in ``demo_summary.json`` (``provenance``): the ferry's
+direct path is removed with the dataset's truth component (perfect cancellation), the ferry waveform
+and position are known (oracle reference, exact track) and the replicas follow the simulator's grid
+dispersion.  All of that comes from the dataset's ``Truth``; the chain sees the ``Observation``
+(geometry, chart, AIS, band).  What remains is real: an FDTD simulated echo of a 1 m x 3 m soft body
 on a strain DAS cable and four hydrophones, in noise, processed with the coherent bistatic
 matched filter of ``water/bistatic.py``.
 
@@ -30,12 +32,11 @@ from scipy.signal import butter, sosfiltfilt
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.water import HarborDataset, build_environment, build_layout  # noqa: E402
-from acoustic_sim.water.bistatic import BistaticConfig, Truth, run_bistatic  # noqa: E402
-from acoustic_sim.water.dataset import vessel_injection  # noqa: E402
-from acoustic_sim.water.dispersion import for_scenario  # noqa: E402
+from acoustic_sim.contract import Provenance, annotate_figure  # noqa: E402
+from acoustic_sim.water import HarborDataset  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, run_bistatic  # noqa: E402
+from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, oracle_illuminator  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
-from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
 
 
 def main() -> None:
@@ -49,30 +50,33 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
 
     ds = HarborDataset.load(args.dataset)
-    cfg = ds.cfg
-    env = build_environment(cfg)
-    layout = build_layout(cfg, env)            # the saved header drops the strain mode; rebuild from the config
-    f_max = f_max_for_grid(env.dx)
-    comps = ds.components
-    gain = ds.gain[:, None]
+    obs, truth = ds.observation, ds.truth
+    env, layout = obs.environment, obs.geometry   # public chart; the layout with the strain mode
+    f_max = obs.meta["band_hz"][1]
+    # Oracle inputs, all from the Truth: the traces without the direct path, the ferry waveform and track.
+    comps = truth.components
+    gain = truth.gain[:, None]
     traces = (gain * (comps["scattered:ferry>uuv1"].astype(float) + args.direct * comps["direct:ferry"].astype(float))
               + args.noise * comps["noise"].astype(float))
-    ferry = next(v for v in cfg.vessels if v.id == "ferry")
-    oracle = ferry.level_pa * vessel_injection(ferry, ds.tracks["ferry"], env, cfg)
+    oracle = oracle_illuminator(truth, "ferry")
 
     bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference="oracle",
-                        removal="none", method="coherent", coherent_norm="snr", exclusion_radius=25.0, dispersion=for_scenario(env, cfg.fdtd))
+                        removal="none", method="coherent", coherent_norm="snr", exclusion_radius=25.0,
+                        propagator=SimulatorAwarePropagator.from_truth(truth))
     t0 = time.time()
     # Frame times are needed for the exact ship track: run the STFT geometry once via a dry config.
     from acoustic_sim.water.bistatic import stft
-    sp = stft(traces, layout, ds.fs, bc, f_max)
-    ship_xy = ds.tracks["ferry"].position_at(sp.times)
-    run = run_bistatic(traces, layout, ds.fs, env, ds.ais, bc, f_max, oracle_signal=oracle, truth=Truth(ship_xy=ship_xy))
+    sp = stft(traces, layout, obs.fs, bc, f_max)
+    ship_xy = truth.tracks["ferry"].position_at(sp.times)
+    run = run_bistatic(traces, layout, obs.fs, env, obs.reports, bc, f_max, oracle_signal=oracle,
+                       diagnostics=Diagnostics(ship_xy=ship_xy),
+                       provenance=Provenance(oracle_inputs=["direct_removal"], data="forward_model"))
+    prov = run.provenance
     print(f"chain: {time.time() - t0:.0f} s, {len(run.grid)} cells, {len(sp.times)} frames, {len(sp.freqs)} bins")
 
     # Per frame estimate = map peak; truth = UUV track.
     B, grid, times = run.scan.B, run.grid, run.sp.times
-    uuv = ds.tracks["uuv1"].position_at(times)
+    uuv = truth.tracks["uuv1"].position_at(times)          # scoring
     est = grid[np.argmax(B, axis=0)]
     err = np.hypot(*(est - uuv).T)
     # Three frame (1.5 s) integration of the maps: the target moves 3 m in that time, well inside a cell.
@@ -92,6 +96,7 @@ def main() -> None:
                             "within_5m": float(np.mean(err3 <= 5.0)), "rmse_m": float(np.sqrt(np.mean(err3 ** 2)))},
         "noise_scale": args.noise, "direct_fraction": args.direct,
         "assumptions": ["direct path removed with the truth component", "oracle ferry waveform", "exact ferry track"],
+        "provenance": prov.to_dict(),
     }
     print(json.dumps(summary, indent=2))
     (out / "demo_summary.json").write_text(json.dumps(summary, indent=2))
@@ -126,6 +131,7 @@ def main() -> None:
     fig.colorbar(im, ax=axes, shrink=0.6, label="coherent bistatic map [dB re peak]")
     fig.suptitle(f"Silent UUV located from the ferry's echo on a strain DAS cable (FDTD, {bc.f_lo:.0f}-{0.95 * f_max:.0f} Hz)\n"
                  f"{tag}", fontsize=12)
+    annotate_figure(fig, prov)
     fig.savefig(out / "demo_maps.png", dpi=110, bbox_inches="tight")
 
     # Figure 2: tracks and error over time.
@@ -147,21 +153,23 @@ def main() -> None:
     a2.set_title("Position error per frame")
     a2.legend(fontsize=9, loc="upper right")
     fig.suptitle(f"Bistatic localisation of a silent UUV: {tag}", fontsize=12)
+    annotate_figure(fig, prov)
     fig.savefig(out / "demo_track.png", dpi=110, bbox_inches="tight")
 
     # Figure 3: echo and noise on the cable (what the processor sees).
     sl = layout.slices["cable1"]
     fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
-    sos = butter(4, [bc.f_lo, 0.95 * f_max], btype="bandpass", fs=ds.fs, output="sos")
+    sos = butter(4, [bc.f_lo, 0.95 * f_max], btype="bandpass", fs=obs.fs, output="sos")
     for ax, (key, x) in zip(axes, (("echo of the ferry from the UUV alone (truth component)", gain * comps["scattered:ferry>uuv1"].astype(float)),
                                    ("echo + noise: what the processor sees", traces))):
         y = sosfiltfilt(sos, x[sl], axis=-1)
         v = np.percentile(np.abs(sosfiltfilt(sos, traces[sl], axis=-1)), 99.5)
-        ax.imshow(y[:, ::10], aspect="auto", origin="lower", cmap="RdBu_r", vmin=-v, vmax=v, extent=(0, ds.t[-1], 0, layout.cables[0].length),
+        ax.imshow(y[:, ::10], aspect="auto", origin="lower", cmap="RdBu_r", vmin=-v, vmax=v, extent=(0, obs.t[-1], 0, layout.cables[0].length),
                   interpolation="nearest")
         ax.set_title(key); ax.set_xlabel("time [s]")
     axes[0].set_ylabel("distance along cable [m]")
     fig.suptitle("Strain DAS cable, 100 to 380 Hz, same colour scale: the echo is 12 dB below the noise on the median channel", fontsize=12)
+    annotate_figure(fig, prov)
     fig.savefig(out / "demo_cable.png", dpi=110, bbox_inches="tight")
     print("wrote", out)
 

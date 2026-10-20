@@ -14,6 +14,7 @@ import numpy as np
 from matplotlib.path import Path as MplPath
 from scipy.ndimage import distance_transform_edt
 
+from acoustic_sim.contract import ChartEnvironment
 from acoustic_sim.model import VelocityModel
 
 
@@ -79,6 +80,13 @@ class HarborEnvironment:
         if margin > 0:
             ok &= self.distance_to_land(xy) >= margin
         return ok
+
+    def public(self) -> ChartEnvironment:
+        """What a deployed system knows of this environment: the land / water chart, the depth and the
+        median water sound speed as the nominal speed (no sound speed map, no solver parameters)."""
+        return ChartEnvironment(water=self.water.copy(), depth=self.depth.copy(), x=np.asarray(self.model.x, dtype=np.float64).copy(),
+                                y=np.asarray(self.model.y, dtype=np.float64).copy(), c_nominal=float(np.median(self.model.values[self.water])),
+                                polygons=[np.asarray(p, float) for p in self.polygons], name=self.name)
 
     def fingerprint(self) -> str:
         """Stable hash of everything that affects wave propagation."""

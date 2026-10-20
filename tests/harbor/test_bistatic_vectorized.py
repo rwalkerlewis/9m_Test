@@ -17,7 +17,7 @@ from acoustic_sim.water.ais import AISReports
 from acoustic_sim.water.bistatic import (
     BistaticConfig,
     ReplicaModel,
-    Truth,
+    Diagnostics,
     _fractional_delay,
     _xp,
     bistatic_map,
@@ -29,6 +29,7 @@ from acoustic_sim.water.bistatic import (
     ship_positions,
     stft,
 )
+from acoustic_sim.water.diagnostics import SimulatorAwarePropagator
 from acoustic_sim.water.dispersion import DispersionModel
 
 from ._gpu import HAS_GPU
@@ -40,7 +41,7 @@ DEVICES = [pytest.param(False, id="cpu"),
            pytest.param(True, id="gpu", marks=pytest.mark.skipif(not HAS_GPU, reason="CuPy / GPU not available"))]
 # Dispersion of a resolved scheme (the fine 0.5 m grid); the scene itself is analytic, the model only
 # exercises the direction dependent wavenumber path.
-DISPERSION = DispersionModel(0.5, 1.0 / 6000.0, C, 4)
+DISPERSION = SimulatorAwarePropagator(DispersionModel(0.5, 1.0 / 6000.0, C, 4))
 
 
 @pytest.fixture(scope="module")
@@ -74,7 +75,7 @@ def _rel(a, b) -> float:
 
 
 def _model(layout, bc, sp):
-    m = ReplicaModel(layout, bc.c, dispersion=bc.dispersion, xp=_xp(bc))
+    m = ReplicaModel(layout, bc.c, propagator=bc.propagator, xp=_xp(bc))
     m.weights = sp.weights
     return m
 
@@ -92,7 +93,7 @@ def test_refinement_and_eca_match_reference(scene, cuda, reference, doppler):
     res = {}
     for impl in ("reference", "vectorized"):
         bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=True, eca_doppler=doppler,
-                            track_smooth_s=2.0 if doppler else 0.0, impl=impl, use_cuda=cuda, dispersion=DISPERSION)
+                            track_smooth_s=2.0 if doppler else 0.0, impl=impl, use_cuda=cuda, propagator=DISPERSION)
         sp = stft(traces, layout, FS, bc, F_MAX)
         model = _model(layout, bc, sp)
         ship = ship_positions(sp, ais, model, bc)
@@ -115,12 +116,12 @@ def test_refinement_and_eca_match_reference(scene, cuda, reference, doppler):
 def test_maps_match_reference(scene, cuda):
     env, layout, traces, direct, echo, s, ais = scene
     bc = BistaticConfig(reference="oracle", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
-                        impl="reference", dispersion=DISPERSION)
+                        impl="reference", propagator=DISPERSION)
     sp = stft(traces, layout, FS, bc, F_MAX)
     grid = build_grid(env, bc)
-    truth = Truth(ship_xy=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0]))
+    truth = Diagnostics(ship_xy=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0]))
     runs = {impl: run_bistatic(traces, layout, FS, env, ais, BistaticConfig(**{**bc.__dict__, "impl": impl, "use_cuda": cuda}),
-                               F_MAX, oracle_signal=s, truth=truth) for impl in ("reference", "vectorized")}
+                               F_MAX, oracle_signal=s, diagnostics=truth) for impl in ("reference", "vectorized")}
     assert _rel(runs["vectorized"].scan.B, runs["reference"].scan.B) < 1e-10
     assert _rel(runs["vectorized"].Z, runs["reference"].Z) < 1e-10
     assert np.array_equal(runs["vectorized"].ref, runs["reference"].ref)
@@ -145,10 +146,10 @@ def test_maps_match_reference(scene, cuda):
 def test_motion_integrate_matches_reference(scene, cuda):
     env, layout, traces, direct, echo, s, ais = scene
     bc = BistaticConfig(reference="oracle", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
-                        impl="reference", dispersion=DISPERSION)
+                        impl="reference", propagator=DISPERSION)
     sp = stft(traces, layout, FS, bc, F_MAX)
     run = run_bistatic(traces, layout, FS, env, ais, bc, F_MAX, oracle_signal=s,
-                       truth=Truth(ship_xy=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0])))
+                       diagnostics=Diagnostics(ship_xy=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0])))
     speeds = np.array([(vx, vy) for vx in np.linspace(-3, 3, 5) for vy in np.linspace(-3, 3, 5)])
     for coherent in (True, False):
         Z = run.Z if coherent else np.abs(run.Z)

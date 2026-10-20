@@ -22,6 +22,12 @@ Criterion (fixed before the run): configuration 4 on the fine dataset reaches a 
 contrast of at least 10 dB and at least half of the frames within 5 m.  If it fails, the
 configuration between 1 and 4 that loses the most contrast is the step to work on.
 
+Every configuration reads its oracle inputs from the dataset's ``Truth`` and records them in
+``provenance`` per result.  ``--propagator simulator`` (the default, as when the stage was run) gives
+every configuration, ``blind`` included, the FDTD dispersion corrected replicas (simulator knowledge,
+flagged); ``--propagator free`` runs the free field replicas a deployed system would use, the truly
+blind variant.
+
 ``--doppler`` adds the same configurations 2 to 4 with ``eca_doppler=True`` (per sample delays
 following the moving ship inside each ECA block, added in stage 0a); they are reported as
 variants and are not part of the criterion.
@@ -49,12 +55,11 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.water import HarborDataset, build_environment, build_layout  # noqa: E402
-from acoustic_sim.water.bistatic import BistaticConfig, Truth, run_bistatic, stft  # noqa: E402
-from acoustic_sim.water.dataset import vessel_injection  # noqa: E402
-from acoustic_sim.water.dispersion import for_scenario  # noqa: E402
+from acoustic_sim.contract import Provenance, dataset_exists  # noqa: E402
+from acoustic_sim.water import HarborDataset  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, run_bistatic, stft  # noqa: E402
+from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, oracle_illuminator  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
-from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
 
 CONFIGS = {
     # name: (direct path in the traces, reference, exact track)
@@ -80,30 +85,32 @@ METRIC_LABELS = {
 }
 
 
-def run_config(name: str, ds: HarborDataset, env, layout, f_max: float, doppler: bool = False, smooth: float = 0.0) -> tuple[dict, object, np.ndarray, np.ndarray]:
+def run_config(name: str, obs, truth, f_max: float, doppler: bool = False, smooth: float = 0.0,
+               propagator: str = "simulator", use_cuda: bool = False) -> tuple[dict, object, np.ndarray, np.ndarray]:
     """One configuration on one dataset: summary dict, the run, the UUV truth and the estimates."""
     direct_in, reference, exact = CONFIGS[name]
-    cfg = ds.cfg
-    comps = ds.components
-    gain = ds.gain[:, None]
+    env, layout = obs.environment, obs.geometry
+    comps = truth.components
+    gain = truth.gain[:, None]
     direct = gain * comps["direct:ferry"].astype(float)
     echo = gain * comps["scattered:ferry>uuv1"].astype(float)
     noise = comps["noise"].astype(float)
     traces = echo + noise + (direct if direct_in else 0.0)
-    ferry = next(v for v in cfg.vessels if v.id == "ferry")
-    oracle = ferry.level_pa * vessel_injection(ferry, ds.tracks["ferry"], env, cfg) if reference == "oracle" else None
+    oracle = oracle_illuminator(truth, "ferry") if reference == "oracle" else None
     bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference=reference,
                         removal="eca" if direct_in else "none", method="coherent", coherent_norm="snr",
-                        exclusion_radius=25.0, dispersion=for_scenario(env, cfg.fdtd), eca_doppler=doppler,
-                        track_smooth_s=smooth if doppler else 0.0)
-    sp = stft(traces, layout, ds.fs, bc, f_max)
-    truth = Truth(ship_xy=ds.tracks["ferry"].position_at(sp.times) if exact else None,
-                  components={"direct:ferry": direct, "scattered:ferry>uuv1": echo} if direct_in else None)
+                        exclusion_radius=25.0, eca_doppler=doppler, track_smooth_s=smooth if doppler else 0.0,
+                        propagator=SimulatorAwarePropagator.from_truth(truth) if propagator == "simulator" else None,
+                        use_cuda=use_cuda)
+    sp = stft(traces, layout, obs.fs, bc, f_max)
+    diag = Diagnostics(ship_xy=truth.tracks["ferry"].position_at(sp.times) if exact else None,
+                       components={"direct:ferry": direct, "scattered:ferry>uuv1": echo} if direct_in else None)
     t0 = time.time()
-    run = run_bistatic(traces, layout, ds.fs, env, ds.ais, bc, f_max, oracle_signal=oracle, truth=truth)
+    run = run_bistatic(traces, layout, obs.fs, env, obs.reports, bc, f_max, oracle_signal=oracle, diagnostics=diag,
+                       provenance=Provenance(oracle_inputs=[] if direct_in else ["direct_removal"]))
     elapsed = time.time() - t0
     B, grid, times = run.scan.B, run.grid, run.sp.times
-    uuv = ds.tracks["uuv1"].position_at(times)
+    uuv = truth.tracks["uuv1"].position_at(times)
     est = grid[np.argmax(B, axis=0)]
     err = np.hypot(*(est - uuv).T)
     B3 = np.zeros_like(B)
@@ -112,10 +119,11 @@ def run_config(name: str, ds: HarborDataset, env, layout, f_max: float, doppler:
     est3 = grid[np.argmax(B3, axis=0)]
     err3 = np.hypot(*(est3 - uuv).T)
     contrast = 10 * np.log10(np.max(B, axis=0) / np.maximum(np.median(B, axis=0), 1e-30))
-    ship_err = np.hypot(*(run.ship.refined - ds.tracks["ferry"].position_at(times)).T)
+    ship_err = np.hypot(*(run.ship.refined - truth.tracks["ferry"].position_at(times)).T)
     live = run.sp.weights[layout.slices["cable1"]] > 0
     summary = {
-        "config": name, "doppler": doppler, "track_smooth_s": smooth if doppler else 0.0, "oracle_inputs": ORACLE_INPUTS[name], "frames": int(len(times)),
+        "config": name, "doppler": doppler, "track_smooth_s": smooth if doppler else 0.0, "oracle_inputs": ORACLE_INPUTS[name],
+        "provenance": run.provenance.to_dict(), "frames": int(len(times)),
         "band_hz": [bc.f_lo, 0.95 * f_max], "chain_s": elapsed,
         "median_error_m": float(np.median(err)), "p90_error_m": float(np.percentile(err, 90)),
         "within_5m": float(np.mean(err <= 5.0)), "within_10m": float(np.mean(err <= 10.0)),
@@ -139,6 +147,9 @@ def main() -> None:
     ap.add_argument("--configs", default=",".join(CONFIGS))
     ap.add_argument("--doppler", action="store_true", help="also run configurations 2 to 4 with eca_doppler=True")
     ap.add_argument("--smooth", type=float, default=0.0, help="track_smooth_s of the Doppler variants (local straight line fit of the refined track)")
+    ap.add_argument("--propagator", choices=("simulator", "free"), default="simulator",
+                    help="replicas: FDTD dispersion corrected (simulator knowledge) or free field (blind)")
+    ap.add_argument("--cuda", action="store_true", help="run the chain on the GPU (maps within 1e-12 of the CPU)")
     ap.add_argument("--frame", type=int, default=40, help="frame index of maps_by_config.png")
     args = ap.parse_args()
     out = Path(args.out)
@@ -154,24 +165,25 @@ def main() -> None:
     variants = [(c, False) for c in names] + ([(c, True) for c in names if c != "oracle"] if args.doppler else [])
     results = {"criterion": {**CRITERION, "text": "configuration 'blind' on the fine dataset: median echo contrast >= 10 dB and >= 50 % of frames within 5 m"},
                "configs": {c: {"direct_in_traces": v[0], "reference": v[1], "exact_track": v[2], "oracle_inputs": ORACLE_INPUTS[c]} for c, v in CONFIGS.items()},
-               "datasets": {}, "metrics": {}}
+               "propagator": args.propagator, "datasets": {}, "metrics": {}}
     (out / "results.json").write_text(json.dumps(results, indent=2))       # the criterion is on disk before any run
     say(f"criterion: {results['criterion']['text']}")
     maps = {}
     for tag, path in (("coarse", args.coarse), ("fine", args.fine)):
-        if not Path(path).exists():
+        if not dataset_exists(path):
             say(f"[{tag}] {path} missing, skipped")
             continue
         ds = HarborDataset.load(path)
-        env = build_environment(ds.cfg)
-        layout = build_layout(ds.cfg, env)
-        f_max = f_max_for_grid(env.dx)
-        say(f"[{tag}] {path}: {env.dx} m grid, fs {ds.fs:.0f} Hz, band 100 to {0.95 * f_max:.0f} Hz, {layout.n_receivers} channels")
-        results["datasets"][tag] = {"path": path, "dx": env.dx, "fs": ds.fs, "band_hz": [100.0, 0.95 * f_max]}
+        obs, truth = ds.observation, ds.truth
+        env, layout = obs.environment, obs.geometry
+        f_max = obs.meta["band_hz"][1]
+        say(f"[{tag}] {path}: {env.dx} m chart, fs {obs.fs:.0f} Hz, band 100 to {0.95 * f_max:.0f} Hz, {layout.n_receivers} channels")
+        results["datasets"][tag] = {"path": path, "dx": env.dx, "fs": obs.fs, "band_hz": [100.0, 0.95 * f_max]}
         results["metrics"][tag] = {}
         for name, dop in variants:
             key = name + (("+doppler" + (f"+smooth{args.smooth:g}" if args.smooth else "")) if dop else "")
-            summary, run, uuv, est = run_config(name, ds, env, layout, f_max, doppler=dop, smooth=args.smooth)
+            summary, run, uuv, est = run_config(name, obs, truth, f_max, doppler=dop, smooth=args.smooth, propagator=args.propagator,
+                                                use_cuda=args.cuda)
             results["metrics"][tag][key] = summary
             maps[tag, key] = (run, uuv, est, env, layout)
             eca = (f", ECA direct {summary['eca_direct_depth_db']:.1f} dB, echo loss {summary['eca_echo_loss_db']:.2f} dB"
@@ -218,7 +230,9 @@ def main() -> None:
         if m == "within_5m":
             ax.axhline(CRITERION["within_5m_min"], color="r", ls="--", label="criterion")
     axes[0, 0].legend(fontsize=8)
-    fig.suptitle("Bistatic ablation: oracle inputs removed one at a time (coherent map, 0.5 s frames)", fontsize=12)
+    fig.suptitle("Bistatic ablation: oracle inputs removed one at a time (coherent map, 0.5 s frames)\n"
+                 f"replicas: {'FDTD dispersion corrected (simulator knowledge)' if args.propagator == 'simulator' else 'free field (blind)'}",
+                 fontsize=12)
     fig.savefig(out / "metrics_by_config.png", dpi=110, bbox_inches="tight")
 
     # Maps: one frame per configuration and dataset.
@@ -241,7 +255,8 @@ def main() -> None:
             ax.plot(*uuv[k], "o", mfc="none", mec="lime", mew=2, ms=14, zorder=5)
             ax.plot(*est[k], "x", color="w", ms=10, mew=2, zorder=6)
             s = results["metrics"][tag][key]
-            ax.set_title(f"{tag}: {key}\nt = {times[k]:.1f} s, err {np.hypot(*(est[k] - uuv[k])):.1f} m, contrast {s['contrast_db_median']:.1f} dB", fontsize=9)
+            prov = Provenance.from_dict(s["provenance"])
+            ax.set_title(f"{tag}: {key} [{'blind' if prov.blind else 'not blind'}]\nt = {times[k]:.1f} s, err {np.hypot(*(est[k] - uuv[k])):.1f} m, contrast {s['contrast_db_median']:.1f} dB", fontsize=9)
             ax.set_xlim(xs[0], xs[-1]); ax.set_ylim(ys[0], ys[-1])
             if ax.get_legend():
                 ax.get_legend().remove()

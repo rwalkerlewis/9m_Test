@@ -1,0 +1,10 @@
+grid 801 x 601 at 0.5 m, fs 6000 Hz, 60000 steps, 200 channels, band to 800 Hz
+criterion: median depth over live cable channels with the data reference >= 20.0 dB
+6 FDTD runs in 2 s
+stationary range  193.0 m: data   2.5 dB (p10   2.2, pos err 18.2 m)  oracle   1.1 dB (p10   0.4, pos err 18.2 m)  oracle_exact  31.5 dB (p10  19.3, pos err  0.0 m)  -> FAIL
+moving     range  193.0 m: data   4.6 dB (p10   3.2, pos err  6.9 m)  oracle   5.6 dB (p10   5.3, pos err  6.9 m)  oracle_exact  24.4 dB (p10  17.3, pos err  0.0 m)  -> FAIL
+stationary range   99.0 m: data  19.9 dB (p10   8.0, pos err  0.4 m)  oracle  41.5 dB (p10  21.3, pos err  0.4 m)  oracle_exact  42.2 dB (p10  21.3, pos err  0.0 m)  -> FAIL
+moving     range   99.0 m: data   7.3 dB (p10   5.6, pos err  1.4 m)  oracle   6.7 dB (p10   4.2, pos err  1.4 m)  oracle_exact  24.6 dB (p10  20.4, pos err  0.0 m)  -> FAIL
+stationary range   29.0 m: data   6.8 dB (p10   1.2, pos err  5.6 m)  oracle   6.8 dB (p10   6.5, pos err  5.6 m)  oracle_exact  50.6 dB (p10  30.1, pos err  0.0 m)  -> FAIL
+moving     range   29.0 m: data   5.6 dB (p10   4.7, pos err  1.2 m)  oracle   6.9 dB (p10   6.5, pos err  1.2 m)  oracle_exact  21.5 dB (p10  19.6, pos err  0.0 m)  -> FAIL
+wrote output/harbor_cancel/freefield
