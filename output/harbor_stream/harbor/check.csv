@@ -1,8 +1,0 @@
-object,kind,radiates,ais,frames,top_peak_hit,any_peak_hit,median_error_m
-ferry,ship,True,True,56,0.000,0.000,
-tug,ship,True,True,56,0.000,0.000,
-moored,ship,True,True,56,0.000,0.000,
-uuv1,uuv,True,False,56,0.000,0.000,
-uuv2,uuv,True,False,56,0.000,0.000,
-diver,diver,True,False,56,0.000,0.000,
-static_scatter,uuv,False,False,56,0.000,0.000,
