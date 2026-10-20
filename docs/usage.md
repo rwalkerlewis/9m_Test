@@ -463,9 +463,9 @@ python examples/harbor_bistatic_demo.py \
     --out output/harbor_bistatic/demo
 ```
 
-The demo intentionally uses an oracle ferry waveform/track and subtracts the truth direct-path
-component, so read it as an idealized echo-localization experiment, not blind operational
-detection (`demo_summary.json` lists these under `provenance`). New datasets are written as
+The demo is intentionally given the true ferry waveform and exact track and removes the direct path
+exactly with the truth component, so read it as an idealized echo-localization experiment, not
+detection with everything estimated from the traces (`demo_summary.json` lists these under `provenance`). New datasets are written as
 `dataset.observation.npz` and `dataset.truth.npz`; `--dataset` may name the old single file or the
 pair. For analytical free-field references, run `examples/harbor_mfp_demo.py`; to apply
 that style of model to a saved harbor dataset, see `examples/harbor_mfp_domain.py`. Other visual

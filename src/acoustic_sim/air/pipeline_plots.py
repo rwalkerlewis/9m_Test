@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 
 
 def _annotate(provenance) -> None:
-    """Print the provenance flags (oracle inputs, simulator knowledge) on the current figure."""
+    """Print the provenance flags (truth inputs, simulator knowledge) on the current figure."""
     if provenance is not None:
         from acoustic_sim.contract import annotate_figure
 

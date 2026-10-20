@@ -170,7 +170,7 @@ class Propagator(Protocol):
     the wavenumber ``(F, P, N)`` of every point pair, with ``theta = atan2(|dy|, |dx|)`` needed only when
     ``needs_angles``.  The chains use that hook in their cached geometry loops; a non analytic propagator
     goes through ``greens``.  ``c`` is its nominal sound speed, ``knowledge`` the simulator knowledge it
-    uses (``()`` for a blind propagator), which the chains copy into the result's :class:`Provenance`.
+    uses (``()`` for a propagator built from the public environment alone), which the chains copy into the result's :class:`Provenance`.
     """
 
     c: float
@@ -187,8 +187,8 @@ class Propagator(Protocol):
 # Provenance
 # ----------------------------------------------------------------------
 
-ORACLE_INPUTS = ("waveform", "track", "direct_removal", "components", "range_calibration", "range_method",
-                 "altitude", "hit_feedback", "labels")
+TRUTH_INPUTS = ("waveform", "track", "direct_removal", "components", "range_calibration", "range_method",
+                "altitude", "hit_feedback", "labels")
 SIMULATOR_KNOWLEDGE = ("dispersion", "empirical_replicas", "band")
 
 
@@ -196,7 +196,7 @@ SIMULATOR_KNOWLEDGE = ("dispersion", "empirical_replicas", "band")
 class Provenance:
     """What a result knew beyond the observation.
 
-    ``oracle_inputs``: truth the processing read (``"waveform"``: the true illuminator waveform,
+    ``truth_inputs``: truth the processing read (``"waveform"``: the true illuminator waveform,
     ``"track"``: the exact illuminator track, ``"direct_removal"``: the direct path removed with the
     truth component, ``"components"``: truth components passed through a stage for diagnostics, ...).
     ``simulator_knowledge``: forward model parameters the processing used (``"dispersion"``: the FDTD
@@ -205,7 +205,7 @@ class Provenance:
     ``held_out``: the data were not used to choose any parameter of the processing.
     """
 
-    oracle_inputs: list[str] = field(default_factory=list)
+    truth_inputs: list[str] = field(default_factory=list)
     simulator_knowledge: list[str] = field(default_factory=list)
     data: str = "forward_model"
     held_out: bool = False
@@ -213,32 +213,33 @@ class Provenance:
     def __post_init__(self) -> None:
         if self.data not in ("observation", "forward_model"):
             raise ValueError(f"data must be 'observation' or 'forward_model', got {self.data!r}")
-        self.oracle_inputs = _unique(self.oracle_inputs)
+        self.truth_inputs = _unique(self.truth_inputs)
         self.simulator_knowledge = _unique(self.simulator_knowledge)
 
     @property
-    def blind(self) -> bool:
-        return not self.oracle_inputs and not self.simulator_knowledge
+    def all_estimated(self) -> bool:
+        """True when everything was estimated from the observation: no truth input, no simulator knowledge."""
+        return not self.truth_inputs and not self.simulator_knowledge
 
-    def with_flags(self, oracle_inputs=(), simulator_knowledge=()) -> "Provenance":
+    def with_flags(self, truth_inputs=(), simulator_knowledge=()) -> "Provenance":
         """A copy with the given flags added."""
-        return Provenance(list(self.oracle_inputs) + list(oracle_inputs),
+        return Provenance(list(self.truth_inputs) + list(truth_inputs),
                           list(self.simulator_knowledge) + list(simulator_knowledge), self.data, self.held_out)
 
     def to_dict(self) -> dict:
-        return {"oracle_inputs": list(self.oracle_inputs), "simulator_knowledge": list(self.simulator_knowledge),
+        return {"truth_inputs": list(self.truth_inputs), "simulator_knowledge": list(self.simulator_knowledge),
                 "data": self.data, "held_out": bool(self.held_out)}
 
     @classmethod
     def from_dict(cls, d: dict) -> "Provenance":
-        return cls(list(d.get("oracle_inputs", [])), list(d.get("simulator_knowledge", [])),
+        return cls(list(d.get("truth_inputs", [])), list(d.get("simulator_knowledge", [])),
                    d.get("data", "forward_model"), bool(d.get("held_out", False)))
 
     def label(self) -> str:
         """One line for figure titles and table captions."""
-        parts = ["blind" if self.blind else "NOT BLIND"]
-        if self.oracle_inputs:
-            parts.append("oracle: " + ", ".join(self.oracle_inputs))
+        parts = ["everything estimated from the traces" if self.all_estimated else "NOT ALL ESTIMATED"]
+        if self.truth_inputs:
+            parts.append("given from the truth: " + ", ".join(self.truth_inputs))
         if self.simulator_knowledge:
             parts.append("simulator: " + ", ".join(self.simulator_knowledge))
         parts.append("synthetic data" if self.data == "forward_model" else "recorded data")
@@ -254,8 +255,8 @@ def _unique(items) -> list[str]:
 
 
 def annotate_figure(fig, prov: Provenance, y: float = 0.005, fontsize: float = 8.0) -> None:
-    """Print the provenance flags at the bottom of a matplotlib figure (red when not blind)."""
-    fig.text(0.5, y, prov.label(), ha="center", va="bottom", fontsize=fontsize, color="0.25" if prov.blind else "firebrick")
+    """Print the provenance flags at the bottom of a matplotlib figure (red when not everything was estimated)."""
+    fig.text(0.5, y, prov.label(), ha="center", va="bottom", fontsize=fontsize, color="0.25" if prov.all_estimated else "firebrick")
 
 
 # ----------------------------------------------------------------------

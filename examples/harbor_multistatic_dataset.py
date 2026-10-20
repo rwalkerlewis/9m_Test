@@ -12,8 +12,8 @@ of every object per frame.
 
 Outputs in ``--out/<fine|coarse>/``: ``dataset.npz``, ``truth.json`` (per object: kind, radiates,
 reports AIS, body size, and per frame position and velocity), ``map.png``, ``components.png``,
-``levels.json``, ``scenario_used.json`` and ``run.log``.  ``ferry_only_map.png`` is the oracle
-bistatic chain (direct path removed with the truth component, oracle ferry waveform, exact
+``levels.json``, ``scenario_used.json`` and ``run.log``.  ``ferry_only_map.png`` is the bistatic
+chain given everything from the truth (direct path removed exactly, true ferry waveform, exact
 ferry track) on the ferry's scattered component alone, with the truth of every body marked, to
 confirm that the echoes of the bodies appear; it is a check of the dataset, not a result.
 
@@ -241,20 +241,20 @@ def main() -> None:
     if args.no_check:
         return
 
-    # Ferry only oracle check: do the bodies' echoes appear?
+    # Ferry only check given everything from the truth: do the bodies' echoes appear?
     comps = ds.components
     gain = ds.gain[:, None]
     traces = gain * comps["scattered:" + scattered_key("ferry", COMBINED)].astype(float) + comps["noise"].astype(float)
     ferry = next(v for v in cfg.vessels if v.id == "ferry")
-    oracle = ferry.level_pa * vessel_injection(ferry, tracks["ferry"], env, cfg)
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference="oracle", removal="none",
+    given = ferry.level_pa * vessel_injection(ferry, tracks["ferry"], env, cfg)
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference="true_waveform", removal="none",
                         method="coherent", coherent_norm="snr", exclusion_radius=25.0, propagator=SimulatorAwarePropagator.from_scenario(env, cfg.fdtd))
     sp = stft(traces, layout, fs, bc, f_max)
     ship_xy = tracks["ferry"].position_at(sp.times)
     t0 = time.time()
-    run = run_bistatic(traces, layout, fs, env, ds.ais, bc, f_max, oracle_signal=oracle, diagnostics=Diagnostics(ship_xy=ship_xy),
-                       provenance=Provenance(oracle_inputs=["direct_removal"]))
-    say(f"[{tag}] ferry only oracle chain: {time.time() - t0:.0f} s, {len(run.grid)} cells, {len(sp.times)} frames")
+    run = run_bistatic(traces, layout, fs, env, ds.ais, bc, f_max, true_waveform=given, diagnostics=Diagnostics(exact_track=ship_xy),
+                       provenance=Provenance(truth_inputs=["direct_removal"]))
+    say(f"[{tag}] ferry only chain (given the truth): {time.time() - t0:.0f} s, {len(run.grid)} cells, {len(sp.times)} frames")
     B, grid, times = run.scan.B, run.grid, run.sp.times
     xs, ys = np.unique(grid[:, 0]), np.unique(grid[:, 1])
     ix = np.rint((grid[:, 0] - xs[0]) / bc.grid_dx).astype(int)
@@ -286,14 +286,14 @@ def main() -> None:
             ax.get_legend().remove()
     axes[0, 0].legend(loc="lower left", fontsize=7)
     fig.colorbar(im, ax=axes, shrink=0.6, label="coherent map [dB re peak]")
-    fig.suptitle("Ferry only, oracle setup (truth direct removal, oracle waveform, exact track): circles are the bodies "
+    fig.suptitle("Ferry only, given the truth (direct path removed exactly, true waveform, exact track): circles are the bodies "
                  "(green moving, magenta static)", fontsize=11)
     annotate_figure(fig, run.provenance)
     fig.savefig(out / "ferry_only_map.png", dpi=100, bbox_inches="tight")
     say("[ferry only] map value within 4 m of each body over the map median, summed map: " + ", ".join(f"{k} {v:+.1f} dB" for k, v in check.items()))
     lv = json.loads((out / "levels.json").read_text())
-    lv["ferry_only_oracle_check_db"] = check
-    lv["ferry_only_oracle_inputs"] = ["direct path removed with the truth component", "oracle ferry waveform", "exact ferry track"]
+    lv["ferry_only_truth_check_db"] = check
+    lv["ferry_only_truth_inputs"] = ["direct path removed with the truth component", "true ferry waveform", "exact ferry track"]
     lv["ferry_only_provenance"] = run.provenance.to_dict()
     (out / "levels.json").write_text(json.dumps(lv, indent=2))
 

@@ -1,4 +1,4 @@
-"""Blind replica model of the processing chains: the free field 2-D Green's function.
+"""Replica model of the processing chains built from the public chart alone: the free field 2-D Green's function.
 
 :class:`FreeFieldPropagator` implements the :class:`acoustic_sim.contract.Propagator` protocol from a
 nominal sound speed alone, which is all a deployed system knows.  It is the default of
@@ -71,7 +71,7 @@ class AnalyticPropagator:
 
 
 class FreeFieldPropagator(AnalyticPropagator):
-    """Isotropic free field: ``k = 2 pi f / c`` for every direction (blind: no simulator knowledge)."""
+    """Isotropic free field: ``k = 2 pi f / c`` for every direction (no simulator knowledge)."""
 
     def __init__(self, c: float) -> None:
         self.c = float(c)

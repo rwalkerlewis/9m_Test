@@ -87,7 +87,7 @@ def test_impl_validation():
 
 
 @pytest.mark.parametrize("cuda", DEVICES)
-@pytest.mark.parametrize("reference, doppler", [("oracle", False), ("data", False), ("oracle", True), ("data", True)])
+@pytest.mark.parametrize("reference, doppler", [("true_waveform", False), ("data", False), ("true_waveform", True), ("data", True)])
 def test_refinement_and_eca_match_reference(scene, cuda, reference, doppler):
     env, layout, traces, direct, echo, s, ais = scene
     res = {}
@@ -97,7 +97,7 @@ def test_refinement_and_eca_match_reference(scene, cuda, reference, doppler):
         sp = stft(traces, layout, FS, bc, F_MAX)
         model = _model(layout, bc, sp)
         ship = ship_positions(sp, ais, model, bc)
-        outs, wf = eca_stage(traces, layout, FS, env, sp, ship, bc, s if reference == "oracle" else None, [direct, echo])
+        outs, wf = eca_stage(traces, layout, FS, env, sp, ship, bc, s if reference == "true_waveform" else None, [direct, echo])
         res[impl] = (ship, outs, wf)
     (r_ship, r_outs, r_wf), (v_ship, v_outs, v_wf) = res["reference"], res["vectorized"]
     assert np.array_equal(v_ship.refined, r_ship.refined) and np.array_equal(v_ship.present, r_ship.present)
@@ -115,13 +115,13 @@ def test_refinement_and_eca_match_reference(scene, cuda, reference, doppler):
 @pytest.mark.parametrize("cuda", DEVICES)
 def test_maps_match_reference(scene, cuda):
     env, layout, traces, direct, echo, s, ais = scene
-    bc = BistaticConfig(reference="oracle", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
+    bc = BistaticConfig(reference="true_waveform", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
                         impl="reference", propagator=DISPERSION)
     sp = stft(traces, layout, FS, bc, F_MAX)
     grid = build_grid(env, bc)
-    truth = Diagnostics(ship_xy=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0]))
+    truth = Diagnostics(exact_track=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0]))
     runs = {impl: run_bistatic(traces, layout, FS, env, ais, BistaticConfig(**{**bc.__dict__, "impl": impl, "use_cuda": cuda}),
-                               F_MAX, oracle_signal=s, diagnostics=truth) for impl in ("reference", "vectorized")}
+                               F_MAX, true_waveform=s, diagnostics=truth) for impl in ("reference", "vectorized")}
     assert _rel(runs["vectorized"].scan.B, runs["reference"].scan.B) < 1e-10
     assert _rel(runs["vectorized"].Z, runs["reference"].Z) < 1e-10
     assert np.array_equal(runs["vectorized"].ref, runs["reference"].ref)
@@ -145,11 +145,11 @@ def test_maps_match_reference(scene, cuda):
 @pytest.mark.parametrize("cuda", DEVICES)
 def test_motion_integrate_matches_reference(scene, cuda):
     env, layout, traces, direct, echo, s, ais = scene
-    bc = BistaticConfig(reference="oracle", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
+    bc = BistaticConfig(reference="true_waveform", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
                         impl="reference", propagator=DISPERSION)
     sp = stft(traces, layout, FS, bc, F_MAX)
-    run = run_bistatic(traces, layout, FS, env, ais, bc, F_MAX, oracle_signal=s,
-                       diagnostics=Diagnostics(ship_xy=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0])))
+    run = run_bistatic(traces, layout, FS, env, ais, bc, F_MAX, true_waveform=s,
+                       diagnostics=Diagnostics(exact_track=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0])))
     speeds = np.array([(vx, vy) for vx in np.linspace(-3, 3, 5) for vy in np.linspace(-3, 3, 5)])
     for coherent in (True, False):
         Z = run.Z if coherent else np.abs(run.Z)

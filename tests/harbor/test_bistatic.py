@@ -62,7 +62,7 @@ def _depth_db(before: np.ndarray, after: np.ndarray) -> np.ndarray:
     return 10 * np.log10(np.sum(before ** 2, axis=1) / np.maximum(np.sum(after ** 2, axis=1), 1e-30))
 
 
-def _old_inline(traces, layout, fs, env, sp, ship, bc, oracle_signal, comps):
+def _old_inline(traces, layout, fs, env, sp, ship, bc, true_waveform, comps):
     """The ECA block of ``run_bistatic`` before it was factored out (verbatim)."""
     nb = int(round(bc.eca_block_s * fs))
     n_blocks = int(np.ceil(traces.shape[1] / nb))
@@ -73,12 +73,12 @@ def _old_inline(traces, layout, fs, env, sp, ship, bc, oracle_signal, comps):
     else:
         sl = layout.slices[bc.ref_channels]
         chans = np.arange(sl.start, sl.stop)[sp.weights[sl] > 0]
-    waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, oracle_signal)
+    waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, true_waveform)
     images = [clutter_images(env, sxy) for sxy in ship_b] if bc.eca_images else []
     return eca_remove([traces] + comps, waveform, layout, fs, ship_b, images, bc.eca_block_s, bc), waveform
 
 
-@pytest.mark.parametrize("reference", ["oracle", "data"])
+@pytest.mark.parametrize("reference", ["true_waveform", "data"])
 def test_eca_stage_matches_old_inline_code(scene, reference):
     env, layout, traces, direct, echo, s, ais = scene
     bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=False)
@@ -86,14 +86,14 @@ def test_eca_stage_matches_old_inline_code(scene, reference):
     model = ReplicaModel(layout, bc.c)
     model.weights = sp.weights
     ship = ship_positions(sp, ais, model, bc)
-    oracle = s if reference == "oracle" else None
-    outs, wf = eca_stage(traces, layout, FS, env, sp, ship, bc, oracle, [direct, echo])
-    outs_old, wf_old = _old_inline(traces, layout, FS, env, sp, ship, bc, oracle, [direct, echo])
+    given = s if reference == "true_waveform" else None
+    outs, wf = eca_stage(traces, layout, FS, env, sp, ship, bc, given, [direct, echo])
+    outs_old, wf_old = _old_inline(traces, layout, FS, env, sp, ship, bc, given, [direct, echo])
     assert np.array_equal(wf, wf_old)
     assert len(outs) == 3 and all(np.array_equal(a, b) for a, b in zip(outs, outs_old))
 
 
-@pytest.mark.parametrize("reference, min_depth_db", [("oracle", 25.0), ("data", 12.0)])
+@pytest.mark.parametrize("reference, min_depth_db", [("true_waveform", 25.0), ("data", 12.0)])
 def test_eca_attenuates_direct_and_keeps_echo(scene, reference, min_depth_db):
     env, layout, traces, direct, echo, s, ais = scene
     bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=False)
@@ -101,7 +101,7 @@ def test_eca_attenuates_direct_and_keeps_echo(scene, reference, min_depth_db):
     model = ReplicaModel(layout, bc.c)
     model.weights = sp.weights
     ship = ship_positions(sp, ais, model, bc)
-    outs, _ = eca_stage(traces, layout, FS, env, sp, ship, bc, s if reference == "oracle" else None, [direct, echo])
+    outs, _ = eca_stage(traces, layout, FS, env, sp, ship, bc, s if reference == "true_waveform" else None, [direct, echo])
     depth, loss = _depth_db(direct, outs[1]), _depth_db(echo, outs[2])
     assert np.median(depth) > min_depth_db, depth
     assert np.median(loss) < 1.0, loss
@@ -111,11 +111,11 @@ def test_eca_attenuates_direct_and_keeps_echo(scene, reference, min_depth_db):
 
 def test_run_bistatic_end_to_end_reports_eca_depth_and_finds_the_body(scene):
     env, layout, traces, direct, echo, s, ais = scene
-    bc = BistaticConfig(reference="oracle", removal="eca", method="coherent", c=C, grid_dx=5.0, edge=20.0,
+    bc = BistaticConfig(reference="true_waveform", removal="eca", method="coherent", c=C, grid_dx=5.0, edge=20.0,
                         exclusion_radius=30.0, refine=False)
     sp = stft(traces, layout, FS, bc, F_MAX)
-    truth = Diagnostics(ship_xy=np.repeat(SHIP[None], len(sp.times), axis=0), components={"direct:ship": direct, "scattered:ship>body": echo})
-    run = run_bistatic(traces, layout, FS, env, ais, bc, F_MAX, oracle_signal=s, diagnostics=truth)
+    truth = Diagnostics(exact_track=np.repeat(SHIP[None], len(sp.times), axis=0), components={"direct:ship": direct, "scattered:ship>body": echo})
+    run = run_bistatic(traces, layout, FS, env, ais, bc, F_MAX, true_waveform=s, diagnostics=truth)
     assert run.eca is not None
     assert np.median(run.eca.removed_db) > 25.0
     assert np.median(run.eca.echo_lost_db) < 1.0
@@ -127,7 +127,7 @@ def test_run_bistatic_end_to_end_reports_eca_depth_and_finds_the_body(scene):
 
 def test_doppler_eca_follows_a_moving_ship(scene):
     """A ship at 4 m/s: the per block fixed lags leave the delay drift inside a block, the per
-    sample delays (``eca_doppler``) follow it, for both the oracle and the data reference."""
+    sample delays (``eca_doppler``) follow it, for both the true waveform and the data reference."""
     env, layout, _, _, _, s, _ = scene
     n = len(s)
     tt = np.arange(n) / FS
@@ -141,17 +141,17 @@ def test_doppler_eca_follows_a_moving_ship(scene):
     ais = AISReports(vessel=np.array(["ship"] * k), t=t_ais, xy=SHIP[None, :] + np.outer(t_ais, [4.0, 0.0]),
                      sog=np.full(k, 4.0), cog=np.zeros(k))
     depths = {}
-    for reference in ("oracle", "data"):
+    for reference in ("true_waveform", "data"):
         for doppler in (False, True):
             bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=False, eca_doppler=doppler)
             sp = stft(traces, layout, FS, bc, F_MAX)
             model = ReplicaModel(layout, bc.c)
             model.weights = sp.weights
             ship = ship_positions(sp, ais, model, bc)
-            outs, _ = eca_stage(traces, layout, FS, env, sp, ship, bc, s if reference == "oracle" else None, [direct])
+            outs, _ = eca_stage(traces, layout, FS, env, sp, ship, bc, s if reference == "true_waveform" else None, [direct])
             depths[reference, doppler] = float(np.median(_depth_db(direct, outs[1])))
-    assert depths["oracle", False] < 20.0, depths
-    assert depths["oracle", True] > 30.0, depths
+    assert depths["true_waveform", False] < 20.0, depths
+    assert depths["true_waveform", True] > 30.0, depths
     assert depths["data", True] > depths["data", False] + 6.0, depths
 
 
@@ -166,7 +166,7 @@ def test_track_smoothing_removes_refinement_jitter(scene):
     direct = np.stack([np.interp(tt - np.hypot(*(ship_t - r).T) / C, tt, s, left=0.0, right=0.0) / np.sqrt(np.hypot(*(SHIP - r)))
                        for r in rec])
     traces = direct + 0.002 * np.random.default_rng(5).standard_normal(direct.shape)
-    bc = BistaticConfig(reference="oracle", removal="eca", c=C, refine=False, eca_doppler=True)
+    bc = BistaticConfig(reference="true_waveform", removal="eca", c=C, refine=False, eca_doppler=True)
     sp = stft(traces, layout, FS, bc, F_MAX)
     exact = SHIP[None, :] + np.outer(sp.times, [4.0, 0.0])
     jitter = exact + np.random.default_rng(8).standard_normal(exact.shape)

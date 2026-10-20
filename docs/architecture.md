@@ -107,21 +107,21 @@ Every result object the processing side returns carries a `contract.Provenance`
 
 ```
 "provenance": {
-  "oracle_inputs": ["waveform", "track", "direct_removal"],   # [] when blind
+  "truth_inputs": ["waveform", "track", "direct_removal"],   # [] when everything is estimated
   "simulator_knowledge": ["dispersion"],                      # [] when none
   "data": "observation" | "forward_model",
   "held_out": true | false
 }
 ```
 
-The chains set the flags they can see (`reference="oracle"`: `"waveform"`; `ship_positions(truth=...)`
-or `Diagnostics(ship_xy=...)`: `"track"`; truth components through the ECA: `"components"`; the
+The chains set the flags they can see (`reference="true_waveform"`: `"waveform"`; `ship_positions(truth=...)`
+or `Diagnostics(exact_track=...)`: `"track"`; truth components through the ECA: `"components"`; the
 propagator's `knowledge`; an empirical localiser: `"empirical_replicas"`). The caller passes what only
-it knows, e.g. `provenance=Provenance(oracle_inputs=["direct_removal"])` when it built the traces
+it knows, e.g. `provenance=Provenance(truth_inputs=["direct_removal"])` when it built the traces
 without the direct path, and whether the data are recorded and held out. In air:
-`"range_calibration"`, `"range_method"`, `"altitude"` (the oracle set-up steps of
-`air/diagnostics.py`) and `"hit_feedback"` (the run stops after `max_hits` hits scored against the
-truth). `contract.annotate_figure` prints the flags on a figure (red when not blind); the air
+`"range_calibration"`, `"range_method"`, `"altitude"` (the set-up steps of
+`air/diagnostics.py` given from the truth) and `"hit_feedback"` (the run stops after `max_hits` hits scored against the
+truth). `contract.annotate_figure` prints the flags on a figure (red when not everything was estimated); the air
 pipeline plots and the bistatic, M3 and M4 figures use it.
 
 Scoring takes the `Truth` as an explicit argument: `water/evaluate.py` (`score_detections`,
@@ -129,8 +129,9 @@ Scoring takes the `Truth` as an explicit argument: `water/evaluate.py` (`score_d
 sanctioned place truth enters after inference. The classifiers (`HarborClassifier`, the air
 classifiers) infer from the observation; labels come from the truth only inside the scoring call.
 
-**Documentation rule.** A table in `docs/` that contains an oracle or simulator aware row must
-contain the blind row for the same case beside it, and the rows say which is which.
+**Documentation rule.** A table in `docs/` that contains a row given truth inputs or simulator
+knowledge must contain the row with everything estimated from the traces for the same case beside
+it, and the rows say which is which.
 
 ### Real data entry point
 
@@ -215,12 +216,12 @@ ocean water column.
 | Module | Responsibility |
 |--------|----------------|
 | `water/sensors.py`, `water/ais.py` | Shared: polyline cable geometry, pressure or gauge-length strain DAS, hydrophones, layout validation and channel splitting (`SensorLayout` is the water `Geometry`); AIS reports and the predictor (`generate_ais` is the forward side's generator) |
-| `water/propagation.py` | `green2d` and `FreeFieldPropagator`, the blind default replica model |
+| `water/propagation.py` | `green2d` and `FreeFieldPropagator`, the default replica model (nothing beyond the chart) |
 | `water/detection.py`, `water/suppression.py`, `water/occupancy.py` | Passive matched-field detection, CFAR, AIS-guided position refinement and ship suppression, and track-before-detect |
 | `water/bistatic.py`, `water/motion.py` | AIS-ship-illuminated echo processing, direct-path removal, and Bartlett/coherent/MVDR/MUSIC localization maps; motion-compensated integration (`motion_integrate`, re-exported by `bistatic.py`) |
 | `water/localiser.py` | Optional empirical replica refinement from a survey of measured (or, flagged, simulated) transfer functions |
 | `water/evaluate.py`, `water/classifier.py` | Scoring against the `Truth` (`score_detections`, `truth_labels`); optional harbor CNN/CVAE classifier |
-| `water/diagnostics.py` | Either side: `SimulatorAwarePropagator`, `VesselPathLocaliser` (replicas from the dataset's own FDTD gathers), `oracle_illuminator` |
+| `water/diagnostics.py` | Either side: `SimulatorAwarePropagator`, `VesselPathLocaliser` (replicas from the dataset's own FDTD gathers), `true_illuminator_waveform` |
 | `water/plotting.py`, `water/device.py` | Visualizations; CPU/CuPy dispatch |
 
 For implementation status, interpretation caveats, and complete scenario and example workflows,
@@ -244,7 +245,7 @@ on neither side of the contract.
 | `air/processor.py` | Matched-field processing in 2-D and 3-D (legacy MFP/EKF path). |
 | `air/tracker.py` | EKF and multi-target tracking for the air-domain pipeline. |
 | `air/fire_control.py` | Ballistic lead, engagement, and multi-target prioritization. |
-| `air/diagnostics.py` | Either side: the truth trajectory for scoring and plotting, and the flagged oracle set-up steps of the pipeline (`oracle_cpa_distance`, `oracle_altitude`). |
+| `air/diagnostics.py` | Either side: the truth trajectory for scoring and plotting, and the flagged set-up steps of the pipeline given from the truth (`true_cpa_distance`, `true_altitude`). |
 | `air/detection_main.py` | Full MFP/EKF pipeline orchestration (simulation and processing). |
 | `air/validate.py` | Amplitude, SNR, travel-time, localization and energy checks. |
 | `air/config.py` | `DetectionConfig` for the MFP/EKF pipeline. |
@@ -319,7 +320,7 @@ traces.npy + metadata.json
         ▼
   load_simulation()       → Observation (traces, fs, mic positions, c, wind)
                             + Truth (source trajectory, solver parameters)
-  air.diagnostics         → oracle set-up from the Truth, flagged in the
+  air.diagnostics         → set-up given from the Truth, flagged in the
                             provenance: RMS calibration distance, auto
                             range choice, source altitude
         │
@@ -401,7 +402,7 @@ The pipeline's processing stages receive only the `Observation` ([Sensing contra
 
 They do **not** receive the velocity model, domain type, or any FDTD internal state.  The `Truth`
 (source trajectory, solver parameters) is used for the evaluation metrics and hit scoring
-(`find_cpa` against the true path) and, as flagged oracle inputs, for the RMS range calibration,
+(`find_cpa` against the true path) and, as flagged truth inputs, for the RMS range calibration,
 the auto range-method choice and the source altitude before the window loop (see
 [Algorithms §2.1](algorithms.md#21--rms-inverse-square-law)).  With `max_hits > 0` the loop stops
 after that many scored hits, so the number of processed windows depends on the truth too

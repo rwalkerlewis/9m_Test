@@ -119,7 +119,7 @@ class DetectionEngine:
         Minimum detections before the WLS tracker produces a fit.
     provenance : Provenance
         What the caller knows about the data (synthetic or recorded).  :meth:`calibrate_range` with
-        ``oracle=True`` adds ``"range_calibration"``; a caller that chose the range method or the
+        ``from_truth=True`` adds ``"range_calibration"``; a caller that chose the range method or the
         source altitude from truth adds those flags.  Every :class:`WindowDetection` carries it.
     """
 
@@ -188,15 +188,15 @@ class DetectionEngine:
         self.tracker = CausalWLSTracker(min_detections=tracker_min_detections,
                                         max_history=tracker_max_history)
 
-    def calibrate_range(self, peak_rms: float, cpa_distance: float, oracle: bool = False) -> None:
+    def calibrate_range(self, peak_rms: float, cpa_distance: float, from_truth: bool = False) -> None:
         """Calibrate the range estimator from CPA observation.
 
-        *oracle*: *cpa_distance* came from the truth trajectory (flagged in :attr:`provenance`).
+        *from_truth*: *cpa_distance* came from the truth trajectory (flagged in :attr:`provenance`).
         """
         if isinstance(self.range_estimator, RMSRangeEstimator):
             self.range_estimator.calibrate(peak_rms, cpa_distance)
-            if oracle:
-                self.provenance.oracle_inputs = list(self.provenance.with_flags(["range_calibration"]).oracle_inputs)
+            if from_truth:
+                self.provenance.truth_inputs = list(self.provenance.with_flags(["range_calibration"]).truth_inputs)
 
     def reset(self) -> None:
         """Clear all internal state for a new scenario."""

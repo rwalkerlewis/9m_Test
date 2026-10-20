@@ -163,10 +163,10 @@ crudely represents its 1 m × 3 m body.
 
 For detector settings, `ProcessingConfig` controls STFT duration/hop, frequency band, scan grid,
 channel QC, common-mode removal, interference projection, peak extraction, optional CUDA, and
-the replica model (`propagator`; `None` is the blind free field, `SimulatorAwarePropagator` the
+the replica model (`propagator`; `None` is the free field, `SimulatorAwarePropagator` the
 FDTD dispersion correction, simulator knowledge). `SuppressionConfig` controls AIS ship refinement and model/adaptive
 projection. Bistatic-specific controls are in `BistaticConfig`: `reference` (`data` or
-`oracle`), `removal` (`eca`, `patch`, `adaptive`, `patch+adaptive`, `none`), `method` (`bartlett`,
+`true_waveform`), `removal` (`eca`, `patch`, `adaptive`, `patch+adaptive`, `none`), `method` (`bartlett`,
 `bartlett_phat`, `coherent`, `mvdr`, `music`), scan-grid resolution and `propagator`. These
 dataclasses and their defaults are documented in their module docstrings and summarized in
 [Harbor](harbor.md).

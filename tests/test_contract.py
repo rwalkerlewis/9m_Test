@@ -323,7 +323,7 @@ def _field_recording():
 def test_processing_runs_on_an_observation_built_from_plain_arrays(tmp_path):
     """The proof that the processing side works without the forward model: an Observation from plain
     arrays, saved and loaded, then ``run_bistatic`` and ``run_ais_aware`` to completion with the free
-    field propagator, blind provenance, and the body found near its position."""
+    field propagator, provenance with everything estimated, and the body found near its position."""
     from acoustic_sim.contract import ChartEnvironment, Observation, Provenance
     from acoustic_sim.water.bistatic import BistaticConfig, run_bistatic
     from acoustic_sim.water.detection import ProcessingConfig
@@ -344,7 +344,7 @@ def test_processing_runs_on_an_observation_built_from_plain_arrays(tmp_path):
     bc = BistaticConfig(c=prop.c, propagator=prop, f_lo=f_lo, f_hi=f_hi, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
                         coherent_norm="snr")
     run = run_bistatic(obs.traces, obs.geometry, obs.fs, obs.environment, obs.reports, bc, f_hi, provenance=prov)
-    assert run.provenance.blind and run.provenance.data == "observation"
+    assert run.provenance.all_estimated and run.provenance.data == "observation"
     B, near = run.scan.B, np.hypot(*(run.grid - rec["body"]).T) <= 6.0
     contrast = 10 * np.log10(B[near].max(axis=0) / np.median(B, axis=0))
     peak_at_body = np.hypot(*(run.grid[B.argmax(axis=0)] - rec["body"]).T) <= 8.0
@@ -354,7 +354,7 @@ def test_processing_runs_on_an_observation_built_from_plain_arrays(tmp_path):
                           grid_bounds=(20.0, 380.0, 20.0, 380.0), min_separation=40.0, refine_dx=2.0, refine_half=6.0)
     passive = run_ais_aware(obs.traces, obs.geometry, obs.fs, obs.environment, obs.reports, pc,
                             SuppressionConfig(refine_half=6.0, refine_step=2.0, min_significance=2.0), floor=0.0, provenance=prov)
-    assert passive.provenance.blind and len(passive.scan.times) > 0
+    assert passive.provenance.all_estimated and len(passive.scan.times) > 0
     assert passive.ships.ids == ["ship"]
 
 

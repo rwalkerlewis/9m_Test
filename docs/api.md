@@ -612,7 +612,7 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
 ### Passive detection and bistatic processing
 
 * `ProcessingConfig` — passive STFT band/window, channel QC, grid, interference rejection,
-  extraction, GPU and the replica model (`propagator`: `None` is the blind free field).
+  extraction, GPU and the replica model (`propagator`: `None` is the free field).
 * `build_grid(env, cfg, edge=150.0)` / `run_detection(traces, layout, fs, env, cfg, floor=0.0,
   grid=None, provenance=None)` from `acoustic_sim.water.detection` — construct the passive scan grid and run
   matched-field detection.
@@ -625,9 +625,9 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
 * `BistaticConfig` — bistatic STFT, reference, direct-path removal, processor, grid, peak and
   replica model (`propagator`) settings.
 * `build_grid(env, bc)` / `run_bistatic(traces, layout, fs, env, ais, bc, f_max, grid=None,
-  oracle_signal=None, diagnostics=None, floor=0.0, provenance=None)` from
-  `acoustic_sim.water.bistatic` — form bistatic scan maps and extracted peaks; `Diagnostics(ship_xy,
-  components)` holds the oracle inputs, and `run.provenance` lists every one used.  Its stages are public too: `stft`, `ship_positions`,
+  true_waveform=None, diagnostics=None, floor=0.0, provenance=None)` from
+  `acoustic_sim.water.bistatic` — form bistatic scan maps and extracted peaks; `Diagnostics(exact_track,
+  components)` holds the truth inputs, and `run.provenance` lists every one used.  Its stages are public too: `stft`, `ship_positions`,
   `eca_stage` (time-domain direct-path removal), `bistatic_map`, `extract_peaks`, and
   `ReplicaModel`.
 * `motion_integrate(Z, grid, times, speeds, coherent=True, impl="vectorized", use_cuda=False)`
@@ -636,7 +636,7 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
   per-velocity peaks.
 * `OccupancyConfig` / `OccupancyGrid(grid, cfg=None)` — track-before-detect over map frames;
   `.run(B, times, snapshot_frames=())` returns `OccupancyHistory`.
-* `FreeFieldPropagator(c)` from `acoustic_sim.water.propagation` — the blind replica model;
+* `FreeFieldPropagator(c)` from `acoustic_sim.water.propagation` — the free field replica model (nothing beyond the chart);
   `SimulatorAwarePropagator.from_truth(truth)` from `acoustic_sim.water.diagnostics` — FDTD-specific
   numerical-dispersion correction (simulator knowledge). Use it for simulated data only, not as a
   real-water model.
@@ -657,14 +657,14 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
 | `water/scatterer.py`, `water/fdtd_cuda_bodies.py` | `Scatterer`, `make_scatterer(vcfg, track)`; `DeviceBodyMasks` — moving bodies in the harbor FDTD (host or on-device masks) |
 | `water/cylinder.py` | `line_source_scattered`, `partial_wave_coefficients` — analytic cylinder scattering used for validation |
 | `water/dispersion.py` | `DispersionModel`, `replica_wavenumbers`, `for_scenario` — the FDTD scheme's numerical wavenumber (forward side) |
-| `water/diagnostics.py` | `SimulatorAwarePropagator`, `VesselPathLocaliser`, `oracle_illuminator` — forward model knowledge on the inference path, flagged in the provenance |
+| `water/diagnostics.py` | `SimulatorAwarePropagator`, `VesselPathLocaliser`, `true_illuminator_waveform` — forward model knowledge on the inference path, flagged in the provenance |
 | `water/localiser.py` | `EmpiricalLocaliser` — analytic MFP first pass refined with survey replicas |
 | `water/classifier.py` | `HarborClassifier.load(cnn_path, cvae_path, device="cpu")` — CNN label + CVAE anomaly score (needs `[ml]`) |
 | `water/device.py` | `get_device(use_cuda=False)`, `Device` — CPU / CuPy selection and dtype policy |
 | `water/plotting.py` | `plot_harbor(env, layout=None, ax=None, show_depth=True, sponge_cells=None)` — harbor map |
 
-The `run_bistatic` oracle options and the FDTD demonstration's truth-based direct-path removal
-are experimental controls, not blind-sensing inputs, and the run's `provenance` says so.
+The `run_bistatic` truth options and the FDTD demonstration's truth-based direct-path removal
+are experimental controls, not inputs a deployed system has, and the run's `provenance` says so.
 `acoustic_sim.contract` (`Observation`, `Truth`, `Provenance`, `Observation.from_arrays`) is
 described in [Architecture](architecture.md#sensing-contract). See [Harbor](harbor.md) for definitions,
 workflow examples, and model limitations.

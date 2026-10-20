@@ -25,9 +25,9 @@ LABELS = {
     "fdtd_ferry_uuv_2s": "FDTD ferry + UUV body, 2 s",
     "fdtd_ferry_uuv_10s": "FDTD ferry + UUV body, 10 s",
     "fdtd_multistatic_2s": "FDTD multistatic, 10 bodies, 2 s",
-    "proc_oracle": "run_bistatic oracle",
-    "proc_eca_oracle_doppler": "run_bistatic eca_oracle+doppler",
-    "proc_blind_doppler_smooth4": "run_bistatic blind+doppler+smooth4",
+    "proc_direct_removed_exactly": "run_bistatic direct_removed_exactly",
+    "proc_true_waveform_exact_track_doppler": "run_bistatic true_waveform_exact_track+doppler",
+    "proc_all_estimated_doppler_smooth4": "run_bistatic all_estimated+doppler+smooth4",
     "eca_193_moving_fixed": "eca_stage 193 m, fixed lags",
     "eca_193_moving_doppler_smooth4": "eca_stage 193 m, per sample delays",
 }

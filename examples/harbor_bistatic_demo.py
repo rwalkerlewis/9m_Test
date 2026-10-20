@@ -3,7 +3,7 @@
 
 Idealised, and said so on every figure and in ``demo_summary.json`` (``provenance``): the ferry's
 direct path is removed with the dataset's truth component (perfect cancellation), the ferry waveform
-and position are known (oracle reference, exact track) and the replicas follow the simulator's grid
+and position are known (true waveform, exact track) and the replicas follow the simulator's grid
 dispersion.  All of that comes from the dataset's ``Truth``; the chain sees the ``Observation``
 (geometry, chart, AIS, band).  What remains is real: an FDTD simulated echo of a 1 m x 3 m soft body
 on a strain DAS cable and four hydrophones, in noise, processed with the coherent bistatic
@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from acoustic_sim.contract import Provenance, annotate_figure  # noqa: E402
 from acoustic_sim.water import HarborDataset  # noqa: E402
 from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, run_bistatic  # noqa: E402
-from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, oracle_illuminator  # noqa: E402
+from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, true_illuminator_waveform  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 
 
@@ -53,14 +53,14 @@ def main() -> None:
     obs, truth = ds.observation, ds.truth
     env, layout = obs.environment, obs.geometry   # public chart; the layout with the strain mode
     f_max = obs.meta["band_hz"][1]
-    # Oracle inputs, all from the Truth: the traces without the direct path, the ferry waveform and track.
+    # Truth inputs, all from the Truth file: the traces without the direct path, the ferry waveform and track.
     comps = truth.components
     gain = truth.gain[:, None]
     traces = (gain * (comps["scattered:ferry>uuv1"].astype(float) + args.direct * comps["direct:ferry"].astype(float))
               + args.noise * comps["noise"].astype(float))
-    oracle = oracle_illuminator(truth, "ferry")
+    given = true_illuminator_waveform(truth, "ferry")
 
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference="oracle",
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference="true_waveform",
                         removal="none", method="coherent", coherent_norm="snr", exclusion_radius=25.0,
                         propagator=SimulatorAwarePropagator.from_truth(truth))
     t0 = time.time()
@@ -68,9 +68,9 @@ def main() -> None:
     from acoustic_sim.water.bistatic import stft
     sp = stft(traces, layout, obs.fs, bc, f_max)
     ship_xy = truth.tracks["ferry"].position_at(sp.times)
-    run = run_bistatic(traces, layout, obs.fs, env, obs.reports, bc, f_max, oracle_signal=oracle,
-                       diagnostics=Diagnostics(ship_xy=ship_xy),
-                       provenance=Provenance(oracle_inputs=["direct_removal"], data="forward_model"))
+    run = run_bistatic(traces, layout, obs.fs, env, obs.reports, bc, f_max, true_waveform=given,
+                       diagnostics=Diagnostics(exact_track=ship_xy),
+                       provenance=Provenance(truth_inputs=["direct_removal"], data="forward_model"))
     prov = run.provenance
     print(f"chain: {time.time() - t0:.0f} s, {len(run.grid)} cells, {len(sp.times)} frames, {len(sp.freqs)} bins")
 
@@ -95,7 +95,7 @@ def main() -> None:
         "integrated_1p5s": {"median_error_m": float(np.median(err3)), "p90_error_m": float(np.percentile(err3, 90)),
                             "within_5m": float(np.mean(err3 <= 5.0)), "rmse_m": float(np.sqrt(np.mean(err3 ** 2)))},
         "noise_scale": args.noise, "direct_fraction": args.direct,
-        "assumptions": ["direct path removed with the truth component", "oracle ferry waveform", "exact ferry track"],
+        "assumptions": ["direct path removed with the truth component", "true ferry waveform", "exact ferry track"],
         "provenance": prov.to_dict(),
     }
     print(json.dumps(summary, indent=2))

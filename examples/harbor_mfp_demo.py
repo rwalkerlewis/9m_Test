@@ -330,7 +330,7 @@ ASSUMPTIONS = ["analytic forward model: the replica is exact (constant c, no mul
                "geometry frozen inside each 3 s window (11 x 0.5 s snapshots)",
                "pier scatterer positions known (stored clutter map) and projected out",
                "ferry position from AIS (6 m rms per axis) refined by a Bartlett search on the data",
-               "ferry waveform estimated by beamforming at the refined ferry position (no oracle)"]
+               "ferry waveform estimated by beamforming at the refined ferry position (estimated from the traces)"]
 
 
 def fig_scene(out, T):

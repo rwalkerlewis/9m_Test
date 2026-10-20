@@ -83,7 +83,7 @@ class ProcessingConfig:
         Run the whole chain on the GPU (CuPy, single precision); falls back to the CPU
         with a warning when CuPy or a GPU is unavailable.
     propagator : Propagator | None
-        Replica model (:class:`acoustic_sim.contract.Propagator`).  ``None`` is the blind
+        Replica model (:class:`acoustic_sim.contract.Propagator`).  ``None`` is the free field
         ``FreeFieldPropagator(c)`` (``water/propagation.py``).  The FDTD scheme's numerical,
         direction dependent wavenumber is ``water.diagnostics.SimulatorAwarePropagator``, built from
         the :class:`~acoustic_sim.contract.Truth`; it is simulator knowledge and the results say so.
@@ -531,7 +531,7 @@ def run_detection(
 ) -> DetectionRun:
     """Pre-process, scan and extract peaks above *floor* (use a low floor, threshold later).
 
-    *provenance* is what the caller knows about the data (synthetic or recorded, held out, oracle
+    *provenance* is what the caller knows about the data (synthetic or recorded, held out, truth
     inputs it used to build *traces*); the run adds the simulator knowledge of *cfg*.
     """
     wh = preprocess(traces, layout, fs, cfg)

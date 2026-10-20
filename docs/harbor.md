@@ -70,7 +70,7 @@ keeps the multiple scattering but loses the per body split.
 | `scatterer.py` | Smooth moving finite-size body masks used by the FDTD runner |
 | `dispersion.py` | `DispersionModel`: the FDTD scheme's numerical wavenumber (forward side) |
 | `propagation.py` | `FreeFieldPropagator` and `green2d`: the blind replica model, default of every chain |
-| `diagnostics.py` | `SimulatorAwarePropagator` (dispersion corrected replicas, built from the `Truth`), `VesselPathLocaliser`, `oracle_illuminator`: forward model knowledge on the inference path, flagged in the provenance |
+| `diagnostics.py` | `SimulatorAwarePropagator` (dispersion corrected replicas, built from the `Truth`), `VesselPathLocaliser`, `true_illuminator_waveform`: forward model knowledge on the inference path, flagged in the provenance |
 | `localiser.py` | Optional empirical replica refinement from a survey grid (`VesselPathLocaliser` in `diagnostics.py` uses the dataset's own vessel gathers) |
 | `evaluate.py`, `classifier.py` | Scoring against the `Truth` (`score_detections`, `truth_labels`); optional harbor CNN/CVAE classifier wrapper (`classifier.py` needs the `[ml]` extra) |
 | `plotting.py` | Harbor figures |

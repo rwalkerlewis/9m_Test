@@ -43,7 +43,7 @@
   },
   "reference_dir": "/workspace/output/performance/runs/stage5_gpu",
   "cases": {
-    "proc_blind_doppler_smooth4": {
+    "proc_all_estimated_doppler_smooth4": {
       "kind": "processing",
       "config": "blind",
       "eca_doppler": true,

@@ -8,9 +8,9 @@ with the scenario noise and processed by the ECA stage of ``water/bistatic.py``;
 noise free direct component goes through the same projection, so the energy it loses is the
 cancellation depth of each channel.  Three references are compared:
 
-``data``         delay and sum beam at the AIS refined position (blind)
-``oracle``       the true source waveform, AIS refined position
-``oracle_exact`` the true source waveform and the exact source position
+``data``                       delay and sum beam at the AIS refined position (estimated from the traces)
+``true_waveform``              the true source waveform, AIS refined position
+``true_waveform_exact_track``  the true source waveform and the exact source position
 
 Criterion (fixed before the run): median depth over the live cable channels, in the
 processing band, with the ``data`` reference, at least 20 dB.  Interpretation (fixed before
@@ -64,7 +64,7 @@ from acoustic_sim.water.vessels import VesselConfig  # noqa: E402
 RANGES = (200.0, 100.0, 30.0)
 SPEED = 4.0
 CRITERION_DB = 20.0
-REFERENCES = ("data", "oracle", "oracle_exact")
+REFERENCES = ("data", "true_waveform", "true_waveform_exact_track")
 
 
 def nearest_channel_range(layout, pts: np.ndarray) -> np.ndarray:
@@ -132,7 +132,7 @@ def main() -> None:
     ap.add_argument("--processing-cuda", action="store_true", help="run the refinement and ECA on the GPU (--cuda is the FDTD)")
     ap.add_argument("--propagator", choices=("simulator", "free"), default="simulator",
                     help="replicas of the AIS refinement: FDTD dispersion corrected (simulator knowledge, as run) or free field "
-                         "(blind); outputs get a _freefield suffix")
+                         "(nothing beyond the chart); outputs get a _freefield suffix")
     ap.add_argument("--coarse", action="store_true", help="1 m grid (for quick checks only)")
     args = ap.parse_args()
     out = Path(args.out)
@@ -211,7 +211,7 @@ def main() -> None:
         sp = stft(traces, layout, fs, bc, f_max)
         model = ReplicaModel(layout, bc.c, propagator=bc.propagator)
         model.weights = sp.weights
-        oracle = v.level_pa * vessel_injection(v, tr, env, cfg)
+        given = v.level_pa * vessel_injection(v, tr, env, cfg)
         live = sp.weights > 0
         ch_range = np.min(np.hypot(*(layout.receivers[:, None, :] - tr.position_at(tr.t)[None]).transpose(2, 0, 1)), axis=1)
         keep = live & (ch_range >= args.gate)
@@ -220,9 +220,9 @@ def main() -> None:
                "range_min_m": float(nearest_channel_range(layout, tr.xy).min()),
                "range_max_m": float(nearest_channel_range(layout, tr.xy).max())}
         for ref in REFERENCES:
-            b = BistaticConfig(**{**bc.__dict__, "reference": "data" if ref == "data" else "oracle"})
-            ship = ship_positions(sp, ais, model, b, vessel=v.id, truth=tr.position_at(sp.times) if ref == "oracle_exact" else None)
-            outs, _ = eca_stage(traces, layout, fs, env, sp, ship, b, oracle if ref != "data" else None, [truth_meas])
+            b = BistaticConfig(**{**bc.__dict__, "reference": "data" if ref == "data" else "true_waveform"})
+            ship = ship_positions(sp, ais, model, b, vessel=v.id, truth=tr.position_at(sp.times) if ref == "true_waveform_exact_track" else None)
+            outs, _ = eca_stage(traces, layout, fs, env, sp, ship, b, given if ref != "data" else None, [truth_meas])
             e1 = band_energy(outs[1], sos)
             depth = 10 * np.log10(np.maximum(e0, 1e-30) / np.maximum(e1, 1e-30))
             dc = depth[cab][keep[cab]]
@@ -245,7 +245,7 @@ def main() -> None:
             "low only at the shortest range: near field channels",
             "stationary passes, moving fails: moving source representation or ECA block length",
         ],
-        "provenance": {ref: Provenance(oracle_inputs={"data": [], "oracle": ["waveform"], "oracle_exact": ["waveform", "track"]}[ref]
+        "provenance": {ref: Provenance(truth_inputs={"data": [], "true_waveform": ["waveform"], "true_waveform_exact_track": ["waveform", "track"]}[ref]
                                        + ["components"], simulator_knowledge=list(getattr(bc.propagator, "knowledge", ()))).to_dict()
                        for ref in REFERENCES},
         "simulated_time_s": args.time, "gate_m": args.gate, "eca_block_s": bc.eca_block_s,
@@ -281,7 +281,7 @@ def main() -> None:
     for j, r in enumerate(RANGES):
         for i, mode in enumerate(("stationary", "moving")):
             ax = axes[i, j]
-            for ref, c in zip(("data", "oracle_exact"), ("C0", "C2")):
+            for ref, c in zip(("data", "true_waveform_exact_track"), ("C0", "C2")):
                 rng_, depth, keep = per_channel[(r, mode, ref)]
                 m = keep.copy()
                 m[hyd] = False
