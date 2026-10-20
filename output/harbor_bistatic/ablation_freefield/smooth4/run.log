@@ -1,0 +1,10 @@
+criterion: configuration 'blind' on the fine dataset: median echo contrast >= 10 dB and >= 50 % of frames within 5 m
+[coarse] output/harbor_bistatic/coarse/dataset.npz: 1.0 m chart, fs 3000 Hz, band 100 to 380 Hz, 200 channels
+[coarse] blind                median  78.5 m, p90  206.1 m, within 5 m  13 %, contrast  18.5 dB, 1.5 s: median  77.0 m, within 5 m   1 %, ship err 1.1 m, ECA direct 5.0 dB, echo loss 0.48 dB (23 s)
+[coarse] blind+doppler+smooth4 median   3.0 m, p90  206.7 m, within 5 m  62 %, contrast  15.5 dB, 1.5 s: median   1.9 m, within 5 m  75 %, ship err 1.1 m, ECA direct 11.0 dB, echo loss 0.47 dB (23 s)
+[fine] output/harbor_bistatic/fine/dataset.npz: 0.5 m chart, fs 6000 Hz, band 100 to 760 Hz, 200 channels
+[fine] blind                median  86.4 m, p90  206.1 m, within 5 m  11 %, contrast  19.7 dB, 1.5 s: median  85.5 m, within 5 m   0 %, ship err 0.8 m, ECA direct 2.8 dB, echo loss 0.31 dB (54 s)
+[fine] blind+doppler+smooth4 median   3.2 m, p90  206.4 m, within 5 m  75 %, contrast  17.3 dB, 1.5 s: median   2.8 m, within 5 m  77 %, ship err 0.8 m, ECA direct 10.8 dB, echo loss 0.32 dB (35 s)
+criterion: blind on fine: contrast 19.7 dB, within 5 m 11 % -> FAIL
+contrast lost per step (fine): 
+wrote output/harbor_bistatic/ablation_freefield/smooth4

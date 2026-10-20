@@ -60,7 +60,7 @@ keeps the multiple scattering but loses the per body split.
 | `fdtd_runner.py` | `HarborFDTDConfig`, `HarborFDTDSolver` (land + shore loss on top of the shared `FDTDSolver`), `HarborFDTDBatch`, `simulate_source(s)` with an on-disk cache |
 | `fdtd_cuda_bodies.py` | Moving body masks evaluated on the GPU (`HarborFDTDConfig.body_masks="device"`) |
 | `signatures.py`, `vessels.py`, `ais.py`, `noise.py` | Signatures and level calibration, trajectories, AIS reports and a predictor, noise and sensor imperfections |
-| `dataset.py` | One cached FDTD job per vessel, mixed linearly with noise and AIS into a labelled `HarborDataset` |
+| `dataset.py` | One cached FDTD job per vessel, mixed linearly with noise and AIS into a `HarborDataset`, saved as `<name>.observation.npz` and `<name>.truth.npz` (see [Sensing contract](architecture.md#sensing-contract)) |
 | `detection.py` | Whitened STFT, matched-field scan, stationary-interference projection, sidelobe-cancelling peak extraction, CFAR threshold |
 | `suppression.py` | AIS-aware suppression: per-frame position refinement, ship projection (model or data-adaptive), re-whitening |
 | `occupancy.py` | Occupancy-grid track-before-detect |
@@ -68,9 +68,11 @@ keeps the multiple scattering but loses the per body split.
 | `motion.py` | `motion_integrate`: motion compensated (synthetic aperture) integration of the per frame maps (re-exported by `bistatic.py`) |
 | `cylinder.py` | Analytic 2-D cylinder scattering (partial wave series) used by the bistatic link budget |
 | `scatterer.py` | Smooth moving finite-size body masks used by the FDTD runner |
-| `dispersion.py` | Replica wavenumbers that follow the FDTD scheme's numerical dispersion |
-| `localiser.py` | Optional empirical replica calibration from a simulated vessel path or survey grid |
-| `evaluate.py`, `classifier.py` | Association and detection metrics; optional harbor CNN/CVAE classifier wrapper (`classifier.py` needs the `[ml]` extra) |
+| `dispersion.py` | `DispersionModel`: the FDTD scheme's numerical wavenumber (forward side) |
+| `propagation.py` | `FreeFieldPropagator` and `green2d`: the blind replica model, default of every chain |
+| `diagnostics.py` | `SimulatorAwarePropagator` (dispersion corrected replicas, built from the `Truth`), `VesselPathLocaliser`, `oracle_illuminator`: forward model knowledge on the inference path, flagged in the provenance |
+| `localiser.py` | Optional empirical replica refinement from a survey grid (`VesselPathLocaliser` in `diagnostics.py` uses the dataset's own vessel gathers) |
+| `evaluate.py`, `classifier.py` | Scoring against the `Truth` (`score_detections`, `truth_labels`); optional harbor CNN/CVAE classifier wrapper (`classifier.py` needs the `[ml]` extra) |
 | `plotting.py` | Harbor figures |
 | `device.py` | CPU / GPU selection |
 
@@ -201,7 +203,8 @@ Processing (`run_bistatic` wall time, and `eca_stage` alone):
 |---|---|---|---|
 | `oracle` | 364 s | 230 s | 15.5 s |
 | `eca_oracle+doppler` | 370 s | 294 s | 102.0 s |
-| `blind+doppler+smooth4` | 522 s | 394 s | 54.1 s |
+| `blind+doppler+smooth4` (dispersion corrected replicas) | 522 s | 394 s | 54.1 s |
+| `blind+doppler+smooth4`, free field replicas (blind) | — | — | 35.3 s (not a benchmark run: shared GPU, `ablation_freefield/smooth4/results.json`) |
 | `eca_stage`, 193 m moving, fixed lags | 22.2 s | 22.4 s | 15.1 s |
 | `eca_stage`, 193 m moving, per sample delays | 28.7 s | 25.0 s | 14.4 s |
 | `ship_positions` refinement, 193 m case (39 frames) | 98 s | 70 s | 3.1 s |
@@ -228,7 +231,7 @@ using this ratio as a deployment estimate.
 | 1 | fused float32 direct traces within 1e-4 (median) and 1e-3 (max) of float64 | median 3.2e-5 to 3.7e-5; max 1.03e-3 (ferry 2 s), 6.6e-4, 6.2e-4, 6.4e-4, 7.0e-4 | **no** (max, one case, by 3 %) |
 | 1 | fused float32 scattered field within 1e-3 of its rms | 6.7e-4, 5.8e-4, 6.6e-4 | yes |
 | 1 | fused float32 stage 0a ECA depths within 0.5 dB | 0.00 dB (median), 0.0008 dB max per channel | yes |
-| 1 | fused float32 `blind+doppler+smooth4` estimates within one map cell in 95 % of frames | 100 % identical | yes |
+| 1 | fused float32 `blind+doppler+smooth4` (dispersion corrected replicas) estimates within one map cell in 95 % of frames | 100 % identical | yes |
 | 2 | device masks within 1e-12 of `body_factor`; scattered traces within 1e-10 of the stage 1 run | masks 1.1e-16 (tests); traces 3.7e-13 max | yes |
 | 3 | batched runs within 1e-12 of single runs | identical (0.0) for B up to 32 | yes |
 | 4 | a CPML thickness at least 10 dB below the sponge in every band and angle | 15 cells, cubic profile: 20.5 dB (peak), 16.5 dB (worst band) margin | yes |
@@ -357,6 +360,11 @@ stationary and at 4 m/s parallel to the first cable leg; ECA depth over the live
 in 100 to 760 Hz; `output/harbor_cancel/`). References: `data` (delay and sum beam at the AIS
 refined position, blind), `oracle` (true waveform, AIS refined position), `oracle_exact` (true
 waveform, exact position). Criterion: median depth with the `data` reference at least 20 dB.
+The AIS refinement of every column used the FDTD dispersion corrected replicas (simulator
+knowledge, so even the `data` column was not blind); the rows marked *free field replicas* are the
+same runs with the free field replicas a deployed system would use
+(`--propagator free`, `output/harbor_cancel/freefield/`), and only their `data` column is blind
+(the `oracle` columns still use the true waveform).
 
 | Source | Range | `data` | `oracle` | `oracle_exact` | `data`, Doppler + 4 s fit | `oracle`, Doppler + 4 s fit | `oracle_exact`, Doppler |
 |---|---|---|---|---|---|---|---|
@@ -366,10 +374,19 @@ waveform, exact position). Criterion: median depth with the `data` reference at 
 | moving 4 m/s | 99 m | 3.4 dB | 3.6 dB | 3.6 dB | 18.9 dB | 22.9 dB | 24.6 dB |
 | stationary | 29 m | 7.0 dB | 37.4 dB | 51.0 dB | 11.9 dB | 29.4 dB | 50.6 dB |
 | moving 4 m/s | 29 m | 2.7 dB | 2.2 dB | 2.2 dB | 7.2 dB | 14.9 dB | 21.5 dB |
+| stationary, free field replicas | 193 m | 5.5 dB | 3.5 dB | 32.9 dB | 10.1 dB | 3.3 dB | 31.5 dB |
+| moving 4 m/s, free field replicas | 193 m | 3.5 dB | 5.4 dB | 5.5 dB | 9.2 dB | 10.4 dB | 24.4 dB |
+| stationary, free field replicas | 99 m | 19.0 dB | 44.5 dB | 45.1 dB | 19.9 dB | 41.5 dB | 42.2 dB |
+| moving 4 m/s, free field replicas | 99 m | 3.4 dB | 3.6 dB | 3.6 dB | 18.8 dB | 19.0 dB | 24.6 dB |
+| stationary, free field replicas | 29 m | 7.5 dB | 38.0 dB | 51.0 dB | 11.9 dB | 28.5 dB | 50.6 dB |
+| moving 4 m/s, free field replicas | 29 m | 2.7 dB | 2.2 dB | 2.2 dB | 7.3 dB | 15.0 dB | 21.5 dB |
 
 Median ECA depth over the live cable channels (`results.json`, `results_doppler.json`,
-`results_doppler_smooth4.json`). **Criterion failed at every range** (the `data` column never
-reaches 20 dB). Reading it with the interpretation fixed in advance:
+`results_doppler_smooth4.json`; the free field rows from the `_freefield` files).
+**Criterion failed at every range** (the `data` column never reaches 20 dB, with either replica).
+The free field replicas change mainly the 193 m stationary case: the refinement misses the ship by
+18 m instead of about 1 m (the numerical dispersion of the 0.5 m grid is several wavelengths of
+phase at that range), so the AIS refined `oracle` column falls from 34 to 4 dB there. Reading it with the interpretation fixed in advance:
 
 * The stationary source is low at every range with the `data` reference while the `oracle`
   reference at the same AIS refined positions reaches 34 to 47 dB, so the removal method is not
@@ -402,6 +419,11 @@ coarse and fine datasets, `output/harbor_bistatic/ablation/`). Configurations: 1
 the traces, removed by ECA; oracle waveform; exact track), 3 `eca_data` (data reference, exact
 track), 4 `blind` (data reference, AIS track with refinement). Criterion for `blind` on the
 fine dataset: median echo contrast at least 10 dB and at least half the frames within 5 m.
+Every configuration of the original run used the FDTD dispersion corrected replicas, so the rows
+named `blind` were not blind: they used simulator knowledge. The rows marked *free field (blind)*
+are the same configurations with free field replicas and no oracle input at all
+(`--propagator free --cuda`, `output/harbor_bistatic/ablation_freefield/`); they are the blind
+rows of this table.
 
 | Configuration | coarse: median error | within 5 m | 1.5 s within 5 m | contrast | ECA depth | fine: median error | within 5 m | 1.5 s within 5 m | contrast | ECA depth |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -415,8 +437,12 @@ fine dataset: median echo contrast at least 10 dB and at least half the frames w
 | `eca_oracle+doppler+smooth4` | 3.8 m | 54 % | 86 % | 14.8 dB | 25.1 dB | 6.0 m | 48 % | 53 % | 14.9 dB | 21.3 dB |
 | `eca_data+doppler+smooth4` | 6.1 m | 42 % | 53 % | 15.3 dB | 14.8 dB | 2.7 m | 68 % | 72 % | 16.0 dB | 12.2 dB |
 | `blind+doppler+smooth4` | 8.5 m | 32 % | 37 % | 15.2 dB | 11.0 dB | 3.8 m | 58 % | 54 % | 16.1 dB | 11.0 dB |
+| `blind`, free field (blind) | 78.5 m | 13 % | 1 % | 18.5 dB | 5.0 dB | 86.4 m | 11 % | 0 % | 19.7 dB | 2.8 dB |
+| `blind+doppler`, free field (blind) | 67.3 m | 34 % | 43 % | 16.1 dB | 8.7 dB | 62.6 m | 38 % | 33 % | 18.5 dB | 7.3 dB |
+| `blind+doppler+smooth4`, free field (blind) | 3.0 m | 62 % | 75 % | 15.5 dB | 11.0 dB | 3.2 m | 75 % | 77 % | 17.3 dB | 10.8 dB |
 
-Per 0.5 s frame (`results.json`; the `+doppler` rows are the same configurations with
+Per 0.5 s frame (`results.json`, rows above the free field ones: dispersion corrected replicas; the
+`+doppler` rows are the same configurations with
 `eca_doppler=True`, reported as variants outside the criterion). The coarse `oracle` row
 reproduces `demo/demo_summary.json` exactly. **Criterion failed**: `blind` on the fine dataset
 has a median contrast of 18.2 dB but only 5 % of the frames within 5 m. The contrast (map peak
@@ -432,7 +458,10 @@ error 6.8 m), the data reference with the exact track in 68 %. With the refined 
 fitted over 4 s (`track_smooth_s`, the `+smooth4` rows from `ablation/smooth4/`) the blind
 variant reaches 58 % of frames within 5 m, median error 3.8 m, contrast 16.1 dB, ECA depth
 11 dB: the numbers the criterion asked for, but from a chain changed after the criterion was
-fixed, so it is reported as a variant and not as a pass. The data reference beats the
+fixed, so it is reported as a variant and not as a pass. With free field replicas (the truly blind
+chain, run after the sensing contract made the dispersion replicas visible as simulator knowledge)
+the same variant does better, not worse: 75 % of the fine frames within 5 m, median 3.2 m; the
+plain `blind` configuration fails the criterion with either replica (11 % within 5 m). The data reference beats the
 oracle waveform once the ECA follows the ship, presumably because the beam carries the quay
 multipath that the free field image lags only approximate. The per frame estimate fails on the
 remaining frames by jumping to a sidelobe (p90 error about 200 m), not by a small miss.
@@ -509,8 +538,8 @@ deliberately not started.
 | `examples/harbor_bistatic_budget.py` | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
 | `examples/harbor_bistatic_dataset.py` | Fine-grid FDTD scenario; caches direct and body-scattered components separately | expensive; `--coarse` is faster but under-resolves the hull |
 | `examples/harbor_bistatic_demo.py` | Oracle-aided coherent bistatic localization figures and error summary from a saved dataset | processing run |
-| `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth` and `--gate` variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
-| `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the oracle inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit) | about 1.5 h of processing for both datasets |
+| `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator free` (blind replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
+| `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the oracle inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit, `--propagator free` the blind replicas, `--cuda` the GPU chain); every result records its `provenance` | about 1.5 h of processing for both datasets |
 | `examples/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and an oracle ferry-only check map | 6 FDTD runs (fine: about 1 h on the GPU) |
 | `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
 | `examples/harbor_train_classifier.py`, `examples/harbor_train_anomaly.py`, `examples/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |
@@ -551,43 +580,42 @@ uses more compute and storage; cache and output directories are separate from th
 `output/harbor` dataset.
 
 ```python
-from acoustic_sim.water import HarborDataset, build_environment
+from acoustic_sim.contract import Observation
 from acoustic_sim.water.detection import ProcessingConfig, build_grid
 from acoustic_sim.water.suppression import SuppressionConfig, run_ais_aware
 from acoustic_sim.water.occupancy import OccupancyConfig, OccupancyGrid
-from acoustic_sim.water.dispersion import for_scenario
 
-ds = HarborDataset.load("output/harbor/dataset.npz")
-env = build_environment(ds.cfg)
-pc = ProcessingConfig(win_s=2.0, hop_s=1.0, use_cuda=True,
-                      dispersion=for_scenario(env, ds.cfg.fdtd))   # drop this for real data
-run = run_ais_aware(ds.traces, ds.layout, ds.fs, env, ds.ais, pc, SuppressionConfig(),
-                    grid=build_grid(env, pc))
+obs = Observation.load("output/harbor/dataset.observation.npz")   # or HarborDataset.load(...).observation
+pc = ProcessingConfig(win_s=2.0, hop_s=1.0, use_cuda=True)       # free field replicas: blind
+run = run_ais_aware(obs.traces, obs.geometry, obs.fs, obs.environment, obs.reports, pc, SuppressionConfig(),
+                    grid=build_grid(obs.environment, pc))
 track = OccupancyGrid(run.scanner.grid, OccupancyConfig(use_cuda=True)).run(run.scan.B, run.wh.times)
+print(run.provenance.to_dict())
 ```
 
-Use `dispersion=` only for FDTD-generated data: it models the simulator's grid, not the ocean.
+Replicas that follow the simulator's grid dispersion are a diagnostic: they need the truth file
+(`propagator=SimulatorAwarePropagator.from_truth(Truth.load("output/harbor/dataset.truth.npz"))`
+from `acoustic_sim.water.diagnostics`), they model the simulator's grid, not the ocean, and the
+run's provenance then lists `"dispersion"`.
 
 For bistatic processing, the corresponding API is `BistaticConfig` and `run_bistatic`:
 
 ```python
 from acoustic_sim.water.bistatic import BistaticConfig, run_bistatic
-from acoustic_sim.water.dispersion import for_scenario
-from acoustic_sim.water.signatures import f_max_for_grid
 
 bc = BistaticConfig(
-    reference="data",       # use "oracle" only for controlled experiments
+    reference="data",       # "oracle" (true waveform) only for controlled experiments; flagged
     removal="eca",
     method="coherent",
-    dispersion=for_scenario(env, ds.cfg.fdtd),
 )
 echo_run = run_bistatic(
-    ds.traces, ds.layout, ds.fs, env, ds.ais, bc, f_max_for_grid(env.dx)
+    obs.traces, obs.geometry, obs.fs, obs.environment, obs.reports, bc, obs.meta["band_hz"][1]
 )
 ```
 
-For FDTD data, use `dispersion=for_scenario(...)`; it compensates for the numerical dispersion
-of that specific grid/time step and should not be used as a model of real-water propagation.
+`BistaticConfig(propagator=SimulatorAwarePropagator.from_truth(truth))` compensates for the
+numerical dispersion of that specific grid/time step; it is simulator knowledge (flagged in
+`echo_run.provenance`) and not a model of real-water propagation.
 
 ## Tests
 

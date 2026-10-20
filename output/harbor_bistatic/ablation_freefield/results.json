@@ -1,0 +1,221 @@
+{
+  "criterion": {
+    "config": "blind",
+    "dataset": "fine",
+    "contrast_db_median_min": 10.0,
+    "within_5m_min": 0.5,
+    "text": "configuration 'blind' on the fine dataset: median echo contrast >= 10 dB and >= 50 % of frames within 5 m",
+    "pass": false
+  },
+  "configs": {
+    "oracle": {
+      "direct_in_traces": false,
+      "reference": "oracle",
+      "exact_track": true,
+      "oracle_inputs": [
+        "direct path removed with the truth component",
+        "oracle ferry waveform",
+        "exact ferry track"
+      ]
+    },
+    "eca_oracle": {
+      "direct_in_traces": true,
+      "reference": "oracle",
+      "exact_track": true,
+      "oracle_inputs": [
+        "oracle ferry waveform",
+        "exact ferry track"
+      ]
+    },
+    "eca_data": {
+      "direct_in_traces": true,
+      "reference": "data",
+      "exact_track": true,
+      "oracle_inputs": [
+        "exact ferry track"
+      ]
+    },
+    "blind": {
+      "direct_in_traces": true,
+      "reference": "data",
+      "exact_track": false,
+      "oracle_inputs": []
+    }
+  },
+  "propagator": "free",
+  "datasets": {
+    "coarse": {
+      "path": "output/harbor_bistatic/coarse/dataset.npz",
+      "dx": 1.0,
+      "fs": 3000.0,
+      "band_hz": [
+        100.0,
+        380.0
+      ]
+    },
+    "fine": {
+      "path": "output/harbor_bistatic/fine/dataset.npz",
+      "dx": 0.5,
+      "fs": 6000.0,
+      "band_hz": [
+        100.0,
+        760.0
+      ]
+    }
+  },
+  "metrics": {
+    "coarse": {
+      "blind": {
+        "config": "blind",
+        "doppler": false,
+        "track_smooth_s": 0.0,
+        "oracle_inputs": [],
+        "provenance": {
+          "oracle_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "chain_s": 14.214669942855835,
+        "median_error_m": 78.53652332121244,
+        "p90_error_m": 206.14099176044294,
+        "within_5m": 0.12658227848101267,
+        "within_10m": 0.12658227848101267,
+        "rmse_m": 111.06861777227681,
+        "contrast_db_median": 18.484518646166258,
+        "integrated_1p5s": {
+          "median_error_m": 76.99671410234566,
+          "p90_error_m": 206.14099176044294,
+          "within_5m": 0.012658227848101266,
+          "rmse_m": 110.24630543451309
+        },
+        "int_median_error_m": 76.99671410234566,
+        "int_within_5m": 0.012658227848101266,
+        "ship_position_error_median_m": 1.0946903299368804,
+        "eca_direct_depth_db": 5.024155979276147,
+        "eca_echo_loss_db": 0.4766954434383499
+      },
+      "blind+doppler": {
+        "config": "blind",
+        "doppler": true,
+        "track_smooth_s": 0.0,
+        "oracle_inputs": [],
+        "provenance": {
+          "oracle_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "chain_s": 13.582664251327515,
+        "median_error_m": 67.2893432624443,
+        "p90_error_m": 206.4408651700894,
+        "within_5m": 0.34177215189873417,
+        "within_10m": 0.379746835443038,
+        "rmse_m": 115.87426978821011,
+        "contrast_db_median": 16.140184856363998,
+        "integrated_1p5s": {
+          "median_error_m": 61.8962712871139,
+          "p90_error_m": 206.14099176044294,
+          "within_5m": 0.43037974683544306,
+          "rmse_m": 104.78811438598511
+        },
+        "int_median_error_m": 61.8962712871139,
+        "int_within_5m": 0.43037974683544306,
+        "ship_position_error_median_m": 1.0946903299368804,
+        "eca_direct_depth_db": 8.66276785159091,
+        "eca_echo_loss_db": 0.47351048639160676
+      }
+    },
+    "fine": {
+      "blind": {
+        "config": "blind",
+        "doppler": false,
+        "track_smooth_s": 0.0,
+        "oracle_inputs": [],
+        "provenance": {
+          "oracle_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "chain_s": 54.78461956977844,
+        "median_error_m": 86.36379534039209,
+        "p90_error_m": 206.14099176044294,
+        "within_5m": 0.11392405063291139,
+        "within_10m": 0.11392405063291139,
+        "rmse_m": 114.90137350966059,
+        "contrast_db_median": 19.7058755143565,
+        "integrated_1p5s": {
+          "median_error_m": 85.45164276489544,
+          "p90_error_m": 206.14099176044294,
+          "within_5m": 0.0,
+          "rmse_m": 113.02178871838844
+        },
+        "int_median_error_m": 85.45164276489544,
+        "int_within_5m": 0.0,
+        "ship_position_error_median_m": 0.8421427206793887,
+        "eca_direct_depth_db": 2.788870620346268,
+        "eca_echo_loss_db": 0.31438105114682613
+      },
+      "blind+doppler": {
+        "config": "blind",
+        "doppler": true,
+        "track_smooth_s": 0.0,
+        "oracle_inputs": [],
+        "provenance": {
+          "oracle_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "frames": 79,
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "chain_s": 55.51320004463196,
+        "median_error_m": 62.56421078868199,
+        "p90_error_m": 206.14099176044294,
+        "within_5m": 0.379746835443038,
+        "within_10m": 0.3924050632911392,
+        "rmse_m": 103.3502330047637,
+        "contrast_db_median": 18.47379735107587,
+        "integrated_1p5s": {
+          "median_error_m": 69.20372081475277,
+          "p90_error_m": 206.14099176044294,
+          "within_5m": 0.3291139240506329,
+          "rmse_m": 104.6972478510203
+        },
+        "int_median_error_m": 69.20372081475277,
+        "int_within_5m": 0.3291139240506329,
+        "ship_position_error_median_m": 0.8421427206793887,
+        "eca_direct_depth_db": 7.275532078667296,
+        "eca_echo_loss_db": 0.3271657560602969
+      }
+    }
+  },
+  "contrast_loss_by_step_fine_db": {}
+}
