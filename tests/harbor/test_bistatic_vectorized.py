@@ -35,6 +35,7 @@ from acoustic_sim.water.dispersion import DispersionModel
 from ._gpu import HAS_GPU
 
 FS, T, C, F_MAX = 2000.0, 3.0, 1495.0, 500.0
+F_HI = 0.95 * F_MAX          # the band top these tests were written with (the old default 0.95 f_max)
 SHIP = np.array([150.0, 250.0])
 BODY = np.array([260.0, 180.0])
 DEVICES = [pytest.param(False, id="cpu"),
@@ -92,9 +93,9 @@ def test_refinement_and_eca_match_reference(scene, cuda, reference, doppler):
     env, layout, traces, direct, echo, s, ais = scene
     res = {}
     for impl in ("reference", "vectorized"):
-        bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=True, eca_doppler=doppler,
+        bc = BistaticConfig(f_hi=F_HI, reference=reference, removal="eca", c=C, refine=True, eca_doppler=doppler,
                             track_smooth_s=2.0 if doppler else 0.0, impl=impl, use_cuda=cuda, propagator=DISPERSION)
-        sp = stft(traces, layout, FS, bc, F_MAX)
+        sp = stft(traces, layout, FS, bc)
         model = _model(layout, bc, sp)
         ship = ship_positions(sp, ais, model, bc)
         outs, wf = eca_stage(traces, layout, FS, env, sp, ship, bc, s if reference == "true_waveform" else None, [direct, echo])
@@ -115,13 +116,13 @@ def test_refinement_and_eca_match_reference(scene, cuda, reference, doppler):
 @pytest.mark.parametrize("cuda", DEVICES)
 def test_maps_match_reference(scene, cuda):
     env, layout, traces, direct, echo, s, ais = scene
-    bc = BistaticConfig(reference="true_waveform", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
+    bc = BistaticConfig(f_hi=F_HI, reference="true_waveform", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
                         impl="reference", propagator=DISPERSION)
-    sp = stft(traces, layout, FS, bc, F_MAX)
+    sp = stft(traces, layout, FS, bc)
     grid = build_grid(env, bc)
     truth = Diagnostics(exact_track=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0]))
     runs = {impl: run_bistatic(traces, layout, FS, env, ais, BistaticConfig(**{**bc.__dict__, "impl": impl, "use_cuda": cuda}),
-                               F_MAX, true_waveform=s, diagnostics=truth) for impl in ("reference", "vectorized")}
+                               true_waveform=s, diagnostics=truth) for impl in ("reference", "vectorized")}
     assert _rel(runs["vectorized"].scan.B, runs["reference"].scan.B) < 1e-10
     assert _rel(runs["vectorized"].Z, runs["reference"].Z) < 1e-10
     assert np.array_equal(runs["vectorized"].ref, runs["reference"].ref)
@@ -145,10 +146,10 @@ def test_maps_match_reference(scene, cuda):
 @pytest.mark.parametrize("cuda", DEVICES)
 def test_motion_integrate_matches_reference(scene, cuda):
     env, layout, traces, direct, echo, s, ais = scene
-    bc = BistaticConfig(reference="true_waveform", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
+    bc = BistaticConfig(f_hi=F_HI, reference="true_waveform", removal="eca", c=C, refine=False, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
                         impl="reference", propagator=DISPERSION)
-    sp = stft(traces, layout, FS, bc, F_MAX)
-    run = run_bistatic(traces, layout, FS, env, ais, bc, F_MAX, true_waveform=s,
+    sp = stft(traces, layout, FS, bc)
+    run = run_bistatic(traces, layout, FS, env, ais, bc, true_waveform=s,
                        diagnostics=Diagnostics(exact_track=SHIP[None, :] + np.outer(sp.times, [4.0, 0.0])))
     speeds = np.array([(vx, vy) for vx in np.linspace(-3, 3, 5) for vy in np.linspace(-3, 3, 5)])
     for coherent in (True, False):

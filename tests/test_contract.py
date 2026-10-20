@@ -22,7 +22,7 @@ PKG = SRC / "acoustic_sim"
 PROCESSING = [
     "water/detection.py", "water/suppression.py", "water/occupancy.py", "water/bistatic.py",
     "water/motion.py", "water/localiser.py", "water/classifier.py", "water/evaluate.py",
-    "water/propagation.py",
+    "water/propagation.py", "water/ais.py", "water/sensors.py", "water/scoreboard.py",
     "air/detection/*.py", "air/processor.py", "air/tracker.py", "air/fire_control.py",
     # ml inference paths (training and data generation are forward side or offline)
     "ml/features.py", "ml/acoustic_classifier.py", "ml/fusion_classifier.py", "ml/maneuver_classifier.py",
@@ -33,10 +33,13 @@ FORWARD = [
     "solver/*.py", "model.py", "sources.py",
     "water/fdtd_runner.py", "water/fdtd_cuda_bodies.py", "water/scatterer.py", "water/dispersion.py",
     "water/signatures.py", "water/vessels.py", "water/noise.py", "water/dataset.py",
-    "water/scenario.py", "water/environment.py",
+    "water/scenario.py", "water/environment.py", "water/ais_sim.py", "water/sensor_sampling.py",
     "air/forward.py", "air/domains.py", "air/noise.py", "air/setup.py",
     "ml/data_generation.py", "ml/fno*.py",
 ]
+
+# Scoring modules read the Truth: processing side (no forward import) but no other processing module imports them.
+SCORING = ["water/evaluate.py", "water/scoreboard.py"]
 
 # Observation header keys that would leak the forward model (section 1 of the contract).
 FORBIDDEN_HEADER_KEYS = {
@@ -135,6 +138,28 @@ def test_lists_name_existing_modules():
 def test_processing_side_does_not_import_forward_side():
     violations = contract_violations()
     assert not violations, "sensing contract violated:\n" + "\n".join(violations)
+
+
+def test_processing_side_does_not_import_scoring():
+    """Truth enters after inference only: no processing module outside ``SCORING`` imports a scoring module."""
+    scoring = {_module_name(p) for p in _expand(SCORING)}
+    assert scoring and {_module_name(p) for p in _expand(SCORING)} <= {_module_name(p) for p in _expand(PROCESSING)}
+    out = []
+    for path in _expand(PROCESSING):
+        if _module_name(path) in scoring:
+            continue
+        out += [f"{path.relative_to(SRC.parent)}:{ln}: imports {m}" for ln, m in imported_modules(path) if m in scoring]
+    assert not out, "\n".join(out)
+
+
+def test_observation_kinds_resolve_to_processing_modules():
+    """The geometry, environment and report classes an observation names are read from processing side modules."""
+    from acoustic_sim import contract
+
+    processing = {_module_name(p) for p in _expand(PROCESSING)} | {"acoustic_sim.contract"}
+    for kind, (mod, name) in contract._KINDS.items():
+        assert mod in processing, f"{kind}: {mod} is not a processing side module"
+        assert contract._cls(kind).__name__ == name
 
 
 def test_checker_catches_function_level_and_relative_imports(tmp_path, monkeypatch):
@@ -334,16 +359,16 @@ def test_processing_runs_on_an_observation_built_from_plain_arrays(tmp_path):
     chart = ChartEnvironment(water=np.ones((len(rec["y"]), len(rec["x"])), bool), depth=np.full((len(rec["y"]), len(rec["x"])), 15.0),
                              x=rec["x"], y=rec["y"], c_nominal=rec["c"])
     obs = Observation.from_arrays(rec["traces"], rec["fs"], rec["layout"], chart, rec["reports"],
-                                  meta={"instrument": "DAS + hydrophones", "units": "strain-like, Pa", "band_hz": [80.0, 450.0]})
+                                  meta={"instrument": "DAS + hydrophones", "units": "strain-like, Pa"})
     obs.save(tmp_path / "field.observation.npz")
     obs = Observation.load(tmp_path / "field.observation.npz")
     prov = Provenance(data="observation")
     prop = FreeFieldPropagator.from_environment(obs.environment)
 
-    f_lo, f_hi = obs.meta["band_hz"]
+    f_lo, f_hi = 80.0, 450.0                     # the processing band: a choice of the processing, not read from the data
     bc = BistaticConfig(c=prop.c, propagator=prop, f_lo=f_lo, f_hi=f_hi, grid_dx=5.0, edge=20.0, exclusion_radius=30.0,
                         coherent_norm="snr")
-    run = run_bistatic(obs.traces, obs.geometry, obs.fs, obs.environment, obs.reports, bc, f_hi, provenance=prov)
+    run = run_bistatic(obs.traces, obs.geometry, obs.fs, obs.environment, obs.reports, bc, provenance=prov)
     assert run.provenance.all_estimated and run.provenance.data == "observation"
     B, near = run.scan.B, np.hypot(*(run.grid - rec["body"]).T) <= 6.0
     contrast = 10 * np.log10(B[near].max(axis=0) / np.median(B, axis=0))
@@ -388,7 +413,7 @@ def test_a_greens_only_propagator_fits_the_protocol():
         bc = BistaticConfig(c=rec["c"], propagator=prop, f_lo=80.0, f_hi=450.0, grid_dx=10.0, edge=20.0, removal="none")
         pc = ProcessingConfig(win_s=0.5, hop_s=0.25, f_lo=80.0, f_hi=450.0, c=rec["c"], propagator=prop, grid_dx=20.0,
                               grid_margin=0.0, grid_bounds=(20.0, 380.0, 20.0, 380.0), min_range=1.0, refine_dx=4.0, refine_half=4.0)
-        maps[name] = (run_bistatic(*args, rec["reports"], bc, 450.0).scan.B, run_detection(*args, pc).scan.B,
+        maps[name] = (run_bistatic(*args, rec["reports"], bc).scan.B, run_detection(*args, pc).scan.B,
                       run_ais_aware(*args, rec["reports"], pc, SuppressionConfig(refine_half=4.0, refine_step=2.0), floor=0.0).scan.B)
     for a, b in zip(maps["analytic"], maps["greens"]):
         np.testing.assert_allclose(b, a, rtol=1e-5, atol=1e-6 * np.abs(a).max())

@@ -29,6 +29,7 @@ FS = 2000.0
 T = 3.0
 C = 1495.0
 F_MAX = 500.0
+F_HI = 0.95 * F_MAX          # the band top these tests were written with (the old default 0.95 f_max)
 SHIP = np.array([150.0, 250.0])
 BODY = np.array([260.0, 180.0])     # off the ship to channel lines: every echo is > 40 m (27 ms) after the direct arrival
 
@@ -81,8 +82,8 @@ def _old_inline(traces, layout, fs, env, sp, ship, bc, true_waveform, comps):
 @pytest.mark.parametrize("reference", ["true_waveform", "data"])
 def test_eca_stage_matches_old_inline_code(scene, reference):
     env, layout, traces, direct, echo, s, ais = scene
-    bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=False)
-    sp = stft(traces, layout, FS, bc, F_MAX)
+    bc = BistaticConfig(f_hi=F_HI, reference=reference, removal="eca", c=C, refine=False)
+    sp = stft(traces, layout, FS, bc)
     model = ReplicaModel(layout, bc.c)
     model.weights = sp.weights
     ship = ship_positions(sp, ais, model, bc)
@@ -96,8 +97,8 @@ def test_eca_stage_matches_old_inline_code(scene, reference):
 @pytest.mark.parametrize("reference, min_depth_db", [("true_waveform", 25.0), ("data", 12.0)])
 def test_eca_attenuates_direct_and_keeps_echo(scene, reference, min_depth_db):
     env, layout, traces, direct, echo, s, ais = scene
-    bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=False)
-    sp = stft(traces, layout, FS, bc, F_MAX)
+    bc = BistaticConfig(f_hi=F_HI, reference=reference, removal="eca", c=C, refine=False)
+    sp = stft(traces, layout, FS, bc)
     model = ReplicaModel(layout, bc.c)
     model.weights = sp.weights
     ship = ship_positions(sp, ais, model, bc)
@@ -111,11 +112,11 @@ def test_eca_attenuates_direct_and_keeps_echo(scene, reference, min_depth_db):
 
 def test_run_bistatic_end_to_end_reports_eca_depth_and_finds_the_body(scene):
     env, layout, traces, direct, echo, s, ais = scene
-    bc = BistaticConfig(reference="true_waveform", removal="eca", method="coherent", c=C, grid_dx=5.0, edge=20.0,
+    bc = BistaticConfig(f_hi=F_HI, reference="true_waveform", removal="eca", method="coherent", c=C, grid_dx=5.0, edge=20.0,
                         exclusion_radius=30.0, refine=False)
-    sp = stft(traces, layout, FS, bc, F_MAX)
+    sp = stft(traces, layout, FS, bc)
     truth = Diagnostics(exact_track=np.repeat(SHIP[None], len(sp.times), axis=0), components={"direct:ship": direct, "scattered:ship>body": echo})
-    run = run_bistatic(traces, layout, FS, env, ais, bc, F_MAX, true_waveform=s, diagnostics=truth)
+    run = run_bistatic(traces, layout, FS, env, ais, bc, true_waveform=s, diagnostics=truth)
     assert run.eca is not None
     assert np.median(run.eca.removed_db) > 25.0
     assert np.median(run.eca.echo_lost_db) < 1.0
@@ -123,6 +124,21 @@ def test_run_bistatic_end_to_end_reports_eca_depth_and_finds_the_body(scene):
     est = run.grid[np.argmax(run.scan.B, axis=0)]
     err = np.hypot(*(est - BODY).T)
     assert np.median(err) < 15.0, err
+
+
+
+def test_map_scale_none_returns_the_map_before_the_division_by_its_maximum(scene):
+    """``map_scale="none"`` (the scoreboard's maps) is the default map times the run's largest value."""
+    env, layout, traces, direct, echo, s, ais = scene
+    bc = BistaticConfig(f_hi=F_HI, reference="true_waveform", removal="none", method="coherent", coherent_norm="snr", c=C,
+                        grid_dx=10.0, edge=20.0, exclusion_radius=30.0, refine=False)
+    runs = {m: run_bistatic(traces - direct, layout, FS, env, ais, BistaticConfig(**{**bc.__dict__, "map_scale": m}), true_waveform=s)
+            for m in ("max", "none")}
+    B_max, B_none = runs["max"].scan.B, runs["none"].scan.B
+    assert B_max.max() == pytest.approx(1.0) and B_none.max() > 0
+    np.testing.assert_allclose(B_none / B_none.max(), B_max, rtol=1e-12, atol=1e-15)
+    with pytest.raises(ValueError):
+        BistaticConfig(map_scale="frame")
 
 
 def test_doppler_eca_follows_a_moving_ship(scene):
@@ -143,8 +159,8 @@ def test_doppler_eca_follows_a_moving_ship(scene):
     depths = {}
     for reference in ("true_waveform", "data"):
         for doppler in (False, True):
-            bc = BistaticConfig(reference=reference, removal="eca", c=C, refine=False, eca_doppler=doppler)
-            sp = stft(traces, layout, FS, bc, F_MAX)
+            bc = BistaticConfig(f_hi=F_HI, reference=reference, removal="eca", c=C, refine=False, eca_doppler=doppler)
+            sp = stft(traces, layout, FS, bc)
             model = ReplicaModel(layout, bc.c)
             model.weights = sp.weights
             ship = ship_positions(sp, ais, model, bc)
@@ -166,8 +182,8 @@ def test_track_smoothing_removes_refinement_jitter(scene):
     direct = np.stack([np.interp(tt - np.hypot(*(ship_t - r).T) / C, tt, s, left=0.0, right=0.0) / np.sqrt(np.hypot(*(SHIP - r)))
                        for r in rec])
     traces = direct + 0.002 * np.random.default_rng(5).standard_normal(direct.shape)
-    bc = BistaticConfig(reference="true_waveform", removal="eca", c=C, refine=False, eca_doppler=True)
-    sp = stft(traces, layout, FS, bc, F_MAX)
+    bc = BistaticConfig(f_hi=F_HI, reference="true_waveform", removal="eca", c=C, refine=False, eca_doppler=True)
+    sp = stft(traces, layout, FS, bc)
     exact = SHIP[None, :] + np.outer(sp.times, [4.0, 0.0])
     jitter = exact + np.random.default_rng(8).standard_normal(exact.shape)
     present = np.ones(len(sp.times), bool)

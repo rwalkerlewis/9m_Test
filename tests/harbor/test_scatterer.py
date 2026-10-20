@@ -193,7 +193,9 @@ def test_strain_layout_sample_points_and_fingerprint():
     assert s.n_samples == 3 * s.n_receivers
     assert np.allclose(s.sample_points[1::3], s.receivers)
     assert np.allclose(s.sample_points[2::3] - s.sample_points[0::3], [[2.0, 0.0]] * s.n_receivers)
-    assert p.fingerprint() != s.fingerprint()
+    from acoustic_sim.water.sensor_sampling import layout_fingerprint
+
+    assert layout_fingerprint(p) != layout_fingerprint(s)
 
 
 # ----------------------------------------------------------------------

@@ -105,6 +105,8 @@ def main() -> None:
     ap.add_argument("--cuda", action="store_true", help="run the FDTD on the GPU (the cache key ignores this)")
     ap.add_argument("--hop", type=float, default=0.25, help="frame hop of the truth file [s]")
     ap.add_argument("--no-check", action="store_true", help="skip the ferry only bistatic check map")
+    ap.add_argument("--propagator", choices=("free_field", "simulator"), default="free_field",
+                    help="replicas of the check map: free field (default) or FDTD dispersion corrected (simulator knowledge, as run)")
     args = ap.parse_args()
 
     cfg = HarborScenarioConfig.load(args.config)
@@ -247,13 +249,13 @@ def main() -> None:
     traces = gain * comps["scattered:" + scattered_key("ferry", COMBINED)].astype(float) + comps["noise"].astype(float)
     ferry = next(v for v in cfg.vessels if v.id == "ferry")
     given = ferry.level_pa * vessel_injection(ferry, tracks["ferry"], env, cfg)
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference="true_waveform", removal="none",
-                        method="coherent", coherent_norm="snr", exclusion_radius=25.0, propagator=SimulatorAwarePropagator.from_scenario(env, cfg.fdtd))
-    sp = stft(traces, layout, fs, bc, f_max)
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, f_hi=0.95 * f_max, bin_stride=2, grid_dx=2.0, reference="true_waveform", removal="none",
+                        method="coherent", coherent_norm="snr", exclusion_radius=25.0, propagator=SimulatorAwarePropagator.from_scenario(env, cfg.fdtd) if args.propagator == "simulator" else None)
+    sp = stft(traces, layout, fs, bc)
     ship_xy = tracks["ferry"].position_at(sp.times)
     t0 = time.time()
-    run = run_bistatic(traces, layout, fs, env, ds.ais, bc, f_max, true_waveform=given, diagnostics=Diagnostics(exact_track=ship_xy),
-                       provenance=Provenance(truth_inputs=["direct_removal"]))
+    run = run_bistatic(traces, layout, fs, env, ds.ais, bc, true_waveform=given, diagnostics=Diagnostics(exact_track=ship_xy),
+                       provenance=Provenance(truth_inputs=["direct_removal", "components"], simulator_knowledge=["band"]))
     say(f"[{tag}] ferry only chain (given the truth): {time.time() - t0:.0f} s, {len(run.grid)} cells, {len(sp.times)} frames")
     B, grid, times = run.scan.B, run.grid, run.sp.times
     xs, ys = np.unique(grid[:, 0]), np.unique(grid[:, 1])

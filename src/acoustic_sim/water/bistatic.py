@@ -48,6 +48,7 @@ METHODS = ("bartlett", "bartlett_phat", "coherent", "mvdr", "music")
 REMOVALS = ("none", "eca", "patch", "adaptive", "patch+adaptive")
 REFERENCES = ("data", "true_waveform")
 IMPLS = ("reference", "vectorized")
+MAP_SCALES = ("max", "none")
 
 
 @dataclass
@@ -59,7 +60,8 @@ class BistaticConfig:
     win_s, hop_s : float
         STFT window and hop [s].
     f_lo, f_hi : float
-        Band [Hz] (``f_hi`` defaults to 0.95 of the grid's usable band).
+        Processing band [Hz], a choice of the processing (the defaults are the band of the 0.5 m
+        harbor datasets, 100 to 760 Hz); nothing reads it from the data.
     bin_stride : int
         Use every n-th bin of the band.
     c : float
@@ -113,6 +115,11 @@ class BistaticConfig:
         cell path gain, so the noise floor of the map peaks in a ring around the ship).  ``"snr"``:
         ``|Z|^2`` divided by the expected noise power of the cell, ``sum_f |G(x, s)|^2 |r_f|^2 / norm``,
         the normalised matched filter whose floor is flat over the grid.
+    map_scale : str
+        ``"max"`` (default): the maps of a run are divided by their largest value (over all frames), so a
+        map is relative to the run's peak.  ``"none"``: the maps are returned as computed (with
+        ``coherent_norm="snr"`` in units of the noise power), so one threshold applies across frames,
+        runs and datasets (the scoreboard, ``water/scoreboard.py``).
     mvdr_loading : float
         Diagonal loading relative to the trace for MVDR and MUSIC.
     music_rank : int
@@ -138,7 +145,7 @@ class BistaticConfig:
     win_s: float = 0.5
     hop_s: float = 0.25
     f_lo: float = 100.0
-    f_hi: float | None = None
+    f_hi: float = 760.0
     bin_stride: int = 2
     c: float = 1495.0
     grid_dx: float = 2.0
@@ -162,6 +169,7 @@ class BistaticConfig:
     exclusion_radius: float = 25.0
     method: str = "coherent"
     coherent_norm: str = "none"
+    map_scale: str = "max"
     mvdr_loading: float = 0.05
     music_rank: int = 3
     min_separation: float = 20.0
@@ -179,6 +187,8 @@ class BistaticConfig:
             raise ValueError(f"reference must be one of {REFERENCES}, got {self.reference!r}")
         if self.impl not in IMPLS:
             raise ValueError(f"impl must be one of {IMPLS}, got {self.impl!r}")
+        if self.map_scale not in MAP_SCALES:
+            raise ValueError(f"map_scale must be one of {MAP_SCALES}, got {self.map_scale!r}")
 
 
 def _xp(bc: BistaticConfig):
@@ -222,7 +232,7 @@ class Spectra:
         return Spectra(self.X.copy(), self.freqs, self.times, self.weights, self.fs, self.win_s)
 
 
-def stft(traces: np.ndarray, layout: SensorLayout, fs: float, bc: BistaticConfig, f_max: float) -> Spectra:
+def stft(traces: np.ndarray, layout: SensorLayout, fs: float, bc: BistaticConfig) -> Spectra:
     """Hann STFT of the band, after channel QC and per cable common mode removal."""
     pc = ProcessingConfig(win_s=bc.win_s, hop_s=bc.hop_s)
     w = channel_weights(traces, layout, pc)
@@ -231,8 +241,7 @@ def stft(traces: np.ndarray, layout: SensorLayout, fs: float, bc: BistaticConfig
     starts = np.arange(0, x.shape[1] - nper + 1, hop)
     window = get_window("hann", nper)
     f = np.fft.rfftfreq(nper, 1.0 / fs)
-    f_hi = bc.f_hi if bc.f_hi is not None else 0.95 * f_max
-    band = np.flatnonzero((f >= bc.f_lo) & (f <= f_hi))[:: bc.bin_stride]
+    band = np.flatnonzero((f >= bc.f_lo) & (f <= bc.f_hi))[:: bc.bin_stride]
     X = np.empty((x.shape[0], len(band), len(starts)), dtype=np.complex128)
     for k, s0 in enumerate(starts):
         X[:, :, k] = np.fft.rfft(x[:, s0:s0 + nper] * window, axis=1)[:, band]
@@ -1070,7 +1079,8 @@ def _bistatic_map_vectorized(clean, ship, ref, grid, model, bc, method, frame_ch
         B = xp.abs(Z) ** 2
         if bc.coherent_norm == "snr":
             B /= xp.maximum(W, 1e-30)
-    B /= max(float(B.max()), 1e-30)
+    if bc.map_scale == "max":
+        B /= max(float(B.max()), 1e-30)
     return _asnumpy(B), None if Z is None else _asnumpy(Z)
 
 
@@ -1113,7 +1123,8 @@ def _bistatic_map_reference(clean: Spectra, ship: ShipTrack, ref: np.ndarray, gr
         B = np.abs(Z) ** 2
         if bc.coherent_norm == "snr":
             B /= np.maximum(W, 1e-30)
-    B /= max(B.max(), 1e-30)
+    if bc.map_scale == "max":
+        B /= max(B.max(), 1e-30)
     return B, Z
 
 
@@ -1228,7 +1239,6 @@ def run_bistatic(
     env: ChartEnvironment,
     ais: AISReports,
     bc: BistaticConfig,
-    f_max: float,
     grid: np.ndarray | None = None,
     true_waveform: np.ndarray | None = None,
     diagnostics: Diagnostics | None = None,
@@ -1246,7 +1256,7 @@ def run_bistatic(
     its own truth inputs and the propagator's simulator knowledge (``run.provenance``).
     """
     truth = diagnostics or Diagnostics()
-    sp = stft(traces, layout, fs, bc, f_max)
+    sp = stft(traces, layout, fs, bc)
     model = ReplicaModel(layout, bc.c, propagator=bc.propagator, xp=_xp(bc))
     model.weights = sp.weights
     ship = ship_positions(sp, ais, model, bc, truth=truth.exact_track)
@@ -1266,7 +1276,7 @@ def run_bistatic(
             direct = next((k for k in names if k.startswith("direct")), names[0])
             echo = next((k for k in names if k.startswith("scattered")), None)
             report = ECAReport(db[direct], db[echo] if echo else np.full(layout.n_receivers, np.nan))
-        clean = stft(clean_traces, layout, fs, bc, f_max)
+        clean = stft(clean_traces, layout, fs, bc)
         clean.weights = sp.weights
         ref = reference_spectrum(sp, ship, model, bc, waveform=waveform, fs=fs)
     else:

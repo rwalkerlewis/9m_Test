@@ -202,7 +202,8 @@ class Provenance:
     ``simulator_knowledge``: forward model parameters the processing used (``"dispersion"``: the FDTD
     scheme's numerical wavenumber, ``"empirical_replicas"``: FDTD rendered replicas).  ``data``:
     ``"observation"`` (recorded) or ``"forward_model"`` (synthetic, processed as if recorded).
-    ``held_out``: the data were not used to choose any parameter of the processing.
+    ``held_out``: the data were not used to choose any parameter of the processing (the test set);
+    ``False`` is the tuning set (the default: data a parameter may have been chosen on).
     """
 
     truth_inputs: list[str] = field(default_factory=list)
@@ -243,6 +244,7 @@ class Provenance:
         if self.simulator_knowledge:
             parts.append("simulator: " + ", ".join(self.simulator_knowledge))
         parts.append("synthetic data" if self.data == "forward_model" else "recorded data")
+        parts.append("test set" if self.held_out else "tuning set")
         return " | ".join(parts)
 
 
@@ -255,7 +257,8 @@ def _unique(items) -> list[str]:
 
 
 def annotate_figure(fig, prov: Provenance, y: float = 0.005, fontsize: float = 8.0) -> None:
-    """Print the provenance flags at the bottom of a matplotlib figure (red when not everything was estimated)."""
+    """Print the provenance flags, including "tuning set" or "test set", at the bottom of a matplotlib figure
+    (red when not everything was estimated)."""
     fig.text(0.5, y, prov.label(), ha="center", va="bottom", fontsize=fontsize, color="0.25" if prov.all_estimated else "firebrick")
 
 
@@ -263,7 +266,8 @@ def annotate_figure(fig, prov: Provenance, y: float = 0.005, fontsize: float = 8
 # Observation and Truth
 # ----------------------------------------------------------------------
 
-# Geometry, environment and report classes are resolved by kind, so this module needs no domain import.
+# Geometry, environment and report classes are resolved by kind, so this module needs no domain import; every
+# module named here is processing side (``tests/test_contract.py``).
 _KINDS = {
     "mic_array": (__name__, "MicArray"),
     "sensor_layout": ("acoustic_sim.water.sensors", "SensorLayout"),

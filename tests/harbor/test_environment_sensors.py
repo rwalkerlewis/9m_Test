@@ -86,8 +86,10 @@ def test_layout_slices_and_split():
 
 def test_layout_validate_flags_land(harbor):
     bad = SensorLayout(hydrophones=np.array([[1000.0, 1000.0], [1200.0, 1700.0]]))
+    from acoustic_sim.water.sensor_sampling import validate_layout
+
     with pytest.raises(ValueError, match="on land"):
-        bad.validate(harbor)
+        validate_layout(bad, harbor)
 
 
 def test_default_scenario_layout_is_in_water(harbor):

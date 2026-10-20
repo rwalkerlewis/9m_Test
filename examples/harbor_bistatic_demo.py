@@ -3,11 +3,12 @@
 
 Idealised, and said so on every figure and in ``demo_summary.json`` (``provenance``): the ferry's
 direct path is removed with the dataset's truth component (perfect cancellation), the ferry waveform
-and position are known (true waveform, exact track) and the replicas follow the simulator's grid
-dispersion.  All of that comes from the dataset's ``Truth``; the chain sees the ``Observation``
-(geometry, chart, AIS, band).  What remains is real: an FDTD simulated echo of a 1 m x 3 m soft body
-on a strain DAS cable and four hydrophones, in noise, processed with the coherent bistatic
-matched filter of ``water/bistatic.py``.
+and position are known (true waveform, exact track) and, with ``--propagator simulator`` (as the
+committed ``demo_summary.json`` was made), the replicas follow the simulator's grid dispersion.  All
+of that comes from the dataset's ``Truth``; the chain sees the ``Observation`` (geometry, chart,
+AIS); the band is a stated processing choice (``--f-hi``).  What remains is real: an FDTD simulated
+echo of a 1 m x 3 m soft body on a strain DAS cable and four hydrophones, in noise, processed with
+the coherent bistatic matched filter of ``water/bistatic.py``.
 
 Usage::
 
@@ -45,6 +46,9 @@ def main() -> None:
     ap.add_argument("--out", default="output/harbor_bistatic/demo")
     ap.add_argument("--noise", type=float, default=1.0, help="noise scale relative to the dataset (1 = as simulated)")
     ap.add_argument("--direct", type=float, default=0.0, help="fraction of the direct path left in (0 = ideal cancellation)")
+    ap.add_argument("--propagator", choices=("free_field", "simulator"), default="free_field",
+                    help="replicas: free field (default) or FDTD dispersion corrected (simulator knowledge, as the committed demo was run)")
+    ap.add_argument("--f-hi", type=float, default=380.0, help="band top [Hz] (380 Hz: the 1 m coarse dataset; 760 Hz for the 0.5 m one)")
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -52,7 +56,6 @@ def main() -> None:
     ds = HarborDataset.load(args.dataset)
     obs, truth = ds.observation, ds.truth
     env, layout = obs.environment, obs.geometry   # public chart; the layout with the strain mode
-    f_max = obs.meta["band_hz"][1]
     # Truth inputs, all from the Truth file: the traces without the direct path, the ferry waveform and track.
     comps = truth.components
     gain = truth.gain[:, None]
@@ -60,17 +63,17 @@ def main() -> None:
               + args.noise * comps["noise"].astype(float))
     given = true_illuminator_waveform(truth, "ferry")
 
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference="true_waveform",
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, f_hi=args.f_hi, bin_stride=2, grid_dx=2.0, reference="true_waveform",
                         removal="none", method="coherent", coherent_norm="snr", exclusion_radius=25.0,
-                        propagator=SimulatorAwarePropagator.from_truth(truth))
+                        propagator=SimulatorAwarePropagator.from_truth(truth) if args.propagator == "simulator" else None)
     t0 = time.time()
     # Frame times are needed for the exact ship track: run the STFT geometry once via a dry config.
     from acoustic_sim.water.bistatic import stft
-    sp = stft(traces, layout, obs.fs, bc, f_max)
+    sp = stft(traces, layout, obs.fs, bc)
     ship_xy = truth.tracks["ferry"].position_at(sp.times)
-    run = run_bistatic(traces, layout, obs.fs, env, obs.reports, bc, f_max, true_waveform=given,
+    run = run_bistatic(traces, layout, obs.fs, env, obs.reports, bc, true_waveform=given,
                        diagnostics=Diagnostics(exact_track=ship_xy),
-                       provenance=Provenance(truth_inputs=["direct_removal"], data="forward_model"))
+                       provenance=Provenance(truth_inputs=["direct_removal", "components"], data="forward_model"))
     prov = run.provenance
     print(f"chain: {time.time() - t0:.0f} s, {len(run.grid)} cells, {len(sp.times)} frames, {len(sp.freqs)} bins")
 
@@ -88,7 +91,7 @@ def main() -> None:
     # Peak to background contrast per frame (dB): peak over the median of the map.
     contrast = 10 * np.log10(np.max(B, axis=0) / np.maximum(np.median(B, axis=0), 1e-30))
     summary = {
-        "frames": int(len(times)), "window_s": bc.win_s, "band_hz": [bc.f_lo, 0.95 * f_max], "grid_m": bc.grid_dx,
+        "frames": int(len(times)), "window_s": bc.win_s, "band_hz": [bc.f_lo, bc.f_hi], "grid_m": bc.grid_dx,
         "median_error_m": float(np.median(err)), "p90_error_m": float(np.percentile(err, 90)),
         "within_5m": float(np.mean(err <= 5.0)), "within_10m": float(np.mean(err <= 10.0)),
         "rmse_m": float(np.sqrt(np.mean(err ** 2))), "contrast_db_median": float(np.median(contrast)),
@@ -129,7 +132,7 @@ def main() -> None:
         else:
             ax.get_legend().remove()
     fig.colorbar(im, ax=axes, shrink=0.6, label="coherent bistatic map [dB re peak]")
-    fig.suptitle(f"Silent UUV located from the ferry's echo on a strain DAS cable (FDTD, {bc.f_lo:.0f}-{0.95 * f_max:.0f} Hz)\n"
+    fig.suptitle(f"Silent UUV located from the ferry's echo on a strain DAS cable (FDTD, {bc.f_lo:.0f}-{bc.f_hi:.0f} Hz)\n"
                  f"{tag}", fontsize=12)
     annotate_figure(fig, prov)
     fig.savefig(out / "demo_maps.png", dpi=110, bbox_inches="tight")
@@ -159,7 +162,7 @@ def main() -> None:
     # Figure 3: echo and noise on the cable (what the processor sees).
     sl = layout.slices["cable1"]
     fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
-    sos = butter(4, [bc.f_lo, 0.95 * f_max], btype="bandpass", fs=obs.fs, output="sos")
+    sos = butter(4, [bc.f_lo, bc.f_hi], btype="bandpass", fs=obs.fs, output="sos")
     for ax, (key, x) in zip(axes, (("echo of the ferry from the UUV alone (truth component)", gain * comps["scattered:ferry>uuv1"].astype(float)),
                                    ("echo + noise: what the processor sees", traces))):
         y = sosfiltfilt(sos, x[sl], axis=-1)

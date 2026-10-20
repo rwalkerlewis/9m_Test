@@ -18,18 +18,22 @@ four configurations that change one assumption at a time:
 For every configuration and dataset: median and p90 position error, fraction of frames within
 5 m, median echo contrast (map peak over the map median, dB), the same after a 1.5 s (three
 frame) integration, and the ECA depth of the direct component and loss of the echo component
-(the truth components go through the same projection for these diagnostics only; they never
-enter the processing).
+(a diagnostic: the truth components go through the same projection in a separate
+``eca_stage`` call after the run, so they never enter the processing and the run's provenance is
+unchanged).
 
 Criterion (fixed before the run): configuration 4 on the fine dataset reaches a median echo
 contrast of at least 10 dB and at least half of the frames within 5 m.  If it fails, the
 configuration between 1 and 4 that loses the most contrast is the step to work on.
 
-Every configuration reads its truth inputs from the dataset's ``Truth`` and records them in
-``provenance`` per result.  ``--propagator simulator`` (the default, as when the stage was run) gives
-every configuration, ``all_estimated`` included, the FDTD dispersion corrected replicas (simulator knowledge,
-flagged); ``--propagator free`` runs the free field replicas a deployed system would use, the truly
-variant with everything estimated.
+``all_estimated`` reads the observation's traces and uses ``FreeFieldPropagator`` and nothing else.
+Configurations 1 to 3 assemble their input from the truth components (that is what they are for) and
+read their other truth inputs from the dataset's ``Truth``; their ``provenance`` says so
+(``truth_inputs`` includes ``"components"``).  The default replicas are the free field ones;
+``--propagator simulator`` gives configurations 1 to 3 the FDTD dispersion corrected replicas
+(simulator knowledge, flagged; that is how stage 0b was first run, ``output/harbor_bistatic/ablation/``).
+The band is a stated processing choice: 100 to 380 Hz on the 1 m coarse dataset, 100 to 760 Hz on the
+0.5 m fine one.
 
 ``--doppler`` adds the same configurations 2 to 4 with ``eca_doppler=True`` (per sample delays
 following the moving ship inside each ECA block, added in stage 0a); they are reported as
@@ -38,7 +42,8 @@ variants and are not part of the criterion.
 Usage::
 
     python examples/harbor_bistatic_ablation.py [--fine output/harbor_bistatic/fine/dataset.npz]
-        [--coarse output/harbor_bistatic/coarse/dataset.npz] [--out output/harbor_bistatic/ablation]
+        [--coarse output/harbor_bistatic/coarse/dataset.npz] [--out output/harbor_bistatic/ablation_freefield]
+        [--propagator {free_field,simulator}]
         [--doppler] [--configs direct_removed_exactly,true_waveform_exact_track,estimated_waveform_exact_track,all_estimated]
 """
 
@@ -60,9 +65,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from acoustic_sim.contract import Provenance, dataset_exists  # noqa: E402
 from acoustic_sim.water import HarborDataset  # noqa: E402
-from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, run_bistatic, stft  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, eca_stage, run_bistatic, stft  # noqa: E402
 from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, true_illuminator_waveform  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.water.propagation import FreeFieldPropagator  # noqa: E402
 
 CONFIGS = {
     # name: (direct path in the traces, reference, exact track)
@@ -77,6 +83,8 @@ TRUTH_INPUTS = {
     "estimated_waveform_exact_track": ["exact ferry track"],
     "all_estimated": [],
 }
+BAND_HZ = {"coarse": (100.0, 380.0), "fine": (100.0, 760.0)}     # stated processing band per dataset
+C_NOMINAL = 1495.0
 CRITERION = {"config": "all_estimated", "dataset": "fine", "contrast_db_median_min": 10.0, "within_5m_min": 0.5}
 METRICS = ("median_error_m", "p90_error_m", "within_5m", "contrast_db_median", "int_median_error_m", "int_within_5m",
            "eca_direct_depth_db", "eca_echo_loss_db")
@@ -88,8 +96,8 @@ METRIC_LABELS = {
 }
 
 
-def run_config(name: str, obs, truth, f_max: float, doppler: bool = False, smooth: float = 0.0,
-               propagator: str = "simulator", use_cuda: bool = False) -> tuple[dict, object, np.ndarray, np.ndarray]:
+def run_config(name: str, obs, truth, band: tuple[float, float], doppler: bool = False, smooth: float = 0.0,
+               propagator: str = "free_field", use_cuda: bool = False) -> tuple[dict, object, np.ndarray, np.ndarray]:
     """One configuration on one dataset: summary dict, the run, the UUV truth and the estimates."""
     direct_in, reference, exact = CONFIGS[name]
     env, layout = obs.environment, obs.geometry
@@ -98,19 +106,23 @@ def run_config(name: str, obs, truth, f_max: float, doppler: bool = False, smoot
     direct = gain * comps["direct:ferry"].astype(float)
     echo = gain * comps["scattered:ferry>uuv1"].astype(float)
     noise = comps["noise"].astype(float)
-    traces = echo + noise + (direct if direct_in else 0.0)
+    if name == "all_estimated":
+        traces, given_inputs = np.asarray(obs.traces, dtype=float), []
+        prop = FreeFieldPropagator(C_NOMINAL)
+    else:
+        traces = echo + noise + (direct if direct_in else 0.0)
+        given_inputs = ["components"] + ([] if direct_in else ["direct_removal"])
+        prop = SimulatorAwarePropagator.from_truth(truth) if propagator == "simulator" else FreeFieldPropagator(C_NOMINAL)
     given = true_illuminator_waveform(truth, "ferry") if reference == "true_waveform" else None
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference=reference,
-                        removal="eca" if direct_in else "none", method="coherent", coherent_norm="snr",
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=band[0], f_hi=band[1], bin_stride=2, grid_dx=2.0, c=C_NOMINAL,
+                        reference=reference, removal="eca" if direct_in else "none", method="coherent", coherent_norm="snr",
                         exclusion_radius=25.0, eca_doppler=doppler, track_smooth_s=smooth if doppler else 0.0,
-                        propagator=SimulatorAwarePropagator.from_truth(truth) if propagator == "simulator" else None,
-                        use_cuda=use_cuda)
-    sp = stft(traces, layout, obs.fs, bc, f_max)
-    diag = Diagnostics(exact_track=truth.tracks["ferry"].position_at(sp.times) if exact else None,
-                       components={"direct:ferry": direct, "scattered:ferry>uuv1": echo} if direct_in else None)
+                        propagator=prop, use_cuda=use_cuda)
+    sp = stft(traces, layout, obs.fs, bc)
+    diag = Diagnostics(exact_track=truth.tracks["ferry"].position_at(sp.times) if exact else None)
     t0 = time.time()
-    run = run_bistatic(traces, layout, obs.fs, env, obs.reports, bc, f_max, true_waveform=given, diagnostics=diag,
-                       provenance=Provenance(truth_inputs=[] if direct_in else ["direct_removal"]))
+    run = run_bistatic(traces, layout, obs.fs, env, obs.reports, bc, true_waveform=given, diagnostics=diag,
+                       provenance=Provenance(truth_inputs=given_inputs))
     elapsed = time.time() - t0
     B, grid, times = run.scan.B, run.grid, run.sp.times
     uuv = truth.tracks["uuv1"].position_at(times)
@@ -127,7 +139,7 @@ def run_config(name: str, obs, truth, f_max: float, doppler: bool = False, smoot
     summary = {
         "config": name, "doppler": doppler, "track_smooth_s": smooth if doppler else 0.0, "truth_inputs": TRUTH_INPUTS[name],
         "provenance": run.provenance.to_dict(), "frames": int(len(times)),
-        "band_hz": [bc.f_lo, 0.95 * f_max], "chain_s": elapsed,
+        "band_hz": [bc.f_lo, bc.f_hi], "chain_s": elapsed, "propagator": type(prop).__name__,
         "median_error_m": float(np.median(err)), "p90_error_m": float(np.percentile(err, 90)),
         "within_5m": float(np.mean(err <= 5.0)), "within_10m": float(np.mean(err <= 10.0)),
         "rmse_m": float(np.sqrt(np.mean(err ** 2))), "contrast_db_median": float(np.median(contrast)),
@@ -135,9 +147,17 @@ def run_config(name: str, obs, truth, f_max: float, doppler: bool = False, smoot
                             "within_5m": float(np.mean(err3 <= 5.0)), "rmse_m": float(np.sqrt(np.mean(err3 ** 2)))},
         "int_median_error_m": float(np.median(err3)), "int_within_5m": float(np.mean(err3 <= 5.0)),
         "ship_position_error_median_m": float(np.median(ship_err)),
-        "eca_direct_depth_db": float(np.median(run.eca.removed_db[layout.slices["cable1"]][live])) if run.eca else None,
-        "eca_echo_loss_db": float(np.median(run.eca.echo_lost_db[layout.slices["cable1"]][live])) if run.eca else None,
+        "eca_direct_depth_db": None, "eca_echo_loss_db": None,
     }
+    if direct_in:
+        # Diagnostic (truth components through the same projection, after the run): ECA depth and echo loss.
+        outs, _ = eca_stage(traces, layout, obs.fs, env, run.sp, run.ship, bc, given, [direct, echo])
+        cab = layout.slices["cable1"]
+        depth = 10 * np.log10(np.sum(direct ** 2, axis=1) / np.maximum(np.sum(outs[1] ** 2, axis=1), 1e-30))
+        loss = 10 * np.log10(np.sum(echo ** 2, axis=1) / np.maximum(np.sum(outs[2] ** 2, axis=1), 1e-30))
+        summary["eca_direct_depth_db"] = float(np.median(depth[cab][live]))
+        summary["eca_echo_loss_db"] = float(np.median(loss[cab][live]))
+        summary["eca_diagnostic_provenance"] = run.provenance.with_flags(["components"]).to_dict()
     return summary, run, uuv, est
 
 
@@ -146,16 +166,18 @@ def main() -> None:
     ap.add_argument("--fine", default="output/harbor_bistatic/fine/dataset.npz")
     ap.add_argument("--coarse", default="output/harbor_bistatic/coarse/dataset.npz")
     ap.add_argument("--demo-summary", default="output/harbor_bistatic/demo/demo_summary.json")
-    ap.add_argument("--out", default="output/harbor_bistatic/ablation")
+    ap.add_argument("--out", default=None, help="default: output/harbor_bistatic/ablation_freefield (free field) or "
+                    "output/harbor_bistatic/ablation (--propagator simulator)")
     ap.add_argument("--configs", default=",".join(CONFIGS))
     ap.add_argument("--doppler", action="store_true", help="also run configurations 2 to 4 with eca_doppler=True")
     ap.add_argument("--smooth", type=float, default=0.0, help="track_smooth_s of the Doppler variants (local straight line fit of the refined track)")
-    ap.add_argument("--propagator", choices=("simulator", "free"), default="simulator",
-                    help="replicas: FDTD dispersion corrected (simulator knowledge) or free field (nothing beyond the chart)")
+    ap.add_argument("--propagator", choices=("free_field", "simulator"), default="free_field",
+                    help="replicas of configurations 1 to 3: free field (default) or FDTD dispersion corrected (simulator "
+                         "knowledge); all_estimated always uses the free field")
     ap.add_argument("--cuda", action="store_true", help="run the chain on the GPU (maps within 1e-12 of the CPU)")
     ap.add_argument("--frame", type=int, default=40, help="frame index of maps_by_config.png")
     args = ap.parse_args()
-    out = Path(args.out)
+    out = Path(args.out or ("output/harbor_bistatic/ablation" if args.propagator == "simulator" else "output/harbor_bistatic/ablation_freefield"))
     out.mkdir(parents=True, exist_ok=True)
     log = open(out / "run.log", "w")
 
@@ -179,13 +201,13 @@ def main() -> None:
         ds = HarborDataset.load(path)
         obs, truth = ds.observation, ds.truth
         env, layout = obs.environment, obs.geometry
-        f_max = obs.meta["band_hz"][1]
-        say(f"[{tag}] {path}: {env.dx} m chart, fs {obs.fs:.0f} Hz, band 100 to {0.95 * f_max:.0f} Hz, {layout.n_receivers} channels")
-        results["datasets"][tag] = {"path": path, "dx": env.dx, "fs": obs.fs, "band_hz": [100.0, 0.95 * f_max]}
+        band = BAND_HZ[tag]
+        say(f"[{tag}] {path}: {env.dx} m chart, fs {obs.fs:.0f} Hz, band {band[0]:.0f} to {band[1]:.0f} Hz, {layout.n_receivers} channels")
+        results["datasets"][tag] = {"path": path, "dx": env.dx, "fs": obs.fs, "band_hz": list(band)}
         results["metrics"][tag] = {}
         for name, dop in variants:
             key = name + (("+doppler" + (f"+smooth{args.smooth:g}" if args.smooth else "")) if dop else "")
-            summary, run, uuv, est = run_config(name, obs, truth, f_max, doppler=dop, smooth=args.smooth, propagator=args.propagator,
+            summary, run, uuv, est = run_config(name, obs, truth, band, doppler=dop, smooth=args.smooth, propagator=args.propagator,
                                                 use_cuda=args.cuda)
             results["metrics"][tag][key] = summary
             maps[tag, key] = (run, uuv, est, env, layout)
@@ -195,7 +217,8 @@ def main() -> None:
                 f"within 5 m {100 * summary['within_5m']:3.0f} %, contrast {summary['contrast_db_median']:5.1f} dB, "
                 f"1.5 s: median {summary['int_median_error_m']:5.1f} m, within 5 m {100 * summary['int_within_5m']:3.0f} %, "
                 f"ship err {summary['ship_position_error_median_m']:.1f} m{eca} ({summary['chain_s']:.0f} s)")
-            if tag == "coarse" and name == "direct_removed_exactly" and not dop and Path(args.demo_summary).exists():
+            if (tag == "coarse" and name == "direct_removed_exactly" and not dop and args.propagator == "simulator"
+                    and Path(args.demo_summary).exists()):
                 demo = json.loads(Path(args.demo_summary).read_text())
                 same = all(abs(demo[k] - summary[k]) < 1e-6 for k in ("median_error_m", "p90_error_m", "within_5m", "contrast_db_median"))
                 results["reproduces_demo_summary"] = bool(same)

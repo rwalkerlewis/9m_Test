@@ -8,10 +8,11 @@ from pathlib import Path
 
 import numpy as np
 
-from acoustic_sim.water.ais import AISConfig
+from acoustic_sim.water.ais_sim import AISConfig
 from acoustic_sim.water.environment import HarborEnvironment, build_synthetic_harbor
 from acoustic_sim.water.fdtd_runner import HarborFDTDConfig
 from acoustic_sim.water.noise import NoiseConfig
+from acoustic_sim.water.sensor_sampling import validate_layout
 from acoustic_sim.water.sensors import Cable, SensorLayout
 from acoustic_sim.water.vessels import VesselConfig
 
@@ -127,5 +128,5 @@ def build_layout(cfg: HarborScenarioConfig, env: HarborEnvironment | None = None
         hydrophones=np.asarray(cfg.hydrophones, float),
     )
     if env is not None:
-        layout.validate(env, margin=margin)
+        validate_layout(layout, env, margin=margin)
     return layout
