@@ -505,7 +505,8 @@ class StreamingEcho:
     """
 
     def __init__(self, layout: SensorLayout, fs: float, env: ChartEnvironment, bc,
-                 stc: EchoStreamConfig | None = None, grid: np.ndarray | None = None, remove_others: bool = True) -> None:
+                 stc: EchoStreamConfig | None = None, grid: np.ndarray | None = None, remove_others: bool = True,
+                 keep_maps: bool = False, keep_clean: bool = False) -> None:
         from acoustic_sim.water.bistatic import build_grid
 
         if bc.reference != "data" or bc.removal != "eca" or not bc.eca_doppler or bc.method != "coherent":
@@ -513,6 +514,8 @@ class StreamingEcho:
         if not isinstance(resolve(bc.propagator, bc.c), FreeFieldPropagator):
             raise ValueError("StreamingEcho needs the free field propagator")
         self.layout, self.fs, self.env, self.bc = layout, float(fs), env, bc
+        self.keep_maps, self.keep_clean = keep_maps, keep_clean
+        self.kept_clean: dict[int, np.ndarray] = {}     # with keep_clean: every cleaned block (for figures)
         self.source: str | None = None
         self.remove_others = remove_others
         self.stc = stc or EchoStreamConfig()
@@ -721,6 +724,8 @@ class StreamingEcho:
             lo = b * self.nb - a
             self.clean[b] = x[:, lo:lo + self.nb]
             self.refd[b] = {name: r[lo:lo + self.nb] for name, r in refs.items()}
+            if self.keep_clean:
+                self.kept_clean[b] = self.clean[b]
         return self._frames(t0, weights)
 
     def _frames(self, t0: float, weights: np.ndarray) -> list[FrameResult]:
@@ -791,7 +796,8 @@ class StreamingEcho:
             g = _nms(B[:, j], self.grid, stc.min_separation, stc.max_peaks, 0.0) if illum[j] else []
             frame_end = (k * self.hop + self.nper) / self.fs
             out.append(FrameResult(float(times[j]), self.grid[g], B[g, j], {n: pos[n][j] for n in illum[j]},
-                                   compute, float(self.n_in / self.fs - frame_end + compute)))
+                                   compute, float(self.n_in / self.fs - frame_end + compute),
+                                   B[:, j].copy() if self.keep_maps else None))
         return out
 
 
