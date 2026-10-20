@@ -637,6 +637,10 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
   from `acoustic_sim.water.motion` (also importable from `water.bistatic`) — integrate per-frame
   maps along constant-velocity hypotheses (synthetic aperture); returns the best map and the
   per-velocity peaks.
+* `StreamingPassive(layout, fs, env, pc, sc=None, stc=StreamConfig())` from `acoustic_sim.water.streaming` —
+  the passive chain in real time: `push(samples, reports)` takes the next chunk of traces `(N, n)` and the
+  AIS reports received so far and returns a `FrameResult` (time, peaks, scores, ship positions, compute
+  time, latency) for every completed frame; only past data are used.
 * `OccupancyConfig` / `OccupancyGrid(grid, cfg=None)` — track-before-detect over map frames;
   `.run(B, times, snapshot_frames=())` returns `OccupancyHistory`.
 * `FreeFieldPropagator(c)` from `acoustic_sim.water.propagation` — the free field replica model (nothing beyond the chart);

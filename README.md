@@ -12,8 +12,9 @@ This repository contains two related but independent applications of acoustic mo
   illuminator.
 
 The harbor implementation and experimental status are documented in
-[docs/harbor.md](docs/harbor.md). The passive matched-field chain does not reliably detect the
-default weak UUV. The bistatic echo demo is idealized: it uses truth components and the true
+[docs/harbor.md](docs/harbor.md). The passive matched-field chain runs in real time
+(`water/streaming.py`, `examples/harbor_stream.py`) and finds radiating vessels without AIS, but it
+does not detect the default weak UUV. The bistatic echo demo is idealized: it uses truth components and the true
 illuminator waveform and is not an operational performance claim; its `demo_summary.json` and figures carry
 the provenance flags. The processing side reads only an `Observation` (traces, sample rate,
 geometry, public chart, AIS); everything else is `Truth` (see

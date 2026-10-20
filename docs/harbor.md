@@ -8,9 +8,12 @@ target's own emission and bistatic localization of a silent body from
 the echo of an AIS ship. The forward model reuses this package's FDTD
 solver; water-specific code lives in `src/acoustic_sim/water/`.
 
-**Status: the simulation, sensing and processing chain work and are tested, but the UUV is
-not yet detected at the intended source level.**  See [Status and findings](#status-and-findings)
-for what was measured and what is still unexplained.
+**Status: the simulation, sensing and processing chain work and are tested.  The passive chain runs
+in real time (`water/streaming.py`: 0.70 s of compute per second of data on the 0.5 m datasets,
+latency about 1 s) and finds a radiating boat without AIS in 87 % of frames within 5 m; the echo chain
+finds one silent UUV lit by one ship (75 % of frames within 5 m), not yet the silent bodies of the
+multi ship scene, and the quiet UUVs of the 5 m harbor are not detected.**  See
+[What the chains find today](#what-the-chains-find-today).
 
 ## Scenario
 
