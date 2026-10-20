@@ -41,6 +41,7 @@ FDTD runs want `--cuda`/a GPU for practical run times).  Each script's `--help` 
 | `harbor_bistatic` | `examples/harbor_bistatic_budget.py`, `harbor_bistatic_dataset.py --coarse`, `harbor_bistatic_demo.py`, `harbor_bistatic_ablation.py` | FDTD cache in `harbor_bistatic/cache/` |
 | `harbor_cancel` | `examples/harbor_cancellation_depth.py` | Cache in `harbor_cancel/cache/` |
 | `harbor_multistatic` | `examples/harbor_multistatic_dataset.py` | |
+| `harbor_simple` | `examples/harbor_multistatic_dataset.py --config examples/harbor_simple.scenario.json --out output/harbor_simple` | The simple harbor (one quay, constant sound speed, DAS loop); dataset and cache not tracked |
 | `walkthrough/<dataset>` | `examples/walkthrough/*.py` | One figure per step of the chain (`01_recording.png` to `07_harbor_picture.png`); the run cache `cache/run.pkl` is not tracked |
 | `harbor_detect`, `harbor_stream` | `examples/harbor_detect.py`, `examples/harbor_stream.py` | `detections.csv`, `check.csv`, `check.png`, `summary.json` per dataset |
 | `harbor_picture/stage1` | `examples/harbor_picture_stage1.py` | Scoreboards (`scoreboard_*.png`, `.json`), `pd_summary.png`, `misses_*.png`, `results.json`, `run.log`; the run cache `cache/*.pkl` is not tracked |

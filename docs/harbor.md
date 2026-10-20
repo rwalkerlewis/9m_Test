@@ -23,8 +23,8 @@ own). The chain runs once (about 30 s on the GPU) and is cached in `output/walkt
 the figures go to `output/walkthrough/<dataset>/`. Nothing in the processing reads the truth or the AIS
 reports: the truth is drawn (dashed lines, circles) only to show where the objects really are, and AIS
 enters in step 4 only, to name what was found. The figures below are the multistatic recording (three
-ships, two UUVs, a diver, six pilings and a moored hull) and, for the echo steps, the bistatic one (one
-ship lighting one silent UUV).
+ships, two UUVs, a diver, six pilings and a moored hull) and, for the echo steps, the [simple
+harbor](#simple-harbor-easier-wavefields) (a ferry and a boat lighting a silent UUV and a wreck).
 
 **1. The recording** (`01_recording.py`). What the system gets: the chart, the sensor positions (a strain
 DAS cable and four hydrophones) and the traces.
@@ -54,12 +54,13 @@ noise it reflects, 10 to 20 dB below the ship's direct sound. For every strong t
 reference beam toward it and removes the delayed copies of that reference from every channel (ECA,
 delays following the track).
 
-![step 5](../output/walkthrough/bistatic/05_direct_path_removal.png)
+![step 5](../output/walkthrough/simple/05_direct_path_removal.png)
 
 **6. The echo map** (`06_echo_map.py`). On the cleaned traces every cell is tested as a reflector of each
-tracked ship's sound; the silent UUV lights up, frame by frame and in the sum of the record.
+tracked ship's sound; the wreck lights up in every frame, the UUV in some, and both stand out in the sum of
+the record (each frame over its median, so the scale is dB over the noise level).
 
-![step 6](../output/walkthrough/bistatic/06_echo_map.png)
+![step 6](../output/walkthrough/simple/06_echo_map.png)
 
 **7. The harbor picture** (`07_harbor_picture.py`). Tracks and echo detections over the true positions,
 and each object's score (frames with a detection within 5 m, median error). On the multistatic recording
@@ -68,8 +69,8 @@ the UUVs) because the other ships' direct sound is removed only by 3 to 7 dB.
 
 ![step 7](../output/walkthrough/multistatic/07_harbor_picture.png)
 
-All three recordings have the full set of figures in `output/walkthrough/` (the 5 m harbor without steps 5
-and 6).
+All four recordings (bistatic, multistatic, simple, harbor) have the full set of figures in
+`output/walkthrough/` (the 5 m harbor without steps 5 and 6).
 
 ## Scenario
 
@@ -92,6 +93,26 @@ The bistatic example uses a **different, cropped fine-grid scenario** in
 DAS with 2 m channel/gauge spacing, a ferry illuminator and a silent 1 m × 3 m UUV body. Its
 `--coarse` option changes to 1 m spacing and scales the sample rate/band. Do not infer its
 settings or resource cost from the default 5 m / 600 Hz harbor scenario.
+
+### Simple harbor (easier wavefields)
+
+`examples/harbor_simple.scenario.json` (`environment.kind = "simple"`, `water.environment.build_simple_harbor`)
+is a harbor built so that its wavefields are easy to resolve, for developing and checking the processing:
+
+| Item | Simple harbor |
+|------|---------------|
+| Domain | 500 m x 400 m basin, 1 m grid, 3 kHz, 20 s; band 100-380 Hz (wavelengths 4-15 m) |
+| Land | One straight 20 m quay along the north edge (a single reflector, one clean image); open water elsewhere, absorbed by the 40 m sponge |
+| Sound speed | 1500 m/s everywhere (no shallow water slowdown): the chart's single sound speed is the true one |
+| Sensors | A pressure mode DAS loop around the scene (80-420 m x 80-330 m, 4 m channels, 299 channels: every angle covered, no strain directivity) and four corner hydrophones |
+| Objects | AIS ferry (1.0 Pa) crossing the north; a boat without AIS (0.3 Pa); a silent 6 m x 2 m UUV; a static 4 m wreck, all inside the loop and 50 m or more apart |
+
+Build it with `python examples/harbor_multistatic_dataset.py --config examples/harbor_simple.scenario.json
+--out output/harbor_simple --cuda` (four FDTD runs, 24 s on the GPU); it writes `output/harbor_simple/fine/`.
+On the median DAS channel the ferry's echo is 15.7 dB below its direct sound and 1.2 dB above the noise
+(`levels.json`). The real-time system (`harbor_stream.py --dataset simple --echo`), everything estimated:
+the ferry within 5 m in 100 % of frames (track 1.4 m), the boat in 78 % (0.9 m), the wreck by its echo in
+100 % and the UUV in 18 %, at 0.62 s of compute per second of data.
 
 ## Physical and Interpretation Limits
 

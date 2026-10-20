@@ -17,7 +17,7 @@ Outputs in ``--out/<dataset>/``: ``passive.csv``, ``echo.csv``, ``tracks.csv``, 
 
 Usage::
 
-    python examples/harbor_stream.py --dataset multistatic|bistatic|harbor [--echo] [--cuda]
+    python examples/harbor_stream.py --dataset multistatic|bistatic|simple|harbor [--echo] [--cuda]
 """
 
 from __future__ import annotations
@@ -54,6 +54,9 @@ DATASETS = {
     "bistatic": ("output/harbor_bistatic/fine/dataset", (100.0, 760.0),
                  dict(win_s=0.5, hop_s=0.25, grid_dx=2.0, grid_margin=5.0, min_range=1.0, bin_stride=2), 40.0,
                  dict(block_frames=8, history_s=5.0, warmup_s=1.0, interference_every=32)),
+    "simple": ("output/harbor_simple/fine/dataset", (100.0, 380.0),
+               dict(win_s=0.5, hop_s=0.25, grid_dx=2.0, grid_margin=5.0, min_range=1.0, bin_stride=2), 45.0,
+               dict(block_frames=8, history_s=5.0, warmup_s=1.0, interference_every=32)),
     "harbor": ("output/harbor/dataset", (12.0, 78.0), dict(grid_dx=5.0), 150.0,
                dict(block_frames=1, history_s=30.0, warmup_s=8.0)),
 }

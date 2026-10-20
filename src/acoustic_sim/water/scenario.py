@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from acoustic_sim.water.ais_sim import AISConfig
-from acoustic_sim.water.environment import HarborEnvironment, build_synthetic_harbor
+from acoustic_sim.water.environment import HarborEnvironment, build_simple_harbor, build_synthetic_harbor
 from acoustic_sim.water.fdtd_runner import HarborFDTDConfig
 from acoustic_sim.water.noise import NoiseConfig
 from acoustic_sim.water.sensor_sampling import validate_layout
@@ -21,12 +21,20 @@ from acoustic_sim.water.vessels import VesselConfig
 class EnvironmentConfig:
     """Grid spacing, sound speed, and an optional crop ``[x0, x1, y0, y1]`` of the harbor
     (the crop becomes its own domain with the origin at ``(x0, y0)``; all other scenario
-    coordinates are then in that local frame)."""
+    coordinates are then in that local frame).
+
+    ``kind``: ``"synthetic"`` (default, ``build_synthetic_harbor``) or ``"simple"``
+    (``build_simple_harbor``: a ``width`` x ``height`` basin with one straight quay of ``quay_width`` along
+    the north edge, open water elsewhere, constant sound speed; ``shallow_c_drop`` and ``crop`` unused)."""
 
     dx: float = 5.0
     c0: float = 1500.0
     shallow_c_drop: float = 10.0
     crop: list[float] | None = None
+    kind: str = "synthetic"
+    width: float = 500.0
+    height: float = 400.0
+    quay_width: float = 20.0
 
 
 @dataclass
@@ -116,6 +124,10 @@ class HarborScenarioConfig:
 
 def build_environment(cfg: HarborScenarioConfig) -> HarborEnvironment:
     e = cfg.environment
+    if e.kind == "simple":
+        return build_simple_harbor(width=e.width, height=e.height, dx=e.dx, c0=e.c0, quay_width=e.quay_width)
+    if e.kind != "synthetic":
+        raise ValueError(f"environment kind must be 'synthetic' or 'simple', got {e.kind!r}")
     crop = None if e.crop is None else tuple(float(v) for v in e.crop)
     return build_synthetic_harbor(dx=e.dx, c0=e.c0, shallow_c_drop=e.shallow_c_drop, crop=crop)
 
