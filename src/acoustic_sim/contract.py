@@ -423,6 +423,12 @@ def contract_paths(path: str | Path) -> tuple[Path, Path]:
     return p.with_name(name + ".observation.npz"), p.with_name(name + ".truth.npz")
 
 
+def dataset_exists(path: str | Path) -> bool:
+    """True if *path* (``<name>.npz``) exists as an old single file or as the observation / truth pair."""
+    p = Path(path)
+    return p.exists() or contract_paths(p)[0].exists()
+
+
 def _main(argv: list[str]) -> int:
     import argparse
 

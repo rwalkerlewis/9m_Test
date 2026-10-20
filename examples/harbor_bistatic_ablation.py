@@ -55,7 +55,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.contract import Provenance  # noqa: E402
+from acoustic_sim.contract import Provenance, dataset_exists  # noqa: E402
 from acoustic_sim.water import HarborDataset  # noqa: E402
 from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, run_bistatic, stft  # noqa: E402
 from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, oracle_illuminator  # noqa: E402
@@ -170,7 +170,7 @@ def main() -> None:
     say(f"criterion: {results['criterion']['text']}")
     maps = {}
     for tag, path in (("coarse", args.coarse), ("fine", args.fine)):
-        if not Path(path).exists():
+        if not dataset_exists(path):
             say(f"[{tag}] {path} missing, skipped")
             continue
         ds = HarborDataset.load(path)

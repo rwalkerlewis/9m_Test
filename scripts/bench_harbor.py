@@ -529,7 +529,7 @@ def main() -> None:
                     ds, t_render = rerender_fine_dataset(args, out_root / f"cache_{args.tag}")
                     results["rerender"] = {"fine_dataset_render_s": t_render}
                     say(f"[bench] fine dataset rerendered with the current solver options in {t_render:.1f} s")
-                elif not FINE_DATASET.exists():
+                elif not (FINE_DATASET.exists() or FINE_DATASET.with_name("dataset.observation.npz").exists()):
                     say(f"[bench] {FINE_DATASET} missing, skipping {name}")
                     continue
                 else:

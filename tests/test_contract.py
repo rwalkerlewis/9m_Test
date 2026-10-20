@@ -392,3 +392,11 @@ def test_a_greens_only_propagator_fits_the_protocol():
                       run_ais_aware(*args, rec["reports"], pc, SuppressionConfig(refine_half=4.0, refine_step=2.0), floor=0.0).scan.B)
     for a, b in zip(maps["analytic"], maps["greens"]):
         np.testing.assert_allclose(b, a, rtol=1e-5, atol=1e-6 * np.abs(a).max())
+
+
+def test_dataset_exists_sees_the_pair(tiny_dataset, tmp_path):
+    from acoustic_sim.contract import dataset_exists
+
+    ds, out = tiny_dataset
+    assert dataset_exists(out / "tiny.npz") and not (out / "tiny.npz").exists()
+    assert not dataset_exists(tmp_path / "missing.npz")

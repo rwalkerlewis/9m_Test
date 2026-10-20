@@ -141,7 +141,7 @@ recording is converted into:
 
 | Item | Form |
 |------|------|
-| `traces` | float array `(n_receivers, n_samples)`, rows in geometry order: every cable's channels in order from its first waypoint, then the hydrophones; dead channels stay in place as zeros (channel QC gives silent channels zero weight). Hydrophones in Pa. DAS channels as the chain models them: the second difference of pressure over the gauge length, `p(s + g/2) - 2 p(s) + p(s - g/2)`, which for axial strain `ε` is `-ρ g² ∂²ε/∂t²` (for strain rate `ε̇`, `-ρ g² ∂ε̇/∂t`), `ρ` the water density; a pressure mode cable is in Pa. |
+| `traces` | float array `(n_receivers, n_samples)`, rows in geometry order: every cable's channels in order from its first waypoint, then the hydrophones; dead channels stay in place as zeros (channel QC gives silent channels zero weight). Hydrophones in Pa. DAS channels as the chain models them: the second difference of pressure over the gauge length, `p(s + g/2) - 2 p(s) + p(s - g/2)`, which to leading order is `(g²/4) ∂²p/∂s²` and so, for axial strain `ε` (momentum: `ρ ∂²ε/∂t² = -∂²p/∂s²`), `-(ρ g²/4) ∂²ε/∂t²` (for strain rate `ε̇`, `-(ρ g²/4) ∂ε̇/∂t`), `ρ` the water density; a pressure mode cable is in Pa. |
 | `fs` | sample rate [Hz] of every channel (resample before, one rate for all) |
 | `t0` | time [s] of the first sample in the AIS time base |
 | `geometry` | `water.sensors.SensorLayout`: per cable the waypoints `(x, y)` [m] in the chart's local east / north frame, `channel_spacing` [m], `das_mode` (`"strain"` or `"pressure"`) and `gauge_length` [m]; hydrophone positions `(x, y)` [m]. In air, `contract.MicArray` positions `(n, 2 or 3)` [m]. |
