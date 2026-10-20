@@ -2,17 +2,164 @@
 
 ## Package Organisation
 
-All production code lives in `src/acoustic_sim/`. The shared simulation
-core is in the package root and `solver/`; domain-specific application
-code is grouped under `air/` (drone detection and engagement) and `water/`
-(harbor sensing). Air and water FDTD runs use the same solver
-implementation. `ml/` contains optional PyTorch models. `harbor/` and a few
+All production code lives in `src/acoustic_sim/`. The package has two sides and one contract
+between them: the **forward side** generates synthetic data by solving the acoustic wave equation
+(FDTD, Helmholtz or an analytic propagator) in air or in water, and the **processing side**
+detects, locates, tracks and classifies unknown objects in data it cannot tell from a recording.
+`contract.py` is the boundary. Air and water are two forward models feeding one
+detect–locate–track–classify chain; `ml/` contains optional PyTorch models, and `harbor/` and a few
 root modules are compatibility import paths only (see
 [Compatibility import paths](#compatibility-import-paths)).
 
-### Module Inventory
+## Sensing contract
 
-#### Simulation core
+### The principle
+
+The **forward side** knows everything: the scenario, every track, every source waveform, the grid,
+the time step, the gains, the dead channels.
+
+The **processing side** consumes either real sensor data or forward model data treated as if it
+were real, and it cannot tell the difference. It knows only what a deployed system would know: the
+recorded traces, the sample rate, the sensor geometry, publicly available environment information
+(land, bathymetry, a nominal sound speed; in air the wind and terrain a met report and a map give)
+and, in water, the AIS reports.
+
+Anything the processing side reads that is not in that list is a **diagnostic**. Diagnostics are
+allowed (they are how processing gain is measured), but every result they touch says so in the
+data (its [provenance](#provenance)), not only in the prose.
+
+### Two data classes, two files
+
+`acoustic_sim/contract.py` (domain neutral; it imports no forward side module):
+
+* `Observation`: `traces` (n_receivers, n_samples), `fs`, `geometry` (anything with `positions()`
+  and `n_receivers`: the water `SensorLayout` with its cables, DAS mode, gauge length and
+  hydrophones, or the air `MicArray`), `environment` (public knowledge only: `ChartEnvironment` in
+  water, a land / water raster, depth and a nominal sound speed; `AirEnvironment` in air, nominal
+  sound speed, wind, terrain type, area), `reports` (AIS reports in water, `None` in air), `t0`, and
+  `meta` (free text about the recording: instrument, units, band; never scenario parameters).
+* `Truth`: `tracks` (`Track`, also a contract type), `components` (direct and scattered field per
+  vessel, noise), `gain`, `dead`, `clean`, `scenario` (the full scenario config including the solver
+  config), `fdtd` (the solver config used, with the derived `dt`) and `meta`.
+
+`save` / `load` write each as one `.npz` with a JSON header: `<name>.observation.npz` and
+`<name>.truth.npz`. The observation header holds no solver configuration, grid spacing, time step,
+scenario, track, source level or component (`tests/test_contract.py` checks the keys).
+`HarborDataset` stays the forward side convenience object: `.observation` and `.truth` build the
+two objects, `HarborDataset.save` (and `assemble_dataset(..., out=...)`, `simulate_scenario(...,
+out=...)`) write the two files, and `HarborDataset.load` reads the pair as well as an old single
+`dataset.npz`, so existing caches and outputs stay usable.
+`python -m acoustic_sim.contract split <dataset.npz>` writes the pair from an old file.
+
+In air, `examples/run_pipeline.py` splits a simulation directory (`traces.npy` +
+`metadata.json`) the same way: the observation gets the traces, the sample rate, the microphone
+positions, the nominal sound speed and the wind; the source trajectory and the solver parameters
+are truth.
+
+### Import rule
+
+No processing side module imports a forward side module, at module level or inside a function.
+`tests/test_contract.py` walks both lists with `ast`, resolves relative imports and names
+re-exported from a package `__init__`, and fails with the file and line of every violation.
+
+| Side | Modules |
+|------|---------|
+| Processing | `water/detection.py`, `water/suppression.py`, `water/occupancy.py`, `water/bistatic.py`, `water/motion.py`, `water/localiser.py`, `water/classifier.py`, `water/evaluate.py`, `water/propagation.py`; `air/detection/*`, `air/processor.py`, `air/tracker.py`, `air/fire_control.py`; the `ml/` inference paths (`features.py`, `acoustic_classifier.py`, `fusion_classifier.py`, `maneuver_classifier.py`, `anomaly_detector.py`, `anomaly_integration.py`) |
+| Forward | `solver/*`, `model.py`, `sources.py`; `water/fdtd_runner.py`, `water/fdtd_cuda_bodies.py`, `water/scatterer.py`, `water/dispersion.py`, `water/signatures.py`, `water/vessels.py`, `water/noise.py`, `water/dataset.py`, `water/scenario.py`, `water/environment.py`; `air/forward.py`, `air/domains.py`, `air/noise.py`, `air/setup.py`; `ml/data_generation.py`, `ml/fno*` |
+| Either | `water/diagnostics.py`, `air/diagnostics.py` (diagnostics may import both sides; library code on the processing side never imports them) |
+
+Shared modules on neither list (`contract.py`, `water/sensors.py`, `water/ais.py`,
+`water/device.py`, `water/plotting.py`, `backend.py`) import no forward module either, except
+that `ais.py` keeps the forward side's AIS generator next to the reports class.
+The rule is static: the package `__init__` files still import the forward modules eagerly (the
+root facade re-exports both sides), so loading the processing side at run time loads the forward
+code too; it is never called.
+
+A shared type moves to `contract.py` (`Track`); a forward dependency becomes an injected object
+(the [propagator](#propagator)); a function that is really a diagnostic moves to
+`water/diagnostics.py` or `air/diagnostics.py`.
+
+### Propagator
+
+Replicas are an injected object. `contract.Propagator` is the protocol:
+`greens(sources_xy, receivers_xy, freqs)` returns the field `(F, P, N)` at the receivers of unit
+sources, and `path(points_xy, source_xy, freqs)` the propagation factor `(F, P)` from one source to
+many points (the illuminator to cell leg of the bistatic model). A propagator also states `c`,
+`knowledge` (the simulator knowledge it uses, copied into every result's provenance) and whether it
+is `analytic`; an analytic one exposes the wavenumber hook `wavenumbers(freqs, theta)` that the
+chains' cached geometry loops use, a non analytic one is evaluated through `greens`.
+
+| Propagator | Module | Knowledge |
+|------------|--------|-----------|
+| `FreeFieldPropagator(c)` | `water/propagation.py` (processing side) | none: the default of `ProcessingConfig.propagator` and `BistaticConfig.propagator` (`None` means `FreeFieldPropagator(config.c)`) |
+| `SimulatorAwarePropagator.from_truth(truth)` | `water/diagnostics.py` | `"dispersion"`: the FDTD scheme's numerical, direction dependent wavenumber; built from the `Truth` because it needs the solver config, so a script that uses it has to load the truth file on the inference path |
+| `HelmholtzPropagator` (later stage) | — | none: a replica library from `solver/helmholtz.py` and the public environment; it implements `greens` and `path` only |
+
+The free field default uses the config's sound speed (1495 m/s), not the chart's nominal speed
+(`FreeFieldPropagator.from_environment(env)` gives that one), so that no result changes; the two
+differ by about 1 m/s on the synthetic harbor.
+
+### Provenance
+
+Every result object the processing side returns carries a `contract.Provenance`
+(`DetectionRun`, `AISAwareRun`, `BistaticRun`, and every air `WindowDetection`), and every
+`results.json` written by the examples has it:
+
+```
+"provenance": {
+  "oracle_inputs": ["waveform", "track", "direct_removal"],   # [] when blind
+  "simulator_knowledge": ["dispersion"],                      # [] when none
+  "data": "observation" | "forward_model",
+  "held_out": true | false
+}
+```
+
+The chains set the flags they can see (`reference="oracle"`: `"waveform"`; `ship_positions(truth=...)`
+or `Diagnostics(ship_xy=...)`: `"track"`; truth components through the ECA: `"components"`; the
+propagator's `knowledge`; an empirical localiser: `"empirical_replicas"`). The caller passes what only
+it knows, e.g. `provenance=Provenance(oracle_inputs=["direct_removal"])` when it built the traces
+without the direct path, and whether the data are recorded and held out. In air:
+`"range_calibration"`, `"range_method"`, `"altitude"` (the oracle set-up steps of
+`air/diagnostics.py`) and `"hit_feedback"` (the run stops after `max_hits` hits scored against the
+truth). `contract.annotate_figure` prints the flags on a figure (red when not blind); the air
+pipeline plots and the bistatic, M3 and M4 figures use it.
+
+Scoring takes the `Truth` as an explicit argument: `water/evaluate.py` (`score_detections`,
+`truth_labels` for classifier labels), and `evaluate_results` in the air pipeline. That is the one
+sanctioned place truth enters after inference. The classifiers (`HarborClassifier`, the air
+classifiers) infer from the observation; labels come from the truth only inside the scoring call.
+
+**Documentation rule.** A table in `docs/` that contains an oracle or simulator aware row must
+contain the blind row for the same case beside it, and the rows say which is which.
+
+### Real data entry point
+
+`Observation.from_arrays(traces, fs, geometry, environment, reports=None, t0=0.0, meta=...)` builds an
+observation from plain arrays; no scenario is involved (`tests/test_contract.py` runs
+`run_bistatic` and `run_ais_aware` to completion on one with the free field propagator). A field
+recording is converted into:
+
+| Item | Form |
+|------|------|
+| `traces` | float array `(n_receivers, n_samples)`, rows in geometry order: every cable's channels in order from its first waypoint, then the hydrophones; dead channels stay in place as zeros (channel QC gives silent channels zero weight). Hydrophones in Pa. DAS channels as the chain models them: the second difference of pressure over the gauge length, `p(s + g/2) - 2 p(s) + p(s - g/2)`, which for axial strain `ε` is `-ρ g² ∂²ε/∂t²` (for strain rate `ε̇`, `-ρ g² ∂ε̇/∂t`), `ρ` the water density; a pressure mode cable is in Pa. |
+| `fs` | sample rate [Hz] of every channel (resample before, one rate for all) |
+| `t0` | time [s] of the first sample in the AIS time base |
+| `geometry` | `water.sensors.SensorLayout`: per cable the waypoints `(x, y)` [m] in the chart's local east / north frame, `channel_spacing` [m], `das_mode` (`"strain"` or `"pressure"`) and `gauge_length` [m]; hydrophone positions `(x, y)` [m]. In air, `contract.MicArray` positions `(n, 2 or 3)` [m]. |
+| `environment` | `contract.ChartEnvironment`: `water` boolean `(ny, nx)` on the regular coordinates `x` `(nx,)`, `y` `(ny,)` [m], `depth` [m], `c_nominal` [m/s]; in air `contract.AirEnvironment` (`c_nominal`, `wind` `(vx, vy, vz)` [m/s], `terrain`, `extent`) |
+| `reports` | `water.ais.AISReports`: `vessel` (id per report, e.g. the MMSI as a string), `t` [s] in the time base of `t0`, `xy` [m] in the chart frame, `sog` [m/s] (knots × 0.5144), `cog` [rad] in the maths convention `atan2(vy, vx)` (from a nautical course in degrees: `radians(90 - cog)`) |
+| `meta` | `"instrument"`, `"units"`, `"band_hz"` `[f_lo, f_hi]` of the usable band |
+
+No format specific reader (HDF5, SEG-Y, NMEA) exists yet.
+
+## Module Inventory
+
+`contract.py` comes first: `Observation`, `Truth`, `Track`, `Provenance`, `ChartEnvironment`,
+`AirEnvironment`, `MicArray`, the `Geometry` and `Propagator` protocols, `annotate_figure`, and the
+`split` command line.
+
+### Forward side
+
+#### Shared simulation core
 
 | Module | Responsibility |
 |--------|---------------|
@@ -24,53 +171,88 @@ root modules are compatibility import paths only (see
 | `solver/fdtd_cuda.py` | Fused CUDA step kernel (one `cupy.RawKernel` launch per step) used by `kernel="fused"`/`"auto"` on a single GPU process. |
 | `solver/snapshots.py` | `save_snapshot` / `save_snapshot_3d`: dB SPL wavefield PNGs written during `run(snapshot_dir=...)`; re-exported by `air/plotting.py`. |
 | `solver/helmholtz.py` | `solve_helmholtz(model, source_xy, frequency_hz, damping_width)` — sparse direct solve of the 2-D Helmholtz equation with PML. |
-| `backend.py` | `get_backend(use_cuda)` → returns `(xp, is_cuda)` where `xp` is numpy or cupy. |
+| `backend.py` | `get_backend(use_cuda)` → returns `(xp, is_cuda)` where `xp` is numpy or cupy (shared by both sides). |
 | `sampling.py` | `check_spatial_sampling`, `check_cfl`, `suggest_dx`. |
 | `io.py` | `load_json`, `save_model`, `load_model`, `model_from_json`. |
 
-#### Air-domain application (`air/`)
-
-Air-specific domain builders, detection/engagement pipelines, signal
-processing, tracking, and studies live in `air/`. Shared source
-trajectories, receiver geometry, velocity models, and the FDTD solver
-remain in the common package or `solver/`. There are two detection paths:
-the production SRP-PHAT pipeline (`air/detection/`, driven by
-`examples/run_pipeline.py`) and the older MFP/EKF library path
-(`air/processor.py`, `air/tracker.py`, `air/detection_main.py`), which the
-parametric studies still use.
-
-#### Detection sub-package (`air/detection/`)
-
-The production SRP-PHAT pipeline uses modules in `air/detection/`, a
-pluggable framework with abstract base classes and factory functions.
-
-| Module | Responsibility |
-|--------|---------------|
-| `air/detection/__init__.py` | Re-exports all public symbols; quick-start docstring. |
-| `air/detection/bearing.py` | **Bearing estimators.** `SRPBeamformer`, `MUSICEstimator`, `MVDRBeamformer`, the `BearingEstimator` ABC and estimator factory. |
-| `air/detection/engine.py` | **`DetectionEngine`** — streaming window processor for bearing, range and tracking. |
-| `air/detection/ranging.py` | **Range estimators.** `RMSRangeEstimator`, `TDOARangeEstimator`, `BearingRateRangeEstimator` and factory. |
-| `air/detection/tracking.py` | **`CausalWLSTracker`** and `EMABearingSmoother` for streaming estimates. |
-
-#### Air library modules
+#### Air forward model (`air/`)
 
 | Module | Responsibility |
 |--------|---------------|
 | `air/domains.py` | Air domain builders (2-D: isotropic, wind, hills/vegetation, echo canyon, urban echo; 3-D: isotropic, wind, ground layer, hills/vegetation). |
 | `air/forward.py` | Analytical 3-D point-source forward model (`simulate_3d_traces`, `simulate_scenario_3d`) and FDTD-backed variants (`simulate_3d_traces_fdtd`, `simulate_scenario_3d_fdtd`). |
 | `air/noise.py` | Post-hoc air-domain and sensor noise injection. |
+| `air/setup.py` | High-level air-domain, receiver, source, and timestep builders. |
+
+#### Water forward model (`water/`)
+
+A plan-view 2-D harbor on the shared FDTD solver: water/land geometry, shoreline absorption,
+moving vessel sources and scatterers, synthetic AIS and measurement noise. It does not model a 3-D
+ocean water column.
+
+| Module | Responsibility |
+|--------|----------------|
+| `water/environment.py`, `water/scenario.py` | Water/land mask, informational depth, effective sound-speed map (`HarborEnvironment.public()` is its `ChartEnvironment`), crop support, JSON scenario configuration and builders |
+| `water/vessels.py`, `water/signatures.py` | Source/target tracks (`build_track`; `Track` is a contract type), acoustic signatures and injection calibration |
+| `water/fdtd_runner.py`, `water/fdtd_cuda_bodies.py`, `water/scatterer.py` | Harbor-specific FDTD behavior over the shared solver, moving body masks |
+| `water/dispersion.py` | `DispersionModel`: the FDTD scheme's numerical wavenumber (used by `SimulatorAwarePropagator`) |
+| `water/noise.py`, `water/dataset.py` | Ambient/shipping/instrument noise, channel gains/faults, source mixture; `HarborDataset` and its observation and truth files |
+
+#### ML data generation and the FNO surrogate (`ml/`)
+
+| Module | Purpose |
+|--------|---------|
+| `data_generation.py` | Synthetic data factories for all three classifiers.  Physics-based source signals (rotor blade modulation, harmonic engine, wing-beat pulses). |
+| `fno.py` | `AcousticFNO(nn.Module)` — Fourier Neural Operator surrogate for FDTD.  Input: 4-channel field (normalised velocity, source x/y Gaussian blobs, frequency encoding).  `SpectralConv2d` retains lowest Fourier modes; `FNOBlock2d` = spectral + pointwise conv + residual + GELU; `TraceDecoder` MLP maps latent features at receiver locations → time-domain traces.  Output: `(batch, n_recv, n_time_steps)`. |
+| `fno_data_gen.py` | FDTD training data pipeline.  Randomises domain type, source params, receiver layout; runs `FDTDSolver` / `FDTD3DSolver`; saves `.npz` per sample.  CLI: `python -m acoustic_sim.ml.fno_data_gen --n-samples 500 --output-dir data/fno_train`. |
+| `fno_training.py` | `FNODataset` (lazy `.npz` loader with receiver/trace padding), `train_fno` (relative L2 loss, masked receivers, cosine LR schedule, gradient clipping).  CLI: `python -m acoustic_sim.ml.fno_training --data-dir data/fno_train --epochs 200`. |
+| `fno_inference.py` | `FNOForwardModel` — drop-in replacement for FDTD.  Loads a trained checkpoint and provides `predict(velocity_field, grid, receivers, source) → traces`. |
+
+### Processing side
+
+#### Water processing (`water/`)
+
+| Module | Responsibility |
+|--------|----------------|
+| `water/sensors.py`, `water/ais.py` | Shared: polyline cable geometry, pressure or gauge-length strain DAS, hydrophones, layout validation and channel splitting (`SensorLayout` is the water `Geometry`); AIS reports and the predictor (`generate_ais` is the forward side's generator) |
+| `water/propagation.py` | `green2d` and `FreeFieldPropagator`, the blind default replica model |
+| `water/detection.py`, `water/suppression.py`, `water/occupancy.py` | Passive matched-field detection, CFAR, AIS-guided position refinement and ship suppression, and track-before-detect |
+| `water/bistatic.py`, `water/motion.py` | AIS-ship-illuminated echo processing, direct-path removal, and Bartlett/coherent/MVDR/MUSIC localization maps; motion-compensated integration (`motion_integrate`, re-exported by `bistatic.py`) |
+| `water/localiser.py` | Optional empirical replica refinement from a survey of measured (or, flagged, simulated) transfer functions |
+| `water/evaluate.py`, `water/classifier.py` | Scoring against the `Truth` (`score_detections`, `truth_labels`); optional harbor CNN/CVAE classifier |
+| `water/diagnostics.py` | Either side: `SimulatorAwarePropagator`, `VesselPathLocaliser` (replicas from the dataset's own FDTD gathers), `oracle_illuminator` |
+| `water/plotting.py`, `water/device.py` | Visualizations; CPU/CuPy dispatch |
+
+For implementation status, interpretation caveats, and complete scenario and example workflows,
+see [Harbor](harbor.md).
+
+#### Air processing (`air/`)
+
+There are two detection paths: the production SRP-PHAT pipeline (`air/detection/`, driven by
+`examples/run_pipeline.py`) and the older MFP/EKF library path (`air/processor.py`,
+`air/tracker.py`, `air/detection_main.py`), which the parametric studies still use.
+`air/detection_main.py` and `air/studies.py` orchestrate simulation and processing together and are
+on neither side of the contract.
+
+| Module | Responsibility |
+|--------|---------------|
+| `air/detection/__init__.py` | Re-exports all public symbols; quick-start docstring. |
+| `air/detection/bearing.py` | **Bearing estimators.** `SRPBeamformer`, `MUSICEstimator`, `MVDRBeamformer`, the `BearingEstimator` ABC and estimator factory. |
+| `air/detection/engine.py` | **`DetectionEngine`** — streaming window processor for bearing, range and tracking; carries the run's `Provenance` into every `WindowDetection`. |
+| `air/detection/ranging.py` | **Range estimators.** `RMSRangeEstimator`, `TDOARangeEstimator`, `BearingRateRangeEstimator` and factory. |
+| `air/detection/tracking.py` | **`CausalWLSTracker`** and `EMABearingSmoother` for streaming estimates. |
 | `air/processor.py` | Matched-field processing in 2-D and 3-D (legacy MFP/EKF path). |
 | `air/tracker.py` | EKF and multi-target tracking for the air-domain pipeline. |
 | `air/fire_control.py` | Ballistic lead, engagement, and multi-target prioritization. |
-| `air/detection_main.py` | Full MFP/EKF pipeline orchestration. |
+| `air/diagnostics.py` | Either side: the truth trajectory for scoring and plotting, and the flagged oracle set-up steps of the pipeline (`oracle_cpa_distance`, `oracle_altitude`). |
+| `air/detection_main.py` | Full MFP/EKF pipeline orchestration (simulation and processing). |
 | `air/validate.py` | Amplitude, SNR, travel-time, localization and energy checks. |
-| `air/setup.py` | High-level air-domain, receiver, source, and timestep builders. |
 | `air/config.py` | `DetectionConfig` for the MFP/EKF pipeline. |
 | `air/studies.py` | Parametric studies (see [Studies](studies.md)). |
 | `air/plotting.py` | Air-domain, gather, wavefield, beam, tracking and study visualizations. |
-| `air/pipeline_plots.py` | Engagement pipeline figures (`plot_pipeline_summary`, `plot_radial_engagement`, `plot_beamformer_diagnostic`); re-exported by `air/plotting.py`. |
+| `air/pipeline_plots.py` | Engagement pipeline figures (`plot_pipeline_summary`, `plot_radial_engagement`, `plot_beamformer_diagnostic`, all with the provenance flags); re-exported by `air/plotting.py`. |
 
-#### ML classifiers (`ml/`)
+#### ML classifiers (`ml/`, inference)
 
 | Module | Purpose |
 |--------|---------|
@@ -78,45 +260,11 @@ pluggable framework with abstract base classes and factory functions.
 | `acoustic_classifier.py` | `AcousticClassifier(nn.Module)` — 3-layer CNN, input `(B, 1, n_mels, n_time)`, output `(B, 6)`.  `get_embedding()` returns 64-dim vector. |
 | `fusion_classifier.py` | `FusionClassifier` — acoustic CNN branch (64-dim) ‖ kinematic MLP branch (14→32→32).  Concatenated → FC(96→64→6).  `KinematicOnlyClassifier` for ablation. |
 | `maneuver_classifier.py` | `ManeuverClassifier` — 2-layer 1-D CNN, input `(B, 6, N)` kinematic channels × timesteps, output `(B, 6)` maneuver classes. |
-| `data_generation.py` | Synthetic data factories for all three classifiers.  Physics-based source signals (rotor blade modulation, harmonic engine, wing-beat pulses). |
-| `training.py` | `train_classifier`, `train_fusion_classifier`, `evaluate_classifier`, `evaluate_fusion_classifier`.  Adam optimiser, cross-entropy loss, confusion matrix evaluation. |
 | `anomaly_detector.py` | CVAE model (convolutional variational autoencoder) for novel threat detection via reconstruction error. |
 | `anomaly_integration.py` | `AnomalyDetector` wrapper: loads model + threshold, provides `process_frame()` and `process_mel_spectrogram()` returning `AnomalyResult` dataclass. |
-| `anomaly_training.py` | Training script for the CVAE: synthetic data generation, training loop, threshold calibration. |
+| `training.py`, `anomaly_training.py` | Offline training (`train_classifier`, `train_fusion_classifier`, `evaluate_classifier`, the CVAE training loop and threshold calibration); `anomaly_training.py` generates its data with the forward model. |
 
-#### FNO surrogate (`ml/fno*.py`)
-
-| Module | Purpose |
-|--------|---------|
-| `fno.py` | `AcousticFNO(nn.Module)` — Fourier Neural Operator surrogate for FDTD.  Input: 4-channel field (normalised velocity, source x/y Gaussian blobs, frequency encoding).  `SpectralConv2d` retains lowest Fourier modes; `FNOBlock2d` = spectral + pointwise conv + residual + GELU; `TraceDecoder` MLP maps latent features at receiver locations → time-domain traces.  Output: `(batch, n_recv, n_time_steps)`. |
-| `fno_data_gen.py` | FDTD training data pipeline.  Randomises domain type, source params, receiver layout; runs `FDTDSolver` / `FDTD3DSolver`; saves `.npz` per sample.  CLI: `python -m acoustic_sim.ml.fno_data_gen --n-samples 500 --output-dir data/fno_train`. |
-| `fno_training.py` | `FNODataset` (lazy `.npz` loader with receiver/trace padding), `train_fno` (relative L2 loss, masked receivers, cosine LR schedule, gradient clipping).  CLI: `python -m acoustic_sim.ml.fno_training --data-dir data/fno_train --epochs 200`. |
-| `fno_inference.py` | `FNOForwardModel` — drop-in replacement for FDTD.  Loads a trained checkpoint and provides `predict(velocity_field, grid, receivers, source) → traces`. |
-
-#### Water / harbor sensing application (`water/`)
-
-This is a separate 2-D application built on the shared FDTD solver. It models a plan-view
-harbor with water/land geometry, shoreline absorption, cable DAS and hydrophone receivers,
-moving vessel sources and scatterers, synthetic AIS, measurement noise, and two distinct
-processing pipelines. It is not part of `examples/run_pipeline.py` and does not model a 3-D
-ocean water column.
-
-| Module | Responsibility |
-|--------|----------------|
-| `water/environment.py`, `water/scenario.py` | Water/land mask, informational depth, effective sound-speed map, crop support, JSON scenario configuration and builders |
-| `water/sensors.py` | Polyline cable geometry; pressure or gauge-length strain-like DAS output; hydrophones; layout validation and channel splitting |
-| `water/vessels.py`, `water/signatures.py`, `water/ais.py` | Source/target tracks, acoustic signatures and injection calibration, noisy AIS reports and prediction |
-| `water/fdtd_runner.py`, `water/scatterer.py` | Harbor-specific FDTD behavior over the shared solver |
-| `water/noise.py`, `water/dataset.py` | Ambient/shipping/instrument noise, channel gains/faults, source mixture and labelled `HarborDataset` serialization |
-| `water/detection.py`, `water/suppression.py`, `water/occupancy.py` | Passive matched-field detection, CFAR, AIS-guided position refinement and ship suppression, and track-before-detect |
-| `water/bistatic.py`, `water/motion.py` | AIS-ship-illuminated echo processing, direct-path removal, and Bartlett/coherent/MVDR/MUSIC localization maps; motion-compensated integration (`motion_integrate`, re-exported by `bistatic.py`) |
-| `water/dispersion.py`, `water/localiser.py` | FDTD numerical-dispersion-aware replicas and optional empirical propagation calibration |
-| `water/evaluate.py`, `water/classifier.py`, `water/plotting.py`, `water/device.py` | Detection scoring, optional harbor CNN/CVAE wrapper, visualizations, and CPU/CuPy dispatch |
-
-For implementation status, interpretation caveats, and complete scenario and example workflows,
-see [Harbor](harbor.md).
-
-#### Compatibility import paths
+### Compatibility import paths
 
 Pre-split import paths keep working and return the very same module objects as the canonical
 ones; new code should import from `acoustic_sim.air`, `acoustic_sim.water` and
@@ -169,9 +317,11 @@ model or domain internals.
 traces.npy + metadata.json
         │
         ▼
-  load_simulation()       → traces, mic_positions, dt, is_3d
-  compute_ground_truth()  → trajectory function (evaluation, hit scoring,
-                            RMS calibration / auto range choice)
+  load_simulation()       → Observation (traces, fs, mic positions, c, wind)
+                            + Truth (source trajectory, solver parameters)
+  air.diagnostics         → oracle set-up from the Truth, flagged in the
+                            provenance: RMS calibration distance, auto
+                            range choice, source altitude
         │
         ▼
   DetectionEngine(mic_positions, fs, win_len, ...)
@@ -213,11 +363,11 @@ traces.npy + metadata.json
   └─────────────────────────────────────────────────────────────┘
         │
         ▼
-  evaluate_results()            → metrics
+  evaluate_results(truth)       → metrics (scoring against the Truth)
   plot_pipeline_summary()       → 6-panel PNG
   plot_radial_engagement()      → radial engagement PNG
   plot_beamformer_diagnostic()  → 4-panel beamformer PNG
-  results_{2d,3d}.json
+  results_{2d,3d}.json          (with "provenance")
 ```
 
 Key design decisions:
@@ -242,19 +392,20 @@ Key design decisions:
 
 ### Information Barrier
 
-The pipeline knows only:
+The pipeline's processing stages receive only the `Observation` ([Sensing contract](#sensing-contract)):
 
 - `traces` — raw pressure time series at each microphone
-- `mic_positions` — receiver coordinates
-- `dt` — sample interval
-- `sound_speed` — scalar from metadata
+- `fs` — sample rate
+- `geometry` — microphone positions
+- `environment` — nominal sound speed (and the wind and terrain type, unused so far)
 
-It does **not** receive the velocity model, domain type, or any FDTD
-internal state.  The source trajectory (ground truth) is used for the
-evaluation metrics and hit scoring (`find_cpa` against the true path),
-and, as an oracle shortcut, for the RMS range calibration and the
-auto range-method choice before the window loop (see
-[Algorithms §2.1](algorithms.md#21--rms-inverse-square-law)).
+They do **not** receive the velocity model, domain type, or any FDTD internal state.  The `Truth`
+(source trajectory, solver parameters) is used for the evaluation metrics and hit scoring
+(`find_cpa` against the true path) and, as flagged oracle inputs, for the RMS range calibration,
+the auto range-method choice and the source altitude before the window loop (see
+[Algorithms §2.1](algorithms.md#21--rms-inverse-square-law)).  With `max_hits > 0` the loop stops
+after that many scored hits, so the number of processed windows depends on the truth too
+(`"hit_feedback"`).  `results_{2d,3d}.json` lists all of these under `provenance`.
 
 ---
 

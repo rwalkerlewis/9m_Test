@@ -14,7 +14,10 @@ This repository contains two related but independent applications of acoustic mo
 The harbor implementation and experimental status are documented in
 [docs/harbor.md](docs/harbor.md). The passive matched-field chain does not reliably detect the
 default weak UUV. The bistatic echo demo is idealized: it uses truth components and an oracle
-reference and is not an operational performance claim.
+reference and is not an operational performance claim; its `demo_summary.json` and figures carry
+the provenance flags. The processing side reads only an `Observation` (traces, sample rate,
+geometry, public chart, AIS); everything else is `Truth` (see
+[Architecture: Sensing contract](docs/architecture.md#sensing-contract)).
 
 ## Airborne Acoustic Pipeline
 
@@ -286,7 +289,8 @@ python -m pytest -q tests   # full suite: several minutes on a CPU (ML training,
 ```
 
 GitHub Actions (`.github/workflows/tests.yml`) runs a fast CPU-only subset on Python 3.10 and
-3.13: `tests/test_package_layout.py`, `tests/harbor/test_dispersion.py` and two FDTD tests from
+3.13: `tests/test_package_layout.py`, `tests/test_contract.py` (the sensing contract: import rules,
+observation files, the plain-array entry point), `tests/harbor/test_dispersion.py` and two FDTD tests from
 `tests/test_fdtd_3d.py`. GPU, MPI and PyTorch are not required there.
 
 ## Dependencies
