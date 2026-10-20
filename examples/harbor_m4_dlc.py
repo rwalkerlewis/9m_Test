@@ -40,6 +40,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from acoustic_sim.contract import annotate_figure  # noqa: E402
 from acoustic_sim.water import (  # noqa: E402
     HarborScenarioConfig,
     assemble_dataset,
@@ -54,7 +55,7 @@ from acoustic_sim.water.detection import (  # noqa: E402
     run_detection,
     threshold_from_maxima,
 )
-from acoustic_sim.water.evaluate import score_detections  # noqa: E402
+from acoustic_sim.water.evaluate import score_detections, truth_labels  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.water.suppression import run_ais_aware  # noqa: E402
 from acoustic_sim.ml.features import compute_mel_spectrogram  # noqa: E402
@@ -235,9 +236,10 @@ def main() -> None:
     layout = build_layout(cfg, env)
     tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in cfg.vessels}
     gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=out / "cache")
+    chart = env.public()          # what the processing knows of the environment
 
     base_pc = ProcessingConfig(use_cuda=args.cuda)
-    grid = build_grid(env, base_pc)
+    grid = build_grid(chart, base_pc)
     print(f"scan grid: {len(grid)} cells, {layout.n_receivers} receivers", flush=True)
 
     zero_levels = {v.id: 0.0 for v in cfg.vessels}
@@ -255,13 +257,13 @@ def main() -> None:
         )
         if args.suppress:
             run_cal = run_ais_aware(
-                ds_cal.traces, layout, ds_cal.fs, env, ds_cal.ais,
+                ds_cal.traces, layout, ds_cal.fs, chart, ds_cal.ais,
                 ProcessingConfig(line_halfwidth=4, use_cuda=args.cuda),
                 floor=1e18, grid=grid,
             )
         else:
             run_cal = run_detection(
-                ds_cal.traces, layout, ds_cal.fs, env,
+                ds_cal.traces, layout, ds_cal.fs, chart,
                 ProcessingConfig(use_cuda=args.cuda),
                 floor=1e18, grid=grid,
             )
@@ -279,12 +281,12 @@ def main() -> None:
 
     if args.suppress:
         run = run_ais_aware(
-            ds.traces, layout, ds.fs, env, ds.ais,
+            ds.traces, layout, ds.fs, chart, ds.ais,
             pc_detect, floor=0.5 * thr, grid=grid,
         )
     else:
         run = run_detection(
-            ds.traces, layout, ds.fs, env,
+            ds.traces, layout, ds.fs, chart,
             base_pc, floor=0.5 * thr, grid=grid,
         )
 
@@ -341,12 +343,12 @@ def main() -> None:
     # Step 6 — Evaluate: score_detections + per-class CNN accuracy
     # ------------------------------------------------------------------
     print("Scoring detections …", flush=True)
-    sc = score_detections(dets, ds.tracks, layout, run.wh.times, thr,
+    truth = ds.truth
+    sc = score_detections(dets, truth, layout, run.wh.times, thr,
                           targets=list(tracks))
 
     # Associate each detection with the nearest truth vessel (for accuracy).
-    from acoustic_sim.water.evaluate import associate  # noqa: E402
-    assoc_labels, _ = associate(dets, ds.tracks, gate=100.0)
+    assoc_labels, _ = truth_labels(dets, truth, gate=100.0)
 
     per_class_acc = _per_class_accuracy(clf_results, assoc_labels) if classifier_available else {}
 
@@ -406,6 +408,7 @@ def main() -> None:
         if l not in seen:
             seen[l] = h
     ax.legend(list(seen.values()), list(seen.keys()), loc="upper left", fontsize=8)
+    annotate_figure(fig, run.provenance)
     fig.savefig(out / "m4_track_map.png", dpi=100, bbox_inches="tight")
     plt.close(fig)
     print(f"  → {out / 'm4_track_map.png'}", flush=True)
@@ -444,6 +447,7 @@ def main() -> None:
                 ax_roc.set_xlim(0, 1)
                 ax_roc.set_ylim(0, 1.02)
                 ax_roc.grid(alpha=0.3)
+                annotate_figure(fig_roc, run.provenance)
                 fig_roc.savefig(out / "m4_roc.png", dpi=100, bbox_inches="tight")
                 plt.close(fig_roc)
                 print(f"  → {out / 'm4_roc.png'}  AUC = {roc_auc:.3f}", flush=True)
@@ -466,6 +470,7 @@ def main() -> None:
         "n_detections": int(len(run.dets)),
         "n_above_threshold": int(len(dets)),
         "suppression_enabled": bool(args.suppress),
+        "provenance": run.provenance.to_dict(),
         "score": score_dict,
         "classifier": {
             "available": classifier_available,

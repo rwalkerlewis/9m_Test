@@ -48,9 +48,10 @@ from acoustic_sim.water import (  # noqa: E402
     build_track,
     render_vessel_gathers,
 )
-from acoustic_sim.water.bistatic import BistaticConfig, Truth, run_bistatic, stft  # noqa: E402
+from acoustic_sim.contract import Provenance, annotate_figure  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, run_bistatic, stft  # noqa: E402
 from acoustic_sim.water.dataset import COMBINED, scattered_key, vessel_injection  # noqa: E402
-from acoustic_sim.water.dispersion import for_scenario  # noqa: E402
+from acoustic_sim.water.diagnostics import SimulatorAwarePropagator  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
 
@@ -247,11 +248,12 @@ def main() -> None:
     ferry = next(v for v in cfg.vessels if v.id == "ferry")
     oracle = ferry.level_pa * vessel_injection(ferry, tracks["ferry"], env, cfg)
     bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference="oracle", removal="none",
-                        method="coherent", coherent_norm="snr", exclusion_radius=25.0, dispersion=for_scenario(env, cfg.fdtd))
+                        method="coherent", coherent_norm="snr", exclusion_radius=25.0, propagator=SimulatorAwarePropagator.from_scenario(env, cfg.fdtd))
     sp = stft(traces, layout, fs, bc, f_max)
     ship_xy = tracks["ferry"].position_at(sp.times)
     t0 = time.time()
-    run = run_bistatic(traces, layout, fs, env, ds.ais, bc, f_max, oracle_signal=oracle, truth=Truth(ship_xy=ship_xy))
+    run = run_bistatic(traces, layout, fs, env, ds.ais, bc, f_max, oracle_signal=oracle, diagnostics=Diagnostics(ship_xy=ship_xy),
+                       provenance=Provenance(oracle_inputs=["direct_removal"]))
     say(f"[{tag}] ferry only oracle chain: {time.time() - t0:.0f} s, {len(run.grid)} cells, {len(sp.times)} frames")
     B, grid, times = run.scan.B, run.grid, run.sp.times
     xs, ys = np.unique(grid[:, 0]), np.unique(grid[:, 1])
@@ -286,11 +288,13 @@ def main() -> None:
     fig.colorbar(im, ax=axes, shrink=0.6, label="coherent map [dB re peak]")
     fig.suptitle("Ferry only, oracle setup (truth direct removal, oracle waveform, exact track): circles are the bodies "
                  "(green moving, magenta static)", fontsize=11)
+    annotate_figure(fig, run.provenance)
     fig.savefig(out / "ferry_only_map.png", dpi=100, bbox_inches="tight")
     say("[ferry only] map value within 4 m of each body over the map median, summed map: " + ", ".join(f"{k} {v:+.1f} dB" for k, v in check.items()))
     lv = json.loads((out / "levels.json").read_text())
     lv["ferry_only_oracle_check_db"] = check
     lv["ferry_only_oracle_inputs"] = ["direct path removed with the truth component", "oracle ferry waveform", "exact ferry track"]
+    lv["ferry_only_provenance"] = run.provenance.to_dict()
     (out / "levels.json").write_text(json.dumps(lv, indent=2))
 
 
