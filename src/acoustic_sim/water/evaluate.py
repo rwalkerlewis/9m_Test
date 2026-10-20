@@ -1,4 +1,8 @@
-"""Scoring of detections against ground truth."""
+"""Scoring of detections against ground truth.
+
+The one sanctioned place truth enters after inference: :func:`score_detections` takes the
+:class:`~acoustic_sim.contract.Truth` as an explicit argument.
+"""
 
 from __future__ import annotations
 
@@ -6,9 +10,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from acoustic_sim.contract import Track, Truth
 from acoustic_sim.water.detection import DetectionSet
 from acoustic_sim.water.sensors import SensorLayout
-from acoustic_sim.water.vessels import Track
 
 
 def associate(dets: DetectionSet, tracks: dict[str, Track], gate: float) -> tuple[list[str | None], np.ndarray]:
@@ -69,7 +73,7 @@ class Score:
 
 def score_detections(
     dets: DetectionSet,
-    tracks: dict[str, Track],
+    truth: Truth,
     layout: SensorLayout,
     frame_times: np.ndarray,
     threshold: float,
@@ -77,13 +81,15 @@ def score_detections(
     gate: float = 100.0,
     present: list[str] | None = None,
 ) -> Score:
-    """Score detections with ``score >= threshold`` against the truth tracks.
+    """Score detections with ``score >= threshold`` against the tracks of *truth*.
 
     Vessels with ``level_pa <= 0`` are absent from the mix and are ignored, unless they are
     listed in *present* (silent scattering bodies, see ``HarborDataset.meta["bodies"]``).
     """
+    if not isinstance(truth, Truth):
+        raise TypeError(f"score_detections takes the Truth (acoustic_sim.contract.Truth), got {type(truth).__name__}")
     present = set(present or [])
-    tracks = {k: t for k, t in tracks.items() if t.level_pa > 0 or k in present}
+    tracks = {k: t for k, t in truth.tracks.items() if t.level_pa > 0 or k in present}
     targets = targets if targets is not None else [k for k, t in tracks.items() if not t.ais]
     targets = [k for k in targets if k in tracks]
     kept = dets.above(threshold)
@@ -106,3 +112,14 @@ def score_detections(
                 "err_m": float(min(hit)) if hit else float("nan"),
             })
     return out
+
+
+def truth_labels(dets: DetectionSet, truth: Truth, gate: float = 100.0) -> tuple[list[str | None], np.ndarray]:
+    """Truth vessel id of every detection (nearest active vessel within *gate*), for scoring a classifier.
+
+    Classification infers from the observation; the labels it is scored against come from *truth*
+    here, inside the scoring call, and nowhere else.
+    """
+    if not isinstance(truth, Truth):
+        raise TypeError(f"truth_labels takes the Truth (acoustic_sim.contract.Truth), got {type(truth).__name__}")
+    return associate(dets, truth.tracks, gate)
