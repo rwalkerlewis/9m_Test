@@ -1,0 +1,38 @@
+{
+  "dataset": "bistatic",
+  "record_s": 20.0,
+  "chains": {
+    "echo (ferry illuminates)": {
+      "seconds": 27.208165168762207,
+      "seconds_per_second_of_data": 1.3604082584381103,
+      "frames": 79,
+      "false_detections_per_frame": 1.6835443037974684,
+      "objects": {
+        "ferry": {
+          "kind": "ship",
+          "radiates": true,
+          "ais": true,
+          "frames": 79,
+          "top_peak_hit": 0.0,
+          "any_peak_hit": 0.0,
+          "median_error_m": null
+        },
+        "uuv1": {
+          "kind": "uuv",
+          "radiates": false,
+          "ais": false,
+          "frames": 79,
+          "top_peak_hit": 0.7341772151898734,
+          "any_peak_hit": 0.7468354430379747,
+          "median_error_m": 2.459070372802277
+        }
+      },
+      "provenance": {
+        "truth_inputs": [],
+        "simulator_knowledge": [],
+        "data": "forward_model",
+        "held_out": false
+      }
+    }
+  }
+}

@@ -11,7 +11,7 @@ FDTD (the fine bistatic scenario, 0.5 m grid, 6 kHz):
     ``fdtd_multistatic_2s``                        the multistatic scene, ferry with all 10 bodies
 
 Processing (the fine bistatic dataset and the stage 0a 193 m moving case):
-    ``proc_oracle``, ``proc_eca_oracle_doppler``, ``proc_blind_doppler_smooth4``
+    ``proc_direct_removed_exactly``, ``proc_true_waveform_exact_track_doppler``, ``proc_all_estimated_doppler_smooth4``
                                                    ``run_bistatic`` as in ``harbor_bistatic_ablation.py``
     ``eca_193_moving_fixed``, ``eca_193_moving_doppler_smooth4``
                                                    ``eca_stage`` alone (fixed lags; per sample delays with a 4 s track fit)
@@ -98,9 +98,9 @@ SCATTER_PAIRS = [
 ]
 PROC_CASES = {
     # name: (ablation configuration, eca_doppler, track_smooth_s)
-    "proc_oracle": ("oracle", False, 0.0),
-    "proc_eca_oracle_doppler": ("eca_oracle", True, 0.0),
-    "proc_blind_doppler_smooth4": ("blind", True, 4.0),
+    "proc_direct_removed_exactly": ("direct_removed_exactly", False, 0.0),
+    "proc_true_waveform_exact_track_doppler": ("true_waveform_exact_track", True, 0.0),
+    "proc_all_estimated_doppler_smooth4": ("all_estimated", True, 4.0),
 }
 ECA_CASES = {
     # name: (eca_doppler, track_smooth_s)
@@ -109,10 +109,10 @@ ECA_CASES = {
 }
 ABLATION_CONFIGS = {
     # name: (direct path in the traces, reference, exact track)   (examples/harbor_bistatic_ablation.py)
-    "oracle": (False, "oracle", True),
-    "eca_oracle": (True, "oracle", True),
-    "eca_data": (True, "data", True),
-    "blind": (True, "data", False),
+    "direct_removed_exactly": (False, "true_waveform", True),
+    "true_waveform_exact_track": (True, "true_waveform", True),
+    "estimated_waveform_exact_track": (True, "data", True),
+    "all_estimated": (True, "data", False),
 }
 ALL_CASES = list(FDTD_CASES) + list(PROC_CASES) + list(ECA_CASES)
 
@@ -287,17 +287,17 @@ def run_proc_case(name: str, ds: HarborDataset, env, layout, f_max: float, args)
     noise = comps["noise"].astype(float)
     traces = echo + noise + (direct if direct_in else 0.0)
     ferry = next(v for v in cfg.vessels if v.id == "ferry")
-    oracle = ferry.level_pa * vessel_injection(ferry, ds.tracks["ferry"], env, cfg) if reference == "oracle" else None
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, bin_stride=2, grid_dx=2.0, reference=reference,
+    given = ferry.level_pa * vessel_injection(ferry, ds.tracks["ferry"], env, cfg) if reference == "true_waveform" else None
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, f_hi=0.95 * f_max, bin_stride=2, grid_dx=2.0, reference=reference,
                         removal="eca" if direct_in else "none", method="coherent", coherent_norm="snr",
                         exclusion_radius=25.0, **replica_options(env, cfg.fdtd), eca_doppler=doppler,
                         track_smooth_s=smooth if doppler else 0.0, **bistatic_options(args))
-    sp = stft(traces, layout, ds.fs, bc, f_max)
-    truth = _Diagnostics(ship_xy=ds.tracks["ferry"].position_at(sp.times) if exact else None,
+    sp = stft(traces, layout, ds.fs, bc)
+    truth = _Diagnostics(exact_track=ds.tracks["ferry"].position_at(sp.times) if exact else None,
                   components={"direct:ferry": direct, "scattered:ferry>uuv1": echo} if direct_in else None)
     sync_gpu()
     t0 = time.perf_counter()
-    run = run_bistatic(traces, layout, ds.fs, env, ds.ais, bc, f_max, oracle_signal=oracle, **diagnostics_option(truth))
+    run = run_bistatic(traces, layout, ds.fs, env, ds.ais, bc, true_waveform=given, **diagnostics_option(truth))
     sync_gpu()
     wall = time.perf_counter() - t0
     B, grid, times = run.scan.B, run.grid, run.sp.times
@@ -359,10 +359,10 @@ def run_eca_case(name: str, args) -> tuple[dict, dict]:
     truth_meas = noise.gain[:, None] * direct
     traces = noise.apply(direct).astype(np.float64)
     ais = cd.ais_from_start(v.id, tr, "moving", cfg.ais, np.random.default_rng(sum(map(ord, v.id))))
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, removal="eca", reference="data",
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, f_hi=0.95 * f_max, removal="eca", reference="data",
                         **replica_options(env, cfg.fdtd), eca_doppler=doppler, track_smooth_s=smooth,
                         **bistatic_options(args))
-    sp = stft(traces, layout, fs, bc, f_max)
+    sp = stft(traces, layout, fs, bc)
     model = ReplicaModel(layout, bc.c, **({"propagator": bc.propagator} if hasattr(bc, "propagator") else {"dispersion": bc.dispersion}), **({"xp": _bistatic_xp(bc)} if _bistatic_xp else {}))
     model.weights = sp.weights
     sync_gpu()

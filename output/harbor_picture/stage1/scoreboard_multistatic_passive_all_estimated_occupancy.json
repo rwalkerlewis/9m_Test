@@ -1,0 +1,258 @@
+{
+  "dataset": "multistatic",
+  "chain": "passive",
+  "config": "all_estimated",
+  "map": "occupancy",
+  "propagator": "free_field",
+  "threshold": {
+    "T": 1060.55615234375,
+    "T_full_record": 4248.0166015625,
+    "pfa": 0.05,
+    "n_frames": 237,
+    "frames_above_T": 11,
+    "object_free_runs": [
+      "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:occupancy",
+      "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:occupancy",
+      "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy"
+    ]
+  },
+  "tuning": {
+    "label": "multistatic / passive / all_estimated / occupancy / tuning set",
+    "threshold": {
+      "T": 1060.55615234375,
+      "T_full_record": 4248.0166015625,
+      "pfa": 0.05,
+      "n_frames": 237,
+      "frames_above_T": 11,
+      "object_free_runs": [
+        "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:occupancy",
+        "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:occupancy",
+        "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy"
+      ]
+    },
+    "false_alarm_rate": 0.0,
+    "false_alarms": 0,
+    "n_frames": 79,
+    "separation": null,
+    "per_object": [
+      {
+        "id": "ferry",
+        "kind": "ship",
+        "radiates": true,
+        "ais": true,
+        "moving": true,
+        "frames": 79,
+        "detected": 0,
+        "pd": 0.0,
+        "median_error_m": null,
+        "p90_error_m": null,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "multistatic:passive:all_estimated:seed0:without_ferry_ais:occupancy"
+        ]
+      },
+      {
+        "id": "tug",
+        "kind": "ship",
+        "radiates": true,
+        "ais": true,
+        "moving": true,
+        "frames": 79,
+        "detected": 0,
+        "pd": 0.0,
+        "median_error_m": null,
+        "p90_error_m": null,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "multistatic:passive:all_estimated:seed0:without_tug_ais:occupancy"
+        ]
+      },
+      {
+        "id": "boat",
+        "kind": "ship",
+        "radiates": true,
+        "ais": false,
+        "moving": true,
+        "frames": 79,
+        "detected": 0,
+        "pd": 0.0,
+        "median_error_m": null,
+        "p90_error_m": null,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "multistatic:passive:all_estimated:seed0:occupancy"
+        ]
+      }
+    ],
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "split": "tuning",
+    "seeds": [
+      0
+    ]
+  },
+  "test": {
+    "label": "multistatic / passive / all_estimated / occupancy / test set",
+    "threshold": {
+      "T": 1060.55615234375,
+      "T_full_record": 4248.0166015625,
+      "pfa": 0.05,
+      "n_frames": 237,
+      "frames_above_T": 11,
+      "object_free_runs": [
+        "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:occupancy",
+        "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:occupancy",
+        "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy"
+      ]
+    },
+    "false_alarm_rate": 0.04556962025316456,
+    "false_alarms": 18,
+    "n_frames": 395,
+    "separation": null,
+    "per_object": [
+      {
+        "id": "ferry",
+        "kind": "ship",
+        "radiates": true,
+        "ais": true,
+        "moving": true,
+        "frames": 395,
+        "detected": 2,
+        "pd": 0.005063291139240506,
+        "median_error_m": 4.9996220120567045,
+        "p90_error_m": 4.999924402411341,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "multistatic:passive:all_estimated:seed1:without_ferry_ais:occupancy",
+          "multistatic:passive:all_estimated:seed2:without_ferry_ais:occupancy",
+          "multistatic:passive:all_estimated:seed3:without_ferry_ais:occupancy",
+          "multistatic:passive:all_estimated:seed4:without_ferry_ais:occupancy",
+          "multistatic:passive:all_estimated:seed5:without_ferry_ais:occupancy"
+        ]
+      },
+      {
+        "id": "tug",
+        "kind": "ship",
+        "radiates": true,
+        "ais": true,
+        "moving": true,
+        "frames": 395,
+        "detected": 0,
+        "pd": 0.0,
+        "median_error_m": null,
+        "p90_error_m": null,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "multistatic:passive:all_estimated:seed1:without_tug_ais:occupancy",
+          "multistatic:passive:all_estimated:seed2:without_tug_ais:occupancy",
+          "multistatic:passive:all_estimated:seed3:without_tug_ais:occupancy",
+          "multistatic:passive:all_estimated:seed4:without_tug_ais:occupancy",
+          "multistatic:passive:all_estimated:seed5:without_tug_ais:occupancy"
+        ]
+      },
+      {
+        "id": "boat",
+        "kind": "ship",
+        "radiates": true,
+        "ais": false,
+        "moving": true,
+        "frames": 395,
+        "detected": 2,
+        "pd": 0.005063291139240506,
+        "median_error_m": 3.4632208594973974,
+        "p90_error_m": 3.86314395818893,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "multistatic:passive:all_estimated:seed1:occupancy",
+          "multistatic:passive:all_estimated:seed2:occupancy",
+          "multistatic:passive:all_estimated:seed3:occupancy",
+          "multistatic:passive:all_estimated:seed4:occupancy",
+          "multistatic:passive:all_estimated:seed5:occupancy"
+        ]
+      }
+    ],
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "split": "test",
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "diagnostic_after_first_ais_report": {
+    "note": "diagnostic: frames after the first AIS report of every reporting ship of the run; threshold from the same frames of the object free runs; not part of any criterion",
+    "threshold": {
+      "T": 1086.99267578125,
+      "T_full_record": 4247.78396298533,
+      "pfa": 0.05,
+      "n_frames": 196,
+      "frames_above_T": 9,
+      "object_free_runs": [
+        "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:occupancy:after_first_ais_report",
+        "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:occupancy:after_first_ais_report",
+        "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy:after_first_ais_report"
+      ]
+    },
+    "tuning": {
+      "pd": {
+        "ferry": 0.0,
+        "tug": 0.0,
+        "boat": 0.0
+      },
+      "median_error_m": {
+        "ferry": null,
+        "tug": null,
+        "boat": null
+      },
+      "false_alarm_rate": 0.0,
+      "frames_kept": 65,
+      "frames_all": 79
+    },
+    "test": {
+      "pd": {
+        "ferry": 0.006389776357827476,
+        "tug": 0.0,
+        "boat": 0.006756756756756757
+      },
+      "median_error_m": {
+        "ferry": 4.9996220120567045,
+        "tug": null,
+        "boat": 3.4632208594973974
+      },
+      "false_alarm_rate": 0.05405405405405406,
+      "frames_kept": 296,
+      "frames_all": 395
+    }
+  },
+  "frames_before_first_ais_report": {
+    "0": 14,
+    "1": 10,
+    "2": 17,
+    "3": 14,
+    "4": 19,
+    "5": 39
+  }
+}

@@ -1,0 +1,1342 @@
+{
+  "criteria": [
+    {
+      "id": 1,
+      "text": "passive chain, multistatic dataset: ferry, tug and boat each Pd >= 0.9 at the 5 % threshold",
+      "dataset": "multistatic",
+      "chain": "passive",
+      "config": "all_estimated/occupancy",
+      "objects": [
+        "ferry",
+        "tug",
+        "boat"
+      ],
+      "pd_min": 0.9
+    },
+    {
+      "id": 2,
+      "text": "echo chain, bistatic dataset: Pd of the UUV >= 0.5",
+      "dataset": "bistatic",
+      "chain": "echo",
+      "config": "ferry/all_estimated",
+      "objects": [
+        "uuv1"
+      ],
+      "pd_min": 0.5
+    },
+    {
+      "id": 3,
+      "text": "echo chain, multistatic dataset, ferry as illuminator: >= 3 of the 7 static bodies detected on the full record map",
+      "dataset": "multistatic",
+      "chain": "echo",
+      "config": "ferry/all_estimated",
+      "static_min": 3
+    }
+  ],
+  "expectation": "criterion 1 passes; 2 and 3 fail, because the direct path of a moving ship is removed by 8 to 19 dB when its waveform is estimated from the traces and the echo sits 16 to 18 dB below it",
+  "split": {
+    "tuning": [
+      0
+    ],
+    "test": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "parameters": {
+    "echo": {
+      "win_s": 0.5,
+      "hop_s": 0.25,
+      "bin_stride": 2,
+      "grid_dx": 2.0,
+      "grid_margin": 5.0,
+      "edge": 40.0,
+      "method": "coherent",
+      "coherent_norm": "snr",
+      "map_scale": "none",
+      "exclusion_radius": 25.0,
+      "eca_doppler": true,
+      "track_smooth_s": 4.0,
+      "refine_half": 10.0,
+      "refine_step": 1.0
+    },
+    "passive": {
+      "multistatic": {
+        "pc": {
+          "win_s": 0.5,
+          "hop_s": 0.25,
+          "bin_stride": 2,
+          "grid_dx": 2.0,
+          "grid_margin": 5.0,
+          "min_range": 1.0,
+          "edge": 40.0
+        },
+        "sc": {
+          "refine_half": 12.0,
+          "refine_step": 1.0,
+          "patch_half": 0.5,
+          "exclusion_radius": 25.0
+        },
+        "occ": {
+          "speed_mps": 5.0
+        }
+      },
+      "harbor": {
+        "pc": {
+          "grid_dx": 5.0,
+          "edge": 150.0
+        },
+        "sc": {},
+        "occ": {
+          "speed_mps": 5.0
+        }
+      }
+    },
+    "bands_hz": {
+      "bistatic": [
+        100.0,
+        760.0
+      ],
+      "multistatic": [
+        100.0,
+        760.0
+      ],
+      "harbor": [
+        12.0,
+        78.0
+      ]
+    },
+    "scoreboard": {
+      "detect_radius_m": 5.0,
+      "false_alarm_radius_m": 10.0,
+      "pfa": 0.05
+    }
+  },
+  "entries": {
+    "bistatic/echo/ferry/all_estimated": {
+      "dataset": "bistatic",
+      "chain": "echo",
+      "config": "ferry/all_estimated",
+      "map": "coherent",
+      "propagator": "free_field",
+      "threshold": {
+        "T": 3585.128173828125,
+        "T_full_record": 30084.19921875,
+        "pfa": 0.05,
+        "n_frames": 79,
+        "frames_above_T": 3,
+        "object_free_runs": [
+          "bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1"
+        ]
+      },
+      "tuning": {
+        "label": "bistatic / echo / ferry/all_estimated / tuning set",
+        "threshold": {
+          "T": 3585.128173828125,
+          "T_full_record": 30084.19921875,
+          "pfa": 0.05,
+          "n_frames": 79,
+          "frames_above_T": 3,
+          "object_free_runs": [
+            "bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1"
+          ]
+        },
+        "false_alarm_rate": 0.5316455696202531,
+        "false_alarms": 42,
+        "n_frames": 79,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "uuv1",
+            "kind": "uuv",
+            "radiates": false,
+            "ais": false,
+            "moving": true,
+            "frames": 79,
+            "detected": 21,
+            "pd": 0.26582278481012656,
+            "median_error_m": 2.262550114054546,
+            "p90_error_m": 3.865113504459191,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "bistatic:echo:ferry/all_estimated:seed0"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "split": "tuning",
+        "seeds": [
+          0
+        ]
+      },
+      "test": {
+        "label": "bistatic / echo / ferry/all_estimated / test set",
+        "threshold": {
+          "T": 3585.128173828125,
+          "T_full_record": 30084.19921875,
+          "pfa": 0.05,
+          "n_frames": 79,
+          "frames_above_T": 3,
+          "object_free_runs": [
+            "bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1"
+          ]
+        },
+        "false_alarm_rate": 0.5443037974683544,
+        "false_alarms": 215,
+        "n_frames": 395,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "uuv1",
+            "kind": "uuv",
+            "radiates": false,
+            "ais": false,
+            "moving": true,
+            "frames": 395,
+            "detected": 119,
+            "pd": 0.3012658227848101,
+            "median_error_m": 2.4965299669607517,
+            "p90_error_m": 4.0439136424331545,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "bistatic:echo:ferry/all_estimated:seed1",
+              "bistatic:echo:ferry/all_estimated:seed2",
+              "bistatic:echo:ferry/all_estimated:seed3",
+              "bistatic:echo:ferry/all_estimated:seed4",
+              "bistatic:echo:ferry/all_estimated:seed5"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "split": "test",
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "diagnostic_frame_argmax_to_uuv": {
+        "tuning": {
+          "frames": 65,
+          "median_m": 2.6345607744398127,
+          "p90_m": 5.393385663855717,
+          "within_5m": 0.8923076923076924,
+          "within_20m": 0.9384615384615385
+        },
+        "test": {
+          "frames": 345,
+          "median_m": 3.377353559676363,
+          "p90_m": 72.31463551886026,
+          "within_5m": 0.7710144927536232,
+          "within_20m": 0.881159420289855
+        }
+      },
+      "cancellation_diagnostic": {
+        "tuning": [
+          {
+            "direct_depth_db_median": 10.750330832426577,
+            "direct_depth_db_p10": 3.246674337407174,
+            "echo_loss_db_median": 0.31906820801378233,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": false
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          }
+        ],
+        "test": [
+          {
+            "direct_depth_db_median": 11.650630678034016,
+            "direct_depth_db_p10": 6.001043787661511,
+            "echo_loss_db_median": 0.3201207453240109,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          },
+          {
+            "direct_depth_db_median": 9.547887971014717,
+            "direct_depth_db_p10": 4.340486547368496,
+            "echo_loss_db_median": 0.31875932296073217,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          },
+          {
+            "direct_depth_db_median": 10.637442091379459,
+            "direct_depth_db_p10": 5.879303693285378,
+            "echo_loss_db_median": 0.3264900199991737,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          },
+          {
+            "direct_depth_db_median": 10.383880181534098,
+            "direct_depth_db_p10": 5.809008167473792,
+            "echo_loss_db_median": 0.3255152896802261,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          },
+          {
+            "direct_depth_db_median": 12.806599211438858,
+            "direct_depth_db_p10": 6.634988458445882,
+            "echo_loss_db_median": 0.3236771011627824,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          }
+        ]
+      },
+      "illuminator_track_error_m": {
+        "tuning": [
+          0.8846683498688702
+        ],
+        "test": [
+          1.008640609229326,
+          1.2655602620025317,
+          1.3646749856878622,
+          1.3805882653707615,
+          0.9285678411026146
+        ]
+      },
+      "misses": {
+        "counts": {
+          "ship exclusion edge": 18,
+          "quay image of the ship": 0,
+          "direct path ship to cable": 8,
+          "elsewhere": 19
+        },
+        "frames_total": 410,
+        "within_25m_of_another_radiator": null,
+        "note": "frames with an illuminator whose highest cell is more than 20 m from every UUV, all seeds"
+      }
+    },
+    "bistatic/echo/ferry/true_waveform_exact_track": {
+      "dataset": "bistatic",
+      "chain": "echo",
+      "config": "ferry/true_waveform_exact_track",
+      "map": "coherent",
+      "propagator": "free_field",
+      "threshold": {
+        "T": 2081.42578125,
+        "T_full_record": 54320.19921875,
+        "pfa": 0.05,
+        "n_frames": 79,
+        "frames_above_T": 3,
+        "object_free_runs": [
+          "bistatic:echo:ferry/true_waveform_exact_track:seed0:free_of_uuv1"
+        ]
+      },
+      "tuning": {
+        "label": "bistatic / echo / ferry/true_waveform_exact_track / tuning set",
+        "threshold": {
+          "T": 2081.42578125,
+          "T_full_record": 54320.19921875,
+          "pfa": 0.05,
+          "n_frames": 79,
+          "frames_above_T": 3,
+          "object_free_runs": [
+            "bistatic:echo:ferry/true_waveform_exact_track:seed0:free_of_uuv1"
+          ]
+        },
+        "false_alarm_rate": 0.11392405063291139,
+        "false_alarms": 9,
+        "n_frames": 79,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "uuv1",
+            "kind": "uuv",
+            "radiates": false,
+            "ais": false,
+            "moving": true,
+            "frames": 79,
+            "detected": 2,
+            "pd": 0.02531645569620253,
+            "median_error_m": 4.602617032084508,
+            "p90_error_m": 4.782059982226208,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "bistatic:echo:ferry/true_waveform_exact_track:seed0"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [
+            "waveform",
+            "track"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "split": "tuning",
+        "seeds": [
+          0
+        ]
+      },
+      "test": {
+        "label": "bistatic / echo / ferry/true_waveform_exact_track / test set",
+        "threshold": {
+          "T": 2081.42578125,
+          "T_full_record": 54320.19921875,
+          "pfa": 0.05,
+          "n_frames": 79,
+          "frames_above_T": 3,
+          "object_free_runs": [
+            "bistatic:echo:ferry/true_waveform_exact_track:seed0:free_of_uuv1"
+          ]
+        },
+        "false_alarm_rate": 0.053164556962025315,
+        "false_alarms": 21,
+        "n_frames": 395,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "uuv1",
+            "kind": "uuv",
+            "radiates": false,
+            "ais": false,
+            "moving": true,
+            "frames": 395,
+            "detected": 9,
+            "pd": 0.02278481012658228,
+            "median_error_m": 4.769303738405742,
+            "p90_error_m": 4.829878401452194,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "bistatic:echo:ferry/true_waveform_exact_track:seed1",
+              "bistatic:echo:ferry/true_waveform_exact_track:seed2",
+              "bistatic:echo:ferry/true_waveform_exact_track:seed3",
+              "bistatic:echo:ferry/true_waveform_exact_track:seed4",
+              "bistatic:echo:ferry/true_waveform_exact_track:seed5"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [
+            "waveform",
+            "track"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "split": "test",
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "diagnostic_frame_argmax_to_uuv": {
+        "tuning": {
+          "frames": 79,
+          "median_m": 118.07497288412227,
+          "p90_m": 235.01081204968557,
+          "within_5m": 0.22784810126582278,
+          "within_20m": 0.45569620253164556
+        },
+        "test": {
+          "frames": 395,
+          "median_m": 87.51718576114811,
+          "p90_m": 230.8808816973753,
+          "within_5m": 0.2607594936708861,
+          "within_20m": 0.4506329113924051
+        }
+      },
+      "cancellation_diagnostic": {
+        "tuning": [
+          {
+            "direct_depth_db_median": 21.340135023973307,
+            "direct_depth_db_p10": 18.760566424115147,
+            "echo_loss_db_median": 0.6248991009689594,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "waveform",
+                "track",
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": false
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          }
+        ],
+        "test": [
+          {
+            "direct_depth_db_median": 21.383105978905974,
+            "direct_depth_db_p10": 18.710498161045763,
+            "echo_loss_db_median": 0.5959360578240422,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "waveform",
+                "track",
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          },
+          {
+            "direct_depth_db_median": 21.445112958241,
+            "direct_depth_db_p10": 18.778587910831604,
+            "echo_loss_db_median": 0.6675180995863041,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "waveform",
+                "track",
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          },
+          {
+            "direct_depth_db_median": 21.38310597889906,
+            "direct_depth_db_p10": 18.760566424114938,
+            "echo_loss_db_median": 0.6248991009683103,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "waveform",
+                "track",
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          },
+          {
+            "direct_depth_db_median": 21.44511295824151,
+            "direct_depth_db_p10": 18.760566424116174,
+            "echo_loss_db_median": 0.5959360578219657,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "waveform",
+                "track",
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          },
+          {
+            "direct_depth_db_median": 21.38025015964266,
+            "direct_depth_db_p10": 18.71049816104432,
+            "echo_loss_db_median": 0.5959360578221602,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "waveform",
+                "track",
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": true
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          }
+        ]
+      },
+      "illuminator_track_error_m": {
+        "tuning": [
+          0.0
+        ],
+        "test": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "misses": {
+        "counts": {
+          "ship exclusion edge": 32,
+          "quay image of the ship": 0,
+          "direct path ship to cable": 30,
+          "elsewhere": 198
+        },
+        "frames_total": 474,
+        "within_25m_of_another_radiator": null,
+        "note": "frames with an illuminator whose highest cell is more than 20 m from every UUV, all seeds"
+      }
+    },
+    "bistatic/echo/ferry/direct_removed_exactly": {
+      "dataset": "bistatic",
+      "chain": "echo",
+      "config": "ferry/direct_removed_exactly",
+      "map": "coherent",
+      "propagator": "free_field",
+      "threshold": {
+        "T": 1107.0787353515625,
+        "T_full_record": 16947.83984375,
+        "pfa": 0.05,
+        "n_frames": 79,
+        "frames_above_T": 3,
+        "object_free_runs": [
+          "bistatic:echo:ferry/direct_removed_exactly:seed0:free_of_uuv1"
+        ]
+      },
+      "tuning": {
+        "label": "bistatic / echo / ferry/direct_removed_exactly / tuning set",
+        "threshold": {
+          "T": 1107.0787353515625,
+          "T_full_record": 16947.83984375,
+          "pfa": 0.05,
+          "n_frames": 79,
+          "frames_above_T": 3,
+          "object_free_runs": [
+            "bistatic:echo:ferry/direct_removed_exactly:seed0:free_of_uuv1"
+          ]
+        },
+        "false_alarm_rate": 0.22784810126582278,
+        "false_alarms": 18,
+        "n_frames": 79,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "uuv1",
+            "kind": "uuv",
+            "radiates": false,
+            "ais": false,
+            "moving": true,
+            "frames": 79,
+            "detected": 29,
+            "pd": 0.3670886075949367,
+            "median_error_m": 1.7557177887447564,
+            "p90_error_m": 4.5100891049728995,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "bistatic:echo:ferry/direct_removed_exactly:seed0"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [
+            "direct_removal",
+            "components",
+            "waveform",
+            "track"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "split": "tuning",
+        "seeds": [
+          0
+        ]
+      },
+      "test": {
+        "label": "bistatic / echo / ferry/direct_removed_exactly / test set",
+        "threshold": {
+          "T": 1107.0787353515625,
+          "T_full_record": 16947.83984375,
+          "pfa": 0.05,
+          "n_frames": 79,
+          "frames_above_T": 3,
+          "object_free_runs": [
+            "bistatic:echo:ferry/direct_removed_exactly:seed0:free_of_uuv1"
+          ]
+        },
+        "false_alarm_rate": 0.39746835443037976,
+        "false_alarms": 157,
+        "n_frames": 395,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "uuv1",
+            "kind": "uuv",
+            "radiates": false,
+            "ais": false,
+            "moving": true,
+            "frames": 395,
+            "detected": 203,
+            "pd": 0.5139240506329114,
+            "median_error_m": 2.2046505340852542,
+            "p90_error_m": 4.600782704747134,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "bistatic:echo:ferry/direct_removed_exactly:seed1",
+              "bistatic:echo:ferry/direct_removed_exactly:seed2",
+              "bistatic:echo:ferry/direct_removed_exactly:seed3",
+              "bistatic:echo:ferry/direct_removed_exactly:seed4",
+              "bistatic:echo:ferry/direct_removed_exactly:seed5"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [
+            "direct_removal",
+            "components",
+            "waveform",
+            "track"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "split": "test",
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "diagnostic_frame_argmax_to_uuv": {
+        "tuning": {
+          "frames": 79,
+          "median_m": 4.806244073119018,
+          "p90_m": 90.19916923708679,
+          "within_5m": 0.5316455696202531,
+          "within_20m": 0.7088607594936709
+        },
+        "test": {
+          "frames": 395,
+          "median_m": 4.484172051665813,
+          "p90_m": 73.48212369404672,
+          "within_5m": 0.589873417721519,
+          "within_20m": 0.8151898734177215
+        }
+      },
+      "cancellation_diagnostic": {
+        "tuning": [
+          null
+        ],
+        "test": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "illuminator_track_error_m": {
+        "tuning": [
+          0.0
+        ],
+        "test": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "misses": {
+        "counts": {
+          "ship exclusion edge": 1,
+          "quay image of the ship": 0,
+          "direct path ship to cable": 59,
+          "elsewhere": 36
+        },
+        "frames_total": 474,
+        "within_25m_of_another_radiator": null,
+        "note": "frames with an illuminator whose highest cell is more than 20 m from every UUV, all seeds"
+      }
+    },
+    "multistatic/passive/all_estimated/occupancy": {
+      "dataset": "multistatic",
+      "chain": "passive",
+      "config": "all_estimated",
+      "map": "occupancy",
+      "propagator": "free_field",
+      "threshold": {
+        "T": 1060.55615234375,
+        "T_full_record": 4248.0166015625,
+        "pfa": 0.05,
+        "n_frames": 237,
+        "frames_above_T": 11,
+        "object_free_runs": [
+          "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:occupancy",
+          "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:occupancy",
+          "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy"
+        ]
+      },
+      "tuning": {
+        "label": "multistatic / passive / all_estimated / occupancy / tuning set",
+        "threshold": {
+          "T": 1060.55615234375,
+          "T_full_record": 4248.0166015625,
+          "pfa": 0.05,
+          "n_frames": 237,
+          "frames_above_T": 11,
+          "object_free_runs": [
+            "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:occupancy",
+            "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:occupancy",
+            "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy"
+          ]
+        },
+        "false_alarm_rate": 0.0,
+        "false_alarms": 0,
+        "n_frames": 79,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "ferry",
+            "kind": "ship",
+            "radiates": true,
+            "ais": true,
+            "moving": true,
+            "frames": 79,
+            "detected": 0,
+            "pd": 0.0,
+            "median_error_m": null,
+            "p90_error_m": null,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed0:without_ferry_ais:occupancy"
+            ]
+          },
+          {
+            "id": "tug",
+            "kind": "ship",
+            "radiates": true,
+            "ais": true,
+            "moving": true,
+            "frames": 79,
+            "detected": 0,
+            "pd": 0.0,
+            "median_error_m": null,
+            "p90_error_m": null,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed0:without_tug_ais:occupancy"
+            ]
+          },
+          {
+            "id": "boat",
+            "kind": "ship",
+            "radiates": true,
+            "ais": false,
+            "moving": true,
+            "frames": 79,
+            "detected": 0,
+            "pd": 0.0,
+            "median_error_m": null,
+            "p90_error_m": null,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed0:occupancy"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "split": "tuning",
+        "seeds": [
+          0
+        ]
+      },
+      "test": {
+        "label": "multistatic / passive / all_estimated / occupancy / test set",
+        "threshold": {
+          "T": 1060.55615234375,
+          "T_full_record": 4248.0166015625,
+          "pfa": 0.05,
+          "n_frames": 237,
+          "frames_above_T": 11,
+          "object_free_runs": [
+            "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:occupancy",
+            "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:occupancy",
+            "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy"
+          ]
+        },
+        "false_alarm_rate": 0.04556962025316456,
+        "false_alarms": 18,
+        "n_frames": 395,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "ferry",
+            "kind": "ship",
+            "radiates": true,
+            "ais": true,
+            "moving": true,
+            "frames": 395,
+            "detected": 2,
+            "pd": 0.005063291139240506,
+            "median_error_m": 4.9996220120567045,
+            "p90_error_m": 4.999924402411341,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed1:without_ferry_ais:occupancy",
+              "multistatic:passive:all_estimated:seed2:without_ferry_ais:occupancy",
+              "multistatic:passive:all_estimated:seed3:without_ferry_ais:occupancy",
+              "multistatic:passive:all_estimated:seed4:without_ferry_ais:occupancy",
+              "multistatic:passive:all_estimated:seed5:without_ferry_ais:occupancy"
+            ]
+          },
+          {
+            "id": "tug",
+            "kind": "ship",
+            "radiates": true,
+            "ais": true,
+            "moving": true,
+            "frames": 395,
+            "detected": 0,
+            "pd": 0.0,
+            "median_error_m": null,
+            "p90_error_m": null,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed1:without_tug_ais:occupancy",
+              "multistatic:passive:all_estimated:seed2:without_tug_ais:occupancy",
+              "multistatic:passive:all_estimated:seed3:without_tug_ais:occupancy",
+              "multistatic:passive:all_estimated:seed4:without_tug_ais:occupancy",
+              "multistatic:passive:all_estimated:seed5:without_tug_ais:occupancy"
+            ]
+          },
+          {
+            "id": "boat",
+            "kind": "ship",
+            "radiates": true,
+            "ais": false,
+            "moving": true,
+            "frames": 395,
+            "detected": 2,
+            "pd": 0.005063291139240506,
+            "median_error_m": 3.4632208594973974,
+            "p90_error_m": 3.86314395818893,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed1:occupancy",
+              "multistatic:passive:all_estimated:seed2:occupancy",
+              "multistatic:passive:all_estimated:seed3:occupancy",
+              "multistatic:passive:all_estimated:seed4:occupancy",
+              "multistatic:passive:all_estimated:seed5:occupancy"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "split": "test",
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "diagnostic_after_first_ais_report": {
+        "note": "diagnostic: frames after the first AIS report of every reporting ship of the run; threshold from the same frames of the object free runs; not part of any criterion",
+        "threshold": {
+          "T": 1086.99267578125,
+          "T_full_record": 4247.78396298533,
+          "pfa": 0.05,
+          "n_frames": 196,
+          "frames_above_T": 9,
+          "object_free_runs": [
+            "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:occupancy:after_first_ais_report",
+            "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:occupancy:after_first_ais_report",
+            "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy:after_first_ais_report"
+          ]
+        },
+        "tuning": {
+          "pd": {
+            "ferry": 0.0,
+            "tug": 0.0,
+            "boat": 0.0
+          },
+          "median_error_m": {
+            "ferry": null,
+            "tug": null,
+            "boat": null
+          },
+          "false_alarm_rate": 0.0,
+          "frames_kept": 65,
+          "frames_all": 79
+        },
+        "test": {
+          "pd": {
+            "ferry": 0.006389776357827476,
+            "tug": 0.0,
+            "boat": 0.006756756756756757
+          },
+          "median_error_m": {
+            "ferry": 4.9996220120567045,
+            "tug": null,
+            "boat": 3.4632208594973974
+          },
+          "false_alarm_rate": 0.05405405405405406,
+          "frames_kept": 296,
+          "frames_all": 395
+        }
+      },
+      "frames_before_first_ais_report": {
+        "0": 14,
+        "1": 10,
+        "2": 17,
+        "3": 14,
+        "4": 19,
+        "5": 39
+      }
+    },
+    "multistatic/passive/all_estimated/scan": {
+      "dataset": "multistatic",
+      "chain": "passive",
+      "config": "all_estimated",
+      "map": "scan",
+      "propagator": "free_field",
+      "threshold": {
+        "T": 7560.92724609375,
+        "T_full_record": 40643.0078125,
+        "pfa": 0.05,
+        "n_frames": 237,
+        "frames_above_T": 11,
+        "object_free_runs": [
+          "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:scan",
+          "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:scan",
+          "multistatic:passive:all_estimated:seed0:free_of_boat:scan"
+        ]
+      },
+      "tuning": {
+        "label": "multistatic / passive / all_estimated / scan / tuning set",
+        "threshold": {
+          "T": 7560.92724609375,
+          "T_full_record": 40643.0078125,
+          "pfa": 0.05,
+          "n_frames": 237,
+          "frames_above_T": 11,
+          "object_free_runs": [
+            "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:scan",
+            "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:scan",
+            "multistatic:passive:all_estimated:seed0:free_of_boat:scan"
+          ]
+        },
+        "false_alarm_rate": 0.9493670886075949,
+        "false_alarms": 75,
+        "n_frames": 79,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "ferry",
+            "kind": "ship",
+            "radiates": true,
+            "ais": true,
+            "moving": true,
+            "frames": 79,
+            "detected": 0,
+            "pd": 0.0,
+            "median_error_m": null,
+            "p90_error_m": null,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed0:without_ferry_ais:scan"
+            ]
+          },
+          {
+            "id": "tug",
+            "kind": "ship",
+            "radiates": true,
+            "ais": true,
+            "moving": true,
+            "frames": 79,
+            "detected": 0,
+            "pd": 0.0,
+            "median_error_m": null,
+            "p90_error_m": null,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed0:without_tug_ais:scan"
+            ]
+          },
+          {
+            "id": "boat",
+            "kind": "ship",
+            "radiates": true,
+            "ais": false,
+            "moving": true,
+            "frames": 79,
+            "detected": 13,
+            "pd": 0.16455696202531644,
+            "median_error_m": 0.973198532990768,
+            "p90_error_m": 1.5972407134808524,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed0:scan"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "split": "tuning",
+        "seeds": [
+          0
+        ]
+      },
+      "test": {
+        "label": "multistatic / passive / all_estimated / scan / test set",
+        "threshold": {
+          "T": 7560.92724609375,
+          "T_full_record": 40643.0078125,
+          "pfa": 0.05,
+          "n_frames": 237,
+          "frames_above_T": 11,
+          "object_free_runs": [
+            "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:scan",
+            "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:scan",
+            "multistatic:passive:all_estimated:seed0:free_of_boat:scan"
+          ]
+        },
+        "false_alarm_rate": 0.35443037974683544,
+        "false_alarms": 140,
+        "n_frames": 395,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "ferry",
+            "kind": "ship",
+            "radiates": true,
+            "ais": true,
+            "moving": true,
+            "frames": 395,
+            "detected": 0,
+            "pd": 0.0,
+            "median_error_m": null,
+            "p90_error_m": null,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed1:without_ferry_ais:scan",
+              "multistatic:passive:all_estimated:seed2:without_ferry_ais:scan",
+              "multistatic:passive:all_estimated:seed3:without_ferry_ais:scan",
+              "multistatic:passive:all_estimated:seed4:without_ferry_ais:scan",
+              "multistatic:passive:all_estimated:seed5:without_ferry_ais:scan"
+            ]
+          },
+          {
+            "id": "tug",
+            "kind": "ship",
+            "radiates": true,
+            "ais": true,
+            "moving": true,
+            "frames": 395,
+            "detected": 0,
+            "pd": 0.0,
+            "median_error_m": null,
+            "p90_error_m": null,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed1:without_tug_ais:scan",
+              "multistatic:passive:all_estimated:seed2:without_tug_ais:scan",
+              "multistatic:passive:all_estimated:seed3:without_tug_ais:scan",
+              "multistatic:passive:all_estimated:seed4:without_tug_ais:scan",
+              "multistatic:passive:all_estimated:seed5:without_tug_ais:scan"
+            ]
+          },
+          {
+            "id": "boat",
+            "kind": "ship",
+            "radiates": true,
+            "ais": false,
+            "moving": true,
+            "frames": 395,
+            "detected": 32,
+            "pd": 0.0810126582278481,
+            "median_error_m": 0.973198532990768,
+            "p90_error_m": 1.9463970659815202,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "multistatic:passive:all_estimated:seed1:scan",
+              "multistatic:passive:all_estimated:seed2:scan",
+              "multistatic:passive:all_estimated:seed3:scan",
+              "multistatic:passive:all_estimated:seed4:scan",
+              "multistatic:passive:all_estimated:seed5:scan"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "split": "test",
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "diagnostic_after_first_ais_report": {
+        "note": "diagnostic: frames after the first AIS report of every reporting ship of the run; threshold from the same frames of the object free runs; not part of any criterion",
+        "threshold": {
+          "T": 553.4955444335938,
+          "T_full_record": 6531.189603805542,
+          "pfa": 0.05,
+          "n_frames": 196,
+          "frames_above_T": 9,
+          "object_free_runs": [
+            "multistatic:passive:all_estimated:seed0:without_ferry_ais:free_of_ferry:scan:after_first_ais_report",
+            "multistatic:passive:all_estimated:seed0:without_tug_ais:free_of_tug:scan:after_first_ais_report",
+            "multistatic:passive:all_estimated:seed0:free_of_boat:scan:after_first_ais_report"
+          ]
+        },
+        "tuning": {
+          "pd": {
+            "ferry": 0.6212121212121212,
+            "tug": 0.0,
+            "boat": 0.046153846153846156
+          },
+          "median_error_m": {
+            "ferry": 2.2360679774997645,
+            "tug": null,
+            "boat": 2.093060445295761
+          },
+          "false_alarm_rate": 0.0,
+          "frames_kept": 65,
+          "frames_all": 79
+        },
+        "test": {
+          "pd": {
+            "ferry": 0.5718849840255591,
+            "tug": 0.017391304347826087,
+            "boat": 0.11148648648648649
+          },
+          "median_error_m": {
+            "ferry": 2.2360679774997645,
+            "tug": 3.8585383826852944,
+            "boat": 1.8669699845141403
+          },
+          "false_alarm_rate": 0.010135135135135136,
+          "frames_kept": 296,
+          "frames_all": 395
+        }
+      },
+      "frames_before_first_ais_report": {
+        "0": 14,
+        "1": 10,
+        "2": 17,
+        "3": 14,
+        "4": 19,
+        "5": 39
+      }
+    }
+  }
+}

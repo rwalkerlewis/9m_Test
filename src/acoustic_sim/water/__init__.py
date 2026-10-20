@@ -1,6 +1,7 @@
 """Harbor DAS + hydrophone detection, localisation, tracking and classification toy model."""
 
-from acoustic_sim.water.ais import AISConfig, AISReports, AISTrack, generate_ais
+from acoustic_sim.water.ais import AISReports, AISTrack
+from acoustic_sim.water.ais_sim import AISConfig, generate_ais
 from acoustic_sim.water.dataset import (
     HarborDataset,
     assemble_dataset,

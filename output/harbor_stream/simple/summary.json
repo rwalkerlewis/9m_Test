@@ -1,0 +1,113 @@
+{
+  "dataset": "simple",
+  "record_s": 20.0,
+  "ais_used_in_processing": false,
+  "compute_per_second_of_data": {
+    "passive": 0.3837439042994447,
+    "echo": 0.24068499869954393,
+    "total": 0.6244289029989887
+  },
+  "passive_latency_s": {
+    "median": 1.716808889999811,
+    "max": 3.1292425409992575
+  },
+  "passive": {
+    "frames": 72,
+    "objects": {
+      "ferry": {
+        "kind": "ship",
+        "radiates": true,
+        "frames": 72,
+        "hit": 1.0,
+        "median_error_m": 1.414213562373065
+      },
+      "boat": {
+        "kind": "ship",
+        "radiates": true,
+        "frames": 72,
+        "hit": 0.7777777777777778,
+        "median_error_m": 0.8911535742453074
+      },
+      "uuv1": {
+        "kind": "uuv",
+        "radiates": false,
+        "frames": 72,
+        "hit": 0.0,
+        "median_error_m": null
+      },
+      "wreck": {
+        "kind": "static",
+        "radiates": false,
+        "frames": 72,
+        "hit": 0.013888888888888888,
+        "median_error_m": 4.242640687119285
+      }
+    }
+  },
+  "tracks": [
+    {
+      "track": "r1",
+      "fixes": 72,
+      "first_t": 0.25,
+      "last_t": 18.0,
+      "score": 5719.97998046875,
+      "ais_label": "ferry",
+      "true_object": "ferry",
+      "median_error_m": 1.414213562373065
+    },
+    {
+      "track": "r2",
+      "fixes": 56,
+      "first_t": 0.25,
+      "last_t": 17.75,
+      "score": 261.4634323120117,
+      "ais_label": null,
+      "true_object": "boat",
+      "median_error_m": 0.8911535742453074
+    },
+    {
+      "track": "r19",
+      "fixes": 28,
+      "first_t": 5.75,
+      "last_t": 18.0,
+      "score": 244.75149536132812,
+      "ais_label": null,
+      "true_object": null,
+      "median_error_m": 18.3731713685549
+    }
+  ],
+  "echo": {
+    "frames": 71,
+    "illuminators": "every confirmed track",
+    "objects": {
+      "ferry": {
+        "kind": "ship",
+        "radiates": true,
+        "frames": 71,
+        "hit": 0.0,
+        "median_error_m": null
+      },
+      "boat": {
+        "kind": "ship",
+        "radiates": true,
+        "frames": 71,
+        "hit": 0.5774647887323944,
+        "median_error_m": 1.3588163370115207
+      },
+      "uuv1": {
+        "kind": "uuv",
+        "radiates": false,
+        "frames": 71,
+        "hit": 0.18309859154929578,
+        "median_error_m": 3.709508404315788
+      },
+      "wreck": {
+        "kind": "static",
+        "radiates": false,
+        "frames": 71,
+        "hit": 1.0,
+        "median_error_m": 2.8284271247461903
+      }
+    }
+  }
+}

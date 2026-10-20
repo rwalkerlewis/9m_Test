@@ -43,7 +43,7 @@
   },
   "reference_dir": "/home/dockimble/Projects/9m_Test/output/performance/reference",
   "cases": {
-    "proc_oracle": {
+    "proc_direct_removed_exactly": {
       "kind": "processing",
       "config": "oracle",
       "eca_doppler": false,
@@ -81,7 +81,7 @@
         "ship_refined_max_shift_m": 0.0
       }
     },
-    "proc_eca_oracle_doppler": {
+    "proc_true_waveform_exact_track_doppler": {
       "kind": "processing",
       "config": "eca_oracle",
       "eca_doppler": true,
@@ -125,7 +125,7 @@
         "waveform_rel_rms": 0.0
       }
     },
-    "proc_blind_doppler_smooth4": {
+    "proc_all_estimated_doppler_smooth4": {
       "kind": "processing",
       "config": "blind",
       "eca_doppler": true,

@@ -163,6 +163,28 @@ def uniform_water_environment(
     return _finish_environment([], width, height, dx, c0, 0.0, "open_water")
 
 
+def build_simple_harbor(
+    width: float = 500.0,
+    height: float = 400.0,
+    dx: float = 1.0,
+    c0: float = 1500.0,
+    quay_width: float = 20.0,
+) -> HarborEnvironment:
+    """A harbor whose wavefields are easy to resolve: a rectangular basin, one straight quay along the north
+    edge (``quay_width`` m of land) and open water on the other three sides (absorbed by the solver's sponge),
+    with a constant sound speed *c0* everywhere (no shallow water slowdown, so the chart's single sound speed is
+    the true one).  The only reflector is the quay face, one clean image of every source.
+
+    Layout (metres, +y is north)::
+
+        land (quay)                    y = height - quay_width .. height
+        open water                     everywhere else
+    """
+    quay = np.array([(-1.0, height - quay_width), (width + 1.0, height - quay_width), (width + 1.0, height + 1.0),
+                     (-1.0, height + 1.0)], dtype=float)
+    return _finish_environment([quay], width, height, dx, c0, 0.0, "simple_harbor")
+
+
 def harbor_polygons() -> list[np.ndarray]:
     """Land polygons of the synthetic harbor, in harbor coordinates [m]."""
     return [

@@ -1,0 +1,83 @@
+{
+  "dataset": "harbor",
+  "record_s": 120.0,
+  "chains": {
+    "passive": {
+      "seconds": 8.616091251373291,
+      "seconds_per_second_of_data": 0.07180076042811076,
+      "frames": 59,
+      "false_detections_per_frame": 2.8983050847457625,
+      "objects": {
+        "ferry": {
+          "kind": "ship",
+          "radiates": true,
+          "ais": true,
+          "frames": 59,
+          "top_peak_hit": 0.01694915254237288,
+          "any_peak_hit": 0.01694915254237288,
+          "median_error_m": 2.999999999999943
+        },
+        "tug": {
+          "kind": "ship",
+          "radiates": true,
+          "ais": true,
+          "frames": 59,
+          "top_peak_hit": 0.0,
+          "any_peak_hit": 0.03389830508474576,
+          "median_error_m": 4.00000000000005
+        },
+        "moored": {
+          "kind": "ship",
+          "radiates": true,
+          "ais": true,
+          "frames": 59,
+          "top_peak_hit": 0.0,
+          "any_peak_hit": 0.0,
+          "median_error_m": null
+        },
+        "uuv1": {
+          "kind": "uuv",
+          "radiates": true,
+          "ais": false,
+          "frames": 59,
+          "top_peak_hit": 0.0,
+          "any_peak_hit": 0.0,
+          "median_error_m": null
+        },
+        "uuv2": {
+          "kind": "uuv",
+          "radiates": true,
+          "ais": false,
+          "frames": 59,
+          "top_peak_hit": 0.0,
+          "any_peak_hit": 0.0,
+          "median_error_m": null
+        },
+        "diver": {
+          "kind": "diver",
+          "radiates": true,
+          "ais": false,
+          "frames": 59,
+          "top_peak_hit": 0.0,
+          "any_peak_hit": 0.0,
+          "median_error_m": null
+        },
+        "static_scatter": {
+          "kind": "uuv",
+          "radiates": false,
+          "ais": false,
+          "frames": 59,
+          "top_peak_hit": 0.0,
+          "any_peak_hit": 0.0,
+          "median_error_m": null
+        }
+      },
+      "provenance": {
+        "truth_inputs": [],
+        "simulator_knowledge": [],
+        "data": "forward_model",
+        "held_out": false
+      }
+    }
+  }
+}

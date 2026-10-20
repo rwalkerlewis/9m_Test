@@ -159,7 +159,7 @@
       "position_error_median_m": 0.8053322121507561,
       "bistatic_options": {}
     },
-    "proc_oracle": {
+    "proc_direct_removed_exactly": {
       "kind": "processing",
       "config": "oracle",
       "eca_doppler": false,
@@ -175,7 +175,7 @@
       "eca_echo_loss_db": null,
       "bistatic_options": {}
     },
-    "proc_eca_oracle_doppler": {
+    "proc_true_waveform_exact_track_doppler": {
       "kind": "processing",
       "config": "eca_oracle",
       "eca_doppler": true,
@@ -191,7 +191,7 @@
       "eca_echo_loss_db": 0.6154724175015305,
       "bistatic_options": {}
     },
-    "proc_blind_doppler_smooth4": {
+    "proc_all_estimated_doppler_smooth4": {
       "kind": "processing",
       "config": "blind",
       "eca_doppler": true,

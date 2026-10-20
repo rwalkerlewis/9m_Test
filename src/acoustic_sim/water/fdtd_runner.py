@@ -19,6 +19,7 @@ from scipy.ndimage import distance_transform_edt
 from acoustic_sim.solver.fdtd import BOUNDARIES, FDTDConfig, FDTDSolver, fd2_coefficients, fd2_cfl_factor
 from acoustic_sim.water.environment import HarborEnvironment
 from acoustic_sim.water.scatterer import Scatterer, body_factor
+from acoustic_sim.water.sensor_sampling import layout_fingerprint
 from acoustic_sim.water.sensors import SensorLayout
 from acoustic_sim.sources import CustomTrajectorySource, StaticSource
 
@@ -393,7 +394,7 @@ def _cache_key(
 ) -> str:
     h = hashlib.sha1()
     h.update(env.fingerprint().encode())
-    h.update(layout.fingerprint().encode())
+    h.update(layout_fingerprint(layout).encode())
     for sc in scatterers:
         h.update(sc.fingerprint().encode())
     h.update(json.dumps(_key_fields(cfg), sort_keys=True).encode())

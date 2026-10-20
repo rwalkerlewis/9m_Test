@@ -86,8 +86,10 @@ def test_layout_slices_and_split():
 
 def test_layout_validate_flags_land(harbor):
     bad = SensorLayout(hydrophones=np.array([[1000.0, 1000.0], [1200.0, 1700.0]]))
+    from acoustic_sim.water.sensor_sampling import validate_layout
+
     with pytest.raises(ValueError, match="on land"):
-        bad.validate(harbor)
+        validate_layout(bad, harbor)
 
 
 def test_default_scenario_layout_is_in_water(harbor):
@@ -111,3 +113,20 @@ def test_config_json_roundtrip(tmp_path):
 def test_config_ignores_missing_sections():
     cfg = HarborScenarioConfig.from_dict({"fdtd": {"total_time": 5.0}})
     assert cfg.fdtd.total_time == 5.0 and len(cfg.cables) == 1 and len(cfg.hydrophones) == 4
+
+
+def test_simple_harbor_is_a_basin_with_one_quay_and_constant_sound_speed():
+    """``kind: "simple"``: open water with one straight quay along the north edge, the same sound speed
+    everywhere in the water (the chart's single sound speed is exact)."""
+    from acoustic_sim.water.environment import build_simple_harbor
+    from acoustic_sim.water.scenario import EnvironmentConfig, HarborScenarioConfig, build_environment
+
+    env = build_simple_harbor(width=200.0, height=100.0, dx=2.0, c0=1490.0, quay_width=10.0)
+    y = env.model.y
+    assert np.all(env.model.values[env.water] == 1490.0)
+    assert env.water[y < 89.0].all() and not env.water[y > 91.0].any()
+    cfg = HarborScenarioConfig(environment=EnvironmentConfig(kind="simple", width=200.0, height=100.0, dx=2.0, c0=1490.0,
+                                                             quay_width=10.0))
+    np.testing.assert_array_equal(build_environment(cfg).water, env.water)
+    with pytest.raises(ValueError):
+        build_environment(HarborScenarioConfig(environment=EnvironmentConfig(kind="lake")))

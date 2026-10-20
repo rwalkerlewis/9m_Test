@@ -10,8 +10,8 @@ which is what makes that use visible.  Every result built with them carries the 
   FDTD scheme that produced the data (``simulator_knowledge: ["dispersion"]``).
 * :class:`VesselPathLocaliser`: empirical replicas from the dataset's own FDTD vessel gathers
   (``simulator_knowledge: ["empirical_replicas"]``).
-* :func:`oracle_illuminator`: the true illuminator waveform for ``reference="oracle"``
-  (``oracle_inputs: ["waveform"]``).
+* :func:`true_illuminator_waveform`: the true illuminator waveform for ``reference="true_waveform"``
+  (``truth_inputs: ["waveform"]``).
 """
 
 from __future__ import annotations
@@ -123,9 +123,9 @@ class VesselPathLocaliser(EmpiricalLocaliser):
         self._freqs = common_freqs
 
 
-def oracle_illuminator(truth: Truth, vessel_id: str) -> np.ndarray:
+def true_illuminator_waveform(truth: Truth, vessel_id: str) -> np.ndarray:
     """The true radiated waveform of *vessel_id* at the emission time (``level_pa`` times the unit
-    FDTD injection), for ``BistaticConfig(reference="oracle")``: an oracle input."""
+    FDTD injection), for ``BistaticConfig(reference="true_waveform")``: a truth input."""
     from acoustic_sim.water.dataset import vessel_injection
     from acoustic_sim.water.scenario import HarborScenarioConfig, build_environment
 

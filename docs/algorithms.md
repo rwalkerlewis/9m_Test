@@ -7,7 +7,7 @@ which direction the sound is coming from and how far away it is, tracks
 the drone's path, then computes a shotgun aim point that leads the
 target.  The per-window processing uses only past data; one set-up step
 (range calibration, see §2.1) currently looks at the whole recording and
-the true trajectory, so the pipeline is not yet fully blind.
+the true trajectory, so not everything in the pipeline is yet estimated from the data.
 
 The direction-finding works like "acoustic triangulation": every
 microphone pair sees the sound arrive at slightly different times, and
@@ -184,8 +184,8 @@ In `run_pipeline.py` the calibration is set once, before the window
 loop, from the peak-RMS window of the **whole** recording and the
 **ground-truth** distance at that time: `calibrate(peak_rms, cpa_distance)`
 scales the peak RMS to `ref_range` (default 10 m) assuming $1/r$ decay,
-while the estimate above inverts with a square root ($1/r^2$).  This is an
-oracle calibration, not a causal one.  The estimate is clamped to
+while the estimate above inverts with a square root ($1/r^2$).  This is a
+calibration given from the truth, not a causal one.  The estimate is clamped to
 $[R_\text{min},\, R_\text{max}]$ (pipeline defaults 5 and 100 m).
 
 **Strengths:** Fast, one scalar per window.  Works well at medium to

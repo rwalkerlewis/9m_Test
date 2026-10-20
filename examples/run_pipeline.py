@@ -23,8 +23,8 @@ identical results to a signal-processing-only baseline.
 Sensing contract: the simulation directory is split into an ``Observation`` (traces, sample rate,
 microphone positions, nominal sound speed and wind) and a ``Truth`` (the source trajectory and the
 solver parameters).  The bearing, range and tracking stages receive only the observation.  The truth
-enters through scoring (``evaluate_results``, hit scoring) and plotting, and through three oracle
-set-up steps of ``acoustic_sim.air.diagnostics`` (RMS range calibration, the auto range method, the
+enters through scoring (``evaluate_results``, hit scoring) and plotting, and through three
+set-up steps given from the truth of ``acoustic_sim.air.diagnostics`` (RMS range calibration, the auto range method, the
 source altitude), which are flagged in ``results_*.json`` under ``provenance`` and on every figure.
 
 Usage::
@@ -64,7 +64,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from acoustic_sim.air.diagnostics import oracle_altitude, oracle_cpa_distance, truth_trajectory
+from acoustic_sim.air.diagnostics import true_altitude, true_cpa_distance, truth_trajectory
 from acoustic_sim.contract import AirEnvironment, MicArray, Observation, Provenance, Truth
 from acoustic_sim.air.detection import (
     DetectionEngine,
@@ -480,8 +480,8 @@ def run_pipeline(
 
     source_z_est = cfg_src["altitude_estimate_m"]
     if source_z_est is None:
-        # Oracle: the scenario's altitude (a 2-D scenario has none: z = 0, no truth used).
-        z_true = oracle_altitude(truth)
+        # Given from the truth: the scenario's altitude (a 2-D scenario has none: z = 0, no truth used).
+        z_true = true_altitude(truth)
         source_z_est = 0.0 if z_true is None else z_true
         if z_true is not None:
             provenance = provenance.with_flags(["altitude"])
@@ -557,8 +557,8 @@ def run_pipeline(
     peak_rms = float(rms_profile.max())
     peak_idx = int(np.argmax(rms_profile))
     peak_t = (peak_idx * hop + win_len / 2) * dt_sim
-    # Oracle: the true distance at the RMS peak (RMS calibration and the auto range method).
-    cpa_dist = oracle_cpa_distance(truth, source_speed, peak_t, array_center)
+    # Given from the truth: the true distance at the RMS peak (RMS calibration and the auto range method).
+    cpa_dist = true_cpa_distance(truth, source_speed, peak_t, array_center)
 
     # -- auto-select range method --
     if range_method == "auto":
@@ -608,7 +608,7 @@ def run_pipeline(
           + f"\n       Available methods: {available_bearing_methods()}")
 
     if range_method == "rms":
-        engine.calibrate_range(peak_rms, cpa_dist, oracle=True)
+        engine.calibrate_range(peak_rms, cpa_dist, from_truth=True)
         print(f"       RMS cal: peak={peak_rms:.6f}, CPA dist={cpa_dist:.1f} m")
 
     # -- main loop -----------------------------------------------------------
@@ -639,7 +639,7 @@ def run_pipeline(
     # max_hits > 0 the run stops after max_hits scored hits, so the truth decides how many windows run.
     ground_truth_fn, src_duration = compute_ground_truth(truth, source_speed)
     if max_hits > 0:
-        engine.provenance.oracle_inputs = engine.provenance.with_flags(["hit_feedback"]).oracle_inputs
+        engine.provenance.truth_inputs = engine.provenance.with_flags(["hit_feedback"]).truth_inputs
 
     pos = 0
     while pos + win_len <= n_samples:

@@ -15,7 +15,8 @@ from pathlib import Path
 import numpy as np
 
 from acoustic_sim.contract import Observation, Truth, contract_paths
-from acoustic_sim.water.ais import AISReports, generate_ais
+from acoustic_sim.water.ais import AISReports
+from acoustic_sim.water.ais_sim import generate_ais
 from acoustic_sim.water.environment import HarborEnvironment
 from acoustic_sim.water.fdtd_runner import Gather, _fused_available, simulate_source, simulate_sources
 from acoustic_sim.water.noise import NoiseRealisation, generate_noise
@@ -30,8 +31,7 @@ from acoustic_sim.water.vessels import Track, VesselConfig, build_track
 class HarborDataset:
     """The forward side's convenience object: observation and truth in one place.
 
-    The processing side gets :attr:`observation` (traces, sample rate, geometry, public chart, AIS,
-    band) and scoring gets :attr:`truth` (tracks, components, gains, dead channels, the scenario and
+    The processing side gets :attr:`observation` (traces, sample rate, geometry, public chart, AIS) and scoring gets :attr:`truth` (tracks, components, gains, dead channels, the scenario and
     solver config); :meth:`save` writes them as two files.
     """
 
@@ -70,18 +70,17 @@ class HarborDataset:
     @property
     def observation(self) -> Observation:
         """What the processing side may read: traces, ``fs``, the layout (with its DAS mode and gauge
-        length), the public chart, the AIS reports, and the band of the recording in ``meta``."""
+        length), the public chart and the AIS reports.  The processing band is a choice of the processing
+        (``BistaticConfig`` / ``ProcessingConfig``), not part of the recording."""
         if self._environment is None:
             env = self.env if self.env is not None else build_environment(self.cfg)
             self._environment = env.public()
         env = self._environment
-        f_max = float(f_max_for_grid(env.dx))
         geometry = self._geometry if self._geometry is not None else self.layout
         return Observation(self.traces, float(self.fs), geometry, env, self.ais, 0.0, {
             "instrument": "synthetic: DAS cables and hydrophones (" + ", ".join(
                 f"{c.name}: {c.das_mode}" for c in geometry.cables) + ")",
             "units": "Pa (pressure channels); second difference of pressure over the gauge length (strain channels)",
-            "band_hz": [0.0, f_max],
         })
 
     @property

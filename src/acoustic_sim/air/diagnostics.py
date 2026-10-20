@@ -1,12 +1,12 @@
 """Air diagnostics: processing steps that read the truth, and say so.
 
 The SRP-PHAT engagement pipeline (``examples/run_pipeline.py``) receives an
-:class:`~acoustic_sim.contract.Observation`.  Three of its set-up steps have no blind counterpart yet
+:class:`~acoustic_sim.contract.Observation`.  Three of its set-up steps have no counterpart estimated from the traces yet
 and read the :class:`~acoustic_sim.contract.Truth` through this module; each adds a flag to the
 pipeline's :class:`~acoustic_sim.contract.Provenance`:
 
 * ``"range_calibration"``: the RMS range estimator is calibrated with the true source distance at
-  the time of the recording's peak RMS (:func:`oracle_cpa_distance`);
+  the time of the recording's peak RMS (:func:`true_cpa_distance`);
 * ``"range_method"``: ``ranging.method = "auto"`` picks TDOA or RMS from that same true distance;
 * ``"altitude"``: with ``source.altitude_estimate_m = null`` the source altitude is the scenario's.
 
@@ -81,14 +81,14 @@ def truth_trajectory(truth: Truth, source_speed: float):
     return trajectory, duration
 
 
-def oracle_cpa_distance(truth: Truth, source_speed: float, t: float, array_center: np.ndarray) -> float:
-    """True source distance [m] from the array centre at time *t* (at least 1 m): an oracle input
+def true_cpa_distance(truth: Truth, source_speed: float, t: float, array_center: np.ndarray) -> float:
+    """True source distance [m] from the array centre at time *t* (at least 1 m): a truth input
     (``"range_calibration"``, and ``"range_method"`` when it chooses the range estimator)."""
     trajectory, _ = truth_trajectory(truth, source_speed)
     return max(float(np.linalg.norm(np.array(trajectory(t)) - array_center)), 1.0)
 
 
-def oracle_altitude(truth: Truth) -> float | None:
-    """The scenario's source altitude, or ``None`` for a 2-D scenario: an oracle input (``"altitude"``)."""
+def true_altitude(truth: Truth) -> float | None:
+    """The scenario's source altitude, or ``None`` for a 2-D scenario: a truth input (``"altitude"``)."""
     z = truth.scenario.get("source_z")
     return None if z is None else float(z)

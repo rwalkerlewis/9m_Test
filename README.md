@@ -12,9 +12,11 @@ This repository contains two related but independent applications of acoustic mo
   illuminator.
 
 The harbor implementation and experimental status are documented in
-[docs/harbor.md](docs/harbor.md). The passive matched-field chain does not reliably detect the
-default weak UUV. The bistatic echo demo is idealized: it uses truth components and an oracle
-reference and is not an operational performance claim; its `demo_summary.json` and figures carry
+[docs/harbor.md](docs/harbor.md). The real-time system (`water/streaming.py`,
+`examples/harbor_stream.py`) locates the ships from the traces alone (AIS only labels the tracks
+afterwards) and finds a silent UUV lit by one ship; it does not detect the default weak UUV of the 5 m
+harbor yet. The bistatic echo demo is idealized: it uses truth components and the true
+illuminator waveform and is not an operational performance claim; its `demo_summary.json` and figures carry
 the provenance flags. The processing side reads only an `Observation` (traces, sample rate,
 geometry, public chart, AIS); everything else is `Truth` (see
 [Architecture: Sensing contract](docs/architecture.md#sensing-contract)).

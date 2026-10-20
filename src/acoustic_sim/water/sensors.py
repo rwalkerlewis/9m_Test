@@ -1,17 +1,15 @@
-"""Sensor layout: DAS cables (dense receiver lines) and discrete hydrophones."""
+"""Sensor layout: DAS cables (dense receiver lines) and discrete hydrophones (processing side).
+
+The layout, the strain gauge sample points of the instrument model and :meth:`SensorLayout.collapse`
+are what the replicas need.  The solver side check of the sample points and the FDTD cache key are in
+``water/sensor_sampling.py`` (forward side).
+"""
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass, field
 
-from typing import TYPE_CHECKING
-
 import numpy as np
-
-if TYPE_CHECKING:
-    from acoustic_sim.contract import ChartEnvironment
-
 
 DAS_MODES = ("pressure", "strain")
 
@@ -194,17 +192,6 @@ class SensorLayout:
             raise ValueError(f"expected {self.n_receivers} rows, got {traces.shape[0]}")
         return {name: traces[sl] for name, sl in self.slices.items()}
 
-    def validate(self, env: "ChartEnvironment", margin: float = 10.0) -> None:
-        """Raise if any sampling point is on land or closer than *margin* m to it."""
-        pts = self.sample_points
-        ok = env.is_water(pts, margin=margin)
-        if not np.all(ok):
-            bad = np.flatnonzero(~ok)
-            raise ValueError(
-                f"{bad.size} receiver sample point(s) on land or within {margin} m of shore, "
-                f"first at index {bad[0]} {pts[bad[0]]}"
-            )
-
     def positions(self) -> np.ndarray:
         """Channel positions in recording order (the :class:`acoustic_sim.contract.Geometry` protocol)."""
         return self.receivers
@@ -221,12 +208,3 @@ class SensorLayout:
         return cls(cables=[Cable(c["name"], np.asarray(c["waypoints"], float), c["channel_spacing"],
                                  c.get("das_mode", "pressure"), c.get("gauge_length", 10.0)) for c in h["cables"]],
                    hydrophones=np.asarray(h["hydrophones"], float))
-
-    def fingerprint(self) -> str:
-        """Hash of everything that affects the sampled traces (unchanged for pressure layouts)."""
-        h = hashlib.sha1()
-        h.update(np.ascontiguousarray(self.receivers, dtype=np.float64).tobytes())
-        if self.has_strain:
-            h.update(b"strain")
-            h.update(np.ascontiguousarray(self.sample_points, dtype=np.float64).tobytes())
-        return h.hexdigest()

@@ -10,7 +10,7 @@ Chain for one dataset
 2. :func:`ship_positions`: AIS prediction per frame and a fine Bartlett refinement with
    per channel PHAT normalisation (the AIS error of 8 m is several wavelengths here).
 3. :func:`reference_spectrum`: the illuminator spectrum per frame and bin, either from the
-   data (beam steered at the refined ship position) or the oracle (true waveform).
+   data (beam steered at the refined ship position) or given from the truth (``"true_waveform"``).
 4. :func:`remove_direct`: project out the ship's replica patch and/or the data adaptive
    dominant subspace, per bin and frame.
 5. :func:`bistatic_map`: for every frame a map over the scan grid, with one of several
@@ -41,13 +41,15 @@ from acoustic_sim.water.motion import (  # noqa: F401  (moved; re-exported for t
     _motion_integrate_vectorized,
     motion_integrate,
 )
-from acoustic_sim.water.propagation import green2d, resolve
+from acoustic_sim.water.propagation import FreeFieldPropagator, green2d, green2d_bins, resolve
 from acoustic_sim.water.sensors import SensorLayout
 
 METHODS = ("bartlett", "bartlett_phat", "coherent", "mvdr", "music")
 REMOVALS = ("none", "eca", "patch", "adaptive", "patch+adaptive")
-REFERENCES = ("data", "oracle")
+REFERENCES = ("data", "true_waveform")
 IMPLS = ("reference", "vectorized")
+MAP_SCALES = ("max", "none")
+ECA_GRAMS = ("matmul", "prefix")
 
 
 @dataclass
@@ -59,7 +61,8 @@ class BistaticConfig:
     win_s, hop_s : float
         STFT window and hop [s].
     f_lo, f_hi : float
-        Band [Hz] (``f_hi`` defaults to 0.95 of the grid's usable band).
+        Processing band [Hz], a choice of the processing (the defaults are the band of the 0.5 m
+        harbor datasets, 100 to 760 Hz); nothing reads it from the data.
     bin_stride : int
         Use every n-th bin of the band.
     c : float
@@ -69,7 +72,8 @@ class BistaticConfig:
     edge : float
         Keep the scan grid this far [m] from the domain boundary (the sponge).
     reference : str
-        ``"data"`` (beam at the refined ship position) or ``"oracle"`` (true ship waveform).
+        ``"data"`` (beam at the refined ship position) or ``"true_waveform"`` (the ship's radiated
+        waveform taken from the simulation).
     refine, refine_half, refine_step : bool, float, float
         Refine the AIS position with a Bartlett search of this half width and step [m].
     removal : str
@@ -112,6 +116,19 @@ class BistaticConfig:
         cell path gain, so the noise floor of the map peaks in a ring around the ship).  ``"snr"``:
         ``|Z|^2`` divided by the expected noise power of the cell, ``sum_f |G(x, s)|^2 |r_f|^2 / norm``,
         the normalised matched filter whose floor is flat over the grid.
+    eca_gram : str
+        How the ECA forms its normal equations ``S^T S`` with per sample delays (``eca_doppler``) and no image
+        lags: ``"matmul"`` (default) the matrix product; ``"prefix"`` the sliding correlations of the one
+        resampled reference every column is a shift of, from prefix sums (about 20 times fewer operations,
+        equal to rounding; the real-time chain uses it).
+    eca_chunk : int
+        Channels whose normal equations the vectorized ECA forms and solves together (memory against
+        kernel launches).
+    map_scale : str
+        ``"max"`` (default): the maps of a run are divided by their largest value (over all frames), so a
+        map is relative to the run's peak.  ``"none"``: the maps are returned as computed (with
+        ``coherent_norm="snr"`` in units of the noise power), so one threshold applies across frames,
+        runs and datasets (the scoreboard, ``water/scoreboard.py``).
     mvdr_loading : float
         Diagonal loading relative to the trace for MVDR and MUSIC.
     music_rank : int
@@ -119,8 +136,8 @@ class BistaticConfig:
     min_separation, max_peaks : float, int
         Peak extraction per frame.
     propagator : Propagator | None
-        Replica model (:class:`acoustic_sim.contract.Propagator`).  ``None`` is the blind
-        ``FreeFieldPropagator(c)``; ``water.diagnostics.SimulatorAwarePropagator.from_truth`` follows the
+        Replica model (:class:`acoustic_sim.contract.Propagator`).  ``None`` is the free
+        field ``FreeFieldPropagator(c)`` (nothing beyond the public chart); ``water.diagnostics.SimulatorAwarePropagator.from_truth`` follows the
         numerical dispersion of the FDTD scheme that produced the data (simulator knowledge, flagged in
         the run's provenance).
     impl : str
@@ -137,7 +154,7 @@ class BistaticConfig:
     win_s: float = 0.5
     hop_s: float = 0.25
     f_lo: float = 100.0
-    f_hi: float | None = None
+    f_hi: float = 760.0
     bin_stride: int = 2
     c: float = 1495.0
     grid_dx: float = 2.0
@@ -161,6 +178,9 @@ class BistaticConfig:
     exclusion_radius: float = 25.0
     method: str = "coherent"
     coherent_norm: str = "none"
+    map_scale: str = "max"
+    eca_gram: str = "matmul"
+    eca_chunk: int = 32
     mvdr_loading: float = 0.05
     music_rank: int = 3
     min_separation: float = 20.0
@@ -178,6 +198,10 @@ class BistaticConfig:
             raise ValueError(f"reference must be one of {REFERENCES}, got {self.reference!r}")
         if self.impl not in IMPLS:
             raise ValueError(f"impl must be one of {IMPLS}, got {self.impl!r}")
+        if self.eca_gram not in ECA_GRAMS:
+            raise ValueError(f"eca_gram must be one of {ECA_GRAMS}, got {self.eca_gram!r}")
+        if self.map_scale not in MAP_SCALES:
+            raise ValueError(f"map_scale must be one of {MAP_SCALES}, got {self.map_scale!r}")
 
 
 def _xp(bc: BistaticConfig):
@@ -221,7 +245,7 @@ class Spectra:
         return Spectra(self.X.copy(), self.freqs, self.times, self.weights, self.fs, self.win_s)
 
 
-def stft(traces: np.ndarray, layout: SensorLayout, fs: float, bc: BistaticConfig, f_max: float) -> Spectra:
+def stft(traces: np.ndarray, layout: SensorLayout, fs: float, bc: BistaticConfig) -> Spectra:
     """Hann STFT of the band, after channel QC and per cable common mode removal."""
     pc = ProcessingConfig(win_s=bc.win_s, hop_s=bc.hop_s)
     w = channel_weights(traces, layout, pc)
@@ -230,8 +254,7 @@ def stft(traces: np.ndarray, layout: SensorLayout, fs: float, bc: BistaticConfig
     starts = np.arange(0, x.shape[1] - nper + 1, hop)
     window = get_window("hann", nper)
     f = np.fft.rfftfreq(nper, 1.0 / fs)
-    f_hi = bc.f_hi if bc.f_hi is not None else 0.95 * f_max
-    band = np.flatnonzero((f >= bc.f_lo) & (f <= f_hi))[:: bc.bin_stride]
+    band = np.flatnonzero((f >= bc.f_lo) & (f <= bc.f_hi))[:: bc.bin_stride]
     X = np.empty((x.shape[0], len(band), len(starts)), dtype=np.complex128)
     for k, s0 in enumerate(starts):
         X[:, :, k] = np.fft.rfft(x[:, s0:s0 + nper] * window, axis=1)[:, band]
@@ -239,7 +262,7 @@ def stft(traces: np.ndarray, layout: SensorLayout, fs: float, bc: BistaticConfig
     return Spectra(X, f[band], (starts + nper / 2.0) / fs, w, fs, bc.win_s)
 
 
-def oracle_spectra(signal: np.ndarray, fs: float, sp: Spectra) -> np.ndarray:
+def waveform_spectra(signal: np.ndarray, fs: float, sp: Spectra) -> np.ndarray:
     """STFT ``(F, K)`` of a known waveform on the frames and bins of *sp*."""
     nper, hop = int(round(sp.win_s * fs)), int(round((sp.times[1] - sp.times[0]) * fs)) if len(sp.times) > 1 else 1
     starts = np.rint(sp.times * fs - nper / 2.0).astype(int)
@@ -256,7 +279,7 @@ class ReplicaModel:
     """Replicas ``a(x, f)`` (P, N) for points *x*: Green's function at the sample points, collapsed.
 
     The Green's function comes from *propagator* (:class:`acoustic_sim.contract.Propagator`; ``None``
-    is the blind free field at *c*).  An analytic propagator that ``needs_angles`` (the simulator
+    is the free field at *c*).  An analytic propagator that ``needs_angles`` (the simulator
     aware one of ``water/diagnostics.py``) gives every point to sample pair the FDTD scheme's
     direction dependent numerical wavenumber instead of ``w / c``; on a coarse grid (4 cells per
     wavelength) the numerical phase speed is 1 to 2 percent off, which shifts a bistatic fix by
@@ -385,7 +408,7 @@ class ShipTrack:
     refined: np.ndarray       # (K, 2)
     present: np.ndarray       # (K,) bool
     score: np.ndarray         # (K,) refinement peak / mean
-    oracle: bool = False      # positions are the exact track (``ship_positions(truth=...)``), not AIS
+    exact_track: bool = False  # positions are the exact track (``ship_positions(truth=...)``), not AIS
 
 
 def _phat(X: np.ndarray) -> np.ndarray:
@@ -397,13 +420,13 @@ def ship_positions(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: Bistat
     """AIS prediction per frame, refined by a PHAT Bartlett search in a window around it.
 
     *truth* (K, 2) replaces the AIS prediction (for ablations: exact position, no refinement); the
-    track is then marked ``oracle`` and every run built on it says so in its provenance.
+    track is then marked ``exact_track`` and every run built on it says so in its provenance.
     """
     if bc.impl == "reference":
         ship = _ship_positions_reference(sp, ais, model, bc, vessel, truth)
     else:
         ship = _ship_positions_vectorized(sp, ais, model, bc, vessel, truth)
-    ship.oracle = truth is not None
+    ship.exact_track = truth is not None
     return ship
 
 
@@ -545,11 +568,11 @@ def _reference_doppler_vectorized(x: np.ndarray, rec: np.ndarray, ship_t: np.nda
 
 
 def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy: np.ndarray, block_s: float,
-                   bc: BistaticConfig, channels: np.ndarray | None = None, oracle_signal: np.ndarray | None = None,
+                   bc: BistaticConfig, channels: np.ndarray | None = None, true_waveform: np.ndarray | None = None,
                    ship_t: np.ndarray | None = None) -> np.ndarray:
     """Illuminator waveform aligned to the emission time, shape ``(n,)``.
 
-    ``bc.reference == "oracle"``: the true ship waveform.  ``"data"``: delay and sum of the
+    ``bc.reference == "true_waveform"``: the true ship waveform.  ``"data"``: delay and sum of the
     *channels* (default: every live channel) toward the ship position of each block of
     *block_s* seconds (*ship_xy* (K_b, 2), one row per block), each channel advanced by its
     range so the sum is at the emission time.  With *ship_t* (n, 2), the ship position at
@@ -558,10 +581,10 @@ def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy:
     every passive radar; that is accepted.
     """
     n = traces.shape[1]
-    if bc.reference == "oracle":
-        if oracle_signal is None:
-            raise ValueError("reference='oracle' needs oracle_signal")
-        return np.asarray(oracle_signal, dtype=np.float64)[:n]
+    if bc.reference == "true_waveform":
+        if true_waveform is None:
+            raise ValueError("reference='true_waveform' needs true_waveform")
+        return np.asarray(true_waveform, dtype=np.float64)[:n]
     idx = np.arange(layout.n_receivers) if channels is None else np.asarray(channels)
     x = np.asarray(traces, dtype=np.float64)[idx]
     rec = layout.receivers[idx]
@@ -636,6 +659,7 @@ def eca_remove(
     block_s: float,
     bc: BistaticConfig,
     ship_t: np.ndarray | None = None,
+    blocks: set[int] | None = None,
 ) -> list[np.ndarray]:
     """Extensive cancellation (least squares projection on delayed copies of the reference).
 
@@ -654,21 +678,42 @@ def eca_remove(
     ``bc.impl = "vectorized"`` builds the regressor matrices of all channels of a block from
     strided views of the (padded, resampled) reference and solves the normal equations of the
     channels with the same lag count together (:func:`_project_out_batched`); the reference loop
-    is :func:`_eca_remove_reference`.
+    is :func:`_eca_remove_reference`.  *blocks* (indices) restricts the cancellation to those blocks (the
+    others are returned unchanged): the real-time chain cleans only the newest blocks of its buffer.
     """
     if bc.impl == "reference":
-        return _eca_remove_reference(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t)
+        return _eca_remove_reference(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, blocks)
     xp = _xp(bc)
-    if xp is not np and bc.reference == "oracle" and ship_t is not None:
-        # Oracle-driven per-sample-delay normal equations can be ill-conditioned enough that
+    if xp is not np and bc.reference == "true_waveform" and ship_t is not None:
+        # True-waveform-driven per-sample-delay normal equations can be ill-conditioned enough that
         # cuSOLVER and LAPACK produce materially different projections. Keep this rare path
         # on the CPU so the GPU implementation meets the reference accuracy contract.
         cpu_bc = replace(bc, use_cuda=False)
-        return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, cpu_bc, ship_t)
-    return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t)
+        return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, cpu_bc, ship_t, chunk=bc.eca_chunk,
+                                      blocks=blocks)
+    return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, chunk=bc.eca_chunk, blocks=blocks)
 
 
-def _project_out_batched(S, segs, loading: float = 1e-14):
+def _gram_prefix(basep, start, block: int):
+    """``S^T S`` (Ng, L, L) for ``S[g, t, l] = basep[g, start[g, l] + t]`` (one base per channel) from prefix
+    sums of the lagged products: ``G[l, m] = sum_t b[s_l + t] b[s_m + t] = P_d[s + block] - P_d[s]`` with
+    ``s = min(s_l, s_m)``, ``d = |s_l - s_m|`` and ``P_d`` the cumulative sum of ``b[w] b[w + d]``."""
+    xp = _module_of(basep)
+    Ng, L = start.shape
+    st = xp.asarray(start)
+    d_all = xp.abs(st[:, :, None] - st[:, None, :])                                          # (Ng, L, L)
+    lo_all = xp.minimum(st[:, :, None], st[:, None, :])
+    dmax = int(d_all.max())
+    n = basep.shape[1]
+    padded = xp.concatenate([basep, xp.zeros((Ng, dmax))], axis=1)
+    lagged = xp.lib.stride_tricks.sliding_window_view(padded, dmax + 1, axis=1)[:, :n]       # (Ng, n, dmax + 1): b[w + d]
+    P = xp.zeros((Ng, n + 1, dmax + 1))
+    xp.cumsum(basep[:, :, None] * lagged, axis=1, out=P[:, 1:])
+    g = xp.arange(Ng)[:, None, None]
+    return P[g, lo_all + block, d_all] - P[g, lo_all, d_all]
+
+
+def _project_out_batched(S, segs, loading: float = 1e-14, G=None):
     """Batched :func:`_project_out`: *S* (Ng, block, L), *segs* (Ng, block, R) -> cleaned (Ng, block, R).
 
     The normal equations of all channels come from one stacked product (identical to the per
@@ -679,7 +724,7 @@ def _project_out_batched(S, segs, loading: float = 1e-14):
     xp = _module_of(S)
     Ng, block, L = S.shape
     St = S.transpose(0, 2, 1)
-    G = xp.matmul(St, S)                                                                   # (Ng, L, L): identical to the per channel S.T @ S
+    G = xp.matmul(St, S) if G is None else G                                                # (Ng, L, L): identical to the per channel S.T @ S
     if xp is np:
         # Per channel and per array, the exact call sequence of _project_out (loading from the channel's
         # own trace, matrix-vector products): a batched matrix-matrix product rounds differently, and
@@ -738,7 +783,8 @@ def _eca_lags(nominal: np.ndarray, half: int, hi: int) -> list[np.ndarray]:
     return out
 
 
-def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, chunk: int = 32) -> list[np.ndarray]:
+def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, chunk: int = 32,
+                           blocks: set[int] | None = None) -> list[np.ndarray]:
     xp = _xp(bc)
     from_window = xp.lib.stride_tricks.sliding_window_view
     n = traces[0].shape[1]
@@ -755,6 +801,8 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
         j_all = xp.arange(n, dtype=float)
         rec_d = xp.asarray(rec)
     for b in range(len(ship_xy)):
+        if blocks is not None and b not in blocks:
+            continue
         lo, hi = b * nb, min((b + 1) * nb, n)
         if hi <= lo:
             break
@@ -791,9 +839,12 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
                     start = pad + (lo - a) - off                                                      # window start in basep
                     W = from_window(basep, block, axis=-1)                                           # (Ng, P, n_win, block)
                     S = W[xp.asarray(np.arange(len(idx)))[:, None], xp.asarray(owner), xp.asarray(start)]   # (Ng, L, block)
+                G = None
+                if ship_t is not None and bc.eca_gram == "prefix" and basep.shape[1] == 1:
+                    G = _gram_prefix(basep[:, 0, :], start, block)
                 S = xp.ascontiguousarray(S.transpose(0, 2, 1))                                        # (Ng, block, L)
                 segs = xp.asarray(np.stack([out[idx, lo:hi] for out in outs], axis=-1))               # (Ng, block, R)
-                cleaned = _asnumpy(_project_out_batched(S, segs))
+                cleaned = _asnumpy(_project_out_batched(S, segs, G=G))
                 for r_i, out in enumerate(outs):
                     out[idx, lo:hi] = cleaned[:, :, r_i]
     return outs
@@ -809,6 +860,7 @@ def _eca_remove_reference(
     block_s: float,
     bc: BistaticConfig,
     ship_t: np.ndarray | None = None,
+    blocks: set[int] | None = None,
 ) -> list[np.ndarray]:
     """The original per channel loop of :func:`eca_remove` (``impl = "reference"``).
 
@@ -834,6 +886,8 @@ def _eca_remove_reference(
     ref_up = resample(ref, n * UPSAMPLE) if ship_t is not None else None
     j_up = np.arange(n * UPSAMPLE, dtype=float)
     for b in range(len(ship_xy)):
+        if blocks is not None and b not in blocks:
+            continue
         lo, hi = b * nb, min((b + 1) * nb, n)
         if hi <= lo:
             break
@@ -880,19 +934,19 @@ def _eca_remove_reference(
 
 
 def reference_spectrum(sp: Spectra, ship: ShipTrack, model: ReplicaModel, bc: BistaticConfig,
-                       oracle: np.ndarray | None = None, waveform: np.ndarray | None = None, fs: float | None = None) -> np.ndarray:
+                       given: np.ndarray | None = None, waveform: np.ndarray | None = None, fs: float | None = None) -> np.ndarray:
     """Illuminator spectrum ``r`` (F, K).
 
     From *waveform* (the time domain reference of :func:`make_reference`, aligned to the
-    emission time) when given; else the oracle STFT; else a beam at the refined ship position
+    emission time) when given; else the STFT *given* of the true waveform; else a beam at the refined ship position
     per frame and bin (the analytic demo's estimate).
     """
     if waveform is not None:
-        return oracle_spectra(waveform, fs, sp)
-    if bc.reference == "oracle":
-        if oracle is None:
-            raise ValueError("reference='oracle' needs the oracle spectra")
-        return oracle
+        return waveform_spectra(waveform, fs, sp)
+    if bc.reference == "true_waveform":
+        if given is None:
+            raise ValueError("reference='true_waveform' needs the spectra of the true waveform")
+        return given
     r = np.zeros((len(sp.freqs), len(sp.times)), dtype=np.complex128)
     if bc.impl == "vectorized":
         xp = model.xp
@@ -1035,8 +1089,20 @@ def _bistatic_map_vectorized(clean, ship, ref, grid, model, bc, method, frame_ch
     X_d = xp.asarray(clean.X)
     w_d = xp.asarray(clean.weights)
     ref_d = xp.asarray(ref) if ref is not None else None
-    for i, kk in enumerate(clean.wavenumbers / bc.c):
-        A = model(grid, kk)                                                                 # (G, N)
+    ks = clean.wavenumbers / bc.c
+    # Free field on the GPU: the replicas of successive bins by phase recurrence (green2d_bins, ~1e-14).
+    fast = xp is not np and isinstance(model.propagator, FreeFieldPropagator)
+    if fast:
+        gen_a = green2d_bins(model._geometry(grid, model.samples)[0], ks, xp)
+        gen_p = green2d_bins(model._geometry(grid, ship_p)[0], ks, xp) if method == "coherent" and len(present) else None
+        w_rep = model._weights_d()
+    for i, kk in enumerate(ks):
+        if fast:
+            A = model.layout.collapse(next(gen_a), xp)
+            if w_rep is not None:
+                A = A * w_rep[None, :]
+        else:
+            A = model(grid, kk)                                                             # (G, N)
         norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=1), 1e-30)
         Xi = X_d[:, i, :]                                                                   # (N, K)
         if method in ("bartlett", "bartlett_phat"):
@@ -1046,7 +1112,7 @@ def _bistatic_map_vectorized(clean, ship, ref, grid, model, bc, method, frame_ch
             if len(present) == 0:
                 continue
             Y = A.conj() @ Xi                                                               # (G, K)
-            path = model.paths(grid, ship_p, kk)                                            # (G, Kp)
+            path = next(gen_p) if fast else model.paths(grid, ship_p, kk)                   # (G, Kp)
             r_i = ref_d[i, present_d][None, :]
             Z[:, present_d] += Y[:, present_d] * xp.conj(path) * xp.conj(r_i) / norm[:, None]
             W[:, present_d] += xp.abs(path) ** 2 * xp.abs(r_i) ** 2 / norm[:, None]
@@ -1069,7 +1135,8 @@ def _bistatic_map_vectorized(clean, ship, ref, grid, model, bc, method, frame_ch
         B = xp.abs(Z) ** 2
         if bc.coherent_norm == "snr":
             B /= xp.maximum(W, 1e-30)
-    B /= max(float(B.max()), 1e-30)
+    if bc.map_scale == "max":
+        B /= max(float(B.max()), 1e-30)
     return _asnumpy(B), None if Z is None else _asnumpy(Z)
 
 
@@ -1112,7 +1179,8 @@ def _bistatic_map_reference(clean: Spectra, ship: ShipTrack, ref: np.ndarray, gr
         B = np.abs(Z) ** 2
         if bc.coherent_norm == "snr":
             B /= np.maximum(W, 1e-30)
-    B /= max(B.max(), 1e-30)
+    if bc.map_scale == "max":
+        B /= max(B.max(), 1e-30)
     return B, Z
 
 
@@ -1169,7 +1237,7 @@ def eca_stage(
     sp: Spectra,
     ship: ShipTrack,
     bc: BistaticConfig,
-    oracle_signal: np.ndarray | None = None,
+    true_waveform: np.ndarray | None = None,
     components: list[np.ndarray] | tuple = (),
 ) -> tuple[list[np.ndarray], np.ndarray]:
     """Time domain direct path removal of :func:`run_bistatic`: reference, image lags, ECA.
@@ -1193,7 +1261,7 @@ def eca_stage(
     else:
         sl = layout.slices[bc.ref_channels]
         chans = np.arange(sl.start, sl.stop)[sp.weights[sl] > 0]
-    waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, oracle_signal, ship_t=ship_t)
+    waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, true_waveform, ship_t=ship_t)
     images = [clutter_images(env, sxy) for sxy in ship_b] if bc.eca_images else []
     outs = eca_remove([traces] + list(components), waveform, layout, fs, ship_b, images, bc.eca_block_s, bc, ship_t=ship_t)
     return outs, waveform
@@ -1201,23 +1269,23 @@ def eca_stage(
 
 @dataclass
 class Diagnostics:
-    """Oracle inputs for ablations and diagnostics (every one is flagged in the run's provenance)."""
+    """Truth inputs for ablations and diagnostics (every one is flagged in the run's provenance)."""
 
-    ship_xy: np.ndarray | None = None          # exact ship positions at the frame times (K, 2)
+    exact_track: np.ndarray | None = None      # exact ship positions at the frame times (K, 2)
     components: dict[str, np.ndarray] | None = None   # truth components to pass through the same cancellation
 
 
 def bistatic_provenance(bc: BistaticConfig, ship: ShipTrack, diagnostics: Diagnostics,
                         provenance: Provenance | None) -> Provenance:
-    """The caller's *provenance* plus the oracle inputs and simulator knowledge of this run."""
-    oracle = []
-    if bc.reference == "oracle":
-        oracle.append("waveform")
-    if ship.oracle:
-        oracle.append("track")
+    """The caller's *provenance* plus the truth inputs and simulator knowledge of this run."""
+    given = []
+    if bc.reference == "true_waveform":
+        given.append("waveform")
+    if ship.exact_track:
+        given.append("track")
     if diagnostics.components and bc.removal == "eca":
-        oracle.append("components")
-    return (provenance or Provenance()).with_flags(oracle, resolve(bc.propagator, bc.c).knowledge)
+        given.append("components")
+    return (provenance or Provenance()).with_flags(given, resolve(bc.propagator, bc.c).knowledge)
 
 
 def run_bistatic(
@@ -1227,35 +1295,34 @@ def run_bistatic(
     env: ChartEnvironment,
     ais: AISReports,
     bc: BistaticConfig,
-    f_max: float,
     grid: np.ndarray | None = None,
-    oracle_signal: np.ndarray | None = None,
+    true_waveform: np.ndarray | None = None,
     diagnostics: Diagnostics | None = None,
     floor: float = 0.0,
     provenance: Provenance | None = None,
 ) -> BistaticRun:
     """The whole chain on one set of traces.
 
-    *oracle_signal* is the true illuminator waveform at the emission time (for
-    ``reference="oracle"``); ``diagnostics.ship_xy`` bypasses AIS and refinement;
+    *true_waveform* is the true illuminator waveform at the emission time (for
+    ``reference="true_waveform"``); ``diagnostics.exact_track`` bypasses AIS and refinement;
     ``diagnostics.components`` go through the same ECA projection and their residual energies are
     reported in ``run.eca`` (cancellation depth and echo loss per channel).  Peaks above *floor*
     are returned (threshold later).  *provenance* is what the caller knows about *traces* (synthetic
-    or recorded, held out, oracle inputs used to build them, e.g. ``"direct_removal"``); the run adds
-    its own oracle inputs and the propagator's simulator knowledge (``run.provenance``).
+    or recorded, held out, truth inputs used to build them, e.g. ``"direct_removal"``); the run adds
+    its own truth inputs and the propagator's simulator knowledge (``run.provenance``).
     """
     truth = diagnostics or Diagnostics()
-    sp = stft(traces, layout, fs, bc, f_max)
+    sp = stft(traces, layout, fs, bc)
     model = ReplicaModel(layout, bc.c, propagator=bc.propagator, xp=_xp(bc))
     model.weights = sp.weights
-    ship = ship_positions(sp, ais, model, bc, truth=truth.ship_xy)
+    ship = ship_positions(sp, ais, model, bc, truth=truth.exact_track)
     grid = grid if grid is not None else build_grid(env, bc)
 
     report = None
     waveform = None
     if bc.removal == "eca":
         comps = list((truth.components or {}).values())
-        outs, waveform = eca_stage(traces, layout, fs, env, sp, ship, bc, oracle_signal, comps)
+        outs, waveform = eca_stage(traces, layout, fs, env, sp, ship, bc, true_waveform, comps)
         clean_traces = outs[0]
         if comps:
             names = list(truth.components)
@@ -1265,12 +1332,12 @@ def run_bistatic(
             direct = next((k for k in names if k.startswith("direct")), names[0])
             echo = next((k for k in names if k.startswith("scattered")), None)
             report = ECAReport(db[direct], db[echo] if echo else np.full(layout.n_receivers, np.nan))
-        clean = stft(clean_traces, layout, fs, bc, f_max)
+        clean = stft(clean_traces, layout, fs, bc)
         clean.weights = sp.weights
         ref = reference_spectrum(sp, ship, model, bc, waveform=waveform, fs=fs)
     else:
-        oracle = oracle_spectra(oracle_signal, fs, sp) if oracle_signal is not None else None
-        ref = reference_spectrum(sp, ship, model, bc, oracle=oracle)
+        given = waveform_spectra(true_waveform, fs, sp) if true_waveform is not None else None
+        ref = reference_spectrum(sp, ship, model, bc, given=given)
         clean = remove_direct(sp, ship, model, bc)
 
     B, Z = bistatic_map(clean, ship, ref, grid, model, bc)
