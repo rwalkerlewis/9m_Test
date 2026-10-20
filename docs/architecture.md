@@ -260,7 +260,7 @@ ocean water column.
 | `water/sensors.py`, `water/ais.py` | Polyline cable geometry, pressure or gauge-length strain DAS (the sample points and `collapse`), hydrophones and channel splitting (`SensorLayout` is the water `Geometry`); AIS reports and the predictor |
 | `water/propagation.py` | `green2d` and `FreeFieldPropagator`, the default replica model (nothing beyond the chart) |
 | `water/detection.py`, `water/suppression.py`, `water/occupancy.py` | Passive matched-field detection, CFAR, AIS-guided position refinement and ship suppression, and track-before-detect |
-| `water/streaming.py` | Real-time chains, causal and step by step: `StreamingPassive` (the AIS-aware passive chain) and `StreamingEcho` (the echo chain with one AIS ship as the illuminator); `push(samples, reports)` returns each frame's peaks, compute time and latency |
+| `water/streaming.py` | The real-time system, causal and step by step: `StreamingPassive` (passive chain; AIS optional, not used by the system), `RadiatorTracker` (tracks from its peaks), `StreamingEcho` (direct paths of the tracked radiators removed, echoes mapped with each as illuminator), `ais_crosscheck` (AIS labels the tracks afterwards) |
 | `water/bistatic.py`, `water/motion.py` | AIS-ship-illuminated echo processing, direct-path removal, and Bartlett/coherent/MVDR/MUSIC localization maps; motion-compensated integration (`motion_integrate`, re-exported by `bistatic.py`) |
 | `water/localiser.py` | Optional empirical replica refinement from a survey of measured (or, flagged, simulated) transfer functions |
 | `water/evaluate.py`, `water/scoreboard.py`, `water/classifier.py` | Scoring against the `Truth` (`score_detections`, `truth_labels`; the [scoreboard](#scoreboard)); optional harbor CNN/CVAE classifier |

@@ -64,21 +64,26 @@ def test_streaming_is_causal():
 
 
 def _echo(traces, rec, chart, chunk):
-    """Frames of the streaming echo chain, each with the number of samples received when it was output."""
+    """Frames of the streaming echo chain, each with the number of samples received when it was output.  The
+    ship's position fixes are the input a tracker would give (here its track every 0.25 s)."""
     from acoustic_sim.water.bistatic import BistaticConfig
     from acoustic_sim.water.streaming import EchoStreamConfig, StreamingEcho
 
     bc = BistaticConfig(c=rec["c"], f_lo=80.0, f_hi=450.0, grid_dx=5.0, edge=20.0, exclusion_radius=30.0, coherent_norm="snr",
                         map_scale="none", eca_doppler=True, track_smooth_s=1.0, eca_images=False)
-    det = StreamingEcho(rec["layout"], rec["fs"], chart, bc, "ship", EchoStreamConfig(step_blocks=1, history_s=0.5, lookahead_s=0.4))
+    det = StreamingEcho(rec["layout"], rec["fs"], chart, bc, EchoStreamConfig(step_blocks=1, history_s=0.5, lookahead_s=0.4))
     out = []
     for s0 in range(0, traces.shape[1], chunk):
-        out += [(f, min(s0 + chunk, traces.shape[1])) for f in det.push(traces[:, s0:s0 + chunk], rec["reports"])]
+        t1 = min(s0 + chunk, traces.shape[1]) / rec["fs"]
+        t_fix = np.arange(0.0, t1, 0.25)
+        t_fix = t_fix[t_fix > (s0 / rec["fs"]) - 0.25] if s0 else t_fix
+        fixes = {"ship": [(t, np.array([150.0 + 4.0 * t, 250.0])) for t in t_fix if t <= t1 - 0.25]}
+        out += [(f, min(s0 + chunk, traces.shape[1])) for f in det.push(traces[:, s0:s0 + chunk], fixes)]
     return out
 
 
 def test_streaming_echo_finds_the_silent_body():
-    """The echo of the silent body, lit by the AIS ship: the top peak of the frames is on the body (the batch
+    """The echo of the silent body, lit by the ship: the top peak of the frames is on the body (the batch
     ``run_bistatic`` on the same recording has its peak within 8 m in at least 40 % of the frames)."""
     rec, chart, *_ = _setup()
     frames = [f for f, _ in _echo(rec["traces"], rec, chart, 500) if f.ships]
@@ -100,6 +105,31 @@ def test_streaming_echo_is_causal():
     for fa, fb in safe:
         np.testing.assert_array_equal(fa.xy, fb.xy)
         np.testing.assert_array_equal(fa.score, fb.score)
+
+
+def test_tracker_confirms_moving_radiators_and_ais_labels_them_afterwards():
+    """Two radiators and random clutter: two confirmed tracks, the clutter and a sidelobe next to the stronger
+    radiator are not confirmed, only the stronger one is strong enough for the echo chain (the weaker scores 20 %),
+    and the AIS cross check labels the one that reports."""
+    from acoustic_sim.water.streaming import FrameResult, RadiatorTracker, ais_crosscheck
+
+    rng = np.random.default_rng(1)
+    tracker = RadiatorTracker()
+    for k in range(60):
+        t = 0.25 * k
+        a, b = np.array([100.0 + 3.0 * t, 200.0]), np.array([300.0, 100.0 + 1.5 * t])
+        pts = [a + rng.normal(0, 1, 2), b + rng.normal(0, 1, 2), a + [0.0, 20.0], rng.uniform(0, 400, 2)]
+        tracker.update(FrameResult(t, np.array(pts), np.array([100.0, 20.0, 40.0, 30.0]), {}, 0.0, 0.0))
+    conf = tracker.confirmed()
+    assert len(conf) == 2
+    ends = sorted(tr.fixes[-1][1][0] for tr in conf.values())
+    assert abs(ends[0] - 144.0) < 5 and abs(ends[1] - 300.0) < 5
+    assert list(tracker.strong()) == [max(conf, key=lambda k: conf[k].score)]
+    k = 12
+    reports = AISReports(np.array(["ferry"] * k), np.arange(k) * 1.25, np.array([[100.0 + 3.0 * 1.25 * i, 200.0] for i in range(k)]),
+                         np.full(k, 3.0), np.zeros(k))
+    labels = ais_crosscheck(conf, reports)
+    assert sorted(labels.values(), key=str) == [None, "ferry"]
 
 
 def test_fast_replicas_match_green2d_on_the_gpu():
@@ -126,7 +156,7 @@ def test_fast_replicas_match_green2d_on_the_gpu():
         assert float(cp.max(cp.abs(g - ref)) / cp.max(cp.abs(ref))) < 1e-12
     bc = BistaticConfig(c=rec["c"], f_lo=80.0, f_hi=450.0, grid_dx=5.0, edge=20.0, coherent_norm="snr", map_scale="none",
                         eca_doppler=True, eca_images=False, use_cuda=True)
-    det = StreamingEcho(rec["layout"], rec["fs"], chart, bc, "ship")
+    det = StreamingEcho(rec["layout"], rec["fs"], chart, bc)
     w = cp.asarray(rng.uniform(0.5, 1.5, rec["layout"].n_receivers).astype(np.float32))
     for k, A in zip(det.ks, det._channel_greens(w)):
         ref = rec["layout"].collapse(green2d(k * det.r_samples, cp), cp) * w[None, :]

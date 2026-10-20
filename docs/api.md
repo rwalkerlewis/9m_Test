@@ -641,9 +641,13 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
   the passive chain in real time: `push(samples, reports)` takes the next chunk of traces `(N, n)` and the
   AIS reports received so far and returns a `FrameResult` (time, peaks, scores, ship positions, compute
   time, latency) for every completed frame; only past data are used.
-* `StreamingEcho(layout, fs, env, bc, source, stc=EchoStreamConfig())` — the echo chain in real time with
-  the AIS ship *source* as the illuminator (`bc`: data reference, `removal="eca"`, `eca_doppler=True`,
-  coherent map, free field propagator); same `push` interface.
+* `RadiatorTracker(TrackerConfig())` — causal tracks from the passive peaks: `update(frame)`, `confirmed()`,
+  `strong()` (the tracks the echo chain uses); `ais_crosscheck(tracks, reports)` labels tracks with AIS ships.
+* `StreamingEcho(layout, fs, env, bc, stc=EchoStreamConfig())` — the echo chain in real time:
+  `push(samples, radiators={id: [(t, xy), ...]}, illuminator=None)` removes the direct path of every live
+  radiator and maps the echoes with each (or only *illuminator*) as the illuminator (`bc`: data reference,
+  `removal="eca"`, `eca_doppler=True`, coherent map, free field propagator; `eca_gram="prefix"` and
+  `eca_chunk` for speed).
 * `green2d_bins(r, ks, xp)` from `acoustic_sim.water.propagation` — `green2d(k r)` for evenly spaced
   wavenumbers by phase recurrence (GPU), used by the batch coherent map and the streaming chains.
 * `OccupancyConfig` / `OccupancyGrid(grid, cfg=None)` — track-before-detect over map frames;

@@ -49,6 +49,7 @@ REMOVALS = ("none", "eca", "patch", "adaptive", "patch+adaptive")
 REFERENCES = ("data", "true_waveform")
 IMPLS = ("reference", "vectorized")
 MAP_SCALES = ("max", "none")
+ECA_GRAMS = ("matmul", "prefix")
 
 
 @dataclass
@@ -115,6 +116,14 @@ class BistaticConfig:
         cell path gain, so the noise floor of the map peaks in a ring around the ship).  ``"snr"``:
         ``|Z|^2`` divided by the expected noise power of the cell, ``sum_f |G(x, s)|^2 |r_f|^2 / norm``,
         the normalised matched filter whose floor is flat over the grid.
+    eca_gram : str
+        How the ECA forms its normal equations ``S^T S`` with per sample delays (``eca_doppler``) and no image
+        lags: ``"matmul"`` (default) the matrix product; ``"prefix"`` the sliding correlations of the one
+        resampled reference every column is a shift of, from prefix sums (about 20 times fewer operations,
+        equal to rounding; the real-time chain uses it).
+    eca_chunk : int
+        Channels whose normal equations the vectorized ECA forms and solves together (memory against
+        kernel launches).
     map_scale : str
         ``"max"`` (default): the maps of a run are divided by their largest value (over all frames), so a
         map is relative to the run's peak.  ``"none"``: the maps are returned as computed (with
@@ -170,6 +179,8 @@ class BistaticConfig:
     method: str = "coherent"
     coherent_norm: str = "none"
     map_scale: str = "max"
+    eca_gram: str = "matmul"
+    eca_chunk: int = 32
     mvdr_loading: float = 0.05
     music_rank: int = 3
     min_separation: float = 20.0
@@ -187,6 +198,8 @@ class BistaticConfig:
             raise ValueError(f"reference must be one of {REFERENCES}, got {self.reference!r}")
         if self.impl not in IMPLS:
             raise ValueError(f"impl must be one of {IMPLS}, got {self.impl!r}")
+        if self.eca_gram not in ECA_GRAMS:
+            raise ValueError(f"eca_gram must be one of {ECA_GRAMS}, got {self.eca_gram!r}")
         if self.map_scale not in MAP_SCALES:
             raise ValueError(f"map_scale must be one of {MAP_SCALES}, got {self.map_scale!r}")
 
@@ -676,11 +689,31 @@ def eca_remove(
         # cuSOLVER and LAPACK produce materially different projections. Keep this rare path
         # on the CPU so the GPU implementation meets the reference accuracy contract.
         cpu_bc = replace(bc, use_cuda=False)
-        return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, cpu_bc, ship_t, blocks=blocks)
-    return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, blocks=blocks)
+        return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, cpu_bc, ship_t, chunk=bc.eca_chunk,
+                                      blocks=blocks)
+    return _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block_s, bc, ship_t, chunk=bc.eca_chunk, blocks=blocks)
 
 
-def _project_out_batched(S, segs, loading: float = 1e-14):
+def _gram_prefix(basep, start, block: int):
+    """``S^T S`` (Ng, L, L) for ``S[g, t, l] = basep[g, start[g, l] + t]`` (one base per channel) from prefix
+    sums of the lagged products: ``G[l, m] = sum_t b[s_l + t] b[s_m + t] = P_d[s + block] - P_d[s]`` with
+    ``s = min(s_l, s_m)``, ``d = |s_l - s_m|`` and ``P_d`` the cumulative sum of ``b[w] b[w + d]``."""
+    xp = _module_of(basep)
+    Ng, L = start.shape
+    st = xp.asarray(start)
+    d_all = xp.abs(st[:, :, None] - st[:, None, :])                                          # (Ng, L, L)
+    lo_all = xp.minimum(st[:, :, None], st[:, None, :])
+    dmax = int(d_all.max())
+    n = basep.shape[1]
+    padded = xp.concatenate([basep, xp.zeros((Ng, dmax))], axis=1)
+    lagged = xp.lib.stride_tricks.sliding_window_view(padded, dmax + 1, axis=1)[:, :n]       # (Ng, n, dmax + 1): b[w + d]
+    P = xp.zeros((Ng, n + 1, dmax + 1))
+    xp.cumsum(basep[:, :, None] * lagged, axis=1, out=P[:, 1:])
+    g = xp.arange(Ng)[:, None, None]
+    return P[g, lo_all + block, d_all] - P[g, lo_all, d_all]
+
+
+def _project_out_batched(S, segs, loading: float = 1e-14, G=None):
     """Batched :func:`_project_out`: *S* (Ng, block, L), *segs* (Ng, block, R) -> cleaned (Ng, block, R).
 
     The normal equations of all channels come from one stacked product (identical to the per
@@ -691,7 +724,7 @@ def _project_out_batched(S, segs, loading: float = 1e-14):
     xp = _module_of(S)
     Ng, block, L = S.shape
     St = S.transpose(0, 2, 1)
-    G = xp.matmul(St, S)                                                                   # (Ng, L, L): identical to the per channel S.T @ S
+    G = xp.matmul(St, S) if G is None else G                                                # (Ng, L, L): identical to the per channel S.T @ S
     if xp is np:
         # Per channel and per array, the exact call sequence of _project_out (loading from the channel's
         # own trace, matrix-vector products): a batched matrix-matrix product rounds differently, and
@@ -806,9 +839,12 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
                     start = pad + (lo - a) - off                                                      # window start in basep
                     W = from_window(basep, block, axis=-1)                                           # (Ng, P, n_win, block)
                     S = W[xp.asarray(np.arange(len(idx)))[:, None], xp.asarray(owner), xp.asarray(start)]   # (Ng, L, block)
+                G = None
+                if ship_t is not None and bc.eca_gram == "prefix" and basep.shape[1] == 1:
+                    G = _gram_prefix(basep[:, 0, :], start, block)
                 S = xp.ascontiguousarray(S.transpose(0, 2, 1))                                        # (Ng, block, L)
                 segs = xp.asarray(np.stack([out[idx, lo:hi] for out in outs], axis=-1))               # (Ng, block, R)
-                cleaned = _asnumpy(_project_out_batched(S, segs))
+                cleaned = _asnumpy(_project_out_batched(S, segs, G=G))
                 for r_i, out in enumerate(outs):
                     out[idx, lo:hi] = cleaned[:, :, r_i]
     return outs

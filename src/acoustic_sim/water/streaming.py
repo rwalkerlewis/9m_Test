@@ -111,9 +111,12 @@ class StreamingPassive:
 
     # ------------------------------------------------------------------
 
-    def push(self, samples: np.ndarray, reports: AISReports) -> list[FrameResult]:
-        """Append *samples* (N, n) and process every complete block; *reports* are the AIS reports
-        received so far (only those at or before each frame are used)."""
+    def push(self, samples: np.ndarray, reports: AISReports | None = None) -> list[FrameResult]:
+        """Append *samples* (N, n) and process every complete block.  *reports* (optional): AIS reports
+        received so far, whose ships are then refined, projected out and excluded; without them every
+        radiator, ships included, is located from the traces alone."""
+        if reports is None:
+            reports = _NO_REPORTS
         self.raw = np.concatenate([self.raw, np.asarray(samples, dtype=np.float64)], axis=1)
         self.t_samples += samples.shape[1]
         out = []
@@ -321,6 +324,9 @@ class StreamingPassive:
         return out
 
 
+_NO_REPORTS = AISReports(np.array([], dtype=str), np.empty(0), np.empty((0, 2)), np.empty(0), np.empty(0))
+
+
 def _reports_until(rep: AISReports, t: float) -> AISReports:
     m = rep.t <= t
     return AISReports(rep.vessel[m], rep.t[m], rep.xy[m], rep.sog[m], rep.cog[m])
@@ -348,6 +354,121 @@ def _greens_kernel():
 
 
 # ----------------------------------------------------------------------
+# Tracks from the passive locations
+# ----------------------------------------------------------------------
+
+@dataclass
+class TrackerConfig:
+    """``gate``: a peak joins a track if within this distance [m] of the track's predicted position (plus
+    ``max_speed`` times the time since its last fix); ``exclusion``: a track does not confirm within this
+    distance [m] of a stronger confirmed track (sidelobes of a loud source; checked at every update); ``confirm``: fixes within ``confirm_window_s`` that make a
+    track confirmed; ``strong_fraction``: :meth:`RadiatorTracker.strong` keeps the confirmed tracks scoring at
+    least this fraction of the strongest (an echo of a loud ship is located by the passive chain too, about
+    10 dB below the ship; set on the bistatic and multistatic recordings); ``drop_s``: a track without a fix for this long is dropped; ``fit_s``: past fixes used
+    for the prediction (straight line fit)."""
+
+    gate: float = 6.0
+    max_speed: float = 6.0
+    exclusion: float = 30.0
+    strong_fraction: float = 0.25
+    confirm: int = 6
+    confirm_window_s: float = 2.0
+    drop_s: float = 2.0
+    fit_s: float = 4.0
+
+
+@dataclass
+class RadiatorTrack:
+    id: str
+    fixes: list = field(default_factory=list)       # (t, xy, score)
+    confirmed: bool = False
+
+    def predict(self, t: float, fit_s: float) -> np.ndarray:
+        tt = np.array([f[0] for f in self.fixes])
+        xy = np.array([f[1] for f in self.fixes])
+        m = tt >= tt[-1] - fit_s
+        if m.sum() < 3:
+            return xy[-1]
+        A = np.column_stack([np.ones(m.sum()), tt[m] - tt[-1]])
+        coef, *_ = np.linalg.lstsq(A, xy[m], rcond=None)
+        return coef[0] + coef[1] * (t - tt[-1])
+
+    @property
+    def score(self) -> float:
+        return float(np.median([f[2] for f in self.fixes[-8:]]))
+
+
+class RadiatorTracker:
+    """Causal tracks of the radiating objects from the per frame peaks of the passive chain (no AIS): every
+    peak joins the nearest track within the gate (one peak per track, strongest peaks first), the others
+    start new tracks; a track is confirmed after ``confirm`` fixes within ``confirm_window_s``."""
+
+    def __init__(self, cfg: TrackerConfig | None = None) -> None:
+        self.cfg = cfg or TrackerConfig()
+        self.tracks: dict[str, RadiatorTrack] = {}
+        self._n = 0
+
+    def update(self, frame: FrameResult) -> None:
+        cfg, t = self.cfg, frame.t
+        for tid in [k for k, tr in self.tracks.items() if t - tr.fixes[-1][0] > cfg.drop_s]:
+            self.tracks.pop(tid)
+        pred = {k: tr.predict(t, cfg.fit_s) for k, tr in self.tracks.items()}
+        taken: set[str] = set()
+        for xy, sc in zip(frame.xy, frame.score):
+            best, dbest = None, np.inf
+            for k, p in pred.items():
+                if k in taken:
+                    continue
+                d = float(np.hypot(*(xy - p)))
+                gate = cfg.gate + cfg.max_speed * (t - self.tracks[k].fixes[-1][0])
+                if d <= gate and d < dbest:
+                    best, dbest = k, d
+            if best is None:
+                self._n += 1
+                best = f"r{self._n}"
+                self.tracks[best] = RadiatorTrack(best)
+            self.tracks[best].fixes.append((t, np.asarray(xy, float), float(sc)))
+            taken.add(best)
+        kept: list[RadiatorTrack] = []
+        for tr in sorted(self.tracks.values(), key=lambda x: -x.score):                   # strongest first
+            recent = sum(1 for f in tr.fixes if f[0] >= t - cfg.confirm_window_s)
+            near = any(np.hypot(*(o.fixes[-1][1] - tr.fixes[-1][1])) < cfg.exclusion for o in kept)
+            tr.confirmed = (tr.confirmed or recent >= cfg.confirm) and not near
+            if tr.confirmed:
+                kept.append(tr)
+
+    def confirmed(self) -> dict[str, RadiatorTrack]:
+        return {k: tr for k, tr in self.tracks.items() if tr.confirmed}
+
+    def strong(self) -> dict[str, RadiatorTrack]:
+        """Confirmed tracks scoring at least ``strong_fraction`` of the strongest, strongest first: the radiators
+        whose direct paths the echo chain removes and whose echoes it maps."""
+        conf = self.confirmed()
+        if not conf:
+            return {}
+        top = max(tr.score for tr in conf.values())
+        return dict(sorted(((k, tr) for k, tr in conf.items() if tr.score >= self.cfg.strong_fraction * top), key=lambda kv: -kv[1].score))
+
+
+def ais_crosscheck(tracks: dict[str, RadiatorTrack], reports: AISReports, gate: float = 25.0, last: int = 8) -> dict[str, str | None]:
+    """AIS used after the location: label each track with the reporting ship whose (dead reckoned) report
+    positions are within *gate* m of the track's last *last* fixes (median), else ``None``."""
+    out: dict[str, str | None] = {}
+    for k, tr in tracks.items():
+        best, dbest = None, gate
+        for v in reports.vessels:
+            at = reports.for_vessel(v)
+            fx = [f for f in tr.fixes[-last:] if f[0] >= at.t[0]]
+            if not fx:
+                continue
+            d = float(np.median([np.hypot(*(at.predict(f[0], causal=True)[0] - f[1])) for f in fx]))
+            if d < dbest:
+                best, dbest = v, d
+        out[k] = best
+    return out
+
+
+# ----------------------------------------------------------------------
 # Echo chain
 # ----------------------------------------------------------------------
 
@@ -355,13 +476,15 @@ def _greens_kernel():
 class EchoStreamConfig:
     """Parameters of the streaming echo chain (the chain's own are in ``BistaticConfig``).
 
-    ``step_blocks``: ECA blocks (``eca_block_s``) cleaned per step; ``history_s``: samples kept before
+    ``step_blocks``: ECA blocks (``eca_block_s``) cleaned per step; ``combine``: how the maps of several
+    illuminators are combined (``"sum"`` or ``"max"``); ``history_s``: samples kept before
     the blocks being cleaned (the reference delays and the QC); ``lookahead_s``: samples needed after
     them (the reference beam advances every channel by its range to the ship); ``max_peaks`` /
     ``min_separation``: peaks reported per frame.
     """
 
     step_blocks: int = 2
+    combine: str = "sum"
     history_s: float = 1.0
     lookahead_s: float = 0.4
     max_peaks: int = 3
@@ -369,25 +492,29 @@ class EchoStreamConfig:
 
 
 class StreamingEcho:
-    """Causal echo chain with one AIS ship as the illuminator: ``bistatic.run_bistatic`` with the data
-    reference, ECA with per sample delays and the coherent ``"snr"`` map, step by step.
+    """Causal echo chain: ``bistatic.run_bistatic`` with the data reference, ECA with per sample delays and the
+    coherent ``"snr"`` map, step by step, with the illuminator and every other radiator located passively.
 
-    Every step (``step_blocks`` ECA blocks): the ship is refined in every frame whose samples have
-    arrived (AIS predicted from the reports received), the track is fitted by a straight line over
-    the past ``track_smooth_s`` only and extrapolated ahead, the reference beam is formed on a short
-    buffer, the ECA cleans the newest blocks, and the frames inside them are mapped in single
-    precision with the free field replicas of ``propagation.green2d_bins``.
+    The caller passes the position fixes of the radiating objects (the passive chain's tracks,
+    :class:`RadiatorTracker`) and which of them illuminates.  Every step (``step_blocks`` ECA blocks): each
+    track is fitted by a straight line over the past ``track_smooth_s`` only and extrapolated ahead; the
+    direct path of the illuminator and then of every other radiator is removed from the newest blocks by
+    ECA (each with its own reference beam, formed on a short buffer already cleaned of the previous ones);
+    the frames inside the blocks are mapped in single precision with the illuminator's reference.  AIS is
+    not used.
     """
 
-    def __init__(self, layout: SensorLayout, fs: float, env: ChartEnvironment, bc, source: str,
-                 stc: EchoStreamConfig | None = None, grid: np.ndarray | None = None) -> None:
-        from acoustic_sim.water.bistatic import ReplicaModel, build_grid
+    def __init__(self, layout: SensorLayout, fs: float, env: ChartEnvironment, bc,
+                 stc: EchoStreamConfig | None = None, grid: np.ndarray | None = None, remove_others: bool = True) -> None:
+        from acoustic_sim.water.bistatic import build_grid
 
         if bc.reference != "data" or bc.removal != "eca" or not bc.eca_doppler or bc.method != "coherent":
             raise ValueError("StreamingEcho runs the data reference, ECA with per sample delays and the coherent map")
         if not isinstance(resolve(bc.propagator, bc.c), FreeFieldPropagator):
             raise ValueError("StreamingEcho needs the free field propagator")
-        self.layout, self.fs, self.env, self.bc, self.source = layout, float(fs), env, bc, source
+        self.layout, self.fs, self.env, self.bc = layout, float(fs), env, bc
+        self.source: str | None = None
+        self.remove_others = remove_others
         self.stc = stc or EchoStreamConfig()
         self.dev = get_device(bc.use_cuda)
         xp = self.dev.xp
@@ -399,7 +526,6 @@ class StreamingEcho:
         self.ks = 2.0 * np.pi * self.freqs / bc.c
         self.window = get_window("hann", self.nper)
         self.grid = grid if grid is not None else build_grid(env, bc)
-        self.model = ReplicaModel(layout, bc.c, propagator=bc.propagator, xp=xp)
         gs, ss = xp.asarray(self.grid, dtype=np.float32), xp.asarray(layout.sample_points, dtype=np.float32)
         self.r_samples = xp.maximum(xp.hypot(gs[:, None, 0] - ss[None, :, 0], gs[:, None, 1] - ss[None, :, 1]), 1.0)
         if xp is not np:
@@ -409,7 +535,7 @@ class StreamingEcho:
         self.n_in = 0                                   # samples received
         self.clean: dict[int, np.ndarray] = {}          # ECA block index -> cleaned samples (N, nb)
         self.refd: dict[int, np.ndarray] = {}           # ECA block index -> reference samples (nb,)
-        self.track: dict[int, tuple[float, np.ndarray, bool]] = {}   # frame -> (t, refined xy, present)
+        self.radiators: dict[str, dict] = {}            # radiator -> fixes "t", "xy", their causal smoothing "sm", newest "line"
         self.next_block = 0                             # first ECA block not cleaned
         self.next_frame = 0                             # first frame not mapped
 
@@ -478,17 +604,22 @@ class StreamingEcho:
                 xp.add.at(ov, (g_n[:m], 2 * own[:m] + 1), delta.imag)
             yield out
 
-    def push(self, samples: np.ndarray, reports: AISReports) -> list[FrameResult]:
-        """Append *samples* (N, n); *reports* are the AIS reports received so far (only the source's are used)."""
+    def push(self, samples: np.ndarray, radiators: dict[str, list[tuple[float, np.ndarray]]] | None = None,
+             illuminator: str | None = None) -> list[FrameResult]:
+        """Append *samples* (N, n).  *radiators*: new position fixes ``(t, xy)`` of the radiating objects (the
+        passive chain's tracks, by id); *illuminator*: the id of the one whose echoes are mapped (``None``:
+        keep the previous one)."""
         self.raw = np.concatenate([self.raw, np.asarray(samples, dtype=np.float64)], axis=1)
         self.n_in += samples.shape[1]
-        rep = _reports_until(reports, self.n_in / self.fs)
-        m = rep.vessel == self.source
-        rep = AISReports(rep.vessel[m], rep.t[m], rep.xy[m], rep.sog[m], rep.cog[m])
+        for rid, fixes in (radiators or {}).items():
+            for t, xy in sorted(fixes, key=lambda f: f[0]):
+                self._add_fix(rid, float(t), np.asarray(xy, float))
+        if illuminator is not None:
+            self.source = illuminator
         out = []
         look = int(round(self.stc.lookahead_s * self.fs))
         while (self.next_block + self.stc.step_blocks) * self.nb + look <= self.n_in:
-            out += self._step(rep)
+            out += self._step()
         keep_from = max(0, self.next_block * self.nb - int(round(self.stc.history_s * self.fs)) - self.nper)
         if keep_from > self.raw0:
             self.raw = self.raw[:, keep_from - self.raw0:]
@@ -500,57 +631,59 @@ class StreamingEcho:
     def _raw(self, a: int, z: int) -> np.ndarray:
         return self.raw[:, a - self.raw0:z - self.raw0]
 
-    def _refine(self, rep: AISReports, weights: np.ndarray) -> None:
-        """Refine the ship in every frame whose samples have arrived and that is not refined yet."""
-        from acoustic_sim.water.bistatic import Spectra, ship_positions
-
-        if len(rep) == 0:
-            return
-        k0 = max(self.track) + 1 if self.track else 0
-        k1 = (self.n_in - self.nper) // self.hop
-        ks = [k for k in range(k0, k1 + 1) if k * self.hop >= self.raw0]
-        if not ks:
-            return
-        X = np.stack([self._spectrum(self._raw(k * self.hop, k * self.hop + self.nper), weights) for k in ks], axis=2)
-        sp = Spectra(X, self.freqs, (np.array(ks) * self.hop + self.nper / 2.0) / self.fs, weights, self.fs, self.bc.win_s)
-        self.model.weights = weights
-        ship = ship_positions(sp, rep, self.model, self.bc, vessel=self.source)
-        for j, k in enumerate(ks):
-            self.track[k] = (float(sp.times[j]), ship.refined[j].copy(), bool(ship.present[j]))
-
     def _spectrum(self, seg: np.ndarray, weights: np.ndarray) -> np.ndarray:
         """Band spectrum (N, F) of one frame after common mode removal (as ``bistatic.stft``)."""
         x = remove_common_mode(seg, self.layout, weights)
         return np.fft.rfft(x * self.window, axis=1)[:, self.band] * weights[:, None]
 
-    def _smoothed(self, t: np.ndarray) -> np.ndarray:
-        """Ship position at times *t* from the causal track: at each frame the straight line fitted to the
-        refined positions of the past ``track_smooth_s`` evaluated at that frame, interpolated between
-        frames and extrapolated from the newest line beyond the newest frame."""
-        ks = sorted(k for k, v in self.track.items() if v[2])
-        tt = np.array([self.track[k][0] for k in ks])
-        xy = np.array([self.track[k][1] for k in ks])
-        T = self.bc.track_smooth_s
-        sm = xy.copy()
-        line = (xy[-1], np.zeros(2))
-        for j in range(len(ks)):
-            m = (tt <= tt[j]) & (tt >= tt[j] - T)
-            if m.sum() >= 3:
-                A = np.column_stack([np.ones(m.sum()), tt[m] - tt[j]])
-                coef, *_ = np.linalg.lstsq(A, xy[m], rcond=None)
-                sm[j] = coef[0]
-                if j == len(ks) - 1:
-                    line = (coef[0], coef[1])
+    def _add_fix(self, name: str, t: float, xy: np.ndarray) -> None:
+        """Append a fix and its causal smoothing: the straight line fitted to the fixes of the past
+        ``track_smooth_s`` (refitted without those more than 10 m from the first fit) evaluated at the fix."""
+        r = self.radiators.setdefault(name, {"t": [], "xy": [], "sm": [], "line": None})
+        r["t"].append(t)
+        r["xy"].append(xy)
+        tt, pts = np.array(r["t"]), np.array(r["xy"])
+        m = tt >= t - self.bc.track_smooth_s
+        if m.sum() >= 3:
+            A = np.column_stack([np.ones(m.sum()), tt[m] - t])
+            coef, *_ = np.linalg.lstsq(A, pts[m], rcond=None)
+            ok = np.hypot(*(pts[m] - A @ coef).T) <= 10.0
+            if 3 <= ok.sum() < m.sum():
+                coef, *_ = np.linalg.lstsq(A[ok], pts[m][ok], rcond=None)
+            r["sm"].append(coef[0])
+            r["line"] = (t, coef[0], coef[1])
+        else:
+            r["sm"].append(xy)
+            r["line"] = (t, xy, np.zeros(2))
+
+    def _fixes(self, name: str) -> tuple[np.ndarray, np.ndarray]:
+        r = self.radiators.get(name)
+        if r is None:
+            return np.empty(0), np.empty((0, 2))
+        return np.array(r["t"]), np.array(r["xy"]).reshape(-1, 2)
+
+    def _live(self, name: str | None, t: float) -> bool:
+        """The radiator has at least 3 fixes, the newest within 2 s before *t*."""
+        r = self.radiators.get(name) if name is not None else None
+        return r is not None and len(r["t"]) >= 3 and r["t"][0] <= t <= r["t"][-1] + 2.0
+
+    def _smoothed(self, t: np.ndarray, name: str | None = None) -> np.ndarray:
+        """Position of *name* (default: the source) at times *t*: its smoothed fixes interpolated, and beyond the
+        newest fix the newest line extrapolated."""
+        r = self.radiators[name or self.source]
+        tt, sm = np.array(r["t"]), np.array(r["sm"])
+        t = np.atleast_1d(np.asarray(t, dtype=float))
         out = np.column_stack([np.interp(t, tt, sm[:, 0]), np.interp(t, tt, sm[:, 1])])
-        late = t > tt[-1]
-        out[late] = line[0][None, :] + np.outer(t[late] - tt[-1], line[1])
+        t1, p1, v1 = r["line"]
+        late = t > t1
+        out[late] = p1[None, :] + np.outer(t[late] - t1, v1)
         return out
 
-    def _step(self, rep: AISReports) -> list[FrameResult]:
+    def _step(self) -> list[FrameResult]:
         from acoustic_sim.water.bistatic import eca_remove, make_reference
 
         t0 = time.perf_counter()
-        xp, dev, bc, stc = self.dev.xp, self.dev, self.bc, self.stc
+        bc, stc = self.bc, self.stc
         b0, b1 = self.next_block, self.next_block + stc.step_blocks
         self.next_block = b1
         h_blocks = int(np.ceil(stc.history_s / bc.eca_block_s))
@@ -559,29 +692,41 @@ class StreamingEcho:
         z = min(b1 * self.nb + int(round(stc.lookahead_s * self.fs)), self.n_in)
         buf = self._raw(a, z)
         weights = channel_weights(buf, self.layout, ProcessingConfig(win_s=bc.win_s, hop_s=bc.hop_s))
-        self._refine(rep, weights)
-        if not any(v[2] for v in self.track.values()):
+        t_now = b1 * self.nb / self.fs
+        live = [r for r in self.radiators if self._live(r, t_now)]
+        if self.source is not None:                         # one illuminator: it first, the others only removed
+            live = ([self.source] if self.source in live else []) + [r for r in live if r != self.source] if self.remove_others else \
+                [r for r in live if r == self.source]
+        if not live or (self.source is not None and live[0] != self.source):
             for b in range(b0, b1):
                 self.clean[b] = self._raw(b * self.nb, (b + 1) * self.nb)
-                self.refd[b] = np.zeros(self.nb)
-            return self._frames(t0, weights, rep_live=False)
+                self.refd[b] = {}
+            return self._frames(t0, weights)
         t_s = (a + np.arange(z - a)) / self.fs
-        ship_t = self._smoothed(t_s)
         nblk = int(np.ceil((z - a) / self.nb))
-        ship_b = ship_t[np.minimum(np.arange(nblk) * self.nb + self.nb // 2, z - a - 1)]
-        x = buf                                            # as run_bistatic: reference and ECA on the traces,
-        chans = np.flatnonzero(weights > 0)                # the common mode removed in the STFT
-        waveform = make_reference(x, self.layout, self.fs, ship_b, bc.eca_block_s, bc, chans, ship_t=ship_t)
+        mid = np.minimum(np.arange(nblk) * self.nb + self.nb // 2, z - a - 1)
         rel = set(range(b0 - a // self.nb, b1 - a // self.nb))
-        cleaned = eca_remove([x], waveform, self.layout, self.fs, ship_b, [], bc.eca_block_s, bc, ship_t=ship_t, blocks=rel)[0]
+        chans = np.flatnonzero(weights > 0)
+        # The direct path of every live radiator, one after the other (strongest track first): each reference is
+        # the beam on the traces already cleaned of the previous ones, and each is kept to map that radiator's
+        # echoes.
+        x = buf                                            # as run_bistatic: reference and ECA on the traces,
+        refs = {}                                          # the common mode removed in the STFT
+        for name in live:
+            ship_t = self._smoothed(t_s, name)
+            ship_b = ship_t[mid]
+            refs[name] = make_reference(x, self.layout, self.fs, ship_b, bc.eca_block_s, bc, chans, ship_t=ship_t)
+            x = eca_remove([x], refs[name], self.layout, self.fs, ship_b, [], bc.eca_block_s, bc, ship_t=ship_t, blocks=rel)[0]
         for b in range(b0, b1):
             lo = b * self.nb - a
-            self.clean[b] = cleaned[:, lo:lo + self.nb]
-            self.refd[b] = waveform[lo:lo + self.nb]
-        return self._frames(t0, weights, rep_live=True)
+            self.clean[b] = x[:, lo:lo + self.nb]
+            self.refd[b] = {name: r[lo:lo + self.nb] for name, r in refs.items()}
+        return self._frames(t0, weights)
 
-    def _frames(self, t0: float, weights: np.ndarray, rep_live: bool) -> list[FrameResult]:
-        """Map every frame whose samples are all cleaned."""
+    def _frames(self, t0: float, weights: np.ndarray) -> list[FrameResult]:
+        """Map every frame whose samples are all cleaned: the coherent ``"snr"`` map of every illuminator whose
+        reference covers the frame (each in units of the noise power), summed, with the cells near every
+        radiator excluded."""
         xp, dev, bc, stc = self.dev.xp, self.dev, self.bc, self.stc
         done = self.next_block * self.nb
         k1 = (done - self.nper) // self.hop
@@ -594,47 +739,58 @@ class StreamingEcho:
         if not ks:
             return []
         times = (np.array(ks) * self.hop + self.nper / 2.0) / self.fs
-        present = np.array([k in self.track and self.track[k][2] for k in ks]) & rep_live
-        ship = np.array([self.track[k][1] if k in self.track else [np.nan, np.nan] for k in ks])
+        blocks = [list(range((k * self.hop) // self.nb, (k * self.hop + self.nper - 1) // self.nb + 1)) for k in ks]
+        illum = [[n for n in self.refd[bl[0]] if all(n in self.refd[b] for b in bl)] for bl in blocks]
+        if self.source is not None:
+            illum = [[n for n in il if n == self.source] for il in illum]
+        names = sorted({n for il in illum for n in il})
+        pos = {n: self._smoothed(times, n) for n in names}
         B = np.zeros((len(self.grid), len(ks)))
-        live = np.flatnonzero(present)
-        if len(live):
+        live = [j for j in range(len(ks)) if illum[j]]
+        if live:
             X = np.empty((self.layout.n_receivers, len(self.band), len(live)), dtype=np.complex64)
-            R = np.empty((len(self.band), len(live)), dtype=np.complex64)
-            for j, i in enumerate(live):
-                s0 = ks[i] * self.hop
-                seg = np.concatenate([self.clean[b] for b in range(s0 // self.nb, (s0 + self.nper - 1) // self.nb + 1)], axis=1)
-                ref = np.concatenate([self.refd[b] for b in range(s0 // self.nb, (s0 + self.nper - 1) // self.nb + 1)])
-                o = s0 - (s0 // self.nb) * self.nb
-                X[:, :, j] = self._spectrum(seg[:, o:o + self.nper], weights)
-                R[:, j] = np.fft.rfft(ref[o:o + self.nper] * self.window)[self.band]
-            Xd, Rd = xp.asarray(X), xp.asarray(R)
+            R = {n: np.zeros((len(self.band), len(live)), dtype=np.complex64) for n in names}
+            for q, j in enumerate(live):
+                bl = blocks[j]
+                o = ks[j] * self.hop - bl[0] * self.nb
+                seg = np.concatenate([self.clean[b] for b in bl], axis=1)
+                X[:, :, q] = self._spectrum(seg[:, o:o + self.nper], weights)
+                for n in illum[j]:
+                    ref = np.concatenate([self.refd[b][n] for b in bl])
+                    R[n][:, q] = np.fft.rfft(ref[o:o + self.nper] * self.window)[self.band]
+            Xd = xp.asarray(X)
+            nI, nK = len(names), len(live)
+            Rd = xp.asarray(np.stack([R[n] for n in names], axis=1))                     # (F, I, K)
             wd = xp.asarray(weights, dtype=np.float32)
-            sp_ = xp.asarray(ship[live], dtype=np.float32)
             gs = xp.asarray(self.grid, dtype=np.float32)
+            sp_ = xp.asarray(np.concatenate([pos[n][live] for n in names]), dtype=np.float32)      # (I K, 2)
             r_path = xp.maximum(xp.hypot(gs[:, None, 0] - sp_[None, :, 0], gs[:, None, 1] - sp_[None, :, 1]), 1.0)
+            gen_p = green2d_bins(r_path, self.ks, xp)                                  # every illuminator at once
             gen_a = self._channel_greens(wd)
-            gen_p = green2d_bins(r_path, self.ks, xp)
-            Z = xp.zeros((len(self.grid), len(live)), dtype=np.complex64)
-            W = xp.zeros((len(self.grid), len(live)), dtype=np.float32)
+            Z = xp.zeros((len(self.grid), nI, nK), dtype=np.complex64)
+            W = xp.zeros((len(self.grid), nI, nK), dtype=np.float32)
             for i in range(len(self.ks)):
                 A = next(gen_a)
-                path = next(gen_p)
-                norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=1), 1e-30)
-                Y = A.conj() @ Xd[:, i, :]
-                r_i = Rd[i][None, :]
-                Z += Y * xp.conj(path) * xp.conj(r_i) / norm[:, None]
-                W += (xp.abs(path) ** 2 * xp.abs(r_i) ** 2 / norm[:, None]).astype(np.float32)
-            Bl = xp.abs(Z) ** 2 / xp.maximum(W, 1e-30)
+                norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=1), 1e-30)[:, None, None]
+                Y = (A.conj() @ Xd[:, i, :])[:, None, :] / norm                         # shared by every illuminator
+                path = next(gen_p).reshape(len(self.grid), nI, nK)
+                r_i = Rd[i][None, :, :]
+                Z += Y * xp.conj(path) * xp.conj(r_i)
+                W += (xp.abs(path) ** 2 * xp.abs(r_i) ** 2 / norm).astype(np.float32)
+            maps = xp.abs(Z) ** 2 / xp.maximum(W, 1e-30)                                 # (G, I, K), zero where an illuminator has no reference
+            Bl = maps.sum(axis=1) if stc.combine == "sum" else maps.max(axis=1)
             B[:, live] = dev.asnumpy(Bl).astype(np.float64)
-            for j, i in enumerate(live):
-                B[np.hypot(*(self.grid - ship[i]).T) < bc.exclusion_radius, i] = 0.0
+            for q, j in enumerate(live):
+                for n in self.radiators:
+                    if self._live(n, times[j]):
+                        p = self._smoothed(times[j:j + 1], n)[0]
+                        B[np.hypot(*(self.grid - p).T) < bc.exclusion_radius, j] = 0.0
         compute = time.perf_counter() - t0
         out = []
         for j, k in enumerate(ks):
-            g = _nms(B[:, j], self.grid, stc.min_separation, stc.max_peaks, 0.0) if present[j] else []
+            g = _nms(B[:, j], self.grid, stc.min_separation, stc.max_peaks, 0.0) if illum[j] else []
             frame_end = (k * self.hop + self.nper) / self.fs
-            out.append(FrameResult(float(times[j]), self.grid[g], B[g, j], {self.source: ship[j]} if present[j] else {},
+            out.append(FrameResult(float(times[j]), self.grid[g], B[g, j], {n: pos[n][j] for n in illum[j]},
                                    compute, float(self.n_in / self.fs - frame_end + compute)))
         return out
 

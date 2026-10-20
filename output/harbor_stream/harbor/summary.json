@@ -1,78 +1,91 @@
 {
   "dataset": "harbor",
   "record_s": 120.0,
-  "frames": 56,
-  "first_frame_t": 8.0,
-  "compute_s": 50.622127604001435,
-  "compute_per_second_of_data": 0.4218510633666786,
-  "latency_s": {
-    "median": 0.8849592930000654,
-    "max": 1.7998088849999476
+  "ais_used_in_processing": false,
+  "compute_per_second_of_data": {
+    "passive": 0.4998173657912351,
+    "echo": 0.0,
+    "total": 0.4998173657912351
   },
-  "false_detections_per_frame": 2.9107142857142856,
-  "objects": {
-    "ferry": {
-      "kind": "ship",
-      "radiates": true,
-      "ais": true,
-      "frames": 56,
-      "top_peak_hit": 0.0,
-      "any_peak_hit": 0.0,
-      "median_error_m": null
-    },
-    "tug": {
-      "kind": "ship",
-      "radiates": true,
-      "ais": true,
-      "frames": 56,
-      "top_peak_hit": 0.0,
-      "any_peak_hit": 0.0,
-      "median_error_m": null
-    },
-    "moored": {
-      "kind": "ship",
-      "radiates": true,
-      "ais": true,
-      "frames": 56,
-      "top_peak_hit": 0.0,
-      "any_peak_hit": 0.0,
-      "median_error_m": null
-    },
-    "uuv1": {
-      "kind": "uuv",
-      "radiates": true,
-      "ais": false,
-      "frames": 56,
-      "top_peak_hit": 0.0,
-      "any_peak_hit": 0.0,
-      "median_error_m": null
-    },
-    "uuv2": {
-      "kind": "uuv",
-      "radiates": true,
-      "ais": false,
-      "frames": 56,
-      "top_peak_hit": 0.0,
-      "any_peak_hit": 0.0,
-      "median_error_m": null
-    },
-    "diver": {
-      "kind": "diver",
-      "radiates": true,
-      "ais": false,
-      "frames": 56,
-      "top_peak_hit": 0.0,
-      "any_peak_hit": 0.0,
-      "median_error_m": null
-    },
-    "static_scatter": {
-      "kind": "uuv",
-      "radiates": false,
-      "ais": false,
-      "frames": 56,
-      "top_peak_hit": 0.0,
-      "any_peak_hit": 0.0,
-      "median_error_m": null
+  "passive_latency_s": {
+    "median": 1.0168716864991438,
+    "max": 2.210376159000589
+  },
+  "passive": {
+    "frames": 56,
+    "objects": {
+      "ferry": {
+        "kind": "ship",
+        "radiates": true,
+        "frames": 56,
+        "hit": 0.5,
+        "median_error_m": 2.0512483795331047
+      },
+      "tug": {
+        "kind": "ship",
+        "radiates": true,
+        "frames": 56,
+        "hit": 0.017857142857142856,
+        "median_error_m": 4.823836612368713
+      },
+      "moored": {
+        "kind": "ship",
+        "radiates": true,
+        "frames": 56,
+        "hit": 0.0,
+        "median_error_m": null
+      },
+      "uuv1": {
+        "kind": "uuv",
+        "radiates": true,
+        "frames": 56,
+        "hit": 0.0,
+        "median_error_m": null
+      },
+      "uuv2": {
+        "kind": "uuv",
+        "radiates": true,
+        "frames": 56,
+        "hit": 0.0,
+        "median_error_m": null
+      },
+      "diver": {
+        "kind": "diver",
+        "radiates": true,
+        "frames": 56,
+        "hit": 0.0,
+        "median_error_m": null
+      },
+      "static_scatter": {
+        "kind": "uuv",
+        "radiates": false,
+        "frames": 56,
+        "hit": 0.0,
+        "median_error_m": null
+      }
     }
-  }
+  },
+  "tracks": [
+    {
+      "track": "r22",
+      "fixes": 15,
+      "first_t": 90.0,
+      "last_t": 118.0,
+      "score": 7912.757080078125,
+      "ais_label": "ferry",
+      "true_object": null,
+      "median_error_m": 13.24532825604753
+    },
+    {
+      "track": "r26",
+      "fixes": 3,
+      "first_t": 110.0,
+      "last_t": 116.0,
+      "score": 2939.083251953125,
+      "ais_label": "tug",
+      "true_object": "tug",
+      "median_error_m": 8.378755170948104
+    }
+  ],
+  "echo": null
 }
