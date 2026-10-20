@@ -16,6 +16,14 @@ from matplotlib.patches import Circle
 matplotlib.use("Agg")
 
 
+def _annotate(provenance) -> None:
+    """Print the provenance flags (oracle inputs, simulator knowledge) on the current figure."""
+    if provenance is not None:
+        from acoustic_sim.contract import annotate_figure
+
+        annotate_figure(plt.gcf(), provenance, y=-0.01, fontsize=10)
+
+
 def plot_radial_engagement(
     fire_decisions: list[dict],
     ground_truth_fn,
@@ -24,6 +32,7 @@ def plot_radial_engagement(
     is_3d: bool,
     cfg_fc: dict,
     output_path: Path | str | None = None,
+    provenance=None,
 ) -> plt.Figure:
     """Radial engagement plot (plan-view + elevation for 3-D).
 
@@ -170,6 +179,7 @@ def plot_radial_engagement(
         fontsize=13, fontweight="bold",
     )
     plt.tight_layout()
+    _annotate(provenance)
     if output_path:
         plt.savefig(str(output_path), dpi=150, bbox_inches="tight")
         plt.close()
@@ -191,6 +201,7 @@ def plot_pipeline_summary(
     hit_threshold: float,
     metrics: dict,
     output_path: Path | str,
+    provenance=None,
 ) -> None:
     """6-panel real-time pipeline summary figure."""
     cx, cy = float(array_center[0]), float(array_center[1])
@@ -344,6 +355,7 @@ def plot_pipeline_summary(
         fontsize=13, fontweight="bold",
     )
     plt.tight_layout()
+    _annotate(provenance)
     plt.savefig(str(output_path), dpi=150, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
@@ -359,6 +371,7 @@ def plot_beamformer_diagnostic(
     beamformer,
     cfg_det: dict,
     output_path: Path | str | None = None,
+    provenance=None,
 ) -> None:
     """4-panel diagnostic comparing RMS-weighted vs SRP-PHAT bearing."""
     n_mics, n_samples = traces.shape
@@ -497,6 +510,7 @@ def plot_beamformer_diagnostic(
         fontsize=14, fontweight="bold",
     )
     plt.tight_layout()
+    _annotate(provenance)
     if output_path:
         plt.savefig(str(output_path), dpi=150, bbox_inches="tight")
         plt.close()

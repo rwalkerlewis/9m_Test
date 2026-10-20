@@ -31,6 +31,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from acoustic_sim.contract import Provenance
 from acoustic_sim.air.detection.bearing import (
     BearingDetection,
     BearingEstimator,
@@ -80,6 +81,9 @@ class WindowDetection:
     # Algorithm that produced the bearing.
     bearing_method: str = ""
 
+    # What the engine knew beyond the observation (shared with the engine; see DetectionEngine.provenance).
+    provenance: Provenance | None = None
+
 
 class DetectionEngine:
     """Streaming detection processor with pluggable algorithms.
@@ -113,6 +117,10 @@ class DetectionEngine:
         Extra keyword arguments forwarded to the range estimator.
     tracker_min_detections : int
         Minimum detections before the WLS tracker produces a fit.
+    provenance : Provenance
+        What the caller knows about the data (synthetic or recorded).  :meth:`calibrate_range` with
+        ``oracle=True`` adds ``"range_calibration"``; a caller that chose the range method or the
+        source altitude from truth adds those flags.  Every :class:`WindowDetection` carries it.
     """
 
     def __init__(
@@ -131,7 +139,9 @@ class DetectionEngine:
         range_kwargs: dict | None = None,
         tracker_min_detections: int = 5,
         tracker_max_history: int = 20,
+        provenance: Provenance | None = None,
     ) -> None:
+        self.provenance = provenance if provenance is not None else Provenance()
         self.mic_positions = np.asarray(mic_positions)
         self.array_center = self.mic_positions.mean(axis=0)
         self.fs = fs
@@ -178,10 +188,15 @@ class DetectionEngine:
         self.tracker = CausalWLSTracker(min_detections=tracker_min_detections,
                                         max_history=tracker_max_history)
 
-    def calibrate_range(self, peak_rms: float, cpa_distance: float) -> None:
-        """Calibrate the range estimator from CPA observation."""
+    def calibrate_range(self, peak_rms: float, cpa_distance: float, oracle: bool = False) -> None:
+        """Calibrate the range estimator from CPA observation.
+
+        *oracle*: *cpa_distance* came from the truth trajectory (flagged in :attr:`provenance`).
+        """
         if isinstance(self.range_estimator, RMSRangeEstimator):
             self.range_estimator.calibrate(peak_rms, cpa_distance)
+            if oracle:
+                self.provenance.oracle_inputs = list(self.provenance.with_flags(["range_calibration"]).oracle_inputs)
 
     def reset(self) -> None:
         """Clear all internal state for a new scenario."""
@@ -212,6 +227,7 @@ class DetectionEngine:
             time=t_center,
             detected=detected,
             window_rms=window_rms,
+            provenance=self.provenance,
         )
 
         if not detected:
