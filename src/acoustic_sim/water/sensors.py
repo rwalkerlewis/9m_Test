@@ -5,9 +5,12 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from acoustic_sim.water.environment import HarborEnvironment
+if TYPE_CHECKING:
+    from acoustic_sim.contract import ChartEnvironment
 
 
 DAS_MODES = ("pressure", "strain")
@@ -191,7 +194,7 @@ class SensorLayout:
             raise ValueError(f"expected {self.n_receivers} rows, got {traces.shape[0]}")
         return {name: traces[sl] for name, sl in self.slices.items()}
 
-    def validate(self, env: HarborEnvironment, margin: float = 10.0) -> None:
+    def validate(self, env: "ChartEnvironment", margin: float = 10.0) -> None:
         """Raise if any sampling point is on land or closer than *margin* m to it."""
         pts = self.sample_points
         ok = env.is_water(pts, margin=margin)
@@ -201,6 +204,23 @@ class SensorLayout:
                 f"{bad.size} receiver sample point(s) on land or within {margin} m of shore, "
                 f"first at index {bad[0]} {pts[bad[0]]}"
             )
+
+    def positions(self) -> np.ndarray:
+        """Channel positions in recording order (the :class:`acoustic_sim.contract.Geometry` protocol)."""
+        return self.receivers
+
+    def to_header(self) -> dict:
+        """JSON description, with the DAS mode and gauge length (public instrument parameters)."""
+        return {"kind": "sensor_layout",
+                "cables": [{"name": c.name, "waypoints": c.waypoints.tolist(), "channel_spacing": c.channel_spacing,
+                            "das_mode": c.das_mode, "gauge_length": c.gauge_length} for c in self.cables],
+                "hydrophones": self.hydrophones.tolist()}
+
+    @classmethod
+    def from_header(cls, h: dict, arrays: dict | None = None) -> "SensorLayout":
+        return cls(cables=[Cable(c["name"], np.asarray(c["waypoints"], float), c["channel_spacing"],
+                                 c.get("das_mode", "pressure"), c.get("gauge_length", 10.0)) for c in h["cables"]],
+                   hydrophones=np.asarray(h["hydrophones"], float))
 
     def fingerprint(self) -> str:
         """Hash of everything that affects the sampled traces (unchanged for pressure layouts)."""
