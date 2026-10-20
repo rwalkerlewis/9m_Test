@@ -584,7 +584,9 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
   cable channels along a polyline. Pressure mode samples one point per channel; strain mode
   samples three points and collapses them with an unnormalised second difference.
 * `SensorLayout(cables=[], hydrophones=...)` — combined channel ordering, sample points,
-  `.validate(env, margin=...)`, `.split(traces)`, and `.collapse(sampled)`.
+  `.split(traces)`, and `.collapse(sampled)`; `validate_layout(layout, env, margin=...)` and
+  `layout_fingerprint(layout)` (the FDTD cache key) are in `acoustic_sim.water.sensor_sampling`
+  (forward side).
 * `HarborFDTDConfig` — sample rate, duration, FD stencil, outer sponge, background and shoreline
   damping, and CUDA selection.
 * `HarborFDTDSolver(env, hcfg, source, receivers, scatterers=())` — harbor FDTD solver with
@@ -622,9 +624,10 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
   provenance=None)` from
   `acoustic_sim.water.suppression` — refine reported ship positions, project ship energy out of
   the data, re-whiten, and rerun the passive scan.
-* `BistaticConfig` — bistatic STFT, reference, direct-path removal, processor, grid, peak and
-  replica model (`propagator`) settings.
-* `build_grid(env, bc)` / `run_bistatic(traces, layout, fs, env, ais, bc, f_max, grid=None,
+* `BistaticConfig` — bistatic STFT and band (`f_lo`, `f_hi`: a processing choice, default 100 to
+  760 Hz), reference, direct-path removal, processor, map scale (`map_scale="none"` returns the map
+  before the division by its maximum), grid, peak and replica model (`propagator`) settings.
+* `build_grid(env, bc)` / `run_bistatic(traces, layout, fs, env, ais, bc, grid=None,
   true_waveform=None, diagnostics=None, floor=0.0, provenance=None)` from
   `acoustic_sim.water.bistatic` — form bistatic scan maps and extracted peaks; `Diagnostics(exact_track,
   components)` holds the truth inputs, and `run.provenance` lists every one used.  Its stages are public too: `stft`, `ship_positions`,
@@ -645,6 +648,9 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
   associate detections to the tracks of the `Truth` and report probability of detection,
   localization error, false alarms, and other-vessel detections; the labels a classifier is scored
   against.
+* `ChainMaps`, `set_threshold(free_runs, truth, pfa=0.05)`, `score(maps, truth, threshold, primary=None,
+  pilings=None)` and `plot_map` from `acoustic_sim.water.scoreboard` — the scoreboard every stage of the
+  harbor picture is measured on (definitions: [Architecture, Scoreboard](architecture.md#scoreboard)).
 
 ### Other water modules
 
@@ -652,7 +658,7 @@ functions below (`build_*`, `simulate_*`, `render_vessel_gathers`, `assemble_dat
 |--------|--------------|
 | `water/signatures.py` | `make_reference_signal(kind, speed, active, fs, seed, f_max=...)`, `ship_reference`, `uuv_reference`, `diver_reference` — unit-level source signatures and level calibration |
 | `water/vessels.py` | `VesselConfig`, `build_track(vcfg, total_time, env=None, ...)` — vessel settings and ground-truth tracks (`Track` lives in `acoustic_sim.contract`) |
-| `water/ais.py` | `AISConfig`, `AISReports`, `AISTrack`, `generate_ais(tracks, cfg, rng)` — noisy AIS reports and prediction |
+| `water/ais.py`, `water/ais_sim.py` | `AISReports`, `AISTrack` — AIS reports and prediction (processing side); `AISConfig`, `generate_ais(tracks, cfg, rng)` — noisy synthetic reports (forward side) |
 | `water/noise.py` | `NoiseConfig`, `NoiseRealisation`, `generate_noise(layout, fs, n_steps, cfg, rng)` — ambient, shipping and instrument noise, channel gains and faults |
 | `water/scatterer.py`, `water/fdtd_cuda_bodies.py` | `Scatterer`, `make_scatterer(vcfg, track)`; `DeviceBodyMasks` — moving bodies in the harbor FDTD (host or on-device masks) |
 | `water/cylinder.py` | `line_source_scattered`, `partial_wave_coefficients` — analytic cylinder scattering used for validation |

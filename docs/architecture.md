@@ -64,13 +64,17 @@ re-exported from a package `__init__`, and fails with the file and line of every
 
 | Side | Modules |
 |------|---------|
-| Processing | `water/detection.py`, `water/suppression.py`, `water/occupancy.py`, `water/bistatic.py`, `water/motion.py`, `water/localiser.py`, `water/classifier.py`, `water/evaluate.py`, `water/propagation.py`; `air/detection/*`, `air/processor.py`, `air/tracker.py`, `air/fire_control.py`; the `ml/` inference paths (`features.py`, `acoustic_classifier.py`, `fusion_classifier.py`, `maneuver_classifier.py`, `anomaly_detector.py`, `anomaly_integration.py`) |
-| Forward | `solver/*`, `model.py`, `sources.py`; `water/fdtd_runner.py`, `water/fdtd_cuda_bodies.py`, `water/scatterer.py`, `water/dispersion.py`, `water/signatures.py`, `water/vessels.py`, `water/noise.py`, `water/dataset.py`, `water/scenario.py`, `water/environment.py`; `air/forward.py`, `air/domains.py`, `air/noise.py`, `air/setup.py`; `ml/data_generation.py`, `ml/fno*` |
+| Processing | `water/detection.py`, `water/suppression.py`, `water/occupancy.py`, `water/bistatic.py`, `water/motion.py`, `water/localiser.py`, `water/classifier.py`, `water/propagation.py`, `water/sensors.py`, `water/ais.py`; the scoring modules `water/evaluate.py` and `water/scoreboard.py` (they read the `Truth`; no other processing module imports them); `air/detection/*`, `air/processor.py`, `air/tracker.py`, `air/fire_control.py`; the `ml/` inference paths (`features.py`, `acoustic_classifier.py`, `fusion_classifier.py`, `maneuver_classifier.py`, `anomaly_detector.py`, `anomaly_integration.py`) |
+| Forward | `solver/*`, `model.py`, `sources.py`; `water/fdtd_runner.py`, `water/fdtd_cuda_bodies.py`, `water/scatterer.py`, `water/dispersion.py`, `water/signatures.py`, `water/vessels.py`, `water/noise.py`, `water/dataset.py`, `water/scenario.py`, `water/environment.py`, `water/ais_sim.py`, `water/sensor_sampling.py`; `air/forward.py`, `air/domains.py`, `air/noise.py`, `air/setup.py`; `ml/data_generation.py`, `ml/fno*` |
 | Either | `water/diagnostics.py`, `air/diagnostics.py` (diagnostics may import both sides; library code on the processing side never imports them) |
 
-Shared modules on neither list (`contract.py`, `water/sensors.py`, `water/ais.py`,
-`water/device.py`, `water/plotting.py`, `backend.py`) import no forward module either, except
-that `ais.py` keeps the forward side's AIS generator next to the reports class.
+Shared modules on neither list (`contract.py`, `water/device.py`, `water/plotting.py`, `backend.py`)
+import no forward module either.  The AIS reports and their predictor (`water/ais.py`) are processing
+side and the synthetic report generator is forward side (`water/ais_sim.py`); the sensor layout, the
+strain gauge sample points of the instrument model and `collapse` are processing side
+(`water/sensors.py`: the replicas need them) and the solver side check of the sample points and the
+FDTD cache key are forward side (`water/sensor_sampling.py`).  Every module `contract._KINDS` names
+(the classes an observation file is read into) is processing side; the test checks it.
 The rule is static: the package `__init__` files still import the forward modules eagerly (the
 root facade re-exports both sides), so loading the processing side at run time loads the forward
 code too; it is never called.
@@ -125,13 +129,50 @@ truth). `contract.annotate_figure` prints the flags on a figure (red when not ev
 pipeline plots and the bistatic, M3 and M4 figures use it.
 
 Scoring takes the `Truth` as an explicit argument: `water/evaluate.py` (`score_detections`,
-`truth_labels` for classifier labels), and `evaluate_results` in the air pipeline. That is the one
+`truth_labels` for classifier labels), `water/scoreboard.py` (the [scoreboard](#scoreboard)), and
+`evaluate_results` in the air pipeline. That is the one
 sanctioned place truth enters after inference. The classifiers (`HarborClassifier`, the air
 classifiers) infer from the observation; labels come from the truth only inside the scoring call.
 
 **Documentation rule.** A table in `docs/` that contains a row given truth inputs or simulator
 knowledge must contain the row with everything estimated from the traces for the same case beside
 it, and the rows say which is which.
+
+### Scoreboard
+
+Every stage of the harbor picture (detect and locate every object in the harbor, radiating or only
+reflecting, as a map over time) is scored by `water/scoreboard.py` with these definitions, fixed in
+stage 1.  A chain produces maps `B` `(n_cells, n_frames)` on scan cells at frame times; the
+scoreboard reads them with the `Truth` (`ChainMaps`, `set_threshold`, `score`).
+
+* **Threshold `T`.** For each chain configuration, the identical chain runs on traces from which
+  one object's contribution has been removed (its direct and scattered truth components subtracted,
+  noise and everything else kept: an *object free run*).  The statistic of a frame is its largest
+  local maximum outside the exclusion zones around the reporting ships and more than 10 m from
+  every object still in the scene; `T` is the smallest value that at most 5 % of the frames of all
+  object free runs exceed.  `T` is set on the tuning set only and then frozen.
+* **Detection** of object *i* in frame *k*: a local maximum (no larger cell in its 3 x 3
+  neighbourhood) above `T` within 5 m of the object's true position in that frame (static objects:
+  their position).  Each peak is assigned to its nearest true object, so one peak detects at most
+  one object (pilings 5 m apart).
+* **Pd** per object: the fraction of the frames in which the object is active that detect it,
+  pooled over the runs of a data split.
+* **False alarms**: local maxima above `T` more than 10 m from every true object and outside the
+  ship exclusion zones, as a rate per frame.
+* **Localisation error**: median and 90th percentile distance from the detecting peak to the true
+  position, over detected frames only.
+* **Full record map**: the sum of a run's frame maps.  Its threshold is the largest local maximum of
+  the object free runs' full record maps away from the objects still in the scene (no false peak on
+  the tuning set).  Static objects are also scored on it (the fraction of runs that detect them).
+* **Separation**: for the row of pilings, the number of pilings detected as distinct peaks on the
+  full record map (nearest object assignment, 5 m).
+
+**Data split.** The noise seed 0 mix of a dataset is the tuning set; seeds 1 to 5, mixed from the
+cached FDTD gathers with `assemble_dataset(seed=...)`, are the test set.  Every parameter (threshold,
+window length, grid spacing, exclusion radius, track smoothing) is chosen on the tuning set and the
+test set is run once with those values; `Provenance.held_out` says which (every figure prints
+"tuning set" or "test set").  A combined body gather (`render_vessel_gathers(combined_bodies=True)`)
+cannot remove one body: the object free run of the echo chain then removes every body at once.
 
 ### Real data entry point
 
@@ -148,7 +189,7 @@ recording is converted into:
 | `geometry` | `water.sensors.SensorLayout`: per cable the waypoints `(x, y)` [m] in the chart's local east / north frame, `channel_spacing` [m], `das_mode` (`"strain"` or `"pressure"`) and `gauge_length` [m]; hydrophone positions `(x, y)` [m]. In air, `contract.MicArray` positions `(n, 2 or 3)` [m]. |
 | `environment` | `contract.ChartEnvironment`: `water` boolean `(ny, nx)` on the regular coordinates `x` `(nx,)`, `y` `(ny,)` [m], `depth` [m], `c_nominal` [m/s]; in air `contract.AirEnvironment` (`c_nominal`, `wind` `(vx, vy, vz)` [m/s], `terrain`, `extent`) |
 | `reports` | `water.ais.AISReports`: `vessel` (id per report, e.g. the MMSI as a string), `t` [s] in the time base of `t0`, `xy` [m] in the chart frame, `sog` [m/s] (knots × 0.5144), `cog` [rad] in the maths convention `atan2(vy, vx)` (from a nautical course in degrees: `radians(90 - cog)`) |
-| `meta` | `"instrument"`, `"units"`, `"band_hz"` `[f_lo, f_hi]` of the usable band |
+| `meta` | free text: `"instrument"`, `"units"` (the processing band is a choice of the processing, `BistaticConfig` / `ProcessingConfig` `f_lo`, `f_hi`, not part of the recording) |
 
 No format specific reader (HDF5, SEG-Y, NMEA) exists yet.
 
@@ -198,6 +239,7 @@ ocean water column.
 | `water/fdtd_runner.py`, `water/fdtd_cuda_bodies.py`, `water/scatterer.py` | Harbor-specific FDTD behavior over the shared solver, moving body masks |
 | `water/dispersion.py` | `DispersionModel`: the FDTD scheme's numerical wavenumber (used by `SimulatorAwarePropagator`) |
 | `water/noise.py`, `water/dataset.py` | Ambient/shipping/instrument noise, channel gains/faults, source mixture; `HarborDataset` and its observation and truth files |
+| `water/ais_sim.py`, `water/sensor_sampling.py` | Synthetic AIS reports from the tracks (`AISConfig`, `generate_ais`); the check that every FDTD sample point is in water and the layout's FDTD cache key |
 
 #### ML data generation and the FNO surrogate (`ml/`)
 
@@ -215,12 +257,12 @@ ocean water column.
 
 | Module | Responsibility |
 |--------|----------------|
-| `water/sensors.py`, `water/ais.py` | Shared: polyline cable geometry, pressure or gauge-length strain DAS, hydrophones, layout validation and channel splitting (`SensorLayout` is the water `Geometry`); AIS reports and the predictor (`generate_ais` is the forward side's generator) |
+| `water/sensors.py`, `water/ais.py` | Polyline cable geometry, pressure or gauge-length strain DAS (the sample points and `collapse`), hydrophones and channel splitting (`SensorLayout` is the water `Geometry`); AIS reports and the predictor |
 | `water/propagation.py` | `green2d` and `FreeFieldPropagator`, the default replica model (nothing beyond the chart) |
 | `water/detection.py`, `water/suppression.py`, `water/occupancy.py` | Passive matched-field detection, CFAR, AIS-guided position refinement and ship suppression, and track-before-detect |
 | `water/bistatic.py`, `water/motion.py` | AIS-ship-illuminated echo processing, direct-path removal, and Bartlett/coherent/MVDR/MUSIC localization maps; motion-compensated integration (`motion_integrate`, re-exported by `bistatic.py`) |
 | `water/localiser.py` | Optional empirical replica refinement from a survey of measured (or, flagged, simulated) transfer functions |
-| `water/evaluate.py`, `water/classifier.py` | Scoring against the `Truth` (`score_detections`, `truth_labels`); optional harbor CNN/CVAE classifier |
+| `water/evaluate.py`, `water/scoreboard.py`, `water/classifier.py` | Scoring against the `Truth` (`score_detections`, `truth_labels`; the [scoreboard](#scoreboard)); optional harbor CNN/CVAE classifier |
 | `water/diagnostics.py` | Either side: `SimulatorAwarePropagator`, `VesselPathLocaliser` (replicas from the dataset's own FDTD gathers), `true_illuminator_waveform` |
 | `water/plotting.py`, `water/device.py` | Visualizations; CPU/CuPy dispatch |
 

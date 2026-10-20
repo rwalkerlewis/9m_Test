@@ -1,0 +1,254 @@
+{
+  "dataset": "bistatic",
+  "chain": "echo",
+  "config": "ferry/all_estimated",
+  "map": "coherent",
+  "propagator": "free_field",
+  "threshold": {
+    "T": 3585.128173828125,
+    "T_full_record": 30084.19921875,
+    "pfa": 0.05,
+    "n_frames": 79,
+    "frames_above_T": 3,
+    "object_free_runs": [
+      "bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1"
+    ]
+  },
+  "tuning": {
+    "label": "bistatic / echo / ferry/all_estimated / tuning set",
+    "threshold": {
+      "T": 3585.128173828125,
+      "T_full_record": 30084.19921875,
+      "pfa": 0.05,
+      "n_frames": 79,
+      "frames_above_T": 3,
+      "object_free_runs": [
+        "bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1"
+      ]
+    },
+    "false_alarm_rate": 0.5316455696202531,
+    "false_alarms": 42,
+    "n_frames": 79,
+    "separation": null,
+    "per_object": [
+      {
+        "id": "uuv1",
+        "kind": "uuv",
+        "radiates": false,
+        "ais": false,
+        "moving": true,
+        "frames": 79,
+        "detected": 21,
+        "pd": 0.26582278481012656,
+        "median_error_m": 2.262550114054546,
+        "p90_error_m": 3.865113504459191,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "bistatic:echo:ferry/all_estimated:seed0"
+        ]
+      }
+    ],
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "split": "tuning",
+    "seeds": [
+      0
+    ]
+  },
+  "test": {
+    "label": "bistatic / echo / ferry/all_estimated / test set",
+    "threshold": {
+      "T": 3585.128173828125,
+      "T_full_record": 30084.19921875,
+      "pfa": 0.05,
+      "n_frames": 79,
+      "frames_above_T": 3,
+      "object_free_runs": [
+        "bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1"
+      ]
+    },
+    "false_alarm_rate": 0.5443037974683544,
+    "false_alarms": 215,
+    "n_frames": 395,
+    "separation": null,
+    "per_object": [
+      {
+        "id": "uuv1",
+        "kind": "uuv",
+        "radiates": false,
+        "ais": false,
+        "moving": true,
+        "frames": 395,
+        "detected": 119,
+        "pd": 0.3012658227848101,
+        "median_error_m": 2.4965299669607517,
+        "p90_error_m": 4.0439136424331545,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "bistatic:echo:ferry/all_estimated:seed1",
+          "bistatic:echo:ferry/all_estimated:seed2",
+          "bistatic:echo:ferry/all_estimated:seed3",
+          "bistatic:echo:ferry/all_estimated:seed4",
+          "bistatic:echo:ferry/all_estimated:seed5"
+        ]
+      }
+    ],
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "split": "test",
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "diagnostic_frame_argmax_to_uuv": {
+    "tuning": {
+      "frames": 65,
+      "median_m": 2.6345607744398127,
+      "p90_m": 5.393385663855717,
+      "within_5m": 0.8923076923076924,
+      "within_20m": 0.9384615384615385
+    },
+    "test": {
+      "frames": 345,
+      "median_m": 3.377353559676363,
+      "p90_m": 72.31463551886026,
+      "within_5m": 0.7710144927536232,
+      "within_20m": 0.881159420289855
+    }
+  },
+  "cancellation_diagnostic": {
+    "tuning": [
+      {
+        "direct_depth_db_median": 10.750330832426577,
+        "direct_depth_db_p10": 3.246674337407174,
+        "echo_loss_db_median": 0.31906820801378233,
+        "channels": "live DAS channels",
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+      }
+    ],
+    "test": [
+      {
+        "direct_depth_db_median": 11.650630678034016,
+        "direct_depth_db_p10": 6.001043787661511,
+        "echo_loss_db_median": 0.3201207453240109,
+        "channels": "live DAS channels",
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+      },
+      {
+        "direct_depth_db_median": 9.547887971014717,
+        "direct_depth_db_p10": 4.340486547368496,
+        "echo_loss_db_median": 0.31875932296073217,
+        "channels": "live DAS channels",
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+      },
+      {
+        "direct_depth_db_median": 10.637442091379459,
+        "direct_depth_db_p10": 5.879303693285378,
+        "echo_loss_db_median": 0.3264900199991737,
+        "channels": "live DAS channels",
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+      },
+      {
+        "direct_depth_db_median": 10.383880181534098,
+        "direct_depth_db_p10": 5.809008167473792,
+        "echo_loss_db_median": 0.3255152896802261,
+        "channels": "live DAS channels",
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+      },
+      {
+        "direct_depth_db_median": 12.806599211438858,
+        "direct_depth_db_p10": 6.634988458445882,
+        "echo_loss_db_median": 0.3236771011627824,
+        "channels": "live DAS channels",
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": true
+        },
+        "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+      }
+    ]
+  },
+  "illuminator_track_error_m": {
+    "tuning": [
+      0.8846683498688702
+    ],
+    "test": [
+      1.008640609229326,
+      1.2655602620025317,
+      1.3646749856878622,
+      1.3805882653707615,
+      0.9285678411026146
+    ]
+  },
+  "misses": {
+    "counts": {
+      "ship exclusion edge": 18,
+      "quay image of the ship": 0,
+      "direct path ship to cable": 8,
+      "elsewhere": 19
+    },
+    "frames_total": 410,
+    "within_25m_of_another_radiator": null,
+    "note": "frames with an illuminator whose highest cell is more than 20 m from every UUV, all seeds"
+  }
+}
