@@ -1,19 +1,19 @@
 {
   "recording": "harbor_seed3",
   "run": {
-    "git_commit": "270945d67307a81834182b19c281382c3446f58f",
+    "git_commit": "8dc4cf034f2288728e0cc2e3228a468cb2588ed3",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/harbor.json",
-    "processing_config_sha256": "d2d0696fd9f132fc0910e92f15e556070ac4fee7e06abdd0249e3e880e7fb087",
+    "processing_config_sha256": "dbf0b73ec00b241b4894c3c29a46b6522587d7f7546ce284e925832691383739",
     "processing_overrides": [],
-    "observation": "/workspace/output/harbor/seed3/dataset.observation.npz",
+    "observation": "/workspace/output/recordings/harbor/seed3/dataset.observation.npz",
     "observation_sha256": "36fcc00ec105c731372e426f3c25db4fde260787dbd976f06fbe608784a5f1e2",
     "python": "3.12.3",
     "numpy": "2.5.4",
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 3,
-    "wall_s": 64.20372872700682,
+    "wall_s": 64.16134813000099,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

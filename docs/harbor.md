@@ -407,9 +407,9 @@ lost tracks faded. It is saved as `picture.mp4` per recording and shown live wit
 
 ![operator view, multistatic_b](../output/reproduce/runs/multistatic_b/picture_frame.png)
 
-One frame of `multistatic_b` (a test recording) at 13.5 s: the ferry with its AIS identity, the boat (no AIS), a false
-track (r12, a sidelobe of the boat 41 m from it), and the tug only as a trail of tentative fixes on the left: it is not
-confirmed until 15 s. Every recording's frame is in `output/reproduce/runs/<recording>/picture_frame.png`; the videos
+Look at the two ships labelled with their AIS identity and source level, the bodies seen by their echo with their size
+indicator, and the grey dots of tentative tracks that never confirm. The frame is three quarters into `multistatic_b`
+(a test recording); every recording's frame is in `output/reproduce/runs/<recording>/picture_frame.png`; the videos
 (`picture.mp4`) are not committed.
 
 ### On a field recording
