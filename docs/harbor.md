@@ -9,7 +9,7 @@ the echo of an AIS ship. The forward model reuses this package's FDTD
 solver; water-specific code lives in `src/acoustic_sim/water/`.
 
 **Status: the simulation, sensing and processing chain work and are tested.  The real-time system
-(`water/streaming.py`, `examples/harbor_stream.py`, 0.78 to 0.95 s of compute per second of data)
+(`water/streaming.py`, `examples/harbor/05_detection/harbor_stream.py`, 0.78 to 0.95 s of compute per second of data)
 locates every ship from the traces alone, AIS only labelling the tracks afterwards, and finds a silent
 UUV lit by one ship in 73 % of frames.  Not yet detected reliably: the silent bodies of the multi ship
 scene (3 to 18 %) and the quiet UUVs of the 5 m harbor.**  See
@@ -17,8 +17,8 @@ scene (3 to 18 %) and the quiet UUVs of the 5 m harbor.**  See
 
 ## Walkthrough: from the traces to the harbor picture
 
-`examples/walkthrough/` takes one recording through the whole real-time chain, one figure per step
-(`./examples/walkthrough/run_all.sh DATASET --cuda`, DATASET one of `simple`, `bistatic`, `multistatic`, `harbor`;
+`examples/harbor/06_walkthrough/` takes one recording through the whole real-time chain, one figure per step
+(`./examples/harbor/06_walkthrough/run_all.sh DATASET --cuda`, DATASET one of `simple`, `bistatic`, `multistatic`, `harbor`;
 each script also runs on its own). The chain runs once (about 30 s on the GPU) and is cached in `output/walkthrough/<dataset>/cache/`;
 the figures go to `output/walkthrough/<dataset>/`. Nothing in the processing reads the truth or the AIS
 reports: the truth is drawn (dashed lines, circles) only to show where the objects really are, and AIS
@@ -95,7 +95,7 @@ All four recordings (bistatic, multistatic, simple, harbor) have the full set of
 | Domain | 2400 m x 1800 m, 5 m grid, c is approximately 1492-1500 m/s (effective speed varies with shore distance) |
 | Land | Pressure-release walls (opaque, thin breakwaters block sound) plus a lossy layer in the water next to the shore (`shore_loss_width`, `shore_loss_max`; approximate amplitude reflection R ~ 0.5 in the default runner configuration) |
 | Sensors | One cable (10 m channel spacing, multiple bends) and 4 hydrophones. The default cable is pressure mode; scenario files can select strain mode and a gauge length. |
-| Vessels/bodies | AIS ferry, tug and moored ship; non-AIS `uuv1`, `uuv2`, and diver; stationary `static_scatter` body. See `examples/harbor.scenario.json`. |
+| Vessels/bodies | AIS ferry, tug and moored ship; non-AIS `uuv1`, `uuv2`, and diver; stationary `static_scatter` body. See `examples/configs/harbor.scenario.json`. |
 | Noise | Colored ambient, three distant-shipping plane waves, DAS channel noise, common-mode noise, 8.6 % gain scatter, 2 % dead channels |
 | Band | 12-78 Hz at 600 Hz sampling |
 
@@ -105,14 +105,14 @@ UUV signatures are sparse tonal signals with little broadband energy; ship signa
 broadband with speed-dependent level and tonal components.
 
 The bistatic example uses a **different, cropped fine-grid scenario** in
-`examples/harbor_bistatic.scenario.json`: it sets a 0.5 m grid, 6 kHz sample rate, strain-mode
+`examples/configs/harbor_bistatic.scenario.json`: it sets a 0.5 m grid, 6 kHz sample rate, strain-mode
 DAS with 2 m channel/gauge spacing, a ferry illuminator and a silent 1 m × 3 m UUV body. Its
 `--coarse` option changes to 1 m spacing and scales the sample rate/band. Do not infer its
 settings or resource cost from the default 5 m / 600 Hz harbor scenario.
 
 ### Simple harbor (easier wavefields)
 
-`examples/harbor_simple.scenario.json` (`environment.kind = "simple"`, `water.environment.build_simple_harbor`)
+`examples/configs/harbor_simple.scenario.json` (`environment.kind = "simple"`, `water.environment.build_simple_harbor`)
 is a harbor built so that its wavefields are easy to resolve, for developing and checking the processing:
 
 | Item | Simple harbor |
@@ -123,7 +123,7 @@ is a harbor built so that its wavefields are easy to resolve, for developing and
 | Sensors | A pressure mode DAS loop around the scene (80-420 m x 80-330 m, 4 m channels, 299 channels: every angle covered, no strain directivity) and four corner hydrophones |
 | Objects | AIS ferry (1.0 Pa) crossing the north; a boat without AIS (0.3 Pa); a silent 6 m x 2 m UUV; a static 4 m wreck, all inside the loop and 50 m or more apart |
 
-Build it with `python examples/harbor_multistatic_dataset.py --config examples/harbor_simple.scenario.json
+Build it with `python examples/harbor/01_datasets/harbor_multistatic_dataset.py --config examples/configs/harbor_simple.scenario.json
 --out output/harbor_simple --cuda` (four FDTD runs, 24 s on the GPU); it writes `output/harbor_simple/fine/`.
 On the median DAS channel the ferry's echo is 15.7 dB below its direct sound and 1.2 dB above the noise
 (`levels.json`). The real-time system (`harbor_stream.py --dataset simple --echo`), everything estimated:
@@ -425,7 +425,7 @@ cache built before this work stays valid.
 
 ### What the chains find today
 
-Detect once, check every detection against the true positions (`examples/harbor_detect.py`,
+Detect once, check every detection against the true positions (`examples/harbor/05_detection/harbor_detect.py`,
 everything estimated from the traces, free field replicas, the 3 strongest map peaks per frame as
 detections, a hit within 5 m of an object; `output/harbor_detect/<dataset>/`). The seed 0 mix of
 each dataset.
@@ -443,7 +443,7 @@ recording, where the direct paths of the ships that do not illuminate are left i
 map. The real-time chain below removes every tracked ship's direct path and, on the same multistatic
 recording, finds uuv2 in 18 % and uuv1 in 3 % of the frames.
 
-**Real time, located from the traces alone** (`water/streaming.py`, `examples/harbor_stream.py`). AIS
+**Real time, located from the traces alone** (`water/streaming.py`, `examples/harbor/05_detection/harbor_stream.py`). AIS
 does not enter the processing: it is used afterwards, to label what was located (`ais_crosscheck`).
 The traces arrive in 0.25 s chunks:
 
@@ -501,7 +501,7 @@ uuv1 in 39 % and uuv2 in 33 % of the frames; estimated, the removal reaches 7 dB
 against 20 dB given both the true waveform and the exact track, which is where the remaining gap is.
 
 **Scoreboard (stage 1, partial).** `water/scoreboard.py` implements the definitions of
-[Architecture, Scoreboard](architecture.md#scoreboard) and `examples/harbor_picture_stage1.py`
+[Architecture, Scoreboard](architecture.md#scoreboard) and `examples/harbor/05_detection/harbor_picture_stage1.py`
 runs it (tuning set seed 0, test set seeds 1 to 5). The run was stopped after the bistatic dataset
 and the multistatic passive chain (`output/harbor_picture/stage1/results.json`); with the threshold
 at 5 % of object free frames:
@@ -600,7 +600,7 @@ whether the bistatic chain works with everything estimated from the traces and b
 multi body scenario for the later stages. Every result states its truth inputs; every
 experiment had its pass/fail criterion in the script docstring and `results.json` before it ran.
 
-**Stage 0a, direct path cancellation against range** (`examples/harbor_cancellation_depth.py`,
+**Stage 0a, direct path cancellation against range** (`examples/harbor/04_bistatic/harbor_cancellation_depth.py`,
 fine 0.5 m grid, 10 s, the ferry signature alone at nearest channel ranges of 193, 99 and 29 m,
 stationary and at 4 m/s parallel to the first cable leg; ECA depth over the live cable channels
 in 100 to 760 Hz; `output/harbor_cancel/`). References: `data` (delay and sum beam at the AIS
@@ -659,7 +659,7 @@ phase at that range), so the AIS refined `true_waveform` column falls from 34 to
   (median) and 3 dB (10th percentile) below the exact QR projection. The criterion column is
   unaffected (8.8 dB either way).
 
-**Stage 0b, the bistatic demo without its truth inputs** (`examples/harbor_bistatic_ablation.py`,
+**Stage 0b, the bistatic demo without its truth inputs** (`examples/harbor/04_bistatic/harbor_bistatic_ablation.py`,
 coarse and fine datasets, `output/harbor_bistatic/ablation/`). Configurations: 1 `direct_removed_exactly`
 (direct path removed with the truth component, true waveform, exact track: the demo), 2 `true_waveform_exact_track` (direct path in
 the traces, removed by ECA; true waveform; exact track), 3 `estimated_waveform_exact_track` (data reference, exact
@@ -712,8 +712,8 @@ against the 16 to 18 dB the echo sits below the direct path on the median cable 
 refined track, whose jitter the per sample delays read as velocity noise (track smoothing
 recovers most of it); the echo loss in the ECA is small throughout (0.3 to 1.9 dB).
 
-**Stage 0c, multistatic scenario and dataset** (`examples/harbor_multistatic.scenario.json`,
-`examples/harbor_multistatic_dataset.py`, `output/harbor_multistatic/`). Same 0.5 m crop and
+**Stage 0c, multistatic scenario and dataset** (`examples/configs/harbor_multistatic.scenario.json`,
+`examples/harbor/01_datasets/harbor_multistatic_dataset.py`, `output/harbor_multistatic/`). Same 0.5 m crop and
 sensors as the bistatic scenario with three illuminators (the AIS ferry; an AIS tug crossing
 the ferry's geometry from the north east; a small radiating boat without AIS), three silent
 moving bodies (`uuv1` and `uuv2`, 1 m x 3 m soft hulls on different headings at 2 and 1.5 m/s;
@@ -764,31 +764,31 @@ deliberately not started.
 
 | Script | What it does | Time |
 |---|---|---|
-| `examples/harbor_m1_demo.py` | Map, one FDTD source run, DAS gather, wavefield snapshots | ~15 s |
-| `examples/harbor_m2_dataset.py` | Builds the default multi-vessel labelled dataset and overview figures (cached FDTD) | expensive on first build; reuses cache |
-| `examples/harbor_m1_scatterer_compare.py` | Three FDTD runs (no body, "hard" and "soft" body) to isolate the scattered field of a static reflector | three FDTD runs |
-| `examples/harbor_m3_detect.py` | Baseline CFAR detection sweeps **without** AIS suppression (the loud ships hide the UUV); `--empirical-refine` uses the `localiser.py` calibration | processing sweep; reuses cache |
-| `examples/harbor_survey_grid.py` | Pre-computes per-cell FDTD transfer functions for `harbor_m3_detect.py --empirical-refine grid_survey` (resume-safe cache) | one FDTD run per water cell of the scan grid |
-| `examples/harbor_m4_dlc.py` | Detect–locate–classify experiment, noise-only CFAR calibration, optional AIS suppression, CNN/CVAE classification and evaluation | varies; FDTD gathers are cached |
-| `examples/harbor_mfp_demo.py` | Analytic (free-field, exact replica) reference for the whole chain: AIS refinement, ferry and pier projection, passive 400 Hz MFP (motor on), bistatic echo MFP (motor off), occupancy track, Bartlett vs MVDR under replica mismatch, Pd vs UUV level. Figures and `results.json` in `output/harbor_demo/` | ~26 min on 16 CPU cores (`--trials 0` skips the Pd sweep: ~4 min) |
-| `examples/harbor_mfp_domain.py` | The same analytic chain in the domain of `output/harbor/dataset.npz` (land, cable + hydrophones, 120 s tracks, AIS, signatures, band, noise and DAS gains from the dataset; analytic propagation with opaque land). Adds AIS-ship gain calibration, re-whitening on the cleaned residual, DAS common-mode and distant-shipping plane-wave projection. Figures and `results.json` in `output/harbor_domain/` | ~1 h on 16 CPU cores (`--pd-windows 0`: ~20 min) |
-| `examples/harbor_m1_uuv.py` | Single Ricker pulse with and without a stationary finite-size UUV; plots the difference as the scattered field | one FDTD pair |
-| `examples/harbor_m1_uuv_video.py` | Animate the pulse and predicted UUV echo on the cable | one FDTD pair |
-| `examples/harbor_bistatic_budget.py` | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
-| `examples/harbor_bistatic_dataset.py` | Fine-grid FDTD scenario; caches direct and body-scattered components separately | expensive; `--coarse` is faster but under-resolves the hull |
-| `examples/harbor_bistatic_demo.py` | Coherent bistatic localization figures given the truth (direct path removed exactly, true waveform, exact track) and error summary from a saved dataset | processing run |
-| `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator` (free field by default, `_freefield` suffix; `simulator` for the dispersion corrected replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
-| `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the truth inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit, `--propagator simulator` the dispersion corrected replicas, `--cuda` the GPU chain); every result records its `provenance` | about 1.5 h of processing for both datasets |
-| `examples/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and a ferry-only check map given the truth | 6 FDTD runs (fine: about 1 h on the GPU) |
-| `examples/walkthrough/` | [Walkthrough](#walkthrough-from-the-traces-to-the-harbor-picture): eight scripts, one figure per step of the chain (recording, passive map, tracks, AIS labels, direct path removal, echo map, harbor picture, geometry); `run_all.sh DATASET --cuda` | about 1 min per recording |
-| `examples/harbor_stream.py` | The real-time system (`water/streaming.py`): passive chain without AIS, tracker, echo chain on the tracks, AIS labels afterwards; feeds a recording in 0.25 s chunks, reports compute per second of data and latency, checks every output against the true positions; `--dataset multistatic|bistatic|harbor [--echo] --cuda`; writes `output/harbor_stream/<dataset>/` | 15 to 60 s per run |
-| `examples/harbor_picture_stage1.py` | Harbor picture stage 1: the [scoreboard](architecture.md#scoreboard) on the bistatic, multistatic and 5 m harbor datasets, tuning set (noise seed 0) and test set (seeds 1 to 5, remixed from the cached gathers), passive and echo chains; `--dataset`, `--chain`, `--propagator {free_field,simulator}`, `--cuda`, `--workers`; writes `output/harbor_picture/stage1/` | about 1.2 h on the GPU (runs are cached in `cache/`) |
-| `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
-| `examples/harbor_train_classifier.py`, `examples/harbor_train_anomaly.py`, `examples/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |
+| `examples/harbor/02_forward_model/harbor_m1_demo.py` | Map, one FDTD source run, DAS gather, wavefield snapshots | ~15 s |
+| `examples/harbor/01_datasets/harbor_m2_dataset.py` | Builds the default multi-vessel labelled dataset and overview figures (cached FDTD) | expensive on first build; reuses cache |
+| `examples/harbor/02_forward_model/harbor_m1_scatterer_compare.py` | Three FDTD runs (no body, "hard" and "soft" body) to isolate the scattered field of a static reflector | three FDTD runs |
+| `examples/harbor/03_passive/harbor_m3_detect.py` | Baseline CFAR detection sweeps **without** AIS suppression (the loud ships hide the UUV); `--empirical-refine` uses the `localiser.py` calibration | processing sweep; reuses cache |
+| `examples/harbor/01_datasets/harbor_survey_grid.py` | Pre-computes per-cell FDTD transfer functions for `harbor_m3_detect.py --empirical-refine grid_survey` (resume-safe cache) | one FDTD run per water cell of the scan grid |
+| `examples/harbor/03_passive/harbor_m4_dlc.py` | Detect–locate–classify experiment, noise-only CFAR calibration, optional AIS suppression, CNN/CVAE classification and evaluation | varies; FDTD gathers are cached |
+| `examples/harbor/03_passive/harbor_mfp_demo.py` | Analytic (free-field, exact replica) reference for the whole chain: AIS refinement, ferry and pier projection, passive 400 Hz MFP (motor on), bistatic echo MFP (motor off), occupancy track, Bartlett vs MVDR under replica mismatch, Pd vs UUV level. Figures and `results.json` in `output/harbor_demo/` | ~26 min on 16 CPU cores (`--trials 0` skips the Pd sweep: ~4 min) |
+| `examples/harbor/03_passive/harbor_mfp_domain.py` | The same analytic chain in the domain of `output/harbor/dataset.npz` (land, cable + hydrophones, 120 s tracks, AIS, signatures, band, noise and DAS gains from the dataset; analytic propagation with opaque land). Adds AIS-ship gain calibration, re-whitening on the cleaned residual, DAS common-mode and distant-shipping plane-wave projection. Figures and `results.json` in `output/harbor_domain/` | ~1 h on 16 CPU cores (`--pd-windows 0`: ~20 min) |
+| `examples/harbor/02_forward_model/harbor_m1_uuv.py` | Single Ricker pulse with and without a stationary finite-size UUV; plots the difference as the scattered field | one FDTD pair |
+| `examples/harbor/02_forward_model/harbor_m1_uuv_video.py` | Animate the pulse and predicted UUV echo on the cable | one FDTD pair |
+| `examples/harbor/04_bistatic/harbor_bistatic_budget.py` | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
+| `examples/harbor/01_datasets/harbor_bistatic_dataset.py` | Fine-grid FDTD scenario; caches direct and body-scattered components separately | expensive; `--coarse` is faster but under-resolves the hull |
+| `examples/harbor/04_bistatic/harbor_bistatic_demo.py` | Coherent bistatic localization figures given the truth (direct path removed exactly, true waveform, exact track) and error summary from a saved dataset | processing run |
+| `examples/harbor/04_bistatic/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator` (free field by default, `_freefield` suffix; `simulator` for the dispersion corrected replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
+| `examples/harbor/04_bistatic/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the truth inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit, `--propagator simulator` the dispersion corrected replicas, `--cuda` the GPU chain); every result records its `provenance` | about 1.5 h of processing for both datasets |
+| `examples/harbor/01_datasets/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and a ferry-only check map given the truth | 6 FDTD runs (fine: about 1 h on the GPU) |
+| `examples/harbor/06_walkthrough/` | [Walkthrough](#walkthrough-from-the-traces-to-the-harbor-picture): eight scripts, one figure per step of the chain (recording, passive map, tracks, AIS labels, direct path removal, echo map, harbor picture, geometry); `run_all.sh DATASET --cuda` | about 1 min per recording |
+| `examples/harbor/05_detection/harbor_stream.py` | The real-time system (`water/streaming.py`): passive chain without AIS, tracker, echo chain on the tracks, AIS labels afterwards; feeds a recording in 0.25 s chunks, reports compute per second of data and latency, checks every output against the true positions; `--dataset multistatic|bistatic|harbor [--echo] --cuda`; writes `output/harbor_stream/<dataset>/` | 15 to 60 s per run |
+| `examples/harbor/05_detection/harbor_picture_stage1.py` | Harbor picture stage 1: the [scoreboard](architecture.md#scoreboard) on the bistatic, multistatic and 5 m harbor datasets, tuning set (noise seed 0) and test set (seeds 1 to 5, remixed from the cached gathers), passive and echo chains; `--dataset`, `--chain`, `--propagator {free_field,simulator}`, `--cuda`, `--workers`; writes `output/harbor_picture/stage1/` | about 1.2 h on the GPU (runs are cached in `cache/`) |
+| `examples/harbor/02_forward_model/harbor_domain_video.py`, `examples/harbor/04_bistatic/harbor_stack_movie.py`, `examples/harbor/04_bistatic/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
+| `examples/harbor/03_passive/harbor_train_classifier.py`, `examples/harbor/03_passive/harbor_train_anomaly.py`, `examples/harbor/01_datasets/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |
 
 Run times are from the original experiments and are hardware and configuration specific; the first FDTD cache build is the main cost.  [Generated outputs](outputs.md) lists what each script writes and what is committed.
 
-`examples/harbor.scenario.json` is the default scenario (set `"fdtd": {"use_cuda": true}` to
+`examples/configs/harbor.scenario.json` is the default scenario (set `"fdtd": {"use_cuda": true}` to
 simulate on the GPU). Outputs are written under `output/`; FDTD cache files can be reused between
 dataset assembly and experiments.
 
@@ -797,8 +797,8 @@ dataset assembly and experiments.
 Run the passive scenario and detection/classification workflow:
 
 ```bash
-python examples/harbor_m2_dataset.py
-python examples/harbor_m4_dlc.py --config examples/harbor.scenario.json --out output/harbor
+python examples/harbor/01_datasets/harbor_m2_dataset.py
+python examples/harbor/03_passive/harbor_m4_dlc.py --config examples/configs/harbor.scenario.json --out output/harbor
 ```
 
 The M4 script can skip AIS suppression with `--no-suppress`, enable GPU processing with
@@ -809,9 +809,9 @@ Check each script's `--help` for current flags.
 For the cropped strain-DAS bistatic setup:
 
 ```bash
-python examples/harbor_bistatic_budget.py --out output/harbor_bistatic
-python examples/harbor_bistatic_dataset.py --coarse
-python examples/harbor_bistatic_demo.py \
+python examples/harbor/04_bistatic/harbor_bistatic_budget.py --out output/harbor_bistatic
+python examples/harbor/01_datasets/harbor_bistatic_dataset.py --coarse
+python examples/harbor/04_bistatic/harbor_bistatic_demo.py \
     --dataset output/harbor_bistatic/coarse/dataset.npz \
     --out output/harbor_bistatic/demo
 ```

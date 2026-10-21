@@ -1,6 +1,6 @@
 """Air diagnostics: processing steps that read the truth, and say so.
 
-The SRP-PHAT engagement pipeline (``examples/run_pipeline.py``) receives an
+The SRP-PHAT engagement pipeline (``examples/air/02_pipeline/run_pipeline.py``) receives an
 :class:`~acoustic_sim.contract.Observation`.  Three of its set-up steps have no counterpart estimated from the traces yet
 and read the :class:`~acoustic_sim.contract.Truth` through this module; each adds a flag to the
 pipeline's :class:`~acoustic_sim.contract.Provenance`:

@@ -171,8 +171,7 @@ def _generate_sample_3d(
     z_max: float = 50.0,
 ) -> dict | None:
     """Generate one 3-D FDTD training sample."""
-    # Import 3D builders from the example script (they live there, not in setup.py).
-    from examples.run_fdtd_3d import build_domain_3d, build_receivers_3d, build_source_3d, compute_dt_3d
+    from acoustic_sim.air.setup_3d import build_domain_3d, build_receivers_3d, build_source_3d, compute_dt_3d
     from acoustic_sim.solver.fdtd import FDTD3DSolver, FDTDConfig
 
     # -- Randomise domain --

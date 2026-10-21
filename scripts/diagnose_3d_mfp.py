@@ -5,7 +5,7 @@ Prints per-window bearing, compares to ground truth, and saves beam-power
 polar plot to the output directory.
 
 Usage:
-    python examples/diagnose_3d_mfp.py output/valley_3d_test
+    python scripts/diagnose_3d_mfp.py output/valley_3d_test
 """
 
 import argparse

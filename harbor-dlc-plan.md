@@ -60,7 +60,7 @@ bodies at training time. Add three more unknown objects with clearly different s
 - The `make_reference_signal()` dispatcher handles `kind == "diver"`.
 - Running `harbor_m2_dataset.py` produces a `.npz` with the additional tracks / gathers.
 - `m2_scenario.png` shows all seven objects.
-- New example `examples/harbor_m1_scatterer_compare.py` runs hard-body and soft-body FDTD
+- New example `examples/harbor/02_forward_model/harbor_m1_scatterer_compare.py` runs hard-body and soft-body FDTD
   back-to-back for the same geometry and produces a side-by-side figure of the scattered fields.
 
 ### Todo List
@@ -68,7 +68,7 @@ bodies at training time. Add three more unknown objects with clearly different s
 2. Add `"diver"` branch to `make_reference_signal()` in `signatures.py`.
 3. Append `uuv2`, `diver`, `static_scatter` (hard body default) entries to `default_vessels()`
    in `scenario.py`; confirm `VesselConfig` already carries `body_kind` (check `scatterer.py`).
-4. Write `examples/harbor_m1_scatterer_compare.py`:
+4. Write `examples/harbor/02_forward_model/harbor_m1_scatterer_compare.py`:
    - Runs FDTD once with `body_kind = "hard"` and once with `body_kind = "soft"`.
    - Computes difference fields and plots: 3-panel figure (hard scattered / soft scattered / ratio dB).
 5. Ensure `harbor_m2_dataset.py` plots all vessels in `m2_scenario.png` (no code change needed
@@ -79,8 +79,8 @@ bodies at training time. Add three more unknown objects with clearly different s
 - `src/acoustic_sim/harbor/signatures.py` — `ship_reference()`, `uuv_reference()`, `make_reference_signal()`.
 - `src/acoustic_sim/harbor/scenario.py` — `default_vessels()`, `VesselConfig`.
 - `src/acoustic_sim/harbor/scatterer.py` — body kind handling (hard vs. soft boundary).
-- `examples/harbor_m1_uuv.py` — reference pattern for the scatterer compare example.
-- `examples/harbor_m2_dataset.py` — dataset assembly driver.
+- `examples/harbor/02_forward_model/harbor_m1_uuv.py` — reference pattern for the scatterer compare example.
+- `examples/harbor/01_datasets/harbor_m2_dataset.py` — dataset assembly driver.
 
 ---
 
@@ -114,7 +114,7 @@ over broadband ship leakage, and the CFAR tail-quantile should be validated for 
 7. Validate: Pd at nominal UUV level (1.0×) in fused-suppressed mode must improve vs. fused-baseline.
 
 ### Relevant Context
-- `examples/harbor_m3_detect.py` — lines 83–127 (main detection loop).
+- `examples/harbor/03_passive/harbor_m3_detect.py` — lines 83–127 (main detection loop).
 - `src/acoustic_sim/harbor/suppression.py` — `run_ais_aware()`, `SuppressionConfig`.
 - `src/acoustic_sim/harbor/detection.py` — `ProcessingConfig.line_halfwidth`.
 - `src/acoustic_sim/harbor/dataset.py` — `HarborDataset.ais` field (AISReports).
@@ -151,7 +151,7 @@ Two empirical replica sources are supported, selectable at runtime:
 - `EmpiricalLocaliser.refine(candidates_xy, wh, frame)` returns a refined `(x, y)` per candidate.
 - `harbor_m3_detect.py` accepts `--empirical-refine [vessel_path|grid_survey]`.
 - Grid-survey pre-computation exposed as a separate script step
-  `examples/harbor_survey_grid.py` (so it can be run once and reused).
+  `examples/harbor/01_datasets/harbor_survey_grid.py` (so it can be run once and reused).
 - Localisation RMSE at nominal UUV level in fused-suppressed mode decreases vs. the 5 m analytic
   refinement baseline (target: < 15 m RMSE for ranges up to 300 m with vessel-path mode;
   < 10 m with grid-survey mode).
@@ -165,7 +165,7 @@ Two empirical replica sources are supported, selectable at runtime:
      by `harbor_survey_grid.py`, stores as `(G_survey, N, F)` complex array + grid coordinates.
    - `refine(candidates_xy, wh, frame_idx)`: interpolate replica to each candidate cell,
      score by normalised matched-field inner product with `wh.Z[:, :, frame_idx]`, return peak.
-2. Write `examples/harbor_survey_grid.py`:
+2. Write `examples/harbor/01_datasets/harbor_survey_grid.py`:
    - Accepts `--grid-dx` (default 20 m), `--out` (cache dir), `--time` (default 12 s).
    - Iterates over all water grid cells, fires one `StaticSource` Ricker pulse per cell,
      records all-receiver traces, saves STFT to `survey_cache/{ix}_{iy}.npz`.
@@ -180,9 +180,9 @@ Two empirical replica sources are supported, selectable at runtime:
 
 ### Relevant Context
 - `src/acoustic_sim/harbor/detection.py` — `extract_detections()`, `ProcessingConfig`.
-- `examples/harbor_m1_demo.py` — `StaticSource` + `HarborFDTDSolver.run_with_snapshots`
+- `examples/harbor/02_forward_model/harbor_m1_demo.py` — `StaticSource` + `HarborFDTDSolver.run_with_snapshots`
   pattern used for per-cell survey runs.
-- `examples/harbor_m3_detect.py` — `render_vessel_gathers` call (line 72); cache at `out/cache/`.
+- `examples/harbor/03_passive/harbor_m3_detect.py` — `render_vessel_gathers` call (line 72); cache at `out/cache/`.
 - `src/acoustic_sim/harbor/sensors.py` — `SensorLayout`.
 
 ---
@@ -212,17 +212,17 @@ Each example is a (n_mels=64, n_time_frames) mel-spectrogram extracted from one 
 of one DAS channel's single-vessel trace.
 
 ### Expected Outcomes
-- New script `examples/harbor_build_classifier_dataset.py` that:
+- New script `examples/harbor/01_datasets/harbor_build_classifier_dataset.py` that:
   - Loads the M2 gather cache for seeds `0 … n_seeds-1`; re-runs M2 for any missing seeds.
   - Extracts per-vessel per-channel mel-spectrogram windows with sliding 50% overlap.
   - Saves `classifier_dataset.npz` with `X` (N, 1, 64, T), `y` (N,) int labels, `label_names`,
     `seed` (N,) per-example seed index.
 - The dataset has balanced classes (oversample minority classes to match ship count).
-- `examples/harbor_train_classifier.py` trains the CNN on this dataset, saves
+- `examples/harbor/03_passive/harbor_train_classifier.py` trains the CNN on this dataset, saves
   `output/harbor/cnn_classifier.pt`.
 
 ### Todo List
-1. Write `examples/harbor_build_classifier_dataset.py`:
+1. Write `examples/harbor/01_datasets/harbor_build_classifier_dataset.py`:
    - Accept `--n-seeds N` (default 8) and `--cache-dir` args.
    - For each seed, call `render_vessel_gathers` (which uses the cache, re-running only on miss).
    - Apply `compute_mel_spectrogram` from `src/acoustic_sim/ml/features.py` with a 4-second
@@ -230,7 +230,7 @@ of one DAS channel's single-vessel trace.
    - Collect `(mel_spec, label, seed)` tuples for all vessels, all channels, all seeds.
 2. Implement class-balanced oversampling (random repeat of minority-class windows).
 3. Save `classifier_dataset.npz` with arrays `X`, `y`, `label_names`, `seed`.
-4. Write `examples/harbor_train_classifier.py` using `AcousticClassifier(n_classes=4)` from
+4. Write `examples/harbor/03_passive/harbor_train_classifier.py` using `AcousticClassifier(n_classes=4)` from
    `src/acoustic_sim/ml/acoustic_classifier.py`; train with cross-entropy, 80/20 seed-stratified
    split (whole seeds in test, not individual windows), save checkpoint and print per-class accuracy.
 
@@ -252,7 +252,7 @@ mel-spectrograms labelled `"ship"` only, so its reconstruction error is low for 
 and high for anything else. The CVAE anomaly score becomes the second-stage classifier output.
 
 ### Expected Outcomes
-- Script `examples/harbor_train_anomaly.py` trains the CVAE on ship-only windows from
+- Script `examples/harbor/03_passive/harbor_train_anomaly.py` trains the CVAE on ship-only windows from
   `classifier_dataset.npz`, saves `output/harbor/cvae_anomaly.pt`.
 - `src/acoustic_sim/harbor/classifier.py` (new file) provides:
   - `HarborClassifier` wrapping both the CNN and CVAE.
@@ -261,7 +261,7 @@ and high for anything else. The CVAE anomaly score becomes the second-stage clas
 
 ### Todo List
 1. Read `src/acoustic_sim/ml/anomaly_detector.py` fully to understand the CVAE interface.
-2. Write `examples/harbor_train_anomaly.py`:
+2. Write `examples/harbor/03_passive/harbor_train_anomaly.py`:
    - Load `classifier_dataset.npz`, filter to ship-only rows.
    - Train `AnomalyDetector` (or the existing `anomaly_training.py` entrypoint) on ship windows.
    - Save checkpoint.
@@ -326,7 +326,7 @@ Output: track map + classification overlay + ROC curve
 ### Relevant Context
 - All prior sub-tasks.
 - `src/acoustic_sim/harbor/plotting.py` — `plot_harbor()`.
-- `examples/harbor_m3_detect.py` — reference for the detection loop pattern.
+- `examples/harbor/03_passive/harbor_m3_detect.py` — reference for the detection loop pattern.
 
 ---
 

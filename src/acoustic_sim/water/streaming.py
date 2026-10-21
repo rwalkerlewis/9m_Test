@@ -3,7 +3,7 @@
 :class:`StreamingPassive` receives the traces in blocks as they are recorded (:meth:`push`) and
 returns, for every new frame, the strongest map peaks.  It is the chain of ``suppression.run_ais_aware``
 with every step that looked at the whole record made causal at the granularity of a block of
-``StreamConfig.block_frames`` frames (8 frames, 2 s, on the 0.5 m recordings of ``examples/harbor_stream.py``;
+``StreamConfig.block_frames`` frames (8 frames, 2 s, on the 0.5 m recordings of ``examples/harbor/05_detection/harbor_stream.py``;
 1 frame on the 5 m harbor): a frame's result uses no sample recorded after the end of its block, but the
 steps below use the whole block, so an early frame of a block sees the later frames of the same block:
 

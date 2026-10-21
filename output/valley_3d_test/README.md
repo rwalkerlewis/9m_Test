@@ -4,8 +4,8 @@ Results from a 3-D FDTD acoustic simulation and detection/engagement pipeline ru
 
 ## How this was generated
 
-1. **FDTD simulation** via `examples/run_valley_3d.sh` → `examples/run_fdtd_3d.py`
-2. **Detection pipeline** via `examples/run_pipeline.py output/valley_3d_test`
+1. **FDTD simulation** via `examples/air/01_simulation/run_valley_3d.sh` → `examples/air/01_simulation/run_fdtd_3d.py`
+2. **Detection pipeline** via `examples/air/02_pipeline/run_pipeline.py output/valley_3d_test`
 
 ## Scenario
 

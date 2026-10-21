@@ -1,4 +1,4 @@
-"""Pipeline engagement and diagnostic plots (``examples/run_pipeline.py``).
+"""Pipeline engagement and diagnostic plots (``examples/air/02_pipeline/run_pipeline.py``).
 
 Split out of :mod:`acoustic_sim.air.plotting`, which re-exports these functions.
 """

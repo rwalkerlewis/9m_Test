@@ -13,7 +13,7 @@ This repository contains two related but independent applications of acoustic mo
 
 The harbor implementation and experimental status are documented in
 [docs/harbor.md](docs/harbor.md). The real-time system (`water/streaming.py`,
-`examples/harbor_stream.py`) locates the ships from the traces alone (AIS only labels the tracks
+`examples/harbor/05_detection/harbor_stream.py`) locates the ships from the traces alone (AIS only labels the tracks
 afterwards) and finds a silent UUV lit by one ship; it does not detect the default weak UUV of the 5 m
 harbor yet. The bistatic echo demo is idealized: it uses truth components and the true
 illuminator waveform and is not an operational performance claim; its `demo_summary.json` and figures carry
@@ -88,24 +88,24 @@ Two processing paths are available:
 1. **Passive target-emission detection:** whitened STFT, matched-field scan, stationary
    interference suppression, CFAR thresholding, optional AIS-aware ship cancellation, and an
    occupancy-grid tracker. See [docs/harbor.md](docs/harbor.md) and the
-   [passive detection example](examples/harbor_m4_dlc.py).
+   [passive detection example](examples/harbor/03_passive/harbor_m4_dlc.py).
 2. **Bistatic echo localization:** an AIS ship illuminates a silent body; its scattered field is
    processed with Bartlett, PHAT-Bartlett, coherent matched filtering, MVDR, or MUSIC maps.
    See [bistatic echo localization](docs/harbor.md#bistatic-echo-localization) and the
-   [bistatic demo](examples/harbor_bistatic_demo.py).
+   [bistatic demo](examples/harbor/04_bistatic/harbor_bistatic_demo.py).
 
-Quick examples:
+Quick examples (every example script, by folder and in workflow order, is listed in [examples/README.md](examples/README.md)):
 
 ```bash
 # Build the default multi-vessel dataset; FDTD source gathers are cached.
-python examples/harbor_m2_dataset.py
+python examples/harbor/01_datasets/harbor_m2_dataset.py
 
 # Run the detect–locate–classify experiment.
-python examples/harbor_m4_dlc.py
+python examples/harbor/03_passive/harbor_m4_dlc.py
 
 # Build a cropped, finer-grid bistatic dataset, then make localization figures.
-python examples/harbor_bistatic_dataset.py --coarse
-python examples/harbor_bistatic_demo.py
+python examples/harbor/01_datasets/harbor_bistatic_dataset.py --coarse
+python examples/harbor/04_bistatic/harbor_bistatic_demo.py
 ```
 
 The bistatic commands are compute-intensive and use their own dataset/output paths. See
@@ -193,19 +193,19 @@ Container** after configuration changes). The complete checkout, including
 
 ```bash
 # 2-D valley
-bash examples/run_valley.sh
+bash examples/air/01_simulation/run_valley.sh
 
 # 3-D valley
-bash examples/run_valley_3d.sh
+bash examples/air/01_simulation/run_valley_3d.sh
 
 # 2-D wind domain
-bash examples/run_wind_circular.sh
+bash examples/air/01_simulation/run_wind_circular.sh
 ```
 
 Or directly:
 
 ```bash
-python examples/run_fdtd.py \
+python examples/air/01_simulation/run_fdtd.py \
     --domain hills_vegetation \
     --source-type moving --source-signal propeller \
     --array circular --receiver-count 16 --receiver-radius 2.0 \
@@ -218,23 +218,23 @@ python examples/run_fdtd.py \
 Pipeline-only scripts for each pre-computed dataset:
 
 ```bash
-bash examples/run_pipeline_valley.sh        # 2-D valley
-bash examples/run_pipeline_valley_3d.sh     # 3-D valley
-bash examples/run_pipeline_erratic.sh       # 3-D erratic quadcopter
-bash examples/run_pipeline_isotropic.sh     # 2-D isotropic / wind
+bash examples/air/02_pipeline/run_pipeline_valley.sh        # 2-D valley
+bash examples/air/02_pipeline/run_pipeline_valley_3d.sh     # 3-D valley
+bash examples/air/02_pipeline/run_pipeline_erratic.sh       # 3-D erratic quadcopter
+bash examples/air/02_pipeline/run_pipeline_isotropic.sh     # 2-D isotropic / wind
 ```
 
 Or directly:
 
 ```bash
 # Baseline (no ML)
-python examples/run_pipeline.py output/valley_test
+python examples/air/02_pipeline/run_pipeline.py output/valley_test
 
 # With source classification gate
-python examples/run_pipeline.py output/valley_test --enable-classification
+python examples/air/02_pipeline/run_pipeline.py output/valley_test --enable-classification
 
 # Full ML (classification + maneuver + anomaly)
-python examples/run_pipeline.py output/valley_test \
+python examples/air/02_pipeline/run_pipeline.py output/valley_test \
     --enable-classification --enable-maneuver --enable-anomaly
 ```
 
@@ -246,7 +246,7 @@ ML flags can also be set via environment variables on the shell scripts:
 
 ```bash
 ENABLE_CLASSIFICATION=true ENABLE_MANEUVER=true \
-    bash examples/run_pipeline_erratic.sh
+    bash examples/air/02_pipeline/run_pipeline_erratic.sh
 ```
 
 Auto-detects 2D vs 3D. Produces:
@@ -266,20 +266,20 @@ acoustic-sim --model-preset gradient --frequency 40
 
 ```bash
 # Train the source, maneuver and fusion classifiers into output/models/
-python examples/train_all_ml.py
+python examples/air/03_ml/train_all_ml.py
 
 # Train and calibrate the CVAE anomaly detector (writes anomaly_detector.pt + anomaly_threshold.json)
 python src/acoustic_sim/ml/anomaly_training.py
 
 # Baseline vs ML comparison across all datasets
-python examples/run_comparison.py
+python examples/air/02_pipeline/run_comparison.py
 ```
 
 ### Batch FDTD
 
 ```bash
 # Run 18 domain × source × array combinations
-python examples/run_all_examples.py
+python examples/air/01_simulation/run_all_examples.py
 ```
 
 ### Tests
@@ -314,8 +314,8 @@ The repository tracks the *metadata and results* of the drone reference runs und
 (`metadata.json`, `results_*.json`, a `README.md` per run), the trained ML weights in
 `output/models/`, and selected harbor and performance results and figures.  Traces, datasets,
 caches and other figures are not tracked (see `.gitignore`). Regenerate the drone traces with
-`python examples/generate_traces.py` (fast analytic forward model, all four datasets) or re-run the
-FDTD (`examples/run_valley.sh`, `run_valley_3d.sh`, `run_fdtd_erratic.py`).  [Generated outputs](docs/outputs.md) lists what is
+`python examples/air/01_simulation/generate_traces.py` (fast analytic forward model, all four datasets) or re-run the
+FDTD (`examples/air/01_simulation/run_valley.sh`, `run_valley_3d.sh`, `run_fdtd_erratic.py`).  [Generated outputs](docs/outputs.md) lists what is
 tracked, how to regenerate each directory, and `scripts/clean_outputs.py` for reclaiming space.
 
 | Directory | Dimension | Domain | Source | Duration |

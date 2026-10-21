@@ -51,7 +51,7 @@ out=...)`) write the two files, and `HarborDataset.load` reads the pair as well 
 `dataset.npz`, so existing caches and outputs stay usable.
 `python -m acoustic_sim.contract split <dataset.npz>` writes the pair from an old file.
 
-In air, `examples/run_pipeline.py` splits a simulation directory (`traces.npy` +
+In air, `examples/air/02_pipeline/run_pipeline.py` splits a simulation directory (`traces.npy` +
 `metadata.json`) the same way: the observation gets the traces, the sample rate, the microphone
 positions, the nominal sound speed and the wind; the source trajectory and the solver parameters
 are truth.
@@ -273,7 +273,7 @@ see [Harbor](harbor.md).
 #### Air processing (`air/`)
 
 There are two detection paths: the production SRP-PHAT pipeline (`air/detection/`, driven by
-`examples/run_pipeline.py`) and the older MFP/EKF library path (`air/processor.py`,
+`examples/air/02_pipeline/run_pipeline.py`) and the older MFP/EKF library path (`air/processor.py`,
 `air/tracker.py`, `air/detection_main.py`), which the parametric studies still use.
 `air/detection_main.py` and `air/studies.py` orchestrate simulation and processing together and are
 on neither side of the contract.
@@ -458,19 +458,19 @@ after that many scored hits, so the number of processed windows depends on the t
 ### Single-process CPU
 
 ```bash
-python examples/run_fdtd.py --domain isotropic ...
+python examples/air/01_simulation/run_fdtd.py --domain isotropic ...
 ```
 
 ### Single-process GPU
 
 ```bash
-python examples/run_fdtd.py --domain isotropic --use-cuda ...
+python examples/air/01_simulation/run_fdtd.py --domain isotropic --use-cuda ...
 ```
 
 ### Multi-process MPI (CPU or GPU)
 
 ```bash
-mpirun -np 4 python examples/run_fdtd.py --domain isotropic [--use-cuda] ...
+mpirun -np 4 python examples/air/01_simulation/run_fdtd.py --domain isotropic [--use-cuda] ...
 ```
 
 MPI decomposes the grid along y (2-D) or z (3-D).  Ghost rows of width

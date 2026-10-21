@@ -63,7 +63,7 @@ alphabetically within each group.
 | **Effective Threshold** | — | $\tau_\text{eff}=m\,\max(r_\text{pattern},\;\tau_\text{hit})$, with $m=1$ unless a maneuver-aware multiplier applies; a shot scores a hit if the CPA miss $<\tau_\text{eff}$. |
 | **Engagement Envelope** | — | `compute_engagement_3d` authorization gate for lead shots: threat class and confidence, evasive-maneuver uncertainty, pellet reach, max engagement range, and position uncertainty vs. limit and pattern diameter. |
 | **Lead Computation** | — | Iterative ballistic intercept (up to 5 iterations) predicting where the target will be when pellets arrive; returns aim bearing, aim elevation, TOF, and intercept position. |
-| **Pattern Diameter** | — | Shotgun pellet spread: $d=s\cdot R$; `pattern_diameter` defaults to $s=0.025$, `run_pipeline.py` uses 0.2 and `examples/pipeline.config.json` sets 0.3. |
+| **Pattern Diameter** | — | Shotgun pellet spread: $d=s\cdot R$; `pattern_diameter` defaults to $s=0.025$, `run_pipeline.py` uses 0.2 and `examples/configs/pipeline.config.json` sets 0.3. |
 | **Pellet Velocity Decay** | — | $v(R)=\max(v_0 - d\cdot R,\;0)$; muzzle velocity $v_0=400$ m/s, deceleration rate $d=1.5$ (m/s)/m. |
 | **Time of Flight** | TOF | Time for pellets to travel range $R$ under linear velocity decay: $t = R / v_\text{avg}$ with $v_\text{avg}=\tfrac12(v_0 + v_0 - dR)$; infinite if the pellet stops first. |
 

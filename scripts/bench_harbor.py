@@ -108,7 +108,7 @@ ECA_CASES = {
     "eca_193_moving_doppler_smooth4": (True, 4.0),
 }
 ABLATION_CONFIGS = {
-    # name: (direct path in the traces, reference, exact track)   (examples/harbor_bistatic_ablation.py)
+    # name: (direct path in the traces, reference, exact track)   (examples/harbor/04_bistatic/harbor_bistatic_ablation.py)
     "direct_removed_exactly": (False, "true_waveform", True),
     "true_waveform_exact_track": (True, "true_waveform", True),
     "estimated_waveform_exact_track": (True, "data", True),
@@ -247,7 +247,7 @@ def run_fdtd_case(name: str, args) -> tuple[dict, dict]:
 
 def rerender_fine_dataset(args, cache_dir: Path) -> tuple[HarborDataset, float]:
     """The fine bistatic dataset rebuilt with the current solver options (same scenario, tracks and
-    noise seed as ``examples/harbor_bistatic_dataset.py``), so the processing criteria can be
+    noise seed as ``examples/harbor/01_datasets/harbor_bistatic_dataset.py``), so the processing criteria can be
     evaluated on float32 or CPML or batched forward modelling."""
     cfg = HarborScenarioConfig.load(BISTATIC_SCENARIO)
     cfg.fdtd.use_cuda = args.cuda
