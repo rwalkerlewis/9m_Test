@@ -169,3 +169,23 @@ def test_combined_bodies_gather(tmp_path):
     assert np.allclose(ds.clean, expected, rtol=1e-4, atol=1e-6 * np.abs(expected).max())
     with pytest.raises(ValueError):
         assemble_dataset(cfg, layout, tracks, combined, scatter_gain={"b1": 0.0})
+
+
+def test_build_info_counts_runs_and_cached_gathers(setup, tmp_path):
+    """``build.json``: the cached gathers counted before and after a render give the FDTD runs; a render read wholly from
+    the cache counts none."""
+    import json
+
+    from acoustic_sim.water.dataset import count_cached_gathers, write_build_info
+
+    env, layout, cfg, tracks, gathers, cache = setup
+    assert count_cached_gathers(None) == 0 and count_cached_gathers(tmp_path / "missing") == 0
+    n = count_cached_gathers(cache)
+    assert n == len(gathers)
+    again = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=cache)
+    assert count_cached_gathers(cache) - n == 0 and set(again) == set(gathers)
+    info = write_build_info(tmp_path / "build.json", cfg, env, len(gathers), 12.0, 3, note="x")
+    assert json.loads((tmp_path / "build.json").read_text()) == info
+    assert info["fdtd_runs"] == 3 and info["n_steps"] == cfg.fdtd.n_steps and info["grid"] == [env.nx, env.ny]
+    assert info["fdtd_wall_s_per_run_per_simulated_s"] == pytest.approx(12.0 / 3 / 6.0) and info["note"] == "x"
+    assert write_build_info(tmp_path / "b.json", cfg, env, 0, 0.1, 0)["fdtd_wall_s_per_run_per_simulated_s"] is None

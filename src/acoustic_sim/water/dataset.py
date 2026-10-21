@@ -391,3 +391,25 @@ def simulate_scenario(
     gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=cache_dir, workers=workers)
     return assemble_dataset(cfg, layout, tracks, gathers, seed=seed, levels=levels, keep_components=keep_components,
                             env=env, out=out)
+
+
+def write_build_info(path: str | Path, cfg: HarborScenarioConfig, env: HarborEnvironment, n_gathers: int, fdtd_wall_s: float,
+                     n_fdtd_runs: int, **extra) -> dict:
+    """``build.json`` of a recording: the FDTD wall time of its gathers (*fdtd_wall_s*, the rendering of every gather,
+    *n_fdtd_runs* of them run and the rest read from the cache), the grid, the sample rate, the number of steps, the time
+    scheme, the GPU and the commit (``acoustic_sim.contract.run_info``).  *extra* is added as given."""
+    from acoustic_sim.contract import run_info
+
+    info = {"fdtd_wall_s": float(fdtd_wall_s), "fdtd_runs": int(n_fdtd_runs), "gathers": int(n_gathers),
+            "fdtd_wall_s_per_run_per_simulated_s": (float(fdtd_wall_s) / n_fdtd_runs / cfg.fdtd.total_time) if n_fdtd_runs else None,
+            "grid": [int(env.nx), int(env.ny)], "dx": float(env.dx), "fs": float(cfg.fdtd.fs), "total_time": float(cfg.fdtd.total_time),
+            "n_steps": int(cfg.fdtd.n_steps), "time_scheme": cfg.fdtd.time_scheme,
+            "run": run_info(use_cuda=cfg.fdtd.use_cuda), **extra}
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(json.dumps(info, indent=2))
+    return info
+
+
+def count_cached_gathers(cache_dir: str | Path | None) -> int:
+    """Number of gather files in *cache_dir* (0 when there is none)."""
+    return 0 if cache_dir is None or not Path(cache_dir).exists() else len(list(Path(cache_dir).glob("gather_*.npz")))

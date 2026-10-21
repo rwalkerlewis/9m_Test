@@ -26,6 +26,7 @@ from scipy.signal import butter, sosfiltfilt, spectrogram
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
+from acoustic_sim.water.dataset import count_cached_gathers, write_build_info  # noqa: E402
 from acoustic_sim.water import (  # noqa: E402
     HarborScenarioConfig,
     assemble_dataset,
@@ -63,7 +64,11 @@ def main() -> None:
 
     t0 = time.time()
     tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in cfg.vessels}
+    n_cached = count_cached_gathers(out / "cache")
+    t_fdtd = time.time()
     gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=out / "cache", workers=args.workers)
+    write_build_info(out / "build.json", cfg, env, len(gathers), time.time() - t_fdtd,
+                     count_cached_gathers(out / "cache") - n_cached)
     ds = assemble_dataset(cfg, layout, tracks, gathers, seed=args.seed)
     print(f"simulated {len(cfg.vessels)} vessels in {time.time() - t0:.0f} s")
     ds.save(out / "dataset.npz")
