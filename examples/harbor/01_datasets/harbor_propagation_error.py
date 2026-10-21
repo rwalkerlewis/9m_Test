@@ -2,18 +2,23 @@
 """The forward model's own propagation error on one recording: arrival time at each hydrophone against range over the
 chart's sound speed.
 
-The simulated water propagates the direct paths faster than the chart's single sound speed, by an amount that depends
-on direction (``docs/harbor.md``): the FDTD scheme's dispersion at 2 to 4 cells per wavelength at the top of the band.
-Measured here from the truth side: one FDTD run of a stationary Ricker pulse at a ship position (the first radiating
-vessel at mid record), the same grid, solver and sensors as the recording; at each hydrophone the arrival time is the
-lag of the peak of the envelope of the band limited cross correlation between the recorded pulse and the free field
-prediction at the chart's speed (the group arrival; the nearest correlation peak, the phase arrival, is kept too, but it is
-ambiguous by a period where the pulse is dispersed) (``green2d`` at the chart's nominal speed, the processing's own replica), the window gated around the
-direct arrival so no reflection enters.  A negative error is an early arrival (faster than the chart).
+Measured from the truth side: one FDTD run of a stationary Ricker pulse at a ship position (the first radiating vessel
+at mid record), the same grid, solver and sensors as the recording; at each hydrophone the arrival time is the lag of
+the peak of the envelope of the band limited cross correlation between the recorded pulse and the free field prediction
+at the chart's speed (``green2d`` at the chart's nominal speed, the processing's own replica; the group arrival; the
+nearest correlation peak, the phase arrival, is kept too, but it is ambiguous by a period where the pulse is dispersed),
+the window gated around the direct arrival.  A negative error is an early arrival (faster than the chart).  Beside it,
+``straight_path_ms``: the travel time along the straight line through the scenario's sound speed map minus range over
+the chart's speed, what the water itself contributes (refraction aside).
 
-The result goes into the truth file's ``meta`` as ``propagation_error_ms`` (per hydrophone: position, range, direction
-from the source, error) and the figure ``propagation_error.png`` (error against direction).  The forward model is not
-changed.
+The result goes into the truth file's ``meta`` as ``propagation_error_ms`` and the figure ``propagation_error.png``.
+Variants (``--scheme``, ``--uniform-speed``, ``--dx``) describe the scenario changed, not the recording, and are written
+beside it as ``propagation_error_<variant>.json``, never into the truth.
+
+Criterion (fixed before the k space recordings were built, task ``forward_fidelity``): the direct path arrival error
+at every hydrophone within 0.2 ms on the 0.5 m and 1 m recordings, within 0.1 ms on the simple harbor (whose water has
+exactly the chart's speed); the 5 m harbor has no criterion (reported).  ``criterion_ms`` and ``passed`` are in the
+result (``None`` where there is no criterion).
 
 Usage::
 
@@ -62,6 +67,14 @@ def arrival_lag(measured: np.ndarray, predicted: np.ndarray, fs: float, t0: floa
     near = np.abs(lags - lags[i]) <= 0.5 * period
     j = np.flatnonzero(near)[int(np.argmax(xc[near]))]
     return float(lags[j]), float(lags[i])
+
+
+def criterion_ms(cfg: HarborScenarioConfig) -> float | None:
+    """The criterion of the module docstring for *cfg*: 0.1 ms on the simple harbor, 0.2 ms on the other 0.5 m and 1 m
+    grids, None on coarser grids."""
+    if cfg.environment.dx > 1.0:
+        return None
+    return 0.1 if cfg.environment.kind == "simple" else 0.2
 
 
 def straight_path_time(env, a: np.ndarray, b: np.ndarray, step: float | None = None) -> float:
@@ -137,6 +150,9 @@ def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | No
            "uniform_speed": uniform_speed, "dx": cfg.environment.dx, "fs": fs, "hydrophones": out,
            "median_ms": float(np.median(e)), "min_ms": float(np.min(e)), "max_ms": float(np.max(e)),
            "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed; straight_path_ms: the travel time along the straight line through the scenario's sound speed map minus range / chart speed (what the water itself contributes, refraction aside)"}
+    lim = criterion_ms(cfg)
+    res["criterion_ms"] = lim
+    res["passed"] = None if lim is None else bool(max(abs(x) for x in e) <= lim)
     if save and scheme is None and not uniform_speed and dx is None:
         truth.meta["propagation_error_ms"] = res
         truth.save(truth_p)
