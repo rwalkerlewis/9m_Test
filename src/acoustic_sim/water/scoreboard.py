@@ -375,6 +375,137 @@ def _full_hit(run: ChainMaps, tru: Truth, oid: str, threshold: Threshold, detect
 
 
 # ----------------------------------------------------------------------
+# Tracks: the headline scoring from stage 2 on
+# ----------------------------------------------------------------------
+#
+# Fixed in stage 2 (``docs/architecture.md``, Scoreboard), replacing the definitions above where they differ; the
+# threshold method above stays as a diagnostic.
+#
+# * A detection (a map peak) within ``hit_radius`` (5 m) of an object's true position is a hit.
+# * A confirmed track is matched to the object nearest over its fixes (median distance) if that is within
+#   ``assoc_radius`` (10 m; 20 m on the 5 m harbor), otherwise it is a false track.
+# * The false alarm rate is the number of confirmed false tracks per minute of recording.
+# * Pd per object (and per kind of track: radiator, echo, either): the fraction of the picture frames, from the
+#   first frame the object could have been confirmed, in which a confirmed (or static) track matched to it is within
+#   ``hit_radius`` of it.  The first frame it could have been confirmed: the first frame in which the chain feeding
+#   that tracker (passive for radiator tracks, echo for echo tracks) has an output and the object is active, plus
+#   ``confirm - 1`` frames of that chain (``confirm`` of the tracker's ``TrackerConfig``).
+
+FIRM = ("confirmed", "static")
+
+
+def match_tracks(tracks: dict, truth: Truth, radius: float, objects: list[str] | None = None) -> list[dict]:
+    """Every track against the truth: matched to the object nearest over its fixes (median distance) when that is
+    within *radius*, else a false track.  *tracks*: id -> fixes ``(t, xy, ...)``."""
+    ids = objects if objects is not None else list(truth.tracks)
+    out = []
+    for k, fixes in tracks.items():
+        d = {oid: float(np.median([np.hypot(*(truth.tracks[oid].position_at(f[0])[0] - np.asarray(f[1]))) for f in fixes]))
+             for oid in ids}
+        nearest = min(d, key=d.get)
+        xy = np.array([f[1] for f in fixes], dtype=float)
+        out.append({"track": k, "fixes": len(fixes), "first_t": float(fixes[0][0]), "last_t": float(fixes[-1][0]),
+                    "true_object": nearest if d[nearest] <= radius else None, "false_track": d[nearest] > radius,
+                    "nearest_object": nearest, "median_error_m": d[nearest], "first_xy": xy[0].round(1).tolist(),
+                    "last_xy": xy[-1].round(1).tolist(), "median_xy": np.median(xy, axis=0).round(1).tolist()})
+    return out
+
+
+def picture_tracks(records: list[dict]) -> dict[str, dict]:
+    """Per track of a picture (``picture.jsonl`` records) that was ever confirmed: its kind and its fixes
+    ``(t, xy)`` from the frames it was confirmed, static or lost in."""
+    out: dict[str, dict] = {}
+    for rec in records:
+        for o in rec["objects"]:
+            for kind, tid in o.get("tracks", {}).items():
+                st = o.get("track_state", {}).get(tid)
+                if st is None or st["status"] not in FIRM + ("lost",):
+                    continue
+                d = out.setdefault(tid, {"kind": kind, "fixes": {}, "first_t": rec["t"]})
+                d["fixes"][st["fix_t"]] = st["fix_xy"]
+    return {k: {"kind": v["kind"], "first_t": v["first_t"], "fixes": sorted(v["fixes"].items())} for k, v in out.items()}
+
+
+def score_picture(records: list[dict], truth: Truth, record_s: float, confirm: dict[str, int], assoc_radius: float = 10.0,
+                  hit_radius: float = DETECT_RADIUS) -> dict:
+    """The stage 2 scoring of a picture (definitions above).  *confirm*: the ``confirm`` of each tracker
+    (``{"radiator": 6, "echo": 8}``)."""
+    tracks = picture_tracks(records)
+    matches = {m["track"]: dict(m, kind=tracks[m["track"]]["kind"])
+               for m in match_tracks({k: v["fixes"] for k, v in tracks.items()}, truth, assoc_radius)}
+    times = np.array([r["t"] for r in records])
+    chain_of = {"radiator": "passive", "echo": "echo"}
+    per = {}
+    for oid, tr in truth.tracks.items():
+        act = tr.active_at(times) if len(times) else np.zeros(0, bool)
+        pos = tr.position_at(times) if len(times) else np.empty((0, 2))
+        row = {"kind": tr.kind, "radiates": bool(tr.level_pa > 0), "ais": bool(tr.ais), "pd": {}, "frames": {}, "hits": {},
+               "median_error_m": {}, "tracks": sorted(k for k, m in matches.items() if m["true_object"] == oid)}
+        starts = {}
+        for kind in ("radiator", "echo"):
+            out_k = np.array([bool(r["chains"].get(chain_of[kind])) for r in records]) & act
+            first = np.flatnonzero(out_k)
+            if len(first) == 0 or kind not in confirm:
+                continue
+            chain_frames = np.flatnonzero(np.array([bool(r["chains"].get(chain_of[kind])) for r in records]))
+            later = chain_frames[chain_frames >= first[0]]
+            starts[kind] = int(later[min(confirm[kind] - 1, len(later) - 1)])
+        for kind in ("radiator", "echo", "any"):
+            k0 = min(starts.values()) if kind == "any" and starts else starts.get(kind)
+            if k0 is None:
+                continue
+            frames = [k for k in range(k0, len(records)) if act[k]]
+            errs = []
+            for k in frames:
+                best = None
+                for o in records[k]["objects"]:
+                    for tk, tid in o.get("tracks", {}).items():
+                        st = o.get("track_state", {}).get(tid)
+                        if st is None or st["status"] not in FIRM or (kind != "any" and tk != kind):
+                            continue
+                        if matches.get(tid, {}).get("true_object") != oid:
+                            continue
+                        d = float(np.hypot(*(np.asarray(st["xy"]) - pos[k])))
+                        best = d if best is None else min(best, d)
+                if best is not None and best <= hit_radius:
+                    errs.append(best)
+            row["frames"][kind] = len(frames)
+            row["hits"][kind] = len(errs)
+            row["pd"][kind] = len(errs) / len(frames) if frames else None
+            row["median_error_m"][kind] = float(np.median(errs)) if errs else None
+        per[oid] = row
+    false = [m for m in matches.values() if m["false_track"]]
+    return {"objects": per, "tracks": list(matches.values()),
+            "false_tracks": {"count": len(false), "per_minute": len(false) / (record_s / 60.0),
+                             "radiator": sum(1 for m in false if m["kind"] == "radiator"),
+                             "echo": sum(1 for m in false if m["kind"] == "echo"), "tracks": false},
+            "definitions": {"hit_radius_m": hit_radius, "assoc_radius_m": assoc_radius, "confirm": dict(confirm)}}
+
+
+def peak_hits(frames, truth: Truth, hit_radius: float = DETECT_RADIUS) -> dict:
+    """Diagnostic per object: the fraction of the frames with a map peak within *hit_radius* (each peak labelled
+    with its nearest object) and the median distance of those peaks.  *frames*: ``(t, peaks (P, 2))``."""
+    ids = list(truth.tracks)
+    hit = {oid: [] for oid in ids}
+    n = 0
+    for t, xy in frames:
+        n += 1
+        if len(xy) == 0:
+            continue
+        pos = np.stack([truth.tracks[i].position_at(t)[0] for i in ids])
+        best: dict[str, float] = {}
+        for p in np.asarray(xy).reshape(-1, 2):
+            d = np.hypot(*(pos - p).T)
+            j = int(np.argmin(d))
+            if d[j] <= hit_radius:
+                best[ids[j]] = min(best.get(ids[j], np.inf), float(d[j]))
+        for oid, d in best.items():
+            hit[oid].append(d)
+    return {oid: {"frames": n, "hit": len(v) / max(n, 1), "median_error_m": float(np.median(v)) if v else None}
+            for oid, v in hit.items()}
+
+
+# ----------------------------------------------------------------------
 # Figures
 # ----------------------------------------------------------------------
 

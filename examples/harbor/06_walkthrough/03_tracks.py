@@ -18,15 +18,17 @@ a = c.args(__doc__)
 obs, tru = c.observation(a.dataset), c.truth(a.dataset)
 run = c.products(a)
 frames = run["passive"]["frames"]
-fig, axes = plt.subplots(1, 2, figsize=(16, 6.4))
-ax = axes[0]
+F = c.Figures(a, "03_tracks", f"Step 3 - tracks from the passive detections ({a.dataset})", c.NOTE)
+fig, ax = F.new("peaks")
 c.chart(ax, obs)
+c.zoom(ax, run["passive"]["grid"])
 pts = np.array([[t, *p] for t, xy, _, _ in frames for p in xy])
 sc = ax.scatter(pts[:, 1], pts[:, 2], c=pts[:, 0], s=6, cmap="plasma")
 fig.colorbar(sc, ax=ax, shrink=0.8, label="time [s]")
 ax.set_title(f"All passive peaks ({len(pts)} in {len(frames)} frames)", fontsize=10)
-ax = axes[1]
+fig, ax = F.new("tracks")
 c.chart(ax, obs)
+c.zoom(ax, run["passive"]["grid"])
 c.truth_overlay(ax, tru)
 rows = []
 for k, fx in run["tracks"].items():
@@ -38,10 +40,10 @@ for k, fx in run["tracks"].items():
     o = min(d, key=d.get)
     rows.append([k, str(len(fx)), o if d[o] <= 10 else "none", f"{d[o]:.1f}"])
 ax.set_title("Confirmed tracks (black) over the true tracks (dashed)", fontsize=10)
-tab = ax.table(cellText=rows, colLabels=["track", "fixes", "true object", "median error [m]"], loc="upper right",
-               cellLoc="center", colWidths=[0.09, 0.08, 0.14, 0.17])
+fig, ax = F.new("table", size=(8, 0.9 + 0.35 * (len(rows) + 1)))
+ax.axis("off")
+tab = ax.table(cellText=rows, colLabels=["track", "fixes", "true object", "median error [m]"], loc="upper center",
+               cellLoc="center")
 tab.auto_set_font_size(False)
 tab.set_fontsize(8)
-fig.suptitle(f"Step 3 - tracks from the passive detections ({a.dataset})", fontsize=12)
-fig.tight_layout()
-c.save(fig, c.out_dir(a) / "03_tracks.png", c.NOTE)
+F.save_all()

@@ -2,9 +2,11 @@
 """Step 6, the echo map: where is ship noise being reflected?
 
 On the cleaned traces, every cell of the grid is tested as a reflector: the reference of each tracked
-ship, delayed by ship -> cell -> channel, is matched to the data.  A silent body lights up.  Three frames
-(crosses: the frame's strongest peaks) and the sum of all frames (the full record), with the true
-bodies circled.
+ship, delayed by ship -> cell -> channel, is matched to the data.  A silent body lights up.  The peaks of every frame
+feed a second tracker (the echo tracker, peaks next to a radiator track left out); the picture shows its tracks, not
+the raw peaks.  Three frames (squares: echo tracks confirmed at that time, with their recent fixes; faint crosses:
+the frame's peaks) and the sum of all frames (the full record) with every confirmed echo track, the true bodies
+circled.
 
     python examples/harbor/06_walkthrough/06_echo_map.py [--dataset bistatic] [--cuda]
 """
@@ -20,6 +22,18 @@ obs, tru = c.observation(a.dataset), c.truth(a.dataset)
 run = c.products(a)
 grid, frames = run["echo"]["grid"], run["echo"]["frames"]
 pick = [frames[int(q * (len(frames) - 1))] for q in (0.2, 0.5, 0.8)]
+etracks = run["echo"]["tracks_ever"]
+firm = {}                                                       # echo track -> times it was confirmed or static in the picture
+for rec in run["records"]:
+    for o in rec["objects"]:
+        tid = o.get("tracks", {}).get("echo")
+        if tid and o.get("track_state", {}).get(tid, {}).get("status") in ("confirmed", "static"):
+            firm.setdefault(tid, set()).add(round(rec["t"], 4))
+
+
+def confirmed_at(k, t):
+    return round(t, 4) in firm.get(k, set())
+
 
 
 def shown(values):
@@ -28,8 +42,10 @@ def shown(values):
     return maximum_filter(np.nan_to_num(img, nan=-30.0), size=3), ext
 
 
-fig, axes = plt.subplots(1, 4, figsize=(22, 5.4))
-for ax, (t, xy, score, B, ships) in zip(axes[:3], pick):
+F = c.Figures(a, "06_echo_map", f"Step 6 - echo maps on the cleaned traces ({a.dataset}): silent bodies lit by the tracked ships",
+              c.NOTE + " Maps shown with a 3 cell maximum filter.")
+for q, (t, xy, score, B, ships) in enumerate(pick):
+    fig, ax = F.new(f"{q + 1}")
     c.chart(ax, obs)
     img, ext = shown(B)
     im = ax.imshow(img, origin="lower", extent=ext, cmap="inferno", vmin=0, vmax=20, alpha=0.95)
@@ -39,15 +55,27 @@ for ax, (t, xy, score, B, ships) in zip(axes[:3], pick):
     for n, p in ships.items():
         ax.plot(*p, "s", color=c.RADIATOR, ms=8, mec="w")
     for r, p in enumerate(xy):
-        ax.plot(*p, "x", color="lime" if r == 0 else "w", ms=10, mew=2)
-    ax.set_title(f"t = {t:.2f} s\nsquares: tracked ships; cyan: true bodies; x: peaks", fontsize=9)
+        ax.plot(*p, "x", color="w", ms=8, mew=1.2, alpha=0.45)
+    for k, fx in etracks.items():
+        past = np.array([f[1] for f in fx if t - 2.0 <= f[0] <= t]).reshape(-1, 2)
+        if len(past) and confirmed_at(k, t):
+            ax.plot(past[:, 0], past[:, 1], "-", color="lime", lw=1.5)
+            ax.plot(*past[-1], "s", color="lime", ms=8, mec="k")
+            ax.annotate(k, past[-1], xytext=(5, 5), textcoords="offset points", fontsize=8, color="lime")
+    ax.set_title(f"t = {t:.2f} s\nblue squares: tracked ships; cyan: true bodies;\ngreen: echo tracks (last 2 s); faint x: peaks", fontsize=9)
+    c.zoom(ax, grid)
+    fig.colorbar(im, ax=ax, shrink=0.8, label="dB over the map median (noise level)")
 full = np.sum([f[3] / max(np.median(f[3][f[3] > 0]), 1e-30) for f in frames], axis=0)   # each frame in units of its median
-ax = axes[3]
+fig, ax = F.new("full_record")
 c.chart(ax, obs)
 img, ext = shown(full)
-ax.imshow(img, origin="lower", extent=ext, cmap="inferno", vmin=0, vmax=20, alpha=0.95)
+im = ax.imshow(img, origin="lower", extent=ext, cmap="inferno", vmin=0, vmax=20, alpha=0.95)
 c.truth_overlay(ax, tru, labels=True, alpha=0.7)
-ax.set_title(f"Full record: sum of {len(frames)} frames (each over its median)", fontsize=9)
-fig.colorbar(im, ax=axes, shrink=0.8, label="dB over the map median (noise level)")
-fig.suptitle(f"Step 6 - echo maps on the cleaned traces ({a.dataset}): silent bodies lit by the tracked ships", fontsize=12)
-c.save(fig, c.out_dir(a) / "06_echo_map.png", c.NOTE + " Maps shown with a 3 cell maximum filter.")
+for k, fx in etracks.items():
+    xy = np.array([f[1] for f in fx])
+    ax.plot(xy[:, 0], xy[:, 1], ".-", color="lime", lw=1.0, ms=3)
+    ax.annotate(k, xy[-1], xytext=(5, -9), textcoords="offset points", fontsize=8, color="lime")
+ax.set_title(f"Full record: sum of {len(frames)} frames (each over its median)\ngreen: every confirmed echo track", fontsize=9)
+c.zoom(ax, grid)
+fig.colorbar(im, ax=ax, shrink=0.8, label="dB over the map median (noise level)")
+F.save_all()

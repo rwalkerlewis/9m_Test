@@ -108,7 +108,7 @@ ECA_CASES = {
     "eca_193_moving_doppler_smooth4": (True, 4.0),
 }
 ABLATION_CONFIGS = {
-    # name: (direct path in the traces, reference, exact track)   (examples/harbor/04_bistatic/harbor_bistatic_ablation.py)
+    # name: (direct path in the traces, reference, exact track)   (examples/harbor/90_history/harbor_bistatic_ablation.py)
     "direct_removed_exactly": (False, "true_waveform", True),
     "true_waveform_exact_track": (True, "true_waveform", True),
     "estimated_waveform_exact_track": (True, "data", True),

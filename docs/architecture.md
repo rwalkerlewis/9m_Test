@@ -64,7 +64,7 @@ re-exported from a package `__init__`, and fails with the file and line of every
 
 | Side | Modules |
 |------|---------|
-| Processing | `water/detection.py`, `water/suppression.py`, `water/occupancy.py`, `water/bistatic.py`, `water/motion.py`, `water/localiser.py`, `water/classifier.py`, `water/propagation.py`, `water/sensors.py`, `water/ais.py`; the scoring modules `water/evaluate.py` and `water/scoreboard.py` (they read the `Truth`; no other processing module imports them); `air/detection/*`, `air/processor.py`, `air/tracker.py`, `air/fire_control.py`; the `ml/` inference paths (`features.py`, `acoustic_classifier.py`, `fusion_classifier.py`, `maneuver_classifier.py`, `anomaly_detector.py`, `anomaly_integration.py`) |
+| Processing | `water/stream.py`, `water/streaming.py`, `water/characteristics.py`, `water/detection.py`, `water/suppression.py`, `water/occupancy.py`, `water/bistatic.py`, `water/motion.py`, `water/localiser.py`, `water/classifier.py`, `water/propagation.py`, `water/sensors.py`, `water/ais.py`; the scoring modules `water/evaluate.py` and `water/scoreboard.py` (they read the `Truth`; no other processing module imports them); `air/detection/*`, `air/processor.py`, `air/tracker.py`, `air/fire_control.py`; the `ml/` inference paths (`features.py`, `acoustic_classifier.py`, `fusion_classifier.py`, `maneuver_classifier.py`, `anomaly_detector.py`, `anomaly_integration.py`) |
 | Forward | `solver/*`, `model.py`, `sources.py`; `water/fdtd_runner.py`, `water/fdtd_cuda_bodies.py`, `water/scatterer.py`, `water/dispersion.py`, `water/signatures.py`, `water/vessels.py`, `water/noise.py`, `water/dataset.py`, `water/scenario.py`, `water/environment.py`, `water/ais_sim.py`, `water/sensor_sampling.py`; `air/forward.py`, `air/domains.py`, `air/noise.py`, `air/setup.py`; `ml/data_generation.py`, `ml/fno*` |
 | Either | `water/diagnostics.py`, `air/diagnostics.py` (diagnostics may import both sides; library code on the processing side never imports them) |
 
@@ -134,6 +134,12 @@ Scoring takes the `Truth` as an explicit argument: `water/evaluate.py` (`score_d
 sanctioned place truth enters after inference. The classifiers (`HarborClassifier`, the air
 classifiers) infer from the observation; labels come from the truth only inside the scoring call.
 
+**Run block.**  Every `summary.json`, `results.json` and `picture.jsonl` header of the stage 2 entry points carries a
+`run` block from `contract.run_info()`: git commit and whether the tree had uncommitted changes, the processing config
+file and its sha256 with the `--set` overrides, the observation file and its sha256, Python, NumPy and CuPy versions, the
+GPU name or `"cpu"`, the seed, the wall time and the `Provenance` above (`held_out` true on the test recordings).
+`tests/harbor/test_ci_end_to_end.py` checks that every entry point writes it.
+
 **Documentation rule.** A table in `docs/` that contains a row given truth inputs or simulator
 knowledge must contain the row with everything estimated from the traces for the same case beside
 it, and the rows say which is which.
@@ -174,10 +180,28 @@ test set is run once with those values; `Provenance.held_out` says which (every 
 "tuning set" or "test set").  A combined body gather (`render_vessel_gathers(combined_bodies=True)`)
 cannot remove one body: the object free run of the echo chain then removes every body at once.
 
+**Stage 2 scoring (the headline numbers from stage 2 on).**  Fixed before the test recordings existed, replacing the
+definitions above where they differ (`scoreboard.score_picture`, read from the picture records):
+
+* a detection within 5 m of an object's true position is a hit;
+* a confirmed track (confirmed or static at least once) is matched to the object nearest over its fixes (median distance)
+  if within 10 m (20 m on the 5 m harbor), otherwise it is a false track;
+* the false alarm rate is the number of confirmed false tracks per minute of recording;
+* Pd per object (and per kind of track: radiator, echo, either) is the fraction of frames, from the first frame the object
+  could have been confirmed, in which a confirmed track matched to it is within 5 m.  The first frame it could have been
+  confirmed: the first frame in which the chain feeding that tracker (passive for radiator tracks, echo for echo tracks)
+  has an output and the object is active, plus `confirm - 1` frames of that chain.
+
+The object free threshold above stays as a diagnostic: on the full scene it does not hold its 5 %
+([history](harbor_history.md#findings-before-stage-2)).  **Data split from stage 2 on:** the noise seed 0 recordings are
+the tuning set (every parameter of the processing configs was set looking at them), and the test set is noise seeds 1 to
+3 of each (mixed from the cached gathers) and `multistatic_b`, a geometry no parameter has seen.
+
 ### Real data entry point
 
 `Observation.from_arrays(traces, fs, geometry, environment, reports=None, t0=0.0, meta=...)` builds an
-observation from plain arrays; no scenario is involved (`tests/test_contract.py` runs
+observation from plain arrays; saved with `Observation.save`, the whole system runs on it with
+`python -m acoustic_sim.water.stream --observation <file> --processing <config> --out <dir>`; no scenario is involved (`tests/test_contract.py` runs
 `run_bistatic` and `run_ais_aware` to completion on one with the free field propagator). A field
 recording is converted into:
 
@@ -259,16 +283,29 @@ ocean water column.
 |--------|----------------|
 | `water/sensors.py`, `water/ais.py` | Polyline cable geometry, pressure or gauge-length strain DAS (the sample points and `collapse`), hydrophones and channel splitting (`SensorLayout` is the water `Geometry`); AIS reports and the predictor |
 | `water/propagation.py` | `green2d` and `FreeFieldPropagator`, the default replica model (nothing beyond the chart) |
-| `water/detection.py`, `water/suppression.py`, `water/occupancy.py` | Passive matched-field detection, CFAR, AIS-guided position refinement and ship suppression, and track-before-detect |
-| `water/streaming.py` | The real-time system, causal and step by step: `StreamingPassive` (passive chain; AIS optional, not used by the system), `RadiatorTracker` (tracks from its peaks), `StreamingEcho` (direct paths of the tracked radiators removed, echoes mapped with each as illuminator), `ais_crosscheck` (AIS labels the tracks afterwards) |
-| `water/bistatic.py`, `water/motion.py` | AIS-ship-illuminated echo processing, direct-path removal, and Bartlett/coherent/MVDR/MUSIC localization maps; motion-compensated integration (`motion_integrate`, re-exported by `bistatic.py`) |
-| `water/localiser.py` | Optional empirical replica refinement from a survey of measured (or, flagged, simulated) transfer functions |
-| `water/evaluate.py`, `water/scoreboard.py`, `water/classifier.py` | Scoring against the `Truth` (`score_detections`, `truth_labels`; the [scoreboard](#scoreboard)); optional harbor CNN/CVAE classifier |
+| `water/detection.py` | Spectra, channel QC, common mode, noise floor and whitening, the matched field scanner and its stationary interference projector, peak extraction (used by the system); CFAR and the batch `run_detection` (history) |
+| `water/stream.py` | **The system**: `HarborPicture` runs the chain below on traces as they arrive and makes one picture record per frame (`picture.jsonl`); `load_processing` reads a processing config (`examples/configs/processing/<recording>.json`, every parameter, `--set` overrides recorded); `run` on an observation; `python -m acoustic_sim.water.stream --observation --processing --out` |
+| `water/streaming.py` | The steps of the system, causal: `StreamingPassive` (passive chain; it accepts AIS reports, the system never passes them), `RadiatorTracker` (tracks from peaks; one instance on the passive peaks, a second on the echo peaks; confirmation, static and lost status), `StreamingEcho` (direct paths of the strong radiator tracks removed, echoes mapped with each as illuminator), `ais_crosscheck` |
+| `water/characteristics.py` | What each tracked object is, measured: position uncertainty (half maximum widths of the map peak, fit residual), velocity and heading with standard errors, AIS identity, received and source level and tonal lines of a radiator, echo strength, size indicator and extent of a body (no classifier) |
+| `water/bistatic.py` | Used by the system: the data reference beam (`make_reference`), the ECA (`eca_remove`), `BistaticConfig`, the grid.  History: the batch `run_bistatic` with an AIS illuminator, the patch, adaptive, MVDR and MUSIC variants |
+| `water/evaluate.py`, `water/scoreboard.py` | Scoring against the `Truth`: the [scoreboard](#scoreboard) (`score_picture`, `match_tracks`, `peak_hits`; the stage 1 threshold method as a diagnostic), `score_detections` |
 | `water/diagnostics.py` | Either side: `SimulatorAwarePropagator`, `VesselPathLocaliser` (replicas from the dataset's own FDTD gathers), `true_illuminator_waveform` |
 | `water/plotting.py`, `water/device.py` | Visualizations; CPU/CuPy dispatch |
 
-For implementation status, interpretation caveats, and complete scenario and example workflows,
-see [Harbor](harbor.md).
+#### History (water processing)
+
+Library modules that only the scripts of `examples/harbor/90_history/` use, kept because committed figures came from them
+(nothing is deleted; see [Harbor, history](harbor_history.md)):
+
+| Module | What it was |
+|--------|-------------|
+| `water/suppression.py` | AIS-aware suppression: ship refinement and projection, re-whitening, the batch `run_ais_aware` (`StreamingPassive` still calls it when given AIS reports; the system gives none) |
+| `water/occupancy.py` | Occupancy grid track-before-detect |
+| `water/localiser.py` | Empirical replica refinement from a survey grid |
+| `water/classifier.py` | The harbor CNN / CVAE classifier wrapper (`[ml]` extra) |
+| `water/motion.py` | Motion compensated integration of batch bistatic maps |
+
+For the system, its numbers and the operator output see [Harbor](harbor.md).
 
 #### Air processing (`air/`)
 

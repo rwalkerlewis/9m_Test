@@ -262,6 +262,71 @@ def annotate_figure(fig, prov: Provenance, y: float = 0.005, fontsize: float = 8
     fig.text(0.5, y, prov.label(), ha="center", va="bottom", fontsize=fontsize, color="0.25" if prov.all_estimated else "firebrick")
 
 
+def file_sha256(path: str | Path, chunk: int = 1 << 22) -> str:
+    """sha256 of a file's bytes (hex)."""
+    import hashlib
+
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(chunk), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def _git(*args: str) -> str | None:
+    import subprocess
+
+    try:
+        return subprocess.run(["git", *args], cwd=Path(__file__).resolve().parent, capture_output=True, text=True,
+                              timeout=20, check=True).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def run_info(processing: str | Path | None = None, observation: str | Path | None = None, seed: int | None = None,
+             wall_s: float | None = None, provenance: Provenance | None = None, use_cuda: bool | None = None,
+             overrides: list[str] | None = None, **extra) -> dict:
+    """The ``run`` block every ``summary.json``, ``results.json`` and ``picture.jsonl`` header carries: the git commit and
+    whether the tree had uncommitted changes, the processing config file and the observation file with their sha256,
+    the Python, NumPy and CuPy versions, the GPU name or ``"cpu"``, the seed, the wall time, the overrides of the
+    processing config and the :class:`Provenance`.  *extra* is added as given."""
+    import platform
+
+    commit = _git("rev-parse", "HEAD")
+    status = _git("status", "--porcelain", "--untracked-files=no")
+    try:
+        import cupy
+
+        cupy_version = cupy.__version__
+    except Exception:                                           # noqa: BLE001 (no CuPy, or no driver)
+        cupy, cupy_version = None, None
+    gpu = "cpu"
+    if use_cuda and cupy is not None:
+        try:
+            name = cupy.cuda.runtime.getDeviceProperties(cupy.cuda.Device().id)["name"]
+            gpu = name.decode() if isinstance(name, bytes) else str(name)
+        except Exception:                                       # noqa: BLE001
+            gpu = "cpu"
+    info = {
+        "git_commit": commit.strip() if commit else None,
+        "git_dirty": bool(status.strip()) if status is not None else None,
+        "processing_config": None if processing is None else str(processing),
+        "processing_config_sha256": None if processing is None or not Path(processing).exists() else file_sha256(processing),
+        "processing_overrides": list(overrides or []),
+        "observation": None if observation is None else str(observation),
+        "observation_sha256": None if observation is None or not Path(observation).exists() else file_sha256(observation),
+        "python": platform.python_version(),
+        "numpy": np.__version__,
+        "cupy": cupy_version,
+        "gpu": gpu,
+        "seed": seed,
+        "wall_s": wall_s,
+        "provenance": (provenance or Provenance()).to_dict(),
+    }
+    info.update(extra)
+    return info
+
+
 # ----------------------------------------------------------------------
 # Observation and Truth
 # ----------------------------------------------------------------------

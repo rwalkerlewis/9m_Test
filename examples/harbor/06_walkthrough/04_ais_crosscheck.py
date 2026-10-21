@@ -18,9 +18,11 @@ a = c.args(__doc__)
 obs = c.observation(a.dataset)
 run = c.products(a)
 rep, labels = obs.reports, run["labels"]
-fig, axes = plt.subplots(1, 2, figsize=(16, 6.2), gridspec_kw={"width_ratios": [1.1, 1.0]})
-ax = axes[0]
+F = c.Figures(a, "04_ais_crosscheck", f"Step 4 - AIS used only to label what was located ({a.dataset})",
+              "AIS is read here for the first time; the tracks did not use it.")
+fig, ax = F.new("tracks")
 c.chart(ax, obs)
+c.zoom(ax, run["passive"]["grid"])
 for v in rep.vessels:
     tr = rep.for_vessel(v)
     ax.plot(tr.xy[:, 0], tr.xy[:, 1], "D", ms=6, mfc="none", mec="tab:purple")
@@ -32,7 +34,7 @@ for k, fx in run["tracks"].items():
     ax.plot(xy[:, 0], xy[:, 1], "-", color=col, lw=2.2)
     ax.annotate(f"{k}: {lab or 'no AIS'}", xy[-1], xytext=(5, -12), textcoords="offset points", fontsize=9, fontweight="bold", color=col)
 ax.set_title("Tracks (lines) and AIS reports (diamonds)", fontsize=10)
-ax = axes[1]
+fig, ax = F.new("distance", size=(10, 6))
 for k, fx in run["tracks"].items():
     for v in rep.vessels:
         at = rep.for_vessel(v)
@@ -49,6 +51,4 @@ ax.set_xlabel("time [s]")
 ax.set_ylabel("distance track - AIS position [m]")
 ax.legend(fontsize=7, ncol=2)
 ax.set_title("Distance of every track to every reporting ship (solid: the match)", fontsize=10)
-fig.suptitle(f"Step 4 - AIS used only to label what was located ({a.dataset})", fontsize=12)
-fig.tight_layout()
-c.save(fig, c.out_dir(a) / "04_ais_crosscheck.png", "AIS is read here for the first time; the tracks did not use it.")
+F.save_all()

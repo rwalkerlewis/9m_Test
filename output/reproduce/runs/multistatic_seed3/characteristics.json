@@ -1,0 +1,104 @@
+{
+  "recording": "multistatic_seed3",
+  "run": {
+    "git_commit": "5608006f774ab74064bf3842b512177c9ae83d35",
+    "git_dirty": true,
+    "processing_config": "/workspace/examples/configs/processing/multistatic.json",
+    "processing_config_sha256": "31d4fbcff76a7036d73471b80fc76be4fc38291f2c4bc1fe2a817889d4815d76",
+    "processing_overrides": [],
+    "observation": "/workspace/output/harbor_multistatic/seed3/dataset.observation.npz",
+    "observation_sha256": "38cec4523756ce552ff98b5f21bd5863517d283b7723f069f4d698d42eaee31a",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 3,
+    "wall_s": 29.55707317100314,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "chunk_s": 0.25
+  },
+  "objects": [
+    {
+      "object": "ferry",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 1.0,
+      "true_size_m": null,
+      "true_speed": 4.0,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 1.1654,
+        "width_major": 13.86,
+        "width_minor": 3.645,
+        "speed": 4.0,
+        "residual": 1.36
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "tug",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 0.7,
+      "true_size_m": null,
+      "true_speed": 2.999999999999984,
+      "detected_frames": 48,
+      "seen": {
+        "own noise": 50
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 0.7941,
+        "width_major": 23.0,
+        "width_minor": 7.2,
+        "speed": 3.12,
+        "residual": 1.495
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "boat",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 0.3,
+      "true_size_m": null,
+      "true_speed": 4.9999999999999964,
+      "detected_frames": 64,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 0.5458000000000001,
+        "width_major": 47.03,
+        "width_minor": 6.745,
+        "speed": 5.015,
+        "residual": 1.9649999999999999
+      },
+      "size_ratio_per_frame": {}
+    }
+  ],
+  "size_order": {
+    "frames_all_three": 0,
+    "hull_below_piling": 0,
+    "fraction": null
+  }
+}

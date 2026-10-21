@@ -31,7 +31,9 @@ das = obs.geometry.slices[obs.geometry.cables[0].name]
 e_raw, e_cl = np.sum(rb[das] ** 2, axis=1), np.sum(cb[das] ** 2, axis=1)
 db = 10 * np.log10(np.maximum(e_raw, 1e-30) / np.maximum(e_cl, 1e-30))
 ch = int(np.argmax(e_raw))
-fig, axes = plt.subplots(1, 3, figsize=(17, 4.8))
+F = c.Figures(a, "05_direct_path_removal", f"Step 5 - the direct sound of the tracked radiators removed ({a.dataset}; tracks used: "
+              f"{', '.join(run['strong'])})", "The removal uses the passive tracks only (no AIS, no truth).")
+axes = [F.new(n, size=(10, 5))[1] for n in ("trace", "spectrum", "channels")]
 t = (s0 + lo + np.arange(rb.shape[1])) / fs
 w = slice(0, int(0.25 * fs))
 axes[0].plot(t[w], rb[ch, w], color="0.6", lw=1, label="recorded")
@@ -54,7 +56,4 @@ axes[2].set_xlabel("DAS channel")
 axes[2].set_ylabel("energy removed [dB]")
 axes[2].set_title("Removed on every channel (direct paths, mostly)", fontsize=10)
 axes[2].legend(fontsize=8)
-fig.suptitle(f"Step 5 - the direct sound of the tracked radiators removed ({a.dataset}; tracks used: "
-             f"{', '.join(run['strong'])})", fontsize=12)
-fig.tight_layout()
-c.save(fig, c.out_dir(a) / "05_direct_path_removal.png", "The removal uses the passive tracks only (no AIS, no truth).")
+F.save_all()

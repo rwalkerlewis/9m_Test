@@ -76,6 +76,9 @@ class FrameResult:
     compute_s: float                  # compute time of the frame's block
     latency_s: float                  # last sample of the frame recorded -> result available
     B: np.ndarray | None = field(default=None, repr=False)
+    spectrum: np.ndarray | None = field(default=None, repr=False)   # with keep_spectra: band spectrum (N, F) of the frame
+    weights: np.ndarray | None = field(default=None, repr=False)    # ... and the channel weights it was formed with
+    refs: dict | None = field(default=None, repr=False)             # echo chain: reference spectrum (F,) per illuminator
 
 
 class StreamingPassive:
@@ -83,11 +86,11 @@ class StreamingPassive:
 
     def __init__(self, layout: SensorLayout, fs: float, env: ChartEnvironment, pc: ProcessingConfig,
                  sc: SuppressionConfig | None = None, stc: StreamConfig | None = None, grid: np.ndarray | None = None,
-                 keep_maps: bool = False) -> None:
+                 keep_maps: bool = False, keep_spectra: bool = False) -> None:
         self.layout, self.fs, self.env = layout, float(fs), env
         self.pc, self.stc = pc, stc or StreamConfig()
         self.sc = replace(sc or SuppressionConfig(), causal=True)    # AIS dead reckoned from past reports only
-        self.keep_maps = keep_maps
+        self.keep_maps, self.keep_spectra = keep_maps, keep_spectra
         self.dev = get_device(pc.use_cuda)
         xp = self.dev.xp
         self.nper, self.hop = int(round(pc.win_s * fs)), int(round(pc.hop_s * fs))
@@ -237,12 +240,14 @@ class StreamingPassive:
                     ships[k][vid] = est.refined[k, v]
         self.frames_done += b
         compute = time.perf_counter() - t0
+        spectra = dev.asnumpy(spec).astype(np.complex64) if self.keep_spectra else None
         out = []
         for k in range(b):
             g = _nms(B[:, k], self.grid, stc.min_separation, stc.max_peaks, 0.0)
             frame_end = (starts[k] + self.nper) / self.fs
             out.append(FrameResult(float(times[k]), self.grid[g], B[g, k], ships[k], compute,
-                                   float(stop / self.fs - frame_end + compute), B[:, k].copy() if self.keep_maps else None))
+                                   float(stop / self.fs - frame_end + compute), B[:, k].copy() if self.keep_maps else None,
+                                   spectra[:, k, :] if spectra is not None else None, w if spectra is not None else None))
         return out
 
     def _init_fast_greens(self) -> None:
@@ -465,7 +470,9 @@ class TrackerConfig:
     track confirmed; ``strong_fraction``: :meth:`RadiatorTracker.strong` keeps the confirmed tracks scoring at
     least this fraction of the strongest (an echo of a loud ship is located by the passive chain too, about
     10 dB below the ship; set on the bistatic and multistatic recordings); ``drop_s``: a track without a fix for this long is dropped; ``fit_s``: past fixes used
-    for the prediction (straight line fit)."""
+    for the prediction (straight line fit); ``static_speed`` / ``static_s``: a confirmed track whose fitted speed stays below
+    ``static_speed`` [m/s] for ``static_s`` [s] is static; ``lost_s``: a dropped confirmed track is kept this long as lost
+    (for the picture; it takes no more fixes)."""
 
     gate: float = 6.0
     max_speed: float = 6.0
@@ -475,6 +482,9 @@ class TrackerConfig:
     confirm_window_s: float = 2.0
     drop_s: float = 2.0
     fit_s: float = 4.0
+    static_speed: float = 0.2
+    static_s: float = 10.0
+    lost_s: float = 4.0
 
 
 @dataclass
@@ -482,6 +492,22 @@ class RadiatorTrack:
     id: str
     fixes: list = field(default_factory=list)       # (t, xy, score)
     confirmed: bool = False
+    confirmed_t: float | None = None                # first time the track was confirmed
+    slow_since: float | None = None                 # fitted speed below ``static_speed`` since this time
+    static: bool = False
+    lost_t: float | None = None                     # dropped at this time (kept as lost for ``lost_s``)
+
+    def velocity(self, fit_s: float) -> np.ndarray | None:
+        """Velocity [m/s] of the straight line fitted to the fixes of the last *fit_s* seconds (``None`` with fewer
+        than 3)."""
+        tt = np.array([f[0] for f in self.fixes])
+        m = tt >= tt[-1] - fit_s
+        if m.sum() < 3:
+            return None
+        xy = np.array([f[1] for f in self.fixes])[m]
+        A = np.column_stack([np.ones(m.sum()), tt[m] - tt[-1]])
+        coef, *_ = np.linalg.lstsq(A, xy, rcond=None)
+        return coef[1]
 
     def predict(self, t: float, fit_s: float) -> np.ndarray:
         tt = np.array([f[0] for f in self.fixes])
@@ -503,15 +529,24 @@ class RadiatorTracker:
     peak joins the nearest track within the gate (one peak per track, strongest peaks first), the others
     start new tracks; a track is confirmed after ``confirm`` fixes within ``confirm_window_s``."""
 
-    def __init__(self, cfg: TrackerConfig | None = None) -> None:
+    def __init__(self, cfg: TrackerConfig | None = None, prefix: str = "r") -> None:
         self.cfg = cfg or TrackerConfig()
         self.tracks: dict[str, RadiatorTrack] = {}
+        self.lost: dict[str, RadiatorTrack] = {}       # dropped tracks that had been confirmed, for ``lost_s``
+        self.prefix = prefix
+        self.frames: list[float] = []                  # times of the frames the tracker was updated with
         self._n = 0
 
     def update(self, frame: FrameResult) -> None:
         cfg, t = self.cfg, frame.t
+        self.frames.append(t)
         for tid in [k for k, tr in self.tracks.items() if t - tr.fixes[-1][0] > cfg.drop_s]:
-            self.tracks.pop(tid)
+            tr = self.tracks.pop(tid)
+            if tr.confirmed_t is not None:
+                tr.lost_t = t
+                self.lost[tid] = tr
+        for tid in [k for k, tr in self.lost.items() if t - tr.lost_t > cfg.lost_s]:
+            self.lost.pop(tid)
         pred = {k: tr.predict(t, cfg.fit_s) for k, tr in self.tracks.items()}
         taken: set[str] = set()
         for xy, sc in zip(frame.xy, frame.score):
@@ -525,7 +560,7 @@ class RadiatorTracker:
                     best, dbest = k, d
             if best is None:
                 self._n += 1
-                best = f"r{self._n}"
+                best = f"{self.prefix}{self._n}"
                 self.tracks[best] = RadiatorTrack(best)
             self.tracks[best].fixes.append((t, np.asarray(xy, float), float(sc)))
             taken.add(best)
@@ -536,6 +571,13 @@ class RadiatorTracker:
             tr.confirmed = (tr.confirmed or recent >= cfg.confirm) and not near
             if tr.confirmed:
                 kept.append(tr)
+                if tr.confirmed_t is None:
+                    tr.confirmed_t = t
+            if tr.fixes[-1][0] == t:                                                    # static: slow for static_s
+                v = tr.velocity(cfg.fit_s)
+                slow = v is not None and float(np.hypot(*v)) < cfg.static_speed
+                tr.slow_since = (tr.slow_since if tr.slow_since is not None else t) if slow else None
+            tr.static = tr.confirmed and tr.slow_since is not None and t - tr.slow_since >= cfg.static_s
 
     def confirmed(self) -> dict[str, RadiatorTrack]:
         return {k: tr for k, tr in self.tracks.items() if tr.confirmed}
@@ -606,7 +648,7 @@ class StreamingEcho:
 
     def __init__(self, layout: SensorLayout, fs: float, env: ChartEnvironment, bc,
                  stc: EchoStreamConfig | None = None, grid: np.ndarray | None = None, remove_others: bool = True,
-                 keep_maps: bool = False, keep_clean: bool = False) -> None:
+                 keep_maps: bool = False, keep_clean: bool = False, keep_spectra: bool = False) -> None:
         from acoustic_sim.water.bistatic import build_grid
 
         if bc.reference != "data" or bc.removal != "eca" or not bc.eca_doppler or bc.method != "coherent":
@@ -614,7 +656,7 @@ class StreamingEcho:
         if not isinstance(resolve(bc.propagator, bc.c), FreeFieldPropagator):
             raise ValueError("StreamingEcho needs the free field propagator")
         self.layout, self.fs, self.env, self.bc = layout, float(fs), env, bc
-        self.keep_maps, self.keep_clean = keep_maps, keep_clean
+        self.keep_maps, self.keep_clean, self.keep_spectra = keep_maps, keep_clean, keep_spectra
         self.kept_clean: dict[int, np.ndarray] = {}     # with keep_clean: every cleaned block (for figures)
         self.source: str | None = None
         self.remove_others = remove_others
@@ -834,6 +876,7 @@ class StreamingEcho:
         pos = {n: self._smoothed(times, n) for n in names}
         B = np.zeros((len(self.grid), len(ks)))
         live = [j for j in range(len(ks)) if illum[j]]
+        X = R = None
         if live:
             X = np.empty((self.layout.n_receivers, len(self.band), len(live)), dtype=np.complex64)
             R = {n: np.zeros((len(self.band), len(live)), dtype=np.complex64) for n in names}
@@ -873,13 +916,17 @@ class StreamingEcho:
                         p = self._smoothed(times[j:j + 1], n)[0]
                         B[np.hypot(*(self.grid - p).T) < bc.exclusion_radius, j] = 0.0
         compute = time.perf_counter() - t0
+        q_of = {j: q for q, j in enumerate(live)}
         out = []
         for j, k in enumerate(ks):
             g = _nms(B[:, j], self.grid, stc.min_separation, stc.max_peaks, 0.0) if illum[j] else []
             frame_end = (k * self.hop + self.nper) / self.fs
+            keep = self.keep_spectra and j in q_of
             out.append(FrameResult(float(times[j]), self.grid[g], B[g, j], {n: pos[n][j] for n in illum[j]},
                                    compute, float(self.n_in / self.fs - frame_end + compute),
-                                   B[:, j].copy() if self.keep_maps else None))
+                                   B[:, j].copy() if self.keep_maps else None,
+                                   X[:, :, q_of[j]].copy() if keep else None, weights if keep else None,
+                                   {n: R[n][:, q_of[j]].copy() for n in illum[j]} if keep else None))
         return out
 
 

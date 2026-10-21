@@ -1,0 +1,44 @@
+2026-10-21 04:31:12 building multistatic_b (FDTD on the GPU)
+2026-10-21 04:37:01 mixing simple seed 1 from the cached gathers
+2026-10-21 04:37:09 mixing simple seed 2 from the cached gathers
+2026-10-21 04:37:18 mixing simple seed 3 from the cached gathers
+2026-10-21 04:37:26 mixing bistatic seed 1 from the cached gathers
+2026-10-21 04:37:35 mixing bistatic seed 2 from the cached gathers
+2026-10-21 04:37:44 mixing bistatic seed 3 from the cached gathers
+2026-10-21 04:37:53 mixing multistatic seed 1 from the cached gathers
+2026-10-21 04:38:06 mixing multistatic seed 2 from the cached gathers
+2026-10-21 04:38:19 mixing multistatic seed 3 from the cached gathers
+2026-10-21 04:38:32 mixing harbor seed 1 from the cached gathers
+2026-10-21 04:38:37 mixing harbor seed 2 from the cached gathers
+2026-10-21 04:38:42 mixing harbor seed 3 from the cached gathers
+2026-10-21 04:38:47 propagation error of bistatic
+2026-10-21 04:39:27 propagation error of harbor
+2026-10-21 04:39:35 propagation error of multistatic
+2026-10-21 04:40:32 propagation error of multistatic_b
+2026-10-21 04:41:30 propagation error of simple
+2026-10-21 04:41:57 running the chain on simple (tuning recording)
+2026-10-21 04:42:26 running the chain on bistatic (tuning recording)
+2026-10-21 04:43:04 running the chain on multistatic (tuning recording)
+2026-10-21 04:43:50 running the chain on harbor (tuning recording)
+2026-10-21 04:45:02 running the chain on simple_seed1 (test recording)
+2026-10-21 04:45:29 running the chain on simple_seed2 (test recording)
+2026-10-21 04:45:57 running the chain on simple_seed3 (test recording)
+2026-10-21 04:46:23 running the chain on bistatic_seed1 (test recording)
+2026-10-21 04:46:55 running the chain on bistatic_seed2 (test recording)
+2026-10-21 04:47:32 running the chain on bistatic_seed3 (test recording)
+2026-10-21 04:48:09 running the chain on multistatic_seed1 (test recording)
+2026-10-21 04:48:52 running the chain on multistatic_seed2 (test recording)
+2026-10-21 04:49:35 running the chain on multistatic_seed3 (test recording)
+2026-10-21 04:50:18 running the chain on harbor_seed1 (test recording)
+2026-10-21 04:51:29 running the chain on harbor_seed2 (test recording)
+2026-10-21 04:52:39 running the chain on harbor_seed3 (test recording)
+2026-10-21 04:53:50 running the chain on multistatic_b (test recording)
+2026-10-21 04:54:33 walkthrough figures of simple
+2026-10-21 04:55:20 walkthrough figures of simple
+2026-10-21 04:56:10 walkthrough figures of bistatic
+2026-10-21 04:57:09 walkthrough figures of multistatic
+2026-10-21 04:58:23 walkthrough figures of harbor
+2026-10-21 05:03:12 propagation error of multistatic
+2026-10-21 05:03:47 propagation error of simple
+2026-10-21 05:04:08 running the chain on multistatic (tuning recording)
+2026-10-21 05:04:41 running the chain on simple_seed1 (test recording)

@@ -2,7 +2,7 @@
 """
 Videos of the wavefield and of the DAS gather in the harbor domain of ``output/harbor/dataset.npz``.
 
-A copy of ``examples/harbor/03_passive/harbor_mfp_domain.py`` (the analytic matched-field test in the dataset's domain) with movies:
+A copy of ``examples/harbor/90_history/harbor_mfp_domain.py`` (the analytic matched-field test in the dataset's domain) with movies:
 the same scene (ferry, tug and moored ship with AIS, the hidden UUV, their 120 s tracks and source signatures from
 the dataset's generator, the 125 channel cable and 4 hydrophones) and the same propagation (2-D free field,
 amplitude sqrt(100 m / r), delay r / c, c = 1500 m/s, land opaque by line of sight, no reflections), now in the time

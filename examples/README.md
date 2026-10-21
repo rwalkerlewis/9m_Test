@@ -2,36 +2,39 @@
 
 Scripts that run the package end to end, in the order you would use them. Every script is run from the repository root
 (`python examples/<folder>/<script>.py --help`; in the dev container `./dev.sh run python ...`) and writes to `output/`.
-Configurations live in `configs/`. The harbor folders are numbered in workflow order: build the datasets (1), then any of
-2 to 5; the walkthrough (6) needs the datasets of 1 and the real-time system of 5. Details and results:
-[docs/harbor.md](../docs/harbor.md) (harbor), [docs/usage.md](../docs/usage.md) (air).
+Configurations live in `configs/`. The harbor folders are numbered in workflow order: build the recordings (1), look at
+the forward model (2), run the system (5), walk through it (6). The harbor system itself is `acoustic_sim.water.stream`;
+`90_history/` keeps the scripts of earlier stages. Details and results: [docs/harbor.md](../docs/harbor.md) (harbor),
+[docs/harbor_history.md](../docs/harbor_history.md) (earlier harbor work), [docs/usage.md](../docs/usage.md) (air).
 
 ## Configurations (`configs/`)
 
-Scenario, domain and pipeline JSON files read by the scripts below (`--config`).
+Scenario, domain, pipeline and processing JSON files read by the scripts below.
 
 | File | Contents |
 |---|---|
+| `processing/<recording>.json` | Every processing parameter of the harbor system for one recording (`simple`, `bistatic`, `multistatic`, `harbor`): band, scan edge, chunk, `ProcessingConfig`, `StreamConfig`, the radiator `TrackerConfig`, the echo chain (`EchoStreamConfig`, `BistaticConfig`, the echo `TrackerConfig`), the characteristics, and the scoring radii (read only by the scoring) |
 | `domain.example.json` | Air velocity model: gradient with a circle and a rectangle anomaly (`acoustic-sim --model-file`) |
-| `harbor.scenario.json` | The default 5 m harbor: 2400 x 1800 m, ferry, tug, moored ship, UUVs, diver (`harbor_m2_dataset.py` and the M1 to M4 scripts) |
+| `harbor.scenario.json` | The default 5 m harbor: 2400 x 1800 m, ferry, tug, moored ship, UUVs, diver (`harbor_m2_dataset.py`) |
 | `harbor_bistatic.scenario.json` | Cropped 0.5 m harbor: a ferry lights a silent UUV, strain DAS (`harbor_bistatic_dataset.py`) |
 | `harbor_multistatic.scenario.json` | 0.5 m harbor with three ships, two UUVs, a diver, six pilings and a moored hull (`harbor_multistatic_dataset.py`) |
+| `harbor_multistatic_b.scenario.json` | The multistatic harbor with every track, the pilings and the hull moved, same sensors and levels: a test geometry no parameter has seen |
 | `harbor_simple.scenario.json` | The simple harbor: easy wavefields, a ferry and a boat lighting a UUV and a wreck (`harbor_multistatic_dataset.py --config`) |
 | `layered.example.json` | Air velocity model: layered, with an anomaly |
 | `pipeline.config.json` | Defaults of the air detection and engagement pipeline (`air/02_pipeline/run_pipeline.py --config`) |
 | `valley.example.json` | Air velocity model: valley with randomised hills |
 
-## Harbor 1: build the datasets (`harbor/01_datasets/`)
+## Harbor 1: build the recordings (`harbor/01_datasets/`)
 
-FDTD runs of the harbor scenarios, mixed into the recordings every later step reads (`output/harbor*/`). Run these first; their gathers are cached.
+FDTD runs of the harbor scenarios, mixed into the recordings every later step reads (`output/harbor*/`). Run these first;
+their gathers are cached. `scripts/reproduce.py` builds every recording it needs, the test recordings included.
 
 | File | What it does |
 |---|---|
 | `harbor_bistatic_dataset.py` | Bistatic harbor dataset: an AIS ship illuminates a silent UUV body in a cropped, fine grid harbor. |
-| `harbor_build_classifier_dataset.py` | Harbor Sub-Task 4: build labelled mel-spectrogram dataset for the CNN classifier. |
 | `harbor_m2_dataset.py` | Harbor M2: build the labelled dataset for the default scenario and plot it. |
-| `harbor_multistatic_dataset.py` | Stage 0c: multi illuminator, multi body harbor dataset for the later multistatic stages. |
-| `harbor_survey_grid.py` | Pre-compute per-cell FDTD transfer functions for the harbor grid survey. |
+| `harbor_multistatic_dataset.py` | Multi illuminator, multi body harbor dataset (the multistatic, simple and multistatic_b recordings). |
+| `harbor_propagation_error.py` | The forward model's own propagation error on a recording (arrival against range over the chart speed per hydrophone), written into its truth file. |
 
 ## Harbor 2: the forward model (`harbor/02_forward_model/`)
 
@@ -45,45 +48,17 @@ What the simulation does: one source, scattering bodies, wavefield and gather vi
 | `harbor_m1_uuv.py` | Harbor M1 variant: one static source, a single pulse, and a static UUV in the water. |
 | `harbor_m1_uuv_video.py` | Video of the single-pulse gather of ``examples/harbor/02_forward_model/harbor_m1_uuv.py`` arriving on the cable, with the reflections off the stationary UUV highlighted as they appear. |
 
-## Harbor 3: passive detection of radiating objects (`harbor/03_passive/`)
-
-Matched field processing (analytic, then on the FDTD data), the M3 detector, the M4 detect-locate-classify pipeline and its classifiers.
+## Harbor 5: the system on the recordings (`harbor/05_detection/`)
 
 | File | What it does |
 |---|---|
-| `harbor_m3_detect.py` | Harbor M3: detection and localisation of the hidden UUV. |
-| `harbor_m4_dlc.py` | Harbor M4: end-to-end detect–locate–classify pipeline. |
-| `harbor_mfp_demo.py` | Simplified harbor matched field processing demo (analytic forward model). |
-| `harbor_mfp_domain.py` | Analytic matched field test in the harbor domain of a saved FDTD dataset. |
-| `harbor_train_anomaly.py` | Harbor Sub-Task 5: train the CVAE anomaly detector on ship-only mel-spectrograms. |
-| `harbor_train_classifier.py` | Harbor Sub-Task 4: train the CNN acoustic classifier on the classifier dataset. |
-
-## Harbor 4: silent bodies by their echo (`harbor/04_bistatic/`)
-
-A ship as the illuminator: link budget, the bistatic demo and its ablation, direct path cancellation depth, presentation figures.
-
-| File | What it does |
-|---|---|
-| `harbor_bistatic_ablation.py` | Stage 0b: the bistatic demo with its truth inputs removed one at a time. |
-| `harbor_bistatic_budget.py` | Harbor bistatic link budget: a silent UUV lit by an AIS ship. |
-| `harbor_bistatic_demo.py` | Bistatic demo: a silent UUV located from the ferry's echo on the DAS cable (pitch figures). |
-| `harbor_cancellation_depth.py` | Stage 0a: direct path cancellation depth of ECA against range, stationary and moving source. |
-| `harbor_presentation.py` | Presentation demo: one ship, one silent stopped UUV, a DAS cable, in the harbor of ``output/harbor/dataset.npz``. |
-| `harbor_stack_movie.py` | Ten second movie: the echoes of a silent UUV are stacked pulse by pulse until it stands out unambiguously. |
-
-## Harbor 5: detection and scoring (`harbor/05_detection/`)
-
-The chains on the recordings: batch detection with a check against the truth, the real-time system, and the stage 1 scoreboard.
-
-| File | What it does |
-|---|---|
-| `harbor_detect.py` | Detect objects in a harbor recording and check every detection against where the objects really are. |
-| `harbor_picture_stage1.py` | Harbor picture, stage 1: the scoreboard, and the chains of ``main`` measured on it. |
-| `harbor_stream.py` | The real-time harbor picture: locate every radiator from the traces, track it, map the echoes, check. |
+| `harbor_stream.py` | The real-time harbor picture (`acoustic_sim.water.stream`) on one recording, scored against the truth: picture.jsonl, summary, characteristics, check figures, the operator view video. |
+| `harbor_detect.py` | The same chain over the whole record at once (a batch run is the stream with one chunk). |
+| `harbor_level_calibration.py` | The one calibration of the source level estimate, on the simple harbor's tuning recording. |
 
 ## Harbor 6: walkthrough (`harbor/06_walkthrough/`)
 
-One recording through the real-time chain, one figure per step (`run_all.sh DATASET --cuda`); start here to see what the system does.
+One recording through the real-time chain, one figure per plot (`run_all.sh DATASET`); start here to see what the system does.
 
 | File | What it does |
 |---|---|
@@ -92,10 +67,33 @@ One recording through the real-time chain, one figure per step (`run_all.sh DATA
 | `03_tracks.py` | Step 3, tracks: which detections belong together? |
 | `04_ais_crosscheck.py` | Step 4, AIS afterwards: which tracks are reporting ships? |
 | `05_direct_path_removal.py` | Step 5, removing the ships' own sound: making the echoes visible. |
-| `06_echo_map.py` | Step 6, the echo map: where is ship noise being reflected? |
-| `07_harbor_picture.py` | Step 7, the harbor picture: everything located, and how well. |
+| `06_echo_map.py` | Step 6, the echo map: where is ship noise being reflected? The echo tracks over it. |
+| `07_harbor_picture.py` | Step 7, the harbor picture: everything located as tracks, and how well. |
 | `08_geometry.py` | Step 8, the geometry behind the picture: where the chain thinks things are going, and which paths the sound takes. |
-| `run_all.sh` | All walkthrough figures for one recording: ./examples/harbor/06_walkthrough/run_all.sh multistatic --cuda |
+| `run_all.sh` | All walkthrough figures for one recording: ./examples/harbor/06_walkthrough/run_all.sh multistatic |
+
+## History (`harbor/90_history/`)
+
+Scripts of earlier stages, not part of the system. They stay runnable because committed figures came from them;
+[docs/harbor_history.md](../docs/harbor_history.md) has their results.
+
+| File | What it was |
+|---|---|
+| `harbor_m3_detect.py` | M3: CFAR detection of the UUV without AIS suppression (the loud ships hide it). |
+| `harbor_m4_dlc.py` | M4: detect, locate, classify with AIS suppression and the CNN / CVAE classifiers. |
+| `harbor_mfp_demo.py` | The whole chain on an analytic forward model (exact replicas), with a Pd sweep. |
+| `harbor_mfp_domain.py` | The analytic chain in the domain of the 5 m harbor dataset. |
+| `harbor_train_classifier.py` | Training of the harbor CNN classifier. |
+| `harbor_train_anomaly.py` | Training of the harbor CVAE anomaly detector. |
+| `harbor_build_classifier_dataset.py` | The labelled mel spectrogram dataset of the CNN classifier. |
+| `harbor_survey_grid.py` | Per cell FDTD transfer functions for the empirical localiser. |
+| `harbor_bistatic_demo.py` | The bistatic demo given the truth (direct path removed exactly, true waveform, exact track). |
+| `harbor_bistatic_ablation.py` | Stage 0b: the bistatic demo with its truth inputs removed one at a time. |
+| `harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth against range, stationary and moving source. |
+| `harbor_bistatic_budget.py` | The analytic bistatic link budget with idealised cylinders. |
+| `harbor_presentation.py` | Presentation demo: one ship, one silent stopped UUV, in the 5 m harbor. |
+| `harbor_stack_movie.py` | Movie of echoes stacked pulse by pulse. |
+| `harbor_picture_stage1.py` | Stage 1: the threshold scoreboard on the batch and streaming chains. |
 
 ## Air 1: simulation (`air/01_simulation/`)
 

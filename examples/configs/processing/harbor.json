@@ -1,0 +1,73 @@
+{
+  "recording": "harbor",
+  "observation": "output/harbor/dataset.observation.npz",
+  "band_hz": [
+    12.0,
+    78.0
+  ],
+  "edge_m": 150.0,
+  "chunk_s": 0.25,
+  "processing": {
+    "win_s": 4.0,
+    "hop_s": 2.0,
+    "bin_stride": 2,
+    "common_mode": true,
+    "sensor_groups": null,
+    "qc_low": 0.1,
+    "qc_high": 5.0,
+    "floor_smooth_bins": 13,
+    "min_range": 5.0,
+    "grid_dx": 5.0,
+    "grid_margin": 10.0,
+    "clip_tau": 6.0,
+    "interference_rank_max": 12,
+    "interference_eig_factor": 1.2,
+    "min_separation": 80.0,
+    "max_peaks": 3,
+    "n_candidates": 8,
+    "refine_dx": 5.0,
+    "refine_half": 30.0,
+    "n_lines": 8,
+    "line_halfwidth": 0
+  },
+  "stream": {
+    "block_frames": 1,
+    "history_s": 30.0,
+    "warmup_s": 8.0,
+    "interference_every": 16,
+    "max_peaks": 5,
+    "min_separation": 20.0
+  },
+  "tracker": {
+    "gate": 15.0,
+    "max_speed": 6.0,
+    "exclusion": 60.0,
+    "strong_fraction": 0.25,
+    "confirm": 3,
+    "confirm_window_s": 8.0,
+    "drop_s": 8.0,
+    "fit_s": 20.0,
+    "static_speed": 0.2,
+    "static_s": 10.0,
+    "lost_s": 4.0
+  },
+  "echo": null,
+  "characteristics": {
+    "level_calibration": 5.1152,
+    "report_frames": 8,
+    "n_lines": 3,
+    "line_min_db": 6.0,
+    "line_floor_bins": 10,
+    "line_tolerance_bins": 1,
+    "size_threshold_db": 0.0,
+    "peak_radius_m": 20.0,
+    "fit_s": 4.0,
+    "merge_radius_m": 5.0,
+    "merge_s": 2.0,
+    "ais_gate_m": 25.0
+  },
+  "scoring": {
+    "hit_radius_m": 5.0,
+    "assoc_radius_m": 20.0
+  }
+}
