@@ -17,8 +17,21 @@ A forward side that generates synthetic acoustic data by solving the wave equati
 - Every experiment has its pass or fail criterion written into the script docstring and `results.json` before it runs. Criteria are never changed after a result is seen.
 - Parameters are chosen on the tuning recordings (noise seed 0 of each dataset) and never changed after a test recording (seeds 1 to 3, `multistatic_b`) has been seen. Set `held_out` correctly in every provenance block.
 - Every result says what it was given beyond the observation (`Provenance`: `truth_inputs`, `simulator_knowledge`). A table with a row given true information carries the row with everything estimated from the traces beside it.
-- `scripts/reproduce.py` regenerates every number quoted in `docs/harbor.md`; a change that moves a number runs it with `--update` and says so in the pull request. Figures, JSON, JSONL and logs under `output/` are committed; `*.npz`, `*.npy`, `*.mp4` and FDTD caches are not.
+- `scripts/reproduce.py` regenerates every number quoted in `docs/harbor.md`, in tables and in prose: a number in prose is written through a `<!-- reproduce:<key> -->` marker that the script fills, never typed by hand. A change that moves a number runs `--update` and says so in the pull request. Prose that interprets numbers is reread after every `--update` and corrected where the numbers no longer support it.
 - `pytest tests` passes before a pull request is opened. New functions get tests on inputs with known answers.
+
+## Figures
+
+- One figure, one panel. Every figure is a single axes with one subject, saved on its own at 1600 pixels wide or more (`figsize` at least (10, 7) at 150 dpi), with axis labels in units, a title that names the recording and the quantity, and a legend where there is more than one series. No grids of subplots: a comparison across configurations or objects is one figure per configuration or object, or one figure with the series overlaid when they share axes. The one exception is two panels that share an axis and are read together (a map and its profile), and even then each panel keeps the sizes above.
+- Text is at least 11 pt at the saved size; labels never overlap (offset or thin them); colour bars have units; maps carry a scale bar or axes in metres and north up.
+- Every figure goes through `acoustic_sim.plotting.save_figure(fig, path)`, which enforces these rules (axes count, size, font size, labels present) and refuses to save otherwise. `tests/test_figures.py` greps the code for `subplots(` with more than two panels and fails on any.
+- A page in `docs/` that shows figures shows the split ones, each with one sentence saying what to look at.
+
+## The output folder
+
+- `output/` holds only what the current docs reference or `scripts/reproduce.py` regenerates, in this layout: `output/recordings/<recording>/` (build, levels, map, propagation error, scenario used), `output/reproduce/` (summary, tables, `runs/<recording>/`), `output/walkthrough/<recording>/`, `output/studies/<study>/` (one folder per study with its `results.json`, figures and `run.log`), `output/air/<scenario>/`.
+- Figures, JSON, JSONL, CSV and logs are committed; `*.npz`, `*.npy`, `*.mp4` and FDTD caches are not.
+- A script that stops being part of the system or a study moves its outputs out of `output/` in the same pull request; git history keeps them, and `docs/harbor_history.md` names the commit.
 
 ## Language
 

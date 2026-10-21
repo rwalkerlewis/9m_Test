@@ -1,4 +1,4 @@
-Branch `layout_study` from `origin/main`. You own a new module `src/acoustic_sim/water/coverage.py`, `tests/harbor/test_coverage.py`, a new folder `examples/harbor/07_layout_study/`, new scenario files `examples/configs/layout/`, `output/layout_study/` and `docs/layout_study.md`. You do not edit the chain, the processing configs, the existing scenario files, the existing recordings, `scripts/reproduce.py` or `docs/harbor.md`. This task builds nine small datasets (four FDTD runs each, about 24 s each on the GPU with the leapfrog scheme; if `forward_fidelity` has merged, use the k space scheme as its scenario files do and expect about ten times that); do not start them while another session is building.
+Branch `layout_study` from `origin/main`. You own a new module `src/acoustic_sim/water/coverage.py`, `tests/harbor/test_coverage.py`, a new folder `examples/harbor/07_layout_study/`, new scenario files `examples/configs/layout/`, `output/studies/layout/` and `docs/layout_study.md`. You do not edit the chain, the processing configs, the existing scenario files, the existing recordings, `scripts/reproduce.py` or `docs/harbor.md`. This task builds nine small datasets (four FDTD runs each, about 24 s each on the GPU with the leapfrog scheme; if `forward_fidelity` has merged, use the k space scheme as its scenario files do and expect about ten times that); do not start them while another session is building.
 
 Read `docs/harbor.md` (The system, Running it, The simple harbor, Numbers), `src/acoustic_sim/water/sensors.py`, `src/acoustic_sim/water/scenario.py` (`build_layout`), `src/acoustic_sim/water/stream.py` (`HarborPicture`, the public entry point), `src/acoustic_sim/water/propagation.py`, `examples/harbor/05_detection/harbor_stream.py` (how it scores; use the same scoring functions, do not copy them), `examples/configs/processing/simple.json`, `examples/configs/harbor_simple.scenario.json` and `examples/harbor/01_datasets/harbor_multistatic_dataset.py` before changing anything.
 
@@ -33,7 +33,7 @@ In the simple harbor (500 by 400 m basin, 1 m grid, 100 to 380 Hz; a ferry, a bo
 | H | the same length as a zigzag of 45 degree segments across the north half | 0 |
 | P | the current loop in pressure mode | 4 (the `main` layout as it is: the reference of an omnidirectional cable) |
 
-One scenario file per variant under `examples/configs/layout/`, differing from `harbor_simple.scenario.json` only in its sensor block; one dataset per variant under `output/layout_study/<variant>/`, seeds 0 to 2 mixed from the cached gathers.
+One scenario file per variant under `examples/configs/layout/`, differing from `harbor_simple.scenario.json` only in its sensor block; one dataset per variant under `output/studies/layout/<variant>/`, seeds 0 to 2 mixed from the cached gathers.
 
 ## 3. Run the system unchanged and score
 
@@ -41,8 +41,8 @@ One scenario file per variant under `examples/configs/layout/`, differing from `
 
 ## 4. Report
 
-`output/layout_study/summary.json` and `docs/layout_study.md`: the table (variant, cable length, channels, hydrophones, per object Pd and median error with the spread over seeds, false tracks per minute, compute per second of data); the coverage maps of every variant on one figure; the rank correlation between each coverage quantity at the objects' positions and Pd over all variants and objects, stating which quantity predicts detection and how well, including if none does; and at most five sentences a buyer should take from it: what a straight cable misses, what bends buy, what hydrophones buy, whether the current loop is a sensible default, and what a 2D pressure release simulation with one sound speed cannot answer.
+`output/studies/layout/summary.json` and `docs/layout_study.md`: the table (variant, cable length, channels, hydrophones, per object Pd and median error with the spread over seeds, false tracks per minute, compute per second of data); the coverage maps, one figure per quantity per variant; the rank correlation between each coverage quantity at the objects' positions and Pd over all variants and objects, stating which quantity predicts detection and how well, including if none does; and at most five sentences a buyer should take from it: what a straight cable misses, what bends buy, what hydrophones buy, whether the current loop is a sensible default, and what a 2D pressure release simulation with one sound speed cannot answer.
 
 ## Rules
 
-The repository rules in `AGENTS.md` apply. Tests for `coverage.py` on layouts with known answers (a straight cable along x: coverage 1 on axis and 0 broadside; a wall shadowing half the sensors; the resolution of a short straight array against the textbook beam width). Stop after the report.
+The repository rules in `AGENTS.md` apply, the figure rules included (the coverage maps are one figure per quantity per variant, not one grid). Tests for `coverage.py` on layouts with known answers (a straight cable along x: coverage 1 on axis and 0 broadside; a wall shadowing half the sensors; the resolution of a short straight array against the textbook beam width). Stop after the report.
