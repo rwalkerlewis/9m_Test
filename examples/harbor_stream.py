@@ -10,10 +10,15 @@ The traces are fed in chunks of ``--chunk`` seconds as they would arrive.  No AI
    the silent bodies with every track as an illuminator (the maps summed);
 4. the AIS reports are used afterwards only, to label the tracks (``ais_crosscheck``).
 
-The truth is read at the end for the check: a detection within ``--hit`` m (5) of an object is a hit.
+The truth is read at the end for the check: a detection within ``--hit`` m (5) of an object is a hit; every
+confirmed track is matched to the object nearest over its fixes (median distance) if within ``--assoc`` m (10; 20 on the
+5 m harbor), otherwise it is a false track (counted, with its positions, in ``summary.json`` and drawn as unmatched).
 Reported: compute time per second of data (below 1 is real time) and the latency of every output.
 
-Outputs in ``--out/<dataset>/``: ``passive.csv``, ``echo.csv``, ``tracks.csv``, ``check.png``, ``summary.json``.
+Outputs in ``--out/<dataset>/``: ``passive.csv``, ``echo.csv``, ``tracks.csv``, ``check.png`` (top: every detection and
+track over the true tracks; bottom: one frame of each chain with its map, where the chain placed the radiators, their
+direct ray paths and, for the echo map, the echo path and the equal delay ellipse through the strongest peak),
+``summary.json``.
 
 Usage::
 
@@ -41,6 +46,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from acoustic_sim.contract import Observation, Truth  # noqa: E402
 from acoustic_sim.water.bistatic import BistaticConfig  # noqa: E402
 from acoustic_sim.water.detection import ProcessingConfig  # noqa: E402
+from acoustic_sim.water.plotting import draw_frame_geometry  # noqa: E402
 from acoustic_sim.water.propagation import FreeFieldPropagator  # noqa: E402
 from acoustic_sim.water.streaming import (  # noqa: E402
     EchoStreamConfig, RadiatorTracker, StreamConfig, StreamingEcho, StreamingPassive, TrackerConfig, ais_crosscheck)
@@ -81,6 +87,28 @@ def check_rows(frames, truth: Truth, chain: str) -> list[dict]:
     return rows
 
 
+ASSOC_RADIUS = 10.0   # a track is matched to the nearest object if its median distance is within this [m]
+# ... scaled for the 5 m harbor (2 s frames, 5 m grid: its tracks are located to about 10 m)
+ASSOC = {"harbor": 20.0}
+
+
+def match_tracks(tracks: dict, truth: Truth, radius: float = ASSOC_RADIUS) -> list[dict]:
+    """Score every track against the truth: matched to the object nearest over its fixes (median distance) when
+    that is within *radius*, else a false track.  *tracks*: id -> fixes ``(t, xy, score)``."""
+    out = []
+    for k, fixes in tracks.items():
+        d = {oid: float(np.median([np.hypot(*(truth.tracks[oid].position_at(f[0])[0] - f[1])) for f in fixes]))
+             for oid in truth.tracks}
+        nearest = min(d, key=d.get)
+        xy = np.array([f[1] for f in fixes])
+        out.append({"track": k, "fixes": len(fixes), "first_t": float(fixes[0][0]), "last_t": float(fixes[-1][0]),
+                    "score": float(np.median([f[2] for f in fixes[-8:]])), "true_object": nearest if d[nearest] <= radius else None,
+                    "false_track": d[nearest] > radius, "nearest_object": nearest, "median_error_m": d[nearest],
+                    "first_xy": xy[0].round(1).tolist(), "last_xy": xy[-1].round(1).tolist(),
+                    "median_xy": np.median(xy, axis=0).round(1).tolist()})
+    return out
+
+
 def per_object(rows, frames, truth, hit):
     out = {}
     times = [f.t for f in frames]
@@ -100,11 +128,15 @@ def main() -> None:
     ap.add_argument("--chunk", type=float, default=0.25, help="seconds of data per push")
     ap.add_argument("--peaks", type=int, default=5, help="passive peaks per frame")
     ap.add_argument("--hit", type=float, default=5.0)
+    ap.add_argument("--assoc", type=float, default=None,
+                    help="track association radius [m] (default 10, 20 on the 5 m harbor); tracks farther from every object are false tracks")
     ap.add_argument("--combine", default="sum", choices=("sum", "max", "persistent"),
                     help="echo maps of the illuminators: summed, maximum, or only the most persistent track")
     ap.add_argument("--out", default="output/harbor_stream")
     args = ap.parse_args()
     path, band, pcd, edge, std = DATASETS[args.dataset]
+    if args.assoc is None:
+        args.assoc = ASSOC.get(args.dataset, ASSOC_RADIUS)
     out = ROOT / args.out / args.dataset
     out.mkdir(parents=True, exist_ok=True)
     obs = Observation.load(ROOT / f"{path}.observation.npz")
@@ -113,12 +145,14 @@ def main() -> None:
     prop = FreeFieldPropagator.from_environment(env)
     pc = ProcessingConfig(f_lo=band[0], f_hi=band[1], c=prop.c, propagator=prop, use_cuda=args.cuda,
                           grid_bounds=(x0 + edge, x1 - edge, y0 + edge, y1 - edge), **pcd)
-    passive = StreamingPassive(obs.geometry, obs.fs, env, pc, SuppressionConfig(), StreamConfig(max_peaks=args.peaks, **std))
+    passive = StreamingPassive(obs.geometry, obs.fs, env, pc, SuppressionConfig(), StreamConfig(max_peaks=args.peaks, **std),
+                               keep_maps=True)
     tracker = RadiatorTracker(TrackerConfig(**TRACKER.get(args.dataset, {})))
     echo = None
     if args.echo:
         bc = BistaticConfig(f_lo=band[0], f_hi=band[1], c=prop.c, propagator=prop, use_cuda=args.cuda, **ECHO)
-        echo = StreamingEcho(obs.geometry, obs.fs, env, bc, EchoStreamConfig(step_blocks=4, combine="max" if args.combine == "max" else "sum"))
+        echo = StreamingEcho(obs.geometry, obs.fs, env, bc, EchoStreamConfig(step_blocks=4, combine="max" if args.combine == "max" else "sum"),
+                             keep_maps=True)
 
     n = int(round(args.chunk * obs.fs))
     p_frames, e_frames, sent = [], [], {}
@@ -154,17 +188,14 @@ def main() -> None:
     e_frames = [f for f in e_frames if f.ships]
     erows = check_rows(e_frames, truth, "echo")
     eper = per_object(erows, e_frames, truth, args.hit)
-    tracks = []
-    for k, tr in tracker.confirmed().items():
-        d = {oid: float(np.median([np.hypot(*(truth.tracks[oid].position_at(f[0])[0] - f[1])) for f in tr.fixes])) for oid in truth.tracks}
-        nearest = min(d, key=d.get)
-        tracks.append({"track": k, "fixes": len(tr.fixes), "first_t": tr.fixes[0][0], "last_t": tr.fixes[-1][0], "score": tr.score,
-                       "ais_label": labels.get(k), "true_object": nearest if d[nearest] <= 10.0 else None,
-                       "median_error_m": d[nearest]})
+    tracks = [dict(m, ais_label=labels.get(m["track"]))
+              for m in match_tracks({k: tr.fixes for k, tr in tracker.confirmed().items()}, truth, args.assoc)]
+    false_tracks = [t for t in tracks if t["false_track"]]
     summary = {"dataset": args.dataset, "record_s": T, "ais_used_in_processing": False,
                "compute_per_second_of_data": {"passive": t_passive / T, "echo": t_echo / T, "total": (t_passive + t_echo) / T},
                "passive_latency_s": {"median": float(np.median(lat)), "max": float(np.max(lat))},
                "passive": {"frames": len(p_frames), "objects": pper}, "tracks": tracks,
+               "track_association_radius_m": args.assoc, "false_tracks": {"count": len(false_tracks), "tracks": false_tracks},
                "echo": {"frames": len(e_frames), "illuminators": "every confirmed track", "objects": eper} if echo else None}
     (out / "summary.json").write_text(json.dumps(summary, indent=2))
     for name, rows in (("passive.csv", prows), ("echo.csv", erows)):
@@ -184,13 +215,15 @@ def main() -> None:
           f"{np.median(lat):.2f} s; AIS used only to label the tracks")
     print("\npassive (no AIS), frames with a peak within 5 m:  " + ", ".join(
         f"{k} {100 * v['hit']:.0f}%" for k, v in pper.items() if v["radiates"] or v["hit"] > 0))
-    print("tracks: " + "; ".join(f"{t['track']} -> {t['true_object']} ({t['median_error_m']:.1f} m), AIS label {t['ais_label']}"
-                                 for t in tracks))
+    print("tracks: " + "; ".join(f"{t['track']} -> {t['true_object'] or 'FALSE TRACK'} ({t['median_error_m']:.1f} m from "
+                                 f"{t['nearest_object']}), AIS label {t['ais_label']}" for t in tracks))
+    print(f"false tracks (no object within {args.assoc:g} m): {len(false_tracks)}" + "".join(
+        f"; {t['track']} at {t['median_xy']} (median), {t['median_error_m']:.1f} m from {t['nearest_object']}" for t in false_tracks))
     if echo:
         print(f"echo ({len(e_frames)} frames, every track illuminates), frames with a peak within 5 m:  " + ", ".join(
             f"{k} {100 * v['hit']:.0f}%" for k, v in eper.items() if not v["radiates"]))
 
-    fig, axes = plt.subplots(1, 2 if echo else 1, figsize=(15 if echo else 8, 6.5), squeeze=False)
+    fig, axes = plt.subplots(2, 2 if echo else 1, figsize=(15 if echo else 8, 13.0), squeeze=False)
     for ax, (name, rows) in zip(axes[0], [("passive (no AIS) and tracks", prows)] + ([("echo", erows)] if echo else [])):
         ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
         r = obs.geometry.positions()
@@ -200,10 +233,15 @@ def main() -> None:
         ax.plot(far[:, 0], far[:, 1], "x", color="tab:red", ms=3, alpha=0.4, label=f"> {args.hit:g} m from every object ({len(far)})")
         ax.plot(hitp[:, 0], hitp[:, 1], "o", color="tab:green", ms=3, label=f"within {args.hit:g} m of an object ({len(hitp)})")
         if name.startswith("passive"):
+            false_ids = {t["track"] for t in false_tracks}
             for k, tr in tracker.confirmed().items():
                 xy = np.array([f[1] for f in tr.fixes])
-                ax.plot(xy[:, 0], xy[:, 1], "-", color="k", lw=0.8)
-                ax.annotate(f"{k}: {labels.get(k) or 'no AIS'}", xy[-1], fontsize=7, color="k")
+                if k in false_ids:
+                    ax.plot(xy[:, 0], xy[:, 1], "--", color="m", lw=1.2)
+                    ax.annotate(f"{k}: unmatched (false track)", xy[-1], fontsize=7, color="m")
+                else:
+                    ax.plot(xy[:, 0], xy[:, 1], "-", color="k", lw=0.8)
+                    ax.annotate(f"{k}: {labels.get(k) or 'no AIS'}", xy[-1], fontsize=7, color="k")
         for oid, tr in truth.tracks.items():
             moving = np.ptp(tr.xy, axis=0).max() > 0
             ax.plot(tr.xy[:, 0], tr.xy[:, 1], "-" if moving else "s", color="deepskyblue" if tr.level_pa > 0 else "orange", lw=1.5, ms=4,
@@ -212,7 +250,30 @@ def main() -> None:
         ax.set_ylim(y0, y1)
         ax.set_aspect("equal")
         ax.legend(fontsize=7, loc="lower left")
-        ax.set_title(f"{args.dataset}: {name}\ntrue tracks: blue radiating, orange silent; black: passive tracks with their AIS label", fontsize=9)
+        ax.set_title(f"{args.dataset}: {name}\ntrue tracks: blue radiating, orange silent; black: passive tracks with their AIS label;\n"
+                     f"magenta dashed: false tracks (no object within {args.assoc:g} m)", fontsize=9)
+    # Second row: the geometry of one frame of each chain (map, where the chain placed the radiators, ray paths).
+    conf = tracker.confirmed()
+    mid = p_frames[len(p_frames) // 2]
+    near = {k: [f[1] for f in tr.fixes if abs(f[0] - mid.t) < 0.3][0] for k, tr in conf.items()
+            if any(abs(f[0] - mid.t) < 0.3 for f in tr.fixes)}
+    geo = [("passive", mid, near, False)]
+    if echo and e_frames:
+        ef = e_frames[len(e_frames) // 2]
+        geo.append(("echo", ef, ef.ships, True))
+    for ax, (name, f, rads, is_echo) in zip(axes[1], geo):
+        ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
+        im = draw_frame_geometry(ax, passive.grid if name == "passive" else echo.grid, f.B, obs.geometry, rads, f.xy, echo=is_echo)
+        for oid, tr in truth.tracks.items():
+            ax.plot(*tr.position_at(f.t)[0], "o", ms=10, mfc="none", mec="deepskyblue" if tr.level_pa > 0 else "orange", mew=1.5)
+        fig.colorbar(im, ax=ax, shrink=0.7, label="dB re frame peak")
+        ax.set_xlim(x0, x1)
+        ax.set_ylim(y0, y1)
+        ax.set_aspect("equal")
+        ax.legend(fontsize=7, loc="lower left")
+        ax.set_title(f"{args.dataset}: {name} map at t = {f.t:.2f} s with its geometry\n"
+                     f"{'tracks at that time' if name == 'passive' else 'illuminator where the echo chain placed it'}; "
+                     f"circles: true positions (for comparison)", fontsize=9)
     fig.savefig(out / "check.png", dpi=110, bbox_inches="tight")
 
 

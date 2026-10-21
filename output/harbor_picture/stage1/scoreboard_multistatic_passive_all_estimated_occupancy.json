@@ -5,8 +5,8 @@
   "map": "occupancy",
   "propagator": "free_field",
   "threshold": {
-    "T": 1060.55615234375,
-    "T_full_record": 4248.0166015625,
+    "T": 627.1036376953125,
+    "T_full_record": 11331.515625,
     "pfa": 0.05,
     "n_frames": 237,
     "frames_above_T": 11,
@@ -19,8 +19,8 @@
   "tuning": {
     "label": "multistatic / passive / all_estimated / occupancy / tuning set",
     "threshold": {
-      "T": 1060.55615234375,
-      "T_full_record": 4248.0166015625,
+      "T": 627.1036376953125,
+      "T_full_record": 11331.515625,
       "pfa": 0.05,
       "n_frames": 237,
       "frames_above_T": 11,
@@ -30,8 +30,9 @@
         "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy"
       ]
     },
-    "false_alarm_rate": 0.0,
-    "false_alarms": 0,
+    "false_alarm_rate": 0.012658227848101266,
+    "false_alarm_frame_rate": 0.012658227848101266,
+    "false_alarms": 1,
     "n_frames": 79,
     "separation": null,
     "per_object": [
@@ -104,8 +105,8 @@
   "test": {
     "label": "multistatic / passive / all_estimated / occupancy / test set",
     "threshold": {
-      "T": 1060.55615234375,
-      "T_full_record": 4248.0166015625,
+      "T": 627.1036376953125,
+      "T_full_record": 11331.515625,
       "pfa": 0.05,
       "n_frames": 237,
       "frames_above_T": 11,
@@ -115,8 +116,9 @@
         "multistatic:passive:all_estimated:seed0:free_of_boat:occupancy"
       ]
     },
-    "false_alarm_rate": 0.04556962025316456,
-    "false_alarms": 18,
+    "false_alarm_rate": 0.035443037974683546,
+    "false_alarm_frame_rate": 0.02531645569620253,
+    "false_alarms": 14,
     "n_frames": 395,
     "separation": null,
     "per_object": [
@@ -127,10 +129,10 @@
         "ais": true,
         "moving": true,
         "frames": 395,
-        "detected": 2,
-        "pd": 0.005063291139240506,
-        "median_error_m": 4.9996220120567045,
-        "p90_error_m": 4.999924402411341,
+        "detected": 0,
+        "pd": 0.0,
+        "median_error_m": null,
+        "p90_error_m": null,
         "full_record_detected": null,
         "full_record_error_m": null,
         "full_record_hits": null,
@@ -171,10 +173,10 @@
         "ais": false,
         "moving": true,
         "frames": 395,
-        "detected": 2,
-        "pd": 0.005063291139240506,
-        "median_error_m": 3.4632208594973974,
-        "p90_error_m": 3.86314395818893,
+        "detected": 0,
+        "pd": 0.0,
+        "median_error_m": null,
+        "p90_error_m": null,
         "full_record_detected": null,
         "full_record_error_m": null,
         "full_record_hits": null,
@@ -205,8 +207,8 @@
   "diagnostic_after_first_ais_report": {
     "note": "diagnostic: frames after the first AIS report of every reporting ship of the run; threshold from the same frames of the object free runs; not part of any criterion",
     "threshold": {
-      "T": 1086.99267578125,
-      "T_full_record": 4247.78396298533,
+      "T": 766.5865478515625,
+      "T_full_record": 11316.201669039416,
       "pfa": 0.05,
       "n_frames": 196,
       "frames_above_T": 9,
@@ -227,22 +229,22 @@
         "tug": null,
         "boat": null
       },
-      "false_alarm_rate": 0.0,
+      "false_alarm_rate": 0.015384615384615385,
       "frames_kept": 65,
       "frames_all": 79
     },
     "test": {
       "pd": {
-        "ferry": 0.006389776357827476,
+        "ferry": 0.0,
         "tug": 0.0,
-        "boat": 0.006756756756756757
+        "boat": 0.0
       },
       "median_error_m": {
-        "ferry": 4.9996220120567045,
+        "ferry": null,
         "tug": null,
-        "boat": 3.4632208594973974
+        "boat": null
       },
-      "false_alarm_rate": 0.05405405405405406,
+      "false_alarm_rate": 0.02027027027027027,
       "frames_kept": 296,
       "frames_all": 395
     }

@@ -16,7 +16,12 @@ with ``evaluate.py`` on the scoring side; processing modules never import it).  
   peak cannot detect two pilings 5 m apart).
 * **Pd** per object: detected frames over frames in which the object is active.
 * **False alarms**: local maxima above ``T`` more than ``fa_radius`` (10 m) from every true object
-  and outside the ship exclusion zones, per frame.
+  and outside the ship exclusion zones, per frame (``false_alarm_rate``), and the fraction of frames with at
+  least one (``false_alarm_frame_rate``), the measured counterpart of ``pfa`` on the scene scored.  The two
+  agree with ``pfa`` only for a map whose background far from the objects does not depend on which objects
+  are in the scene (a calibrated map, e.g. the whitened matched field statistic); a map normalised over the
+  scene every frame (the occupancy posterior) moves mass between objects and background, so its false alarm
+  rate on the full scene is not the rate its threshold was set for and has to be read from these fields.
 * **Localisation error**: median and 90th percentile distance from the detecting peak to the true
   position, over detected frames.
 * **Full record map**: the sum of the frame maps; its threshold is the largest local maximum of the
@@ -29,7 +34,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy.ndimage import maximum_filter
+from scipy.ndimage import label, maximum_filter
 
 from acoustic_sim.contract import Provenance, Truth
 
@@ -81,7 +86,9 @@ class ChainMaps:
 
 def local_maxima(values: np.ndarray, grid: np.ndarray) -> np.ndarray:
     """Boolean mask of the local maxima of *values* (G, ...) on the regular, possibly land masked grid
-    of cell centres *grid* (G, 2): a cell is a maximum when no cell of its 3 x 3 neighbourhood is larger."""
+    of cell centres *grid* (G, 2): a cell is a maximum when no cell of its 3 x 3 neighbourhood is larger.
+    A flat maximum (connected cells of equal value, none with a larger neighbour) is one maximum: only its
+    first cell is kept, so one flat false peak counts as one false alarm."""
     grid = np.asarray(grid, dtype=float)
     steps = np.diff(np.unique(grid[:, 0]))
     dx = float(steps.min()) if len(steps) else 1.0
@@ -91,10 +98,22 @@ def local_maxima(values: np.ndarray, grid: np.ndarray) -> np.ndarray:
     flat = v.reshape(len(grid), -1)
     out = np.zeros(flat.shape, dtype=bool)
     img = np.full((iy.max() + 1, ix.max() + 1), -np.inf)
+    marked = np.zeros(img.shape, dtype=bool)
+    eight = np.ones((3, 3), dtype=bool)
     for j in range(flat.shape[1]):
         img[iy, ix] = flat[:, j]
         mx = maximum_filter(img, size=3, mode="constant", cval=-np.inf)
-        out[:, j] = (flat[:, j] >= mx[iy, ix]) & np.isfinite(flat[:, j])
+        m = (flat[:, j] >= mx[iy, ix]) & np.isfinite(flat[:, j])
+        # Adjacent maxima have equal values (each is >= the other): one per connected component.
+        marked[:] = False
+        marked[iy[m], ix[m]] = True
+        lab, n = label(marked, structure=eight)
+        if n < m.sum():
+            cells = np.flatnonzero(m)
+            _, first = np.unique(lab[iy[cells], ix[cells]], return_index=True)
+            m[:] = False
+            m[cells[first]] = True
+        out[:, j] = m
     return out.reshape(v.shape)
 
 
@@ -165,6 +184,9 @@ def set_threshold(free_runs: list[ChainMaps], truth: Truth, pfa: float = PFA, fa
     if not free_runs:
         raise ValueError("set_threshold needs at least one object free run")
     m = np.concatenate([free_frame_maxima(r, truth, fa_radius) for r in free_runs])
+    if not np.any(np.isfinite(m) & (m > 0)):
+        raise ValueError("set_threshold: no object free frame has a positive local maximum outside the exclusion zones; "
+                         "there is no noise statistic to set the threshold on")
     s = np.sort(m)
     n_above = int(np.floor(pfa * len(s)))
     T = float(s[len(s) - n_above - 1])
@@ -209,13 +231,14 @@ class Scoreboard:
     separation: dict | None = None
     label: str = ""
     meta: dict = field(default_factory=dict)
+    false_alarm_frame_rate: float = float("nan")
 
     def get(self, oid: str) -> ObjectScore:
         return next(o for o in self.per_object if o.id == oid)
 
     def to_dict(self) -> dict:
         return {"label": self.label, "threshold": self.threshold.to_dict(), "false_alarm_rate": self.false_alarm_rate,
-                "false_alarms": self.false_alarms, "n_frames": self.n_frames, "separation": self.separation,
+                "false_alarm_frame_rate": self.false_alarm_frame_rate, "false_alarms": self.false_alarms, "n_frames": self.n_frames, "separation": self.separation,
                 "per_object": [o.to_dict() for o in self.per_object], "provenance": self.provenance.to_dict(), **self.meta}
 
 
@@ -322,12 +345,14 @@ def score(
         rows.append(row)
 
     # False alarms on the primary runs.
-    n_fa, K = 0, 0
+    n_fa, k_fa, K = 0, 0, 0
     for run, tru in zip(primary, truths):
         ids = run.objects(tru)
         xy, _ = _positions(tru, ids, run.times)
         for k, (_, _, _, p) in enumerate(frame_assignments(run, tru)):
-            n_fa += int(np.sum(_far_from(run.grid[p], xy[:, k], fa_radius)))
+            n = int(np.sum(_far_from(run.grid[p], xy[:, k], fa_radius)))
+            n_fa += n
+            k_fa += n > 0
         K += len(run.times)
     sep = None
     if pilings:
@@ -336,7 +361,8 @@ def score(
             per_run.append(sum(1 for p in pilings if p in maps and _full_hit(maps[p][i], tru, p, threshold, detect_radius)))
         sep = {"pilings": len([p for p in pilings if p in maps]), "resolved_per_run": per_run,
                "resolved_median": float(np.median(per_run))}
-    return Scoreboard(rows, n_fa / max(K, 1), threshold, primary[0].provenance, n_fa, K, sep, label)
+    return Scoreboard(rows, n_fa / max(K, 1), threshold, primary[0].provenance, n_fa, K, sep, label,
+                      false_alarm_frame_rate=k_fa / max(K, 1))
 
 
 def _full_hit(run: ChainMaps, tru: Truth, oid: str, threshold: Threshold, detect_radius: float) -> bool:
@@ -380,7 +406,8 @@ def plot_table(sb: Scoreboard, path, title: str = "") -> None:
                 cell.set_facecolor(plt.cm.RdYlGn(0.15 + 0.7 * pd))
     sep = (f", pilings resolved {sb.separation['resolved_per_run']} of {sb.separation['pilings']}" if sb.separation else "")
     ax.set_title(f"{title or sb.label}\nthreshold T = {sb.threshold.T:.4g} (at most {100 * sb.threshold.pfa:.0f} % of "
-                 f"{sb.threshold.n_frames} object free frames above), false alarms {sb.false_alarm_rate:.2f} per frame{sep}",
+                 f"{sb.threshold.n_frames} object free frames above), false alarms {sb.false_alarm_rate:.2f} per frame, "
+                 f"frames with a false alarm {100 * sb.false_alarm_frame_rate:.0f} %{sep}",
                  fontsize=10)
     annotate_figure(fig, sb.provenance)
     fig.savefig(path, dpi=110, bbox_inches="tight")

@@ -3,19 +3,19 @@
   "record_s": 20.0,
   "chains": {
     "passive": {
-      "seconds": 11.314784049987793,
-      "seconds_per_second_of_data": 0.5657392024993897,
+      "seconds": 12.906671285629272,
+      "seconds_per_second_of_data": 0.6453335642814636,
       "frames": 79,
-      "false_detections_per_frame": 1.7974683544303798,
+      "false_detections_per_frame": 1.8481012658227849,
       "objects": {
         "ferry": {
           "kind": "ship",
           "radiates": true,
           "ais": true,
           "frames": 79,
-          "top_peak_hit": 0.0379746835443038,
-          "any_peak_hit": 0.17721518987341772,
-          "median_error_m": 1.1180339887499025
+          "top_peak_hit": 0.06329113924050633,
+          "any_peak_hit": 0.16455696202531644,
+          "median_error_m": 4.123105625617633
         },
         "tug": {
           "kind": "ship",
@@ -31,9 +31,9 @@
           "radiates": true,
           "ais": false,
           "frames": 79,
-          "top_peak_hit": 0.7341772151898734,
-          "any_peak_hit": 0.7721518987341772,
-          "median_error_m": 1.6481341431588832
+          "top_peak_hit": 0.5063291139240507,
+          "any_peak_hit": 0.569620253164557,
+          "median_error_m": 1.716716454343975
         },
         "uuv1": {
           "kind": "uuv",
@@ -134,8 +134,8 @@
       }
     },
     "echo (ferry illuminates)": {
-      "seconds": 26.70694899559021,
-      "seconds_per_second_of_data": 1.3353474497795106,
+      "seconds": 20.699209451675415,
+      "seconds_per_second_of_data": 1.0349604725837707,
       "frames": 79,
       "false_detections_per_frame": 2.037974683544304,
       "objects": {

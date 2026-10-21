@@ -9,25 +9,27 @@ the echo of an AIS ship. The forward model reuses this package's FDTD
 solver; water-specific code lives in `src/acoustic_sim/water/`.
 
 **Status: the simulation, sensing and processing chain work and are tested.  The real-time system
-(`water/streaming.py`, `examples/harbor_stream.py`, 0.67 to 0.87 s of compute per second of data)
+(`water/streaming.py`, `examples/harbor_stream.py`, 0.78 to 0.95 s of compute per second of data)
 locates every ship from the traces alone, AIS only labelling the tracks afterwards, and finds a silent
-UUV lit by one ship in 75 % of frames.  Not yet detected reliably: the silent bodies of the multi ship
-scene (6 to 14 %) and the quiet UUVs of the 5 m harbor.**  See
+UUV lit by one ship in 73 % of frames.  Not yet detected reliably: the silent bodies of the multi ship
+scene (3 to 18 %) and the quiet UUVs of the 5 m harbor.**  See
 [What the chains find today](#what-the-chains-find-today).
 
 ## Walkthrough: from the traces to the harbor picture
 
 `examples/walkthrough/` takes one recording through the whole real-time chain, one figure per step
-(`./examples/walkthrough/run_all.sh <bistatic|multistatic|harbor> --cuda`; each script also runs on its
-own). The chain runs once (about 30 s on the GPU) and is cached in `output/walkthrough/<dataset>/cache/`;
+(`./examples/walkthrough/run_all.sh DATASET --cuda`, DATASET one of `simple`, `bistatic`, `multistatic`, `harbor`;
+each script also runs on its own). The chain runs once (about 30 s on the GPU) and is cached in `output/walkthrough/<dataset>/cache/`;
 the figures go to `output/walkthrough/<dataset>/`. Nothing in the processing reads the truth or the AIS
 reports: the truth is drawn (dashed lines, circles) only to show where the objects really are, and AIS
 enters in step 4 only, to name what was found. The figures below are the multistatic recording (three
 ships, two UUVs, a diver, six pilings and a moored hull) and, for the echo steps, the [simple
 harbor](#simple-harbor-easier-wavefields) (a ferry and a boat lighting a silent UUV and a wreck).
 
-**1. The recording** (`01_recording.py`). What the system gets: the chart, the sensor positions (a strain
-DAS cable and four hydrophones) and the traces.
+**1. The recording** (`01_recording.py`). What the system gets: the chart, the sensor positions (a DAS cable and
+four hydrophones) and the traces. The cable of the bistatic and multistatic recordings is in strain mode (the
+second difference of the field over the gauge length, as an interrogator measures it); the simple harbor and the
+5 m harbor have a pressure mode cable.
 
 ![step 1](../output/walkthrough/multistatic/01_recording.png)
 
@@ -63,11 +65,25 @@ the record (each frame over its median, so the scale is dB over the noise level)
 ![step 6](../output/walkthrough/simple/06_echo_map.png)
 
 **7. The harbor picture** (`07_harbor_picture.py`). Tracks and echo detections over the true positions,
-and each object's score (frames with a detection within 5 m, median error). On the multistatic recording
-the ships are found in 85 to 96 % of the frames; the silent bodies there are mostly not (6 % and 14 % for
+and each object's score (frames with a detection within 5 m, median error). Every track is scored as well: one
+that matches no object within 10 m is a false track, drawn red dashed and listed in the table with its median
+position (`07_harbor_picture.json`); the simple harbor has one, the bistatic recording one. On the multistatic recording
+the ships are found in 69 to 97 % of the frames; the silent bodies there are mostly not (3 % and 18 % for
 the UUVs) because the other ships' direct sound is removed only by 3 to 7 dB.
 
 ![step 7](../output/walkthrough/multistatic/07_harbor_picture.png)
+
+**8. The geometry** (`08_geometry.py`). Where the chain projects each track ahead (the straight line fit the
+tracker gates with and the echo chain places the illuminator by) against where the object really was, and how far
+ahead that holds; and one frame's map with its ray paths: the illuminator where the echo chain placed it, its
+direct paths to a few sensors, the echo path through the strongest peak and the ellipse of equal delay through it
+(an echo can come from anywhere on that ellipse; the array's aperture picks the point). Exclusion zones show as the
+dark discs around each tracked radiator.
+
+![step 8](../output/walkthrough/multistatic/08_geometry.png)
+
+The same frame geometry is the bottom row of `harbor_stream.py`'s and `harbor_detect.py`'s `check.png`, and
+`scoreboard_*_frame.png` of stage 1 adds the threshold contour and the peaks above it.
 
 All four recordings (bistatic, multistatic, simple, harbor) have the full set of figures in
 `output/walkthrough/` (the 5 m harbor without steps 5 and 6).
@@ -112,7 +128,11 @@ Build it with `python examples/harbor_multistatic_dataset.py --config examples/h
 On the median DAS channel the ferry's echo is 15.7 dB below its direct sound and 1.2 dB above the noise
 (`levels.json`). The real-time system (`harbor_stream.py --dataset simple --echo`), everything estimated:
 the ferry within 5 m in 100 % of frames (track 1.4 m), the boat in 78 % (0.9 m), the wreck by its echo in
-100 % and the UUV in 18 %, at 0.62 s of compute per second of data.
+100 % and the UUV in 18 %, at 0.62 s of compute per second of data. One confirmed track, r19, matches no object
+(18.4 m median from the nearest, the wreck) and is a false track. It is not a radiator without AIS: for its first
+2 s (5.75 to 8 s) it sits 4 to 8 m from the wreck, the ferry's echo off the wreck located by the passive chain;
+from 11.5 s on it stays about 43 m south of the ferry and moves east with it (24 m while the ferry moves 26 m),
+a sidelobe of the ferry beyond the tracker's 30 m sidelobe exclusion. Its score is 4 % of the ferry's.
 
 ## Physical and Interpretation Limits
 
@@ -413,13 +433,15 @@ each dataset.
 | Dataset | Chain | Found (frames with a detection within 5 m, median error) | Not found | Detections > 10 m from every object | Time |
 |---|---|---|---|---|---|
 | bistatic (0.5 m, 20 s) | echo, ferry illuminates | silent UUV 75 %, 2.5 m | — | 1.7 per frame | 27 s |
-| multistatic (0.5 m, 20 s) | passive | boat (no AIS) 77 %, 1.6 m; ferry 18 %, 1.1 m | tug | 1.8 per frame | 11 s |
+| multistatic (0.5 m, 20 s) | passive | boat (no AIS) 57 %, 1.7 m; ferry 16 %, 4.1 m | tug | 1.8 per frame | 13 s |
 | multistatic | echo, ferry illuminates | — (tug 23 %: its direct path dominates the map) | both UUVs, diver, six pilings, moored hull | 2.0 per frame | 27 s |
 | harbor (5 m, 120 s) | passive | ferry 2 %, tug 3 % | moored ship, both UUVs, diver | 2.9 per frame | 9 s |
 
-Not detected anywhere: the second UUV, the diver, the pilings, the moored hull, the radiating UUVs of
-the 5 m dataset, and every silent body in the multi illuminator scene, where the direct paths of the
-ships that do not illuminate are left in the traces and swamp the echo map.
+Not detected by these batch runs (one illuminator, `harbor_detect.py`): the second UUV, the diver, the
+pilings, the moored hull, the radiating UUVs of the 5 m dataset, and every silent body of the multistatic
+recording, where the direct paths of the ships that do not illuminate are left in the traces and swamp the echo
+map. The real-time chain below removes every tracked ship's direct path and, on the same multistatic
+recording, finds uuv2 in 18 % and uuv1 in 3 % of the frames.
 
 **Real time, located from the traces alone** (`water/streaming.py`, `examples/harbor_stream.py`). AIS
 does not enter the processing: it is used afterwards, to label what was located (`ais_crosscheck`).
@@ -442,18 +464,36 @@ The traces arrive in 0.25 s chunks:
 
 On the Quadro RTX 4000, checked against the true positions (a detection within 5 m of an object):
 
-| Recording | Compute per s of data (passive + echo) | Passive (no AIS) | Tracks (AIS label afterwards) | Echo |
-|---|---|---|---|---|
-| bistatic (0.5 m, 20 s) | 0.67 s | ferry 100 %, the UUV's echo 58 % | ferry 1.0 m (AIS: ferry) | silent UUV 75 % |
-| multistatic (0.5 m, 20 s) | 0.87 s | ferry 96 %, tug 85 %, boat 86 % | boat 1.3 m (no AIS), ferry 2.2 m (AIS: ferry), tug 2.6 m (AIS: tug) | uuv2 14 %, uuv1 6 %, the other bodies under 2 % |
-| harbor (5 m, 120 s) | 0.50 s (passive only) | ferry 50 %, tug 2 % | ferry 13 m (AIS: ferry), tug 8 m (AIS: tug) | — |
+| Recording | Compute per s of data (passive + echo) | Passive (no AIS) | Tracks (AIS label afterwards) | False tracks | Echo |
+|---|---|---|---|---|---|
+| simple (1 m, 20 s) | 0.62 s | ferry 100 %, boat 78 % | ferry 1.4 m (AIS: ferry), boat 0.9 m (no AIS) | 1: r19 at (205, 227), 18 m from the wreck | wreck 100 %, UUV 18 % |
+| bistatic (0.5 m, 20 s) | 0.78 s | ferry 100 %, the UUV's echo 24 % | ferry 1.0 m (AIS: ferry) | 1: r18 at (163, 228), 41 m from the ferry | silent UUV 73 % |
+| multistatic (0.5 m, 20 s) | 0.95 s | ferry 97 %, tug 69 %, boat 78 % | boat 2.6 m (no AIS), ferry 2.2 m (AIS: ferry), tug 2.3 m (AIS: tug) | 0 | uuv2 18 %, uuv1 3 %, the other bodies under 2 % |
+| harbor (5 m, 120 s) | 0.50 s (passive only) | ferry 50 %, tug 2 % | ferry 13 m (AIS: ferry), tug 8 m (AIS: tug) | 0 | — |
 
-Latency: about 1.7 s on the 0.5 m recordings (2 s steps), 1 s on the 5 m one. What made it fit: free field
-replicas from fused GPU kernels (phase recurrence, `green2d_bins`, within 1e-14; the strain channel
-replicas from the range table, within 7e-6), the interference eigendecompositions batched and spread over
+Every confirmed track is scored: matched to the object nearest over its fixes (median distance) when within
+10 m (20 m on the 5 m harbor), otherwise a false track (`summary.json`, `false_tracks`; drawn dashed and listed
+in step 7 of the walkthrough). Both false tracks are sidelobes of the ferry that move with it (r18 stays 41 m
+from it; r19 is described with the simple harbor above). Compute times vary by a few hundredths between runs.
+
+Latency: about 1.7 s on the simple harbor and 1.9 s on the strain recordings (2 s steps), 1 s on the 5 m one.
+What made it fit: free field replicas from fused GPU kernels (phase recurrence, `green2d_bins`, within 1e-14;
+the passive strain replicas from the same recurrence at the three sample points of each channel, combined in
+the kernel; the echo chain's strain channel replicas from the range table, within 7e-6), the interference eigendecompositions batched and spread over
 blocks, the ECA on the newest blocks only (`eca_remove(blocks=...)`), its normal equations from prefix sums
 (`eca_gram="prefix"`, equal to 1e-15) for all channels at once (`eca_chunk=200`), every illuminator's map in
 one pass. The batch coherent map uses the same replicas: 4.9 s instead of 9.2 s on the fine bistatic dataset.
+
+The passive replicas (scan, streaming chain, AIS ship refinement and projection) are the Green's function at
+the layout's sample points collapsed to channels, as the echo chain's: on a strain cable the data are the
+second difference over the gauge length. Until this review they were the Green's function at the channel
+centres, a mismatch on the bistatic and multistatic recordings. With the matched replica the map at every
+radiator doubles (multistatic seed 0, median over frames within 3 m of the truth: ferry 1472 to 3286, tug 91
+to 230, boat 1574 to 3090), and so do the frame maxima. The strongest ship's sidelobes then take more of the
+peaks of a frame, so the weaker objects are found less often: tug 85 to 69 %, boat 86 to 78 %, the UUV's echo
+on the bistatic recording 58 to 24 % (passive), and in the batch passive chain (`harbor_detect.py`, where the
+AIS ship refinement uses the same replicas) the boat 77 to 57 %. The passive compute went from
+0.34 to 0.45 s per second of data.
 
 Removing the other ships' direct paths is what lets the echoes through in the multi ship scene: with the
 tug's and the boat's direct paths removed exactly (from the truth, a diagnostic) the ferry lit map finds
@@ -466,13 +506,26 @@ runs it (tuning set seed 0, test set seeds 1 to 5). The run was stopped after th
 and the multistatic passive chain (`output/harbor_picture/stage1/results.json`); with the threshold
 at 5 % of object free frames:
 
-| Dataset / chain | Configuration | Pd tuning | Pd test |
-|---|---|---|---|
-| bistatic / echo | `all_estimated` | uuv1 0.27 | uuv1 0.30 |
-| bistatic / echo | `true_waveform_exact_track` (given the truth) | uuv1 0.03 | uuv1 0.02 |
-| bistatic / echo | `direct_removed_exactly` (given the truth) | uuv1 0.37 | uuv1 0.51 |
-| multistatic / passive (scan map) | `all_estimated` | ferry 0.00, tug 0.00, boat 0.16 | ferry 0.00, tug 0.00, boat 0.08 |
-| multistatic / passive (occupancy map) | `all_estimated` | 0.00, 0.00, 0.00 | 0.01, 0.00, 0.01 |
+| Dataset / chain | Configuration | Pd tuning | Pd test | Frames with a false alarm, tuning / test (target 5 %) |
+|---|---|---|---|---|
+| bistatic / echo | `all_estimated` | uuv1 0.27 | uuv1 0.30 | 4 % / 6 % |
+| bistatic / echo | `true_waveform_exact_track` (given the truth) | uuv1 0.03 | uuv1 0.02 | 5 % / 3 % |
+| bistatic / echo | `direct_removed_exactly` (given the truth) | uuv1 0.37 | uuv1 0.51 | 15 % / 18 % |
+| multistatic / passive (scan map) | `all_estimated` | ferry 0.01, tug 0.00, boat 0.16 | ferry 0.01, tug 0.00, boat 0.08 | 16 % / 7 % |
+| multistatic / passive (occupancy map) | `all_estimated` | 0.00, 0.00, 0.00 | 0.00, 0.00, 0.00 | 1 % / 3 % |
+
+**Which scoreboards are calibrated.** The threshold is set on runs with one object removed from the mix, at
+5 % of their frames; the last column is the rate it actually gives on the full scene (`false_alarm_frame_rate`
+in the JSON: frames with at least one false alarm). Only the two bistatic rows with the ECA hold the 5 %
+(`all_estimated`, `true_waveform_exact_track`): the UUV is the only object and adds nothing beyond the false
+alarm radius. The passive scan map does not: each object free run lacks that ship's sidelobes, which appear
+beyond the 10 m radius in the full scene (16 % on the tuning mix). The occupancy map does not either, in the
+other direction (1 to 3 %): it is renormalised to sum 1 every frame, so in the full scene the objects take
+mass from the background, and a weak object's Pd depends on how loud the others are. Criterion 1 is scored on
+the occupancy map, so its Pd is at a false alarm rate below 5 %, not at 5 %. `direct_removed_exactly` (18 %)
+is not comparable with the other echo rows. On a map whose background does not depend on the scene the
+threshold does hold (`tests/harbor/test_scoreboard.py`: 4.4 % on an independent noise run, against 1.2 % for
+the same map normalised every frame).
 
 Criteria fixed before the run: 1 (passive, ferry, tug and boat Pd >= 0.9) **fails**; 2 (echo,
 bistatic UUV Pd >= 0.5) **fails** (0.30); 3 (multistatic static bodies) was not run. The UUV is the
@@ -481,6 +534,36 @@ threshold in only 30 %: the threshold is set by the residual direct path at the 
 The passive threshold is set by the frames before the first AIS report, where the ships are neither
 projected out nor excluded. The direct path of the ferry is removed by 10.8 dB (estimated waveform)
 and 21.3 dB (true waveform and exact track), as in stage 0.
+
+**Why given the true waveform and the exact track the UUV is mapped worse than with everything estimated**
+(Pd 0.02 against 0.30, map peak within 5 m of the UUV in 26 % of frames against 77 %, although the direct
+path is removed 10 dB deeper). Neither configuration given the truth is an upper limit. Measured on the
+tuning mix (`scripts/diagnose_true_waveform.py`, seed 0, given the true waveform, the exact track and the truth
+components):
+
+* It is not the removal: the ECA with the true waveform takes 0.6 dB of the UUV echo (0.3 dB with the data
+  reference). It is not the scale (the `"snr"` map is independent of the reference scale), the frames (both
+  references are cut on the same frames) or a conjugation (per bin over the frames, the data reference and
+  the true waveform are coherent at 0.98 with the exact track, 0.79 with the refined one).
+* It is the timing. The data reference leads the true waveform by 2.6 to 2.8 ms. The direct path recorded at
+  the hydrophones arrives 1.5 to 2.3 ms earlier than the true waveform propagated at the chart's sound
+  speed, and the FDTD scheme's dispersion model (simulator knowledge, `SimulatorAwarePropagator`) predicts
+  0.5 to 2.9 ms early for the same paths: same sign, same order, direction dependent (the hydrophones do not
+  agree one by one; a band limited cross correlation is also ambiguous by about 0.6 ms). The simulated water
+  propagates faster than the chart's single sound speed, by an amount that depends on direction.
+* The data reference is estimated from the traces, so it carries the same propagation as the echo and the
+  free field matched filter stays aligned. The true waveform is the emitted signal: against free field
+  replicas the echo is 1 to 3 ms off, the coherent sum over 100 to 760 Hz loses focus, and the UUV echo alone
+  maps 4.7 dB lower (map peak 813 against 2400) while the residual direct path and the noise do not drop
+  (about 700 and 550). The UUV peak is then 4.2 m off (median), at the edge of the 5 m radius, and loses to
+  the residuals.
+* With the dispersion corrected replicas (simulator knowledge), the true waveform run finds the UUV in 49 % of
+  the frames (from 23 %), 2.7 m off; the gap to the 73 % of everything estimated is not explained.
+* `direct_removed_exactly` uses the same true waveform and still scores 0.51, because its threshold is set
+  without any residual direct path, so the weaker echo peak still clears it.
+
+A fair reference configuration would pair the true waveform with the simulator aware replicas (not run
+here).
 
 ### History
 
@@ -697,7 +780,7 @@ deliberately not started.
 | `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator` (free field by default, `_freefield` suffix; `simulator` for the dispersion corrected replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
 | `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the truth inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit, `--propagator simulator` the dispersion corrected replicas, `--cuda` the GPU chain); every result records its `provenance` | about 1.5 h of processing for both datasets |
 | `examples/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and a ferry-only check map given the truth | 6 FDTD runs (fine: about 1 h on the GPU) |
-| `examples/walkthrough/` | [Walkthrough](#walkthrough-from-the-traces-to-the-harbor-picture): seven scripts, one figure per step of the chain (recording, passive map, tracks, AIS labels, direct path removal, echo map, harbor picture); `run_all.sh <dataset> --cuda` | about 1 min per recording |
+| `examples/walkthrough/` | [Walkthrough](#walkthrough-from-the-traces-to-the-harbor-picture): eight scripts, one figure per step of the chain (recording, passive map, tracks, AIS labels, direct path removal, echo map, harbor picture, geometry); `run_all.sh DATASET --cuda` | about 1 min per recording |
 | `examples/harbor_stream.py` | The real-time system (`water/streaming.py`): passive chain without AIS, tracker, echo chain on the tracks, AIS labels afterwards; feeds a recording in 0.25 s chunks, reports compute per second of data and latency, checks every output against the true positions; `--dataset multistatic|bistatic|harbor [--echo] --cuda`; writes `output/harbor_stream/<dataset>/` | 15 to 60 s per run |
 | `examples/harbor_picture_stage1.py` | Harbor picture stage 1: the [scoreboard](architecture.md#scoreboard) on the bistatic, multistatic and 5 m harbor datasets, tuning set (noise seed 0) and test set (seeds 1 to 5, remixed from the cached gathers), passive and echo chains; `--dataset`, `--chain`, `--propagator {free_field,simulator}`, `--cuda`, `--workers`; writes `output/harbor_picture/stage1/` | about 1.2 h on the GPU (runs are cached in `cache/`) |
 | `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |

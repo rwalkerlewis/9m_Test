@@ -16,7 +16,8 @@ active at that time and its distance; a detection within ``--hit`` m (5) is a hi
 
 Outputs in ``--out/<dataset>/``: ``detections.csv`` (chain, t, x, y, score, rank, nearest object,
 distance), ``check.csv`` (per object and chain: frames, frames hit by the top peak, by any peak,
-median error), ``check.png`` (true tracks and detections on the chart), ``summary.json``.
+median error), ``check.png`` (top: true tracks and detections on the chart; bottom: one frame of each chain with its
+map, the AIS ships where the chain refined them, the exclusion zones and the ray paths), ``summary.json``.
 
 Usage::
 
@@ -43,8 +44,9 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from acoustic_sim.contract import Observation, Provenance, Truth  # noqa: E402
 from acoustic_sim.water.ais import AISReports  # noqa: E402
-from acoustic_sim.water.bistatic import BistaticConfig, run_bistatic  # noqa: E402
+from acoustic_sim.water.bistatic import BistaticConfig, exclusion, run_bistatic  # noqa: E402
 from acoustic_sim.water.detection import ProcessingConfig, _nms  # noqa: E402
+from acoustic_sim.water.plotting import draw_frame_geometry  # noqa: E402
 from acoustic_sim.water.propagation import FreeFieldPropagator  # noqa: E402
 from acoustic_sim.water.suppression import SuppressionConfig, run_ais_aware  # noqa: E402
 
@@ -74,9 +76,12 @@ def run_passive(obs: Observation, band, spec, cuda: bool):
     prop = FreeFieldPropagator.from_environment(env)
     pc = ProcessingConfig(f_lo=band[0], f_hi=band[1], c=prop.c, propagator=prop, use_cuda=cuda,
                           grid_bounds=(x0 + e, x1 - e, y0 + e, y1 - e), **spec["pc"])
-    run = run_ais_aware(obs.traces, obs.geometry, obs.fs, env, obs.reports, pc, SuppressionConfig(**spec["sc"]),
-                        provenance=Provenance(data="forward_model"))
-    return run.scan.B, run.scanner.grid, run.scan.times, run.provenance
+    sc = SuppressionConfig(**spec["sc"])
+    run = run_ais_aware(obs.traces, obs.geometry, obs.fs, env, obs.reports, pc, sc, provenance=Provenance(data="forward_model"))
+    est, grid = run.ships, run.scanner.grid
+    ships = [{vid: est.refined[k, v] for v, vid in enumerate(est.ids) if est.present[k, v]} for k in range(len(run.scan.times))]
+    ex = est.exclusion_mask(grid, sc.exclusion_radius) if est.ids else np.zeros(run.scan.B.shape, bool)
+    return run.scan.B, grid, run.scan.times, run.provenance, (ships, ex)
 
 
 def run_echo(obs: Observation, band, cuda: bool, source: str):
@@ -88,7 +93,8 @@ def run_echo(obs: Observation, band, cuda: bool, source: str):
     bc = BistaticConfig(f_lo=band[0], f_hi=band[1], c=prop.c, propagator=prop, use_cuda=cuda, grid_dx=2.0,
                         coherent_norm="snr", map_scale="none", exclusion_radius=25.0, eca_doppler=True, track_smooth_s=4.0)
     run = run_bistatic(obs.traces, obs.geometry, obs.fs, env, reports, bc, provenance=Provenance(data="forward_model"))
-    return run.scan.B, run.grid, run.sp.times, run.provenance
+    ships = [{source: run.ship.refined[k]} if run.ship.present[k] else {} for k in range(len(run.sp.times))]
+    return run.scan.B, run.grid, run.sp.times, run.provenance, (ships, exclusion(run.grid, run.ship, bc.exclusion_radius))
 
 
 def check(dets, B, grid, times, truth: Truth, hit: float):
@@ -133,14 +139,17 @@ def main() -> None:
     truth = Truth.load(ROOT / f"{path}.truth.npz")                                # read only for the check
     T = obs.traces.shape[1] / obs.fs
 
-    all_rows, summary = [], {"dataset": args.dataset, "record_s": T, "chains": {}}
+    all_rows, summary, geometry = [], {"dataset": args.dataset, "record_s": T, "chains": {}}, {}
     runs = [("passive", None)] * ("passive" in chains) + [("echo", s) for s in (obs.reports.vessels[:1] if "echo" in chains else [])]
     for chain, src in runs:
         t0 = time.time()
-        B, grid, times, prov = run_passive(obs, band, spec, args.cuda) if chain == "passive" else run_echo(obs, band, args.cuda, src)
+        B, grid, times, prov, (ships, ex) = run_passive(obs, band, spec, args.cuda) if chain == "passive" else run_echo(obs, band, args.cuda, src)
         secs = time.time() - t0
         name = chain if src is None else f"echo ({src} illuminates)"
         dets = peaks(B, grid, args.peaks, args.sep)
+        k = len(times) // 2                                                          # a frame for the geometry figure
+        geometry[name] = (grid, B[:, k], times[k], ships[k], np.array([grid[g] for kk, g, _ in dets if kk == k]).reshape(-1, 2),
+                          ex[:, k], chain == "echo")
         rows, per, fa = check(dets, B, grid, times, truth, args.hit)
         for x in rows:
             x["chain"] = name
@@ -169,7 +178,7 @@ def main() -> None:
 
     env = obs.environment
     names = list(summary["chains"])
-    fig, axes = plt.subplots(1, len(names), figsize=(7.5 * len(names), 6.5), squeeze=False)
+    fig, axes = plt.subplots(2, len(names), figsize=(7.5 * len(names), 13.0), squeeze=False)
     x0, x1, y0, y1 = env.extent
     for ax, name in zip(axes[0], names):
         ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
@@ -191,6 +200,19 @@ def main() -> None:
         ax.set_aspect("equal")
         ax.legend(fontsize=7, loc="lower left")
         ax.set_title(f"{args.dataset}: {name}\ntracks: blue radiating, orange silent; % = frames with a detection within {args.hit:g} m",
+                     fontsize=9)
+    for ax, name in zip(axes[1], names):                                             # one frame of each chain, with its geometry
+        grid, Bk, tk, rads, pk, exk, is_echo = geometry[name]
+        ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
+        im = draw_frame_geometry(ax, grid, Bk, obs.geometry, rads, pk, echo=is_echo, exclusion=exk)
+        for oid, tr in truth.tracks.items():
+            ax.plot(*tr.position_at(tk)[0], "o", ms=10, mfc="none", mec="deepskyblue" if tr.level_pa > 0 else "orange", mew=1.5)
+        fig.colorbar(im, ax=ax, shrink=0.7, label="dB re frame peak")
+        ax.set_xlim(x0, x1)
+        ax.set_ylim(y0, y1)
+        ax.set_aspect("equal")
+        ax.legend(fontsize=7, loc="lower left")
+        ax.set_title(f"{name}, t = {tk:.2f} s: map, AIS ships as refined,\nexclusion zones, ray paths; circles: true positions",
                      fontsize=9)
     fig.savefig(out / "check.png", dpi=110, bbox_inches="tight")
     print(f"\nwrote {out}")

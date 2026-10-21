@@ -3,13 +3,13 @@
   "record_s": 120.0,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.4998173657912351,
+    "passive": 0.4786890155665484,
     "echo": 0.0,
-    "total": 0.4998173657912351
+    "total": 0.4786890155665484
   },
   "passive_latency_s": {
-    "median": 1.0168716864991438,
-    "max": 2.210376159000589
+    "median": 1.0059455094997247,
+    "max": 1.3003567380001186
   },
   "passive": {
     "frames": 56,
@@ -72,9 +72,23 @@
       "first_t": 90.0,
       "last_t": 118.0,
       "score": 7912.757080078125,
-      "ais_label": "ferry",
-      "true_object": null,
-      "median_error_m": 13.24532825604753
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 13.24532825604753,
+      "first_xy": [
+        1490.0,
+        750.0
+      ],
+      "last_xy": [
+        1590.0,
+        880.0
+      ],
+      "median_xy": [
+        1530.0,
+        825.0
+      ],
+      "ais_label": "ferry"
     },
     {
       "track": "r26",
@@ -82,10 +96,29 @@
       "first_t": 110.0,
       "last_t": 116.0,
       "score": 2939.083251953125,
-      "ais_label": "tug",
       "true_object": "tug",
-      "median_error_m": 8.378755170948104
+      "false_track": false,
+      "nearest_object": "tug",
+      "median_error_m": 8.378755170948104,
+      "first_xy": [
+        1015.0,
+        880.0
+      ],
+      "last_xy": [
+        1035.0,
+        865.0
+      ],
+      "median_xy": [
+        1025.0,
+        875.0
+      ],
+      "ais_label": "tug"
     }
   ],
+  "track_association_radius_m": 20.0,
+  "false_tracks": {
+    "count": 0,
+    "tracks": []
+  },
   "echo": null
 }

@@ -34,3 +34,9 @@ run them only on an otherwise idle machine.
 | Script | Purpose |
 |---|---|
 | `clean_outputs.py` | List (dry run) or `--delete` gitignored generated files under `output/`; see [docs/outputs.md](../docs/outputs.md) |
+
+## Harbor diagnostics
+
+| Script | Purpose |
+|---|---|
+| `diagnose_true_waveform.py` | Why the stage 1 echo run given the true waveform and the exact track maps the UUV worse than everything estimated: maps of the ECA outputs per truth component, the recorded direct path against the true waveform, the FDTD dispersion (reads the truth) |

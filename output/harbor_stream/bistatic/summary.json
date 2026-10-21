@@ -3,13 +3,13 @@
   "record_s": 20.0,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.3404110314006175,
-    "echo": 0.3337132021508296,
-    "total": 0.6741242335514471
+    "passive": 0.4636332209498505,
+    "echo": 0.3342985283998132,
+    "total": 0.7979317493496637
   },
   "passive_latency_s": {
-    "median": 1.6400354135003,
-    "max": 2.878484638000373
+    "median": 1.9088165060002211,
+    "max": 3.2044514449989947
   },
   "passive": {
     "frames": 72,
@@ -19,14 +19,14 @@
         "radiates": true,
         "frames": 72,
         "hit": 1.0,
-        "median_error_m": 1.0
+        "median_error_m": 1.0000000000000142
       },
       "uuv1": {
         "kind": "uuv",
         "radiates": false,
         "frames": 72,
-        "hit": 0.5833333333333334,
-        "median_error_m": 2.908131961159106
+        "hit": 0.2361111111111111,
+        "median_error_m": 2.7846454462148995
       }
     }
   },
@@ -36,22 +36,80 @@
       "fixes": 72,
       "first_t": 0.25,
       "last_t": 18.0,
-      "score": 2250.87841796875,
-      "ais_label": "ferry",
+      "score": 7091.829345703125,
       "true_object": "ferry",
-      "median_error_m": 1.0
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 1.0000000000000142,
+      "first_xy": [
+        140.0,
+        200.0
+      ],
+      "last_xy": [
+        208.0,
+        202.0
+      ],
+      "median_xy": [
+        176.0,
+        200.0
+      ],
+      "ais_label": "ferry"
     },
     {
-      "track": "r27",
-      "fixes": 7,
-      "first_t": 16.5,
-      "last_t": 18.0,
-      "score": 165.1254119873047,
-      "ais_label": null,
+      "track": "r18",
+      "fixes": 14,
+      "first_t": 11.5,
+      "last_t": 16.0,
+      "score": 991.9359436035156,
       "true_object": null,
-      "median_error_m": 39.29376540877697
+      "false_track": true,
+      "nearest_object": "ferry",
+      "median_error_m": 41.231056256176615,
+      "first_xy": [
+        156.0,
+        228.0
+      ],
+      "last_xy": [
+        174.0,
+        228.0
+      ],
+      "median_xy": [
+        163.0,
+        228.0
+      ],
+      "ais_label": null
     }
   ],
+  "track_association_radius_m": 10.0,
+  "false_tracks": {
+    "count": 1,
+    "tracks": [
+      {
+        "track": "r18",
+        "fixes": 14,
+        "first_t": 11.5,
+        "last_t": 16.0,
+        "score": 991.9359436035156,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "ferry",
+        "median_error_m": 41.231056256176615,
+        "first_xy": [
+          156.0,
+          228.0
+        ],
+        "last_xy": [
+          174.0,
+          228.0
+        ],
+        "median_xy": [
+          163.0,
+          228.0
+        ],
+        "ais_label": null
+      }
+    ]
+  },
   "echo": {
     "frames": 71,
     "illuminators": "every confirmed track",
@@ -67,8 +125,8 @@
         "kind": "uuv",
         "radiates": false,
         "frames": 71,
-        "hit": 0.7464788732394366,
-        "median_error_m": 2.8726187549428723
+        "hit": 0.7323943661971831,
+        "median_error_m": 2.5972114359879734
       }
     }
   }

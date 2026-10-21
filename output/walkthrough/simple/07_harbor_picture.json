@@ -1,0 +1,127 @@
+{
+  "dataset": "simple",
+  "detect_radius_m": 5.0,
+  "track_association_radius_m": 10.0,
+  "objects": {
+    "ferry": {
+      "by": "passive",
+      "frames_found": 1.0,
+      "median_error_m": 1.414213562373065
+    },
+    "boat": {
+      "by": "passive",
+      "frames_found": 0.7777777777777778,
+      "median_error_m": 0.8911535742453074
+    },
+    "uuv1": {
+      "by": "echo",
+      "frames_found": 0.18309859154929578,
+      "median_error_m": 3.709508404315788
+    },
+    "wreck": {
+      "by": "echo",
+      "frames_found": 1.0,
+      "median_error_m": 2.8284271247461903
+    }
+  },
+  "tracks": [
+    {
+      "track": "r1",
+      "fixes": 72,
+      "first_t": 0.25,
+      "last_t": 18.0,
+      "score": 5719.97998046875,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 1.414213562373065,
+      "first_xy": [
+        121.0,
+        259.0
+      ],
+      "last_xy": [
+        191.0,
+        259.0
+      ],
+      "median_xy": [
+        157.0,
+        259.0
+      ]
+    },
+    {
+      "track": "r2",
+      "fixes": 56,
+      "first_t": 0.25,
+      "last_t": 17.75,
+      "score": 261.4634323120117,
+      "true_object": "boat",
+      "false_track": false,
+      "nearest_object": "boat",
+      "median_error_m": 0.8911535742453074,
+      "first_xy": [
+        151.0,
+        121.0
+      ],
+      "last_xy": [
+        187.0,
+        143.0
+      ],
+      "median_xy": [
+        169.0,
+        133.0
+      ]
+    },
+    {
+      "track": "r19",
+      "fixes": 28,
+      "first_t": 5.75,
+      "last_t": 18.0,
+      "score": 244.75149536132812,
+      "true_object": null,
+      "false_track": true,
+      "nearest_object": "wreck",
+      "median_error_m": 18.3731713685549,
+      "first_xy": [
+        203.0,
+        215.0
+      ],
+      "last_xy": [
+        225.0,
+        231.0
+      ],
+      "median_xy": [
+        205.0,
+        227.0
+      ]
+    }
+  ],
+  "false_tracks": {
+    "count": 1,
+    "tracks": [
+      {
+        "track": "r19",
+        "fixes": 28,
+        "first_t": 5.75,
+        "last_t": 18.0,
+        "score": 244.75149536132812,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "wreck",
+        "median_error_m": 18.3731713685549,
+        "first_xy": [
+          203.0,
+          215.0
+        ],
+        "last_xy": [
+          225.0,
+          231.0
+        ],
+        "median_xy": [
+          205.0,
+          227.0
+        ]
+      }
+    ]
+  },
+  "note": "scored against the truth after the run; the processing reads no truth"
+}

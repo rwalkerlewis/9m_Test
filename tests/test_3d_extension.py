@@ -205,19 +205,11 @@ def test_0a_identity():
         ("Tracker positions (x,y)", max_track_diff, 1.0),  # tracker differs due to z=0 measurement
         ("Fire control lead angles", max_lead_diff, 0.1),
     ]
-    all_pass = True
     for name, diff, tol in results:
-        status = "PASS" if diff < tol else "WARN"
-        if diff >= tol * 100:
-            status = "FAIL"
-            all_pass = False
-        print(f"  {name:<40} {diff:>15.2e} {status:>10}")
-
-    if all_pass:
-        print("\n  *** TEST 0A PASSED ***")
-    else:
-        print("\n  *** TEST 0A: Some differences noted (see above) ***")
-    return all_pass
+        print(f"  {name:<40} {diff:>15.2e} {'PASS' if diff < tol else 'FAIL':>10}")
+    assert matched_dets > 0, "no detections to compare"
+    failed = [(name, diff, tol) for name, diff, tol in results if not diff < tol]
+    assert not failed, f"3D at z=0 differs from 2D: {failed}"
 
 
 # =====================================================================
@@ -288,8 +280,8 @@ def test_0b_altitude_discrimination():
     max_multi = max((len(d) for d in multi_dets), default=0)
     print(f"  Max sources detected per window: {max_multi}")
 
-    print("\n  *** TEST 0B PASSED ***")
-    return True
+    assert n_detected > 0, "no detections"
+    assert any(z > 5.0 for z in z_detected), f"the elevated source is not resolved in z: {z_detected}"
 
 
 # =====================================================================
@@ -345,7 +337,7 @@ def test_0c_vertical_trajectory():
     )
 
     # Check vz is negative (descending).
-    valid = ~np.isnan(track["velocities"][:, 0])
+    valid = ~np.isnan(track["velocities"][:, 0]) & ~np.isnan(track["positions"][:, 0])
     if np.any(valid):
         mean_vz = float(np.mean(track["velocities"][valid, 2]))
         print(f"  Mean estimated vz: {mean_vz:.2f} m/s")
@@ -363,6 +355,7 @@ def test_0c_vertical_trajectory():
         if len(ranges) > 2:
             range_trend = ranges[-1] - ranges[0]
             print(f"  Range change: {range_trend:.1f} m (should be negative for approach)")
+            assert range_trend < 0, f"approaching source: range change {range_trend:.1f} m"
     else:
         print("  No valid tracker states")
 
@@ -376,8 +369,8 @@ def test_0c_vertical_trajectory():
         mean_el = float(np.mean(np.abs(fc["lead_angles_el"][valid_el])))
         print(f"  Mean elevation lead angle: {np.degrees(mean_el):.2f} deg")
 
-    print("\n  *** TEST 0C PASSED ***")
-    return True
+    assert np.any(valid), "no valid tracker states"
+    assert mean_vz < 0, f"descending source: estimated vz {mean_vz:.2f} m/s"
 
 
 # =====================================================================
@@ -442,8 +435,7 @@ def test_0d_performance():
     else:
         print(f"  ✓ 3D is {ratio:.1f}x slower (acceptable)")
 
-    print("\n  *** TEST 0D PASSED ***")
-    return True
+    assert ratio <= 50, f"3D is {ratio:.1f}x slower than 2D"
 
 
 # =====================================================================
@@ -457,10 +449,14 @@ def run_all_tests():
     print("=" * 60)
 
     results = {}
-    results["0A"] = test_0a_identity()
-    results["0B"] = test_0b_altitude_discrimination()
-    results["0C"] = test_0c_vertical_trajectory()
-    results["0D"] = test_0d_performance()
+    for test_id, test in (("0A", test_0a_identity), ("0B", test_0b_altitude_discrimination),
+                          ("0C", test_0c_vertical_trajectory), ("0D", test_0d_performance)):
+        try:
+            test()
+            results[test_id] = True
+        except AssertionError as e:
+            print(f"  {test_id}: {e}")
+            results[test_id] = False
 
     print("\n" + "=" * 60)
     print("  SUMMARY")

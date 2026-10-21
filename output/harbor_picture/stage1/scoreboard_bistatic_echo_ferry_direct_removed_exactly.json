@@ -27,6 +27,7 @@
       ]
     },
     "false_alarm_rate": 0.22784810126582278,
+    "false_alarm_frame_rate": 0.1518987341772152,
     "false_alarms": 18,
     "n_frames": 79,
     "separation": null,
@@ -79,6 +80,7 @@
       ]
     },
     "false_alarm_rate": 0.39746835443037976,
+    "false_alarm_frame_rate": 0.18227848101265823,
     "false_alarms": 157,
     "n_frames": 395,
     "separation": null,

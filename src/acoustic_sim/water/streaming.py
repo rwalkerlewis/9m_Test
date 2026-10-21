@@ -1,12 +1,17 @@
-"""Real-time passive detection: the AIS-aware matched field chain, causal and frame by frame.
+"""Real-time passive detection: the AIS-aware matched field chain, causal per block of frames.
 
 :class:`StreamingPassive` receives the traces in blocks as they are recorded (:meth:`push`) and
 returns, for every new frame, the strongest map peaks.  It is the chain of ``suppression.run_ais_aware``
-with every step that looked at the whole record made causal:
+with every step that looked at the whole record made causal at the granularity of a block of
+``StreamConfig.block_frames`` frames (8 frames, 2 s, on the 0.5 m recordings of ``examples/harbor_stream.py``;
+1 frame on the 5 m harbor): a frame's result uses no sample recorded after the end of its block, but the
+steps below use the whole block, so an early frame of a block sees the later frames of the same block:
 
-* channel QC on the last ``history_s`` seconds of samples;
-* the noise floor (median over time) over the last ``history_s`` seconds of frames, before and
-  after the ships are projected out;
+* channel QC on the last ``history_s`` seconds of samples up to the end of the block, and the per cable
+  common mode (median over the live channels) with those weights;
+* the noise floor (median over time) over the last ``history_s`` seconds of frames up to the end of the
+  block, before and after the ships are projected out (the past spectra are kept without channel weights;
+  the current weights are applied when they are used);
 * AIS positions dead reckoned from the latest report at or before the frame (``causal``), refined
   per frame as before;
 * the adaptive ship projection over the ``2 * adaptive_window + 1`` frames **ending** at the frame;
@@ -104,7 +109,7 @@ class StreamingPassive:
         self.t_samples = 0                                        # samples received
         self.next_start = 0                                       # sample index of the next frame start
         self.X = []                                               # spectra of past frames, (N, F) device arrays
-        self.Xc = []                                              # same after the ship projection
+        self.Xc = []                                              # same after the ship projection (no channel weights)
         self.times: list[float] = []
         self.U: dict[int, object] = {}
         self.frames_done = 0
@@ -177,10 +182,14 @@ class StreamingPassive:
         else:
             est = None
             Zb = Zh[:, :, -b:]
+        # Store the cleaned spectra without the channel weights: the cleaned values of the live channels and the
+        # raw spectra of the channels this block's QC zeroed (a later block may keep them), so the weights of the
+        # current block apply to every stored frame alike.
+        live = (wd > 0)[:, None]
         for k in range(b):
-            self.Xc.append((Zb[:, :, k] * sigma).astype(dev.cdtype))
+            self.Xc.append(xp.where(live, Zb[:, :, k] * sigma, self.X[-b + k]).astype(dev.cdtype))
         self.Xc = self.Xc[-self.H:]
-        Xch = xp.stack(self.Xc, axis=2)
+        Xch = xp.stack(self.Xc, axis=2) * wd[:, None, None]
         sigma2 = noise_floor(xp.abs(Xch) ** 2, pc, dev)                             # re-whitening on the cleaned past
         Zc = (Xch / sigma2[:, :, None]).astype(dev.cdtype)                          # (N, F, H)
         wc = Whitened(self.freqs, np.array(self.times), Zc, sigma2, w, self.scan_bins, dev)
@@ -237,9 +246,10 @@ class StreamingPassive:
         return out
 
     def _init_fast_greens(self) -> None:
-        """Tables for :meth:`_greens`: the free field replicas of the scanned bins in order."""
+        """Tables for :meth:`_greens`: the free field replicas of the scanned bins in order, from the ranges
+        of every grid cell to every sample point of the layout (three per strain channel)."""
         xp, dev = self.dev.xp, self.dev
-        r = self._geom[0]                                                            # (G, N) device, >= min_range
+        r = self._geom[0]                                                            # (G, S) device, >= min_range
         c = resolve(self.pc.propagator, self.pc.c).c
         self._k = 2.0 * np.pi * self.freqs[self.scan_bins] / c
         self._r = r
@@ -249,15 +259,27 @@ class StreamingPassive:
         self._step = xp.exp(-1j * dk * r).astype(dev.cdtype)
         near = r < 8.0 / float(self._k[0])                                            # where the asymptotic series is not used
         self._near = xp.nonzero(near)
+        self._strain = self.layout.has_strain
+        self._ones = xp.ones(r.shape[1], dtype=dev.fdtype)
+        if self._strain and xp is not np:
+            sidx, coef, owner, ocoef = _collapse_tables(self.layout)
+            self._sidx, self._coef = xp.asarray(sidx.ravel()), xp.asarray(coef.ravel())
+            g_n, s_n = self._near
+            self._near_own = (g_n, xp.asarray(owner)[s_n], xp.asarray(ocoef)[s_n])
 
     def _greens(self, exact_every: int = 16):
         """Coroutine over the scanned bins, in order: ``send(s)`` with the per channel scale *s* (N,)
-        (weight over noise floor) returns that bin's replicas ``green2d(k r) * s`` (G, N).  The phase
+        (weight over noise floor) returns that bin's replicas ``collapse(green2d(k r)) * s`` (G, N).  The phase
         advances by one complex multiply per bin (re-anchored to the exact phase every *exact_every* bins),
         amplitude and asymptotic series come from cached ``1 / sqrt(r)`` and ``1 / r`` (one fused GPU
-        kernel), and the exact Hankel function replaces them where ``k r < 8``."""
+        kernel), and the exact Hankel function replaces them where ``k r < 8``.  Without strain cables the
+        sample points are the channels and the scale is applied inside the kernel; with them the kernel
+        evaluates every sample point unscaled, and the second difference (``SensorLayout.collapse``) and the
+        scale follow."""
         xp, dev = self.dev.xp, self.dev
-        kern = _greens_kernel() if xp is not np else None
+        gpu = xp is not np
+        kern = (_strain_greens_kernel() if self._strain else _greens_kernel()) if gpu else None
+        G, N = self._r.shape[0], self.layout.n_receivers
         phase = None
         out = None
         scale = yield None
@@ -265,17 +287,36 @@ class StreamingPassive:
             if j % exact_every == 0:
                 phase = xp.exp(-1j * (k * self._r - np.pi / 4.0)).astype(dev.cdtype)
             sc = scale.astype(dev.fdtype)[None, :]
+            amp = np.float32(np.sqrt(2.0 / (np.pi * k)))
+            rn = self._r[self._near]
+            if gpu and self._strain:
+                # One thread per (cell, channel): its sample points' replicas combined as SensorLayout.collapse
+                # does, times the scale, and their phases advanced; then the exact Hankel function where k r < 8.
+                out = xp.empty((G, N), dtype=dev.cdtype)
+                kern(self._step, self._inv_sqrt_r, self._inv_r, self._sidx, self._coef, sc[0], np.float32(k), amp,
+                     np.int32(phase.shape[1]), np.int32(N), out, phase)
+                ir = 1.0 / rn
+                asym = (amp / xp.sqrt(rn) * (1.0 - 9.0 * ir ** 2 / (128.0 * k * k) + 1j * ir / (8.0 * k))
+                        * xp.exp(-1j * (k * rn - np.pi / 4.0)))
+                g_n, own, oc = self._near_own
+                delta = xp.where(k * rn < 8.0, green2d(k * rn, xp) - asym, 0.0) * (oc * sc[0][own])
+                ov = out.view(dev.fdtype)                                              # (G, 2N): real, imag interleaved
+                xp.add.at(ov, (g_n, 2 * own), delta.real.astype(dev.fdtype))
+                xp.add.at(ov, (g_n, 2 * own + 1), delta.imag.astype(dev.fdtype))
+                scale = yield out
+                continue
+            s_pts = self._ones[None, :] if self._strain else sc
             if kern is not None:
                 out = xp.empty_like(phase)
-                kern(phase, self._step, self._inv_sqrt_r, self._inv_r, sc, np.float32(k),
-                     np.float32(np.sqrt(2.0 / (np.pi * k))), out, phase)
+                kern(phase, self._step, self._inv_sqrt_r, self._inv_r, s_pts, np.float32(k), amp, out, phase)
             else:
                 series = 1.0 + 1j * self._inv_r / (8.0 * k) - 9.0 * self._inv_r ** 2 / (128.0 * k * k)
-                out = (np.sqrt(2.0 / (np.pi * k)) * self._inv_sqrt_r * series * phase * sc).astype(dev.cdtype)
+                out = (amp * self._inv_sqrt_r * series * phase * s_pts).astype(dev.cdtype)
                 phase = (phase * self._step).astype(dev.cdtype)
-            rn = self._r[self._near]
-            exact = green2d(k * rn, xp) * sc[0][self._near[1]]
+            exact = green2d(k * rn, xp) * s_pts[0][self._near[1]]
             out[self._near] = xp.where(k * rn < 8.0, exact, out[self._near]).astype(dev.cdtype)
+            if self._strain:
+                out = (self.layout.collapse(out, xp) * sc).astype(dev.cdtype)
             scale = yield out
 
     def _interference_all(self, Zc, w: np.ndarray, bins: list[int], chunk: int = 16) -> dict:
@@ -336,7 +377,8 @@ _KERNEL = None
 
 
 def _greens_kernel():
-    """Fused CuPy kernel: replicas of one bin from the running phase, then the phase advanced in place."""
+    """Fused CuPy kernel: replicas of one bin at every sample point from the running phase (times the per point
+    scale), then the phase advanced in place."""
     global _KERNEL
     if _KERNEL is None:
         import cupy
@@ -352,6 +394,64 @@ def _greens_kernel():
             "stream_greens")
     return _KERNEL
 
+
+def _collapse_tables(layout: SensorLayout):
+    """Per channel its (up to three) sample points and the weights of ``SensorLayout.collapse`` (1, -2, 1 for a
+    strain channel, 1 for a pressure channel or hydrophone), and per sample point its channel and weight."""
+    sidx, coef, start = [], [], 0
+    for c in layout.cables:
+        for ch in range(c.n_channels):
+            if c.is_strain:
+                sidx.append([start + 3 * ch, start + 3 * ch + 1, start + 3 * ch + 2])
+                coef.append([1.0, -2.0, 1.0])
+            else:
+                sidx.append([start + ch] * 3)
+                coef.append([1.0, 0.0, 0.0])
+        start += c.n_samples
+    for h in range(layout.n_hydrophones):
+        sidx.append([start + h] * 3)
+        coef.append([1.0, 0.0, 0.0])
+    sidx, coef = np.array(sidx, dtype=np.int32), np.array(coef, dtype=np.float32)
+    owner = np.empty(layout.n_samples, dtype=np.int64)
+    ocoef = np.zeros(layout.n_samples, dtype=np.float32)
+    for chn in range(len(sidx)):
+        for j in range(3):
+            if coef[chn, j] != 0.0:
+                owner[sidx[chn, j]], ocoef[sidx[chn, j]] = chn, coef[chn, j]
+    return sidx, coef, owner, ocoef
+
+
+_STRAIN_KERNEL = None
+
+
+def _strain_greens_kernel():
+    """Fused CuPy kernel of :meth:`StreamingPassive._greens` on a layout with strain cables: out[g, c] = sc[c]
+    sum_j coef[c, j] G(g, s_cj) from the running phase of the sample points, whose phases it then advances
+    (every sample point belongs to one channel, so each phase is advanced once)."""
+    global _STRAIN_KERNEL
+    if _STRAIN_KERNEL is None:
+        import cupy
+
+        _STRAIN_KERNEL = cupy.ElementwiseKernel(
+            "raw complex64 step, raw float32 isr, raw float32 ir, raw int32 sidx, raw float32 coef, raw float32 sc, "
+            "float32 k, float32 amp, int32 S, int32 N",
+            "complex64 out, raw complex64 ph",
+            """
+            int g = i / N, c = i % N;
+            complex<float> acc(0.0f, 0.0f);
+            for (int j = 0; j < 3; j++) {
+                float cf = coef[3 * c + j];
+                if (cf == 0.0f) continue;
+                long long q = (long long)g * S + sidx[3 * c + j];
+                float u = ir[q];
+                complex<float> series(1.0f - 9.0f * u * u / (128.0f * k * k), u / (8.0f * k));
+                complex<float> p = ph[q];
+                acc += p * series * (cf * amp * isr[q]);
+                ph[q] = p * step[q];
+            }
+            out = acc * sc[c];
+            """, "stream_strain_greens")
+    return _STRAIN_KERNEL
 
 # ----------------------------------------------------------------------
 # Tracks from the passive locations
@@ -547,26 +647,7 @@ class StreamingEcho:
         ``SensorLayout.collapse`` (1, -2, 1 for a strain channel, 1 for a pressure one), and the sample point
         pairs that need the exact Hankel function at the lowest bin, sorted by range."""
         xp = self.dev.xp
-        sidx, coef, start = [], [], 0
-        for c in self.layout.cables:
-            for ch in range(c.n_channels):
-                if c.is_strain:
-                    sidx.append([start + 3 * ch, start + 3 * ch + 1, start + 3 * ch + 2])
-                    coef.append([1.0, -2.0, 1.0])
-                else:
-                    sidx.append([start + ch] * 3)
-                    coef.append([1.0, 0.0, 0.0])
-            start += c.n_samples
-        for h in range(self.layout.n_hydrophones):
-            sidx.append([start + h] * 3)
-            coef.append([1.0, 0.0, 0.0])
-        sidx, coef = np.array(sidx, dtype=np.int32), np.array(coef, dtype=np.float32)
-        owner = np.empty(self.layout.n_samples, dtype=np.int64)
-        ocoef = np.zeros(self.layout.n_samples, dtype=np.float32)
-        for chn in range(len(sidx)):
-            for j in range(3):
-                if coef[chn, j] != 0.0:
-                    owner[sidx[chn, j]], ocoef[sidx[chn, j]] = chn, coef[chn, j]
+        sidx, coef, owner, ocoef = _collapse_tables(self.layout)
         self._sidx, self._coef = xp.asarray(sidx.ravel()), xp.asarray(coef.ravel())
         r = self.r_samples
         g_n, s_n = xp.nonzero(r < 8.0 / float(self.ks[0]))
@@ -610,8 +691,8 @@ class StreamingEcho:
     def push(self, samples: np.ndarray, radiators: dict[str, list[tuple[float, np.ndarray]]] | None = None,
              illuminator: str | None = None) -> list[FrameResult]:
         """Append *samples* (N, n).  *radiators*: new position fixes ``(t, xy)`` of the radiating objects (the
-        passive chain's tracks, by id); *illuminator*: the id of the one whose echoes are mapped (``None``:
-        keep the previous one)."""
+        passive chain's tracks, by id); their direct paths are removed in the order the radiators first appeared;
+        *illuminator*: the id of the one whose echoes are mapped (``None``: keep the previous one)."""
         self.raw = np.concatenate([self.raw, np.asarray(samples, dtype=np.float64)], axis=1)
         self.n_in += samples.shape[1]
         for rid, fixes in (radiators or {}).items():
@@ -710,9 +791,10 @@ class StreamingEcho:
         mid = np.minimum(np.arange(nblk) * self.nb + self.nb // 2, z - a - 1)
         rel = set(range(b0 - a // self.nb, b1 - a // self.nb))
         chans = np.flatnonzero(weights > 0)
-        # The direct path of every live radiator, one after the other (strongest track first): each reference is
-        # the beam on the traces already cleaned of the previous ones, and each is kept to map that radiator's
-        # echoes.
+        # The direct path of every live radiator, one after the other in the order the radiators first appeared in a
+        # push (with an illuminator, it first): each reference is the beam on the traces already cleaned of the
+        # previous ones, and each is kept to map that radiator's echoes.  Strongest first (by track score) was
+        # measured worse on the multistatic recording (uuv2 18 -> 13 % of frames).
         x = buf                                            # as run_bistatic: reference and ECA on the traces,
         refs = {}                                          # the common mode removed in the STFT
         for name in live:
