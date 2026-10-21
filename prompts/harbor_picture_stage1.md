@@ -62,7 +62,7 @@ For every object in every dataset, run the chain that applies and score it:
 | Chain | Objects | Dataset | Configurations |
 |---|---|---|---|
 | Passive emission (`run_ais_aware`, matched field scan, occupancy filter) | radiating UUV, radiating boat, and the AIS ships themselves (a ship found without using its AIS report is a check of the locator) | `harbor`, `multistatic` | everything estimated from the traces; and the same with the simulator aware propagator, labelled |
-| Echo from a ship on AIS (`run_bistatic`, coherent map, ECA with per sample delays, track smoothing as on `main`) | silent UUVs, diver, pilings, moored hull | `bistatic` (ferry only), `multistatic` (ferry, tug, each as the sound source in turn) | everything estimated; given the true waveform and exact track; direct path removed exactly. The last two are the upper limits and sit beside the first in every table |
+| Echo from a ship on AIS (`run_bistatic`, coherent map, ECA with per sample delays, track smoothing as on `main`) | silent UUVs, diver, pilings, moored hull | `bistatic` (ferry only), `multistatic` (ferry, tug, each as the sound source in turn) | everything estimated; given the true waveform and exact track; direct path removed exactly. The last two are given truth inputs and sit beside the first in every table (they are not upper limits: see `docs/harbor.md`, stage 1) |
 
 For the echo chain the map is the unnormalised `coherent_norm="snr"` map so that one threshold applies across frames and datasets; add the option to return it unnormalised if `main` still divides by the frame maximum.
 

@@ -23,7 +23,11 @@ applies across frames, runs and datasets), ECA with per sample delays and the re
 over 4 s.  Configurations: ``all_estimated`` (the observation's traces, the data reference, the AIS
 refined track, free field replicas); ``true_waveform_exact_track`` (given the true waveform and the
 exact track); ``direct_removed_exactly`` (the illuminator's direct path removed with its truth
-component, true waveform, exact track).  The last two are upper limits.
+component, true waveform, exact track).  The last two are given truth inputs, but they are not upper
+limits: the true waveform is the emitted signal, while the replicas use the chart's sound speed and the
+FDTD propagates with its own direction dependent numerical phase speed, so the echo arrives 0.5 to 3 ms
+off the true waveform and the free field matched filter loses the UUV (``docs/harbor.md``, stage 1); the
+data reference is estimated from the traces and carries the same propagation as the echo.
 
 Data split, fixed before any run: the noise seed 0 mix of each dataset is the tuning set, seeds 1 to
 5 (mixed from the cached FDTD gathers with ``assemble_dataset(seed=...)``) the test set.  Every

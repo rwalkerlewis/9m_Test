@@ -494,6 +494,36 @@ The passive threshold is set by the frames before the first AIS report, where th
 projected out nor excluded. The direct path of the ferry is removed by 10.8 dB (estimated waveform)
 and 21.3 dB (true waveform and exact track), as in stage 0.
 
+**Why given the true waveform and the exact track the UUV is mapped worse than with everything estimated**
+(Pd 0.02 against 0.30, map peak within 5 m of the UUV in 26 % of frames against 77 %, although the direct
+path is removed 10 dB deeper). Neither configuration given the truth is an upper limit. Measured on the
+tuning mix (`scripts/diagnose_true_waveform.py`, seed 0, given the true waveform, the exact track and the truth
+components):
+
+* It is not the removal: the ECA with the true waveform takes 0.6 dB of the UUV echo (0.3 dB with the data
+  reference). It is not the scale (the `"snr"` map is independent of the reference scale), the frames (both
+  references are cut on the same frames) or a conjugation (per bin over the frames, the data reference and
+  the true waveform are coherent at 0.98 with the exact track, 0.79 with the refined one).
+* It is the timing. The data reference leads the true waveform by 2.6 to 2.8 ms. The direct path recorded at
+  the hydrophones arrives 1.5 to 2.3 ms earlier than the true waveform propagated at the chart's sound
+  speed, and the FDTD scheme's dispersion model (simulator knowledge, `SimulatorAwarePropagator`) predicts
+  0.5 to 2.9 ms early for the same paths: same sign, same order, direction dependent (the hydrophones do not
+  agree one by one; a band limited cross correlation is also ambiguous by about 0.6 ms). The simulated water
+  propagates faster than the chart's single sound speed, by an amount that depends on direction.
+* The data reference is estimated from the traces, so it carries the same propagation as the echo and the
+  free field matched filter stays aligned. The true waveform is the emitted signal: against free field
+  replicas the echo is 1 to 3 ms off, the coherent sum over 100 to 760 Hz loses focus, and the UUV echo alone
+  maps 4.7 dB lower (map peak 813 against 2400) while the residual direct path and the noise do not drop
+  (about 700 and 550). The UUV peak is then 4.2 m off (median), at the edge of the 5 m radius, and loses to
+  the residuals.
+* With the dispersion corrected replicas (simulator knowledge), the true waveform run finds the UUV in 49 % of
+  the frames (from 23 %), 2.7 m off; the gap to the 73 % of everything estimated is not explained.
+* `direct_removed_exactly` uses the same true waveform and still scores 0.51, because its threshold is set
+  without any residual direct path, so the weaker echo peak still clears it.
+
+A fair reference configuration would pair the true waveform with the simulator aware replicas (not run
+here).
+
 ### History
 
 #### The passive emission experiment
