@@ -1,0 +1,72 @@
+{
+  "source_xy": [
+    1380.0,
+    620.0
+  ],
+  "source": "ferry",
+  "band_hz": [
+    12.0,
+    78.0
+  ],
+  "c_chart": 1500.0,
+  "time_scheme": "kspace",
+  "uniform_speed": true,
+  "dx": 5.0,
+  "fs": 600.0,
+  "hydrophones": [
+    {
+      "hydrophone": 0,
+      "xy": [
+        450.0,
+        1100.0
+      ],
+      "range_m": 1046.5658125507446,
+      "direction_deg": 297.2995722113328,
+      "error_ms": 0.0,
+      "phase_error_ms": 5.416666666666667,
+      "straight_path_ms": 2.220446049250313e-13
+    },
+    {
+      "hydrophone": 1,
+      "xy": [
+        1250.0,
+        700.0
+      ],
+      "range_m": 152.64337522473747,
+      "direction_deg": 301.6075022462489,
+      "error_ms": 0.0,
+      "phase_error_ms": 5.416666666666667,
+      "straight_path_ms": 0.0
+    },
+    {
+      "hydrophone": 2,
+      "xy": [
+        1850.0,
+        1100.0
+      ],
+      "range_m": 671.7886572427374,
+      "direction_deg": 44.39690880561947,
+      "error_ms": 0.0,
+      "phase_error_ms": 5.416666666666667,
+      "straight_path_ms": 1.1102230246251565e-13
+    },
+    {
+      "hydrophone": 3,
+      "xy": [
+        1500.0,
+        380.0
+      ],
+      "range_m": 268.32815729997475,
+      "direction_deg": 153.434948822922,
+      "error_ms": -0.20833333333333334,
+      "phase_error_ms": 4.479166666666667,
+      "straight_path_ms": -2.7755575615628914e-14
+    }
+  ],
+  "median_ms": 0.0,
+  "min_ms": -0.20833333333333334,
+  "max_ms": 0.0,
+  "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed; straight_path_ms: the travel time along the straight line through the scenario's sound speed map minus range / chart speed (what the water itself contributes, refraction aside)",
+  "criterion_ms": null,
+  "passed": null
+}

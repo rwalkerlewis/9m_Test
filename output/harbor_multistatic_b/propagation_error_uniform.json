@@ -1,0 +1,72 @@
+{
+  "source_xy": [
+    166.08514494500886,
+    183.04257247250445
+  ],
+  "source": "ferry",
+  "band_hz": [
+    100.0,
+    760.0
+  ],
+  "c_chart": 1500.0,
+  "time_scheme": "kspace",
+  "uniform_speed": true,
+  "dx": 0.5,
+  "fs": 6000.0,
+  "hydrophones": [
+    {
+      "hydrophone": 0,
+      "xy": [
+        30.0,
+        30.0
+      ],
+      "range_m": 204.79549717634382,
+      "direction_deg": 221.64343049375546,
+      "error_ms": -0.010416666666666666,
+      "phase_error_ms": 0.5729166666666666,
+      "straight_path_ms": 0.0
+    },
+    {
+      "hydrophone": 1,
+      "xy": [
+        330.0,
+        20.0
+      ],
+      "range_m": 231.19463693206774,
+      "direction_deg": 134.84714220342568,
+      "error_ms": -0.052083333333333336,
+      "phase_error_ms": 0.5104166666666666,
+      "straight_path_ms": -2.7755575615628914e-14
+    },
+    {
+      "hydrophone": 2,
+      "xy": [
+        30.0,
+        250.0
+      ],
+      "range_m": 151.6656314917915,
+      "direction_deg": 296.1983847351983,
+      "error_ms": -0.010416666666666666,
+      "phase_error_ms": 0.5729166666666666,
+      "straight_path_ms": 0.0
+    },
+    {
+      "hydrophone": 3,
+      "xy": [
+        200.0,
+        20.0
+      ],
+      "range_m": 166.53257288546564,
+      "direction_deg": 168.24934275057734,
+      "error_ms": -0.010416666666666666,
+      "phase_error_ms": 0.5520833333333334,
+      "straight_path_ms": 0.0
+    }
+  ],
+  "median_ms": -0.010416666666666666,
+  "min_ms": -0.052083333333333336,
+  "max_ms": -0.010416666666666666,
+  "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed; straight_path_ms: the travel time along the straight line through the scenario's sound speed map minus range / chart speed (what the water itself contributes, refraction aside)",
+  "criterion_ms": 0.2,
+  "passed": true
+}

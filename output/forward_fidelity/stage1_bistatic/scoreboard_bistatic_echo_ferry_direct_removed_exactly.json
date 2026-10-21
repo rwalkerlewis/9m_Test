@@ -1,0 +1,102 @@
+{
+  "dataset": "bistatic",
+  "chain": "echo",
+  "config": "ferry/direct_removed_exactly",
+  "map": "coherent",
+  "propagator": "free_field",
+  "threshold": {
+    "T": 1286.06787109375,
+    "T_full_record": 36656.93359375,
+    "pfa": 0.05,
+    "n_frames": 79,
+    "frames_above_T": 3,
+    "object_free_runs": [
+      "bistatic:echo:ferry/direct_removed_exactly:seed0:free_of_uuv1"
+    ]
+  },
+  "tuning": {
+    "label": "bistatic / echo / ferry/direct_removed_exactly / tuning set",
+    "threshold": {
+      "T": 1286.06787109375,
+      "T_full_record": 36656.93359375,
+      "pfa": 0.05,
+      "n_frames": 79,
+      "frames_above_T": 3,
+      "object_free_runs": [
+        "bistatic:echo:ferry/direct_removed_exactly:seed0:free_of_uuv1"
+      ]
+    },
+    "false_alarm_rate": 0.12658227848101267,
+    "false_alarm_frame_rate": 0.11392405063291139,
+    "false_alarms": 10,
+    "n_frames": 79,
+    "separation": null,
+    "per_object": [
+      {
+        "id": "uuv1",
+        "kind": "uuv",
+        "radiates": false,
+        "ais": false,
+        "moving": true,
+        "frames": 79,
+        "detected": 66,
+        "pd": 0.8354430379746836,
+        "median_error_m": 1.9426942310983653,
+        "p90_error_m": 3.155639970741511,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "bistatic:echo:ferry/direct_removed_exactly:seed0"
+        ]
+      }
+    ],
+    "provenance": {
+      "truth_inputs": [
+        "direct_removal",
+        "components",
+        "waveform",
+        "track"
+      ],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "split": "tuning",
+    "seeds": [
+      0
+    ]
+  },
+  "diagnostic_frame_argmax_to_uuv": {
+    "tuning": {
+      "frames": 79,
+      "median_m": 2.040330521919029,
+      "p90_m": 3.9828409527778774,
+      "within_5m": 0.9493670886075949,
+      "within_20m": 0.9493670886075949
+    }
+  },
+  "cancellation_diagnostic": {
+    "tuning": [
+      null
+    ],
+    "test": []
+  },
+  "illuminator_track_error_m": {
+    "tuning": [
+      0.0
+    ],
+    "test": []
+  },
+  "misses": {
+    "counts": {
+      "ship exclusion edge": 0,
+      "quay image of the ship": 0,
+      "direct path ship to cable": 0,
+      "elsewhere": 4
+    },
+    "frames_total": 79,
+    "within_25m_of_another_radiator": null,
+    "note": "frames with an illuminator whose highest cell is more than 20 m from every UUV, all seeds"
+  }
+}

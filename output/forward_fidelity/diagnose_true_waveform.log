@@ -1,0 +1,44 @@
+
+##### components
+
+== all_estimated: direct depth median 11.3 dB, echo loss median 0.34 dB, ship error 0.83 m
+   reference vs true waveform: |ratio| median 0.018, coherence median 0.740, phase slope 0.0004217 rad/Hz (delay -0.067 ms), phase intercept 2.35 rad, phase residual std 0.09 rad
+   full map: peak within 5 m of the UUV in 0.80 of frames; median map at UUV 3.27e+03, median max 3.27e+03
+   direct_residual  alone: median max 534, median at UUV 107, peak on UUV 0.00
+   echo             alone: median max 2.97e+03, median at UUV 2.97e+03, peak on UUV 0.82
+   rest             alone: median max 257, median at UUV 24.4, peak on UUV 0.00
+   misses: distance of the peak to the ship median 200.9 m
+
+== true_waveform_exact_track: direct depth median 21.9 dB, echo loss median 0.51 dB, ship error 0.00 m
+   reference vs true waveform: |ratio| median 1, coherence median 1.000, phase slope 6.53e-22 rad/Hz (delay -0.000 ms), phase intercept -0.00 rad, phase residual std 0.00 rad
+   full map: peak within 5 m of the UUV in 0.49 of frames; median map at UUV 1.12e+03, median max 1.49e+03
+   direct_residual  alone: median max 747, median at UUV 59.4, peak on UUV 0.00
+   echo             alone: median max 1.07e+03, median at UUV 1.07e+03, peak on UUV 0.99
+   rest             alone: median max 575, median at UUV 50.4, peak on UUV 0.00
+   misses: distance of the peak to the ship median 109.8 m
+
+== data_ref_exact_track: direct depth median 20.3 dB, echo loss median 0.37 dB, ship error 0.00 m
+   reference vs true waveform: |ratio| median 0.0315, coherence median 0.992, phase slope 0.0003286 rad/Hz (delay -0.052 ms), phase intercept 2.42 rad, phase residual std 0.01 rad
+   full map: peak within 5 m of the UUV in 0.96 of frames; median map at UUV 3.28e+03, median max 3.28e+03
+   direct_residual  alone: median max 634, median at UUV 121, peak on UUV 0.00
+   echo             alone: median max 2.78e+03, median at UUV 2.78e+03, peak on UUV 1.00
+   rest             alone: median max 256, median at UUV 27.8, peak on UUV 0.00
+   misses: distance of the peak to the ship median 75.3 m
+
+== true_waveform_refined_track: direct depth median 11.0 dB, echo loss median 0.52 dB, ship error 0.83 m
+   reference vs true waveform: |ratio| median 1, coherence median 1.000, phase slope 6.53e-22 rad/Hz (delay -0.000 ms), phase intercept -0.00 rad, phase residual std 0.00 rad
+   full map: peak within 5 m of the UUV in 0.44 of frames; median map at UUV 1.1e+03, median max 1.42e+03
+   direct_residual  alone: median max 650, median at UUV 60.5, peak on UUV 0.00
+   echo             alone: median max 1.03e+03, median at UUV 1.03e+03, peak on UUV 0.81
+   rest             alone: median max 529, median at UUV 38.3, peak on UUV 0.00
+   misses: distance of the peak to the ship median 137.6 m
+
+##### lags
+hyd 196: range 206-251 m, lag of the record behind the free field prediction 0.07 to 0.26 ms (median 0.17), sign +1, peak corr 0.69
+      lag = 1.040 ms + -3.799 ms/km * range
+hyd 197: range 214-257 m, lag of the record behind the free field prediction 0.81 to 0.92 ms (median 0.88), sign +1, peak corr 0.71
+      lag = 0.333 ms + 2.302 ms/km * range
+hyd 198: range 126-191 m, lag of the record behind the free field prediction 0.38 to 0.52 ms (median 0.45), sign +1, peak corr 0.70
+      lag = 0.733 ms + -1.789 ms/km * range
+hyd 199: range 180-188 m, lag of the record behind the free field prediction 0.51 to 0.62 ms (median 0.57), sign +1, peak corr 0.70
+      lag = -1.196 ms + 9.677 ms/km * range
