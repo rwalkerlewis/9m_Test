@@ -76,8 +76,8 @@ from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
 from acoustic_sim.water.vessels import VesselConfig  # noqa: E402
 from acoustic_sim.sources import CustomTrajectorySource  # noqa: E402
 
-BISTATIC_SCENARIO = ROOT / "examples" / "harbor_bistatic.scenario.json"
-MULTISTATIC_SCENARIO = ROOT / "examples" / "harbor_multistatic.scenario.json"
+BISTATIC_SCENARIO = ROOT / "examples" / "configs" / "harbor_bistatic.scenario.json"
+MULTISTATIC_SCENARIO = ROOT / "examples" / "configs" / "harbor_multistatic.scenario.json"
 DATA_ROOT = Path(__import__("os").environ.get("BENCH_DATA_ROOT", ROOT))      # where output/harbor_bistatic and output/harbor_cancel live
 FINE_DATASET = DATA_ROOT / "output" / "harbor_bistatic" / "fine" / "dataset.npz"
 CANCEL_CACHE = DATA_ROOT / "output" / "harbor_cancel" / "cache"
@@ -135,8 +135,8 @@ CRITERIA = {
 # ----------------------------------------------------------------------
 
 def load_example(name: str):
-    """Import ``examples/<name>.py`` as a module (its ``main`` is not run)."""
-    spec = importlib.util.spec_from_file_location(name, ROOT / "examples" / f"{name}.py")
+    """Import the example script ``<name>.py`` (found anywhere under ``examples/``) as a module (its ``main`` is not run)."""
+    spec = importlib.util.spec_from_file_location(name, next((ROOT / "examples").rglob(f"{name}.py")))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

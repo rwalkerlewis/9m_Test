@@ -365,11 +365,11 @@ def test_pipeline_integration_no_break():
     print("  All anomaly module imports: OK")
 
     # 2. Verify pipeline config includes anomaly fields.
-    sys.path.insert(0, str(Path(__file__).parent.parent / "examples"))
+    sys.path.insert(0, str(Path(__file__).parent.parent / "examples" / "air" / "02_pipeline"))
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         "run_pipeline",
-        str(Path(__file__).parent.parent / "examples" / "run_pipeline.py"),
+        str(Path(__file__).parent.parent / "examples" / "air" / "02_pipeline" / "run_pipeline.py"),
     )
     pipeline_mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pipeline_mod)
