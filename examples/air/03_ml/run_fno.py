@@ -165,24 +165,26 @@ def evaluate(
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)
+        from acoustic_sim.plotting import save_figure
+
+        # Two panels read together (the traces and their residual share the time axis).
+        fig, axes = plt.subplots(2, 1, figsize=(12, 9), sharex=True)
         t = np.arange(n_steps)
         recv_idx = 0
 
         axes[0].plot(t, fdtd_sub[recv_idx], label="FDTD", alpha=0.8)
         axes[0].plot(t, fno_sub[recv_idx], label="FNO", alpha=0.8, ls="--")
-        axes[0].set_ylabel("Pressure")
-        axes[0].set_title(f"Receiver {recv_idx} trace comparison")
+        axes[0].set_ylabel("pressure [Pa]")
+        axes[0].set_xlabel("time step")
+        axes[0].set_title(f"FNO against FDTD: receiver {recv_idx} trace and residual")
         axes[0].legend()
 
         axes[1].plot(t, fdtd_sub[recv_idx] - fno_sub[recv_idx], color="red")
-        axes[1].set_ylabel("Residual")
-        axes[1].set_xlabel("Time step")
+        axes[1].set_ylabel("residual [Pa]")
+        axes[1].set_xlabel("time step")
 
-        fig.tight_layout()
         plot_path = checkpoint.parent / "comparison.png"
-        fig.savefig(str(plot_path), dpi=150)
-        plt.close(fig)
+        save_figure(fig, plot_path, allow_two_panels=True)
         print(f"  Saved plot: {plot_path}")
     except ImportError:
         pass

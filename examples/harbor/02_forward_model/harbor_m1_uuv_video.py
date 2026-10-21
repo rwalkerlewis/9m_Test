@@ -12,17 +12,17 @@ over ``--seconds`` of video.  As the time cursor advances,
   echoes it re-radiates later;
 * the predicted first reflection (source -> UUV -> channel, straight paths) is drawn as it arrives and labelled.
 
-Outputs (``--out``): m1uuv_gather.mp4, m1uuv_gather.gif, m1uuv_gather_poster.png and frames_gather/ (every 30th frame).
+Outputs (``--out``, default ``output/studies/history/harbor_m1_uuv_video/``): m1uuv_gather.mp4 and m1uuv_gather.gif
+(the frames go straight into the video; none is kept as a figure).
 
 Usage::
 
-    python examples/harbor/02_forward_model/harbor_m1_uuv_video.py [--out output/harbor_m1_uuv] [--seconds 10] [--record 2.5] [--fps 30]
+    python examples/harbor/02_forward_model/harbor_m1_uuv_video.py [--out output/studies/history/harbor_m1_uuv_video] [--seconds 10] [--record 2.5] [--fps 30]
 """
 
 from __future__ import annotations
 
 import argparse
-import shutil
 import subprocess
 import sys
 import time
@@ -32,6 +32,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.animation import FFMpegWriter
 import numpy as np
 from scipy.signal import hilbert
 
@@ -78,7 +79,7 @@ def ease(u):
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default="output/harbor_m1_uuv")
+    ap.add_argument("--out", default="output/studies/history/harbor_m1_uuv_video")
     ap.add_argument("--seconds", type=float, default=10.0, help="video length [s]")
     ap.add_argument("--record", type=float, default=2.5, help="simulated seconds of record replayed")
     ap.add_argument("--hold", type=float, default=1.0, help="seconds the finished gather is held at the end")
@@ -145,38 +146,33 @@ def main() -> None:
     # ---- frames ----
     nfr = int(round(args.seconds * args.fps)); n_play = int(round((args.seconds - args.hold) * args.fps))
     t_now_all = np.minimum(args.record, args.record * np.arange(nfr) / max(1, n_play - 1))
-    fdir = out / "_gather"; fdir.mkdir(exist_ok=True); keep = out / "frames_gather"; keep.mkdir(exist_ok=True)
-    for f in keep.glob("*.png"): f.unlink()
     t1 = time.time(); t_first = float(t_echo.min()); t_dfirst = float(t_direct.min())
-    for i, tn in enumerate(t_now_all):
-        n = int(tn * fs)
-        shown = blank.copy(); shown[:, :n] = comp[:, :n]; h_g.set_data(shown)
-        tt = np.zeros_like(tint); tt[:, :n] = tint[:, :n]; h_t.set_data(tt)
-        cursor.set_xdata([tn, tn])
-        ok = t_direct <= tn; l_dir.set_data(t_direct[ok], s_along[ok])
-        ok = t_echo <= tn; l_echo.set_data(t_echo[ok], s_along[ok])
-        # the ping: where the first UUV echo is arriving right now
-        hit = np.abs(t_echo - tn) < 0.5 / fs * 3
-        if tn >= t_first and tn <= t_echo.max() and ok.any():
-            kk = np.argsort(np.abs(t_echo - tn))[:2]; ping.set_data(t_echo[kk], s_along[kk]); ping.set_alpha(1.0)
-        else: ping.set_data([], [])
-        for L, t0, dur in ((lab, t_first, 0.4), (lab_d, t_dfirst, 0.3)):
-            if tn >= t0:
-                L.set_visible(True); L.set_alpha(float(ease((tn - t0) / (dur * args.record / args.seconds * 4))))
-            else: L.set_visible(False)
-        title.set_text(f"DAS record arriving on the cable, t = {tn:4.2f} s")
-        fig.savefig(fdir / f"f{i:05d}.png", dpi=args.dpi, facecolor="white")
-        if i % 30 == 0 or i == nfr - 1: shutil.copy(fdir / f"f{i:05d}.png", keep / f"gather_{i:05d}.png")
-    plt.close(fig); print(f"{nfr} frames in {time.time() - t1:.0f} s", flush=True)
     mp4 = out / "m1uuv_gather.mp4"
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(args.fps), "-i", str(fdir / "f%05d.png"),
-                    "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", str(mp4)], check=True)
-    shutil.copy(fdir / f"f{nfr - 1:05d}.png", out / "m1uuv_gather_poster.png")
+    w = FFMpegWriter(fps=args.fps, codec="libx264", extra_args=["-pix_fmt", "yuv420p", "-crf", "20", "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2"])
+    with w.saving(fig, str(mp4), dpi=args.dpi):
+        for i, tn in enumerate(t_now_all):
+            n = int(tn * fs)
+            shown = blank.copy(); shown[:, :n] = comp[:, :n]; h_g.set_data(shown)
+            tt = np.zeros_like(tint); tt[:, :n] = tint[:, :n]; h_t.set_data(tt)
+            cursor.set_xdata([tn, tn])
+            ok = t_direct <= tn; l_dir.set_data(t_direct[ok], s_along[ok])
+            ok = t_echo <= tn; l_echo.set_data(t_echo[ok], s_along[ok])
+            # the ping: where the first UUV echo is arriving right now
+            hit = np.abs(t_echo - tn) < 0.5 / fs * 3
+            if tn >= t_first and tn <= t_echo.max() and ok.any():
+                kk = np.argsort(np.abs(t_echo - tn))[:2]; ping.set_data(t_echo[kk], s_along[kk]); ping.set_alpha(1.0)
+            else: ping.set_data([], [])
+            for L, t0, dur in ((lab, t_first, 0.4), (lab_d, t_dfirst, 0.3)):
+                if tn >= t0:
+                    L.set_visible(True); L.set_alpha(float(ease((tn - t0) / (dur * args.record / args.seconds * 4))))
+                else: L.set_visible(False)
+            title.set_text(f"DAS record arriving on the cable, t = {tn:4.2f} s")
+            w.grab_frame(facecolor="white")
+    plt.close(fig); print(f"{nfr} frames in {time.time() - t1:.0f} s", flush=True)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(mp4), "-vf",
                     "fps=15,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192[p];[b][p]paletteuse=dither=bayer:bayer_scale=4",
                     str(out / "m1uuv_gather.gif")], check=True)
-    shutil.rmtree(fdir)
-    print(f"wrote {mp4} ({args.seconds:.0f} s, {args.fps} fps), m1uuv_gather.gif, m1uuv_gather_poster.png in {time.time() - t_start:.0f} s")
+    print(f"wrote {mp4} ({args.seconds:.0f} s, {args.fps} fps), m1uuv_gather.gif in {time.time() - t_start:.0f} s")
 
 
 if __name__ == "__main__":

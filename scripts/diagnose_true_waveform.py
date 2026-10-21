@@ -15,8 +15,11 @@ components): a diagnostic, not part of any processing chain.
 
 Usage::
 
-    python scripts/diagnose_true_waveform.py [components] [lags] [dispersion] [--maps] [--cuda]
+    python scripts/diagnose_true_waveform.py [components] [lags] [dispersion] [--maps] [--cuda] > LOG
+    python scripts/diagnose_true_waveform.py --json-from-log LOG JSON     # the numbers of LOG as JSON (for the docs)
 """
+import json
+import re
 import sys
 from pathlib import Path
 
@@ -24,6 +27,44 @@ import numpy as np
 from scipy.signal import resample
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def log_numbers(text: str) -> dict:
+    """The numbers of a log of this script: per configuration of ``components`` the direct path depth, echo loss,
+    ship error, the reference's coherence with and delay against the true waveform, the map at the UUV and each
+    component's map; per hydrophone of ``lags`` the lag range, median and correlation."""
+    num = r"([-+0-9.e]+)"
+    out = {"components": {}, "lags": {}}
+    cur = None
+    for line in text.splitlines():
+        m = re.match(rf"== (\w+): direct depth median {num} dB, echo loss median {num} dB, ship error {num} m", line)
+        if m:
+            cur = out["components"][m.group(1)] = {"depth_db": float(m.group(2)), "echo_loss_db": float(m.group(3)),
+                                                   "ship_error_m": float(m.group(4)), "maps": {}}
+            continue
+        m = re.search(rf"coherence median {num}, .*\(delay {num} ms\)", line)
+        if m and cur is not None:
+            cur.update(coherence=float(m.group(1)), delay_ms=float(m.group(2)))
+            continue
+        m = re.search(rf"peak within 5 m of the UUV in {num} of frames; median map at UUV {num}, median max {num}", line)
+        if m and cur is not None:
+            cur.update(within_5m=float(m.group(1)), map_at_uuv=float(m.group(2)), map_max=float(m.group(3)))
+            continue
+        m = re.match(rf"\s+(\w+)\s+alone: median max {num}, median at UUV {num}, peak on UUV {num}", line)
+        if m and cur is not None:
+            cur["maps"][m.group(1)] = {"max": float(m.group(2)), "at_uuv": float(m.group(3)), "peak_on_uuv": float(m.group(4))}
+            continue
+        m = re.match(rf"hyd (\d+): range {num}-{num} m, .* {num} to {num} ms \(median {num}\), .*peak corr {num}", line)
+        if m:
+            out["lags"][m.group(1)] = {"range_m": [float(m.group(2)), float(m.group(3))], "lag_ms": [float(m.group(4)), float(m.group(5))],
+                                       "median_ms": float(m.group(6)), "corr": float(m.group(7))}
+    return out
+
+
+if __name__ == "__main__" and "--json-from-log" in sys.argv:
+    i = sys.argv.index("--json-from-log")
+    Path(sys.argv[i + 2]).write_text(json.dumps(log_numbers(Path(sys.argv[i + 1]).read_text()), indent=2))
+    raise SystemExit(0)
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "examples" / "harbor" / "90_history"))
 import harbor_picture_stage1 as s1  # noqa: E402

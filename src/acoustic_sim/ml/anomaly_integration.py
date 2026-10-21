@@ -13,8 +13,8 @@ Example
     from acoustic_sim.ml.anomaly_integration import AnomalyDetector
 
     detector = AnomalyDetector(
-        model_path="output/models/anomaly_detector.pt",
-        threshold_path="output/models/anomaly_threshold.json",
+        model_path="output/air/models/anomaly_detector.pt",
+        threshold_path="output/air/models/anomaly_threshold.json",
     )
     result = detector.process_frame(audio_frame, sample_rate=4000)
     if result.is_novel:

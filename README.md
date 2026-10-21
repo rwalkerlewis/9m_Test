@@ -58,7 +58,7 @@ Six domain configurations are available: isotropic (free space), wind (uniform f
 
 All detections default to hostile. Engagement is scored by computed miss distance including projectile flight time. A target is considered neutralized after a configurable number of shots (default 3) fall within the acceptable miss distance. Computational latency is tracked because this is modeled as a real-time system.
 
-**ML classifiers (integrated into the detection pipeline).** PyTorch classifiers for source type (CNN on mel spectrograms, 6 classes: quadcopter, hexacopter, fixed wing, bird, ground vehicle, unknown), maneuver state (1D CNN on kinematic features, 6 classes: steady, turning, accelerating, diving, evasive, hovering), a fusion classifier that combines acoustic and kinematic inputs, and a CVAE anomaly detector for novel threat flagging are wired into the production pipeline as optional components. Source classification gates engagement decisions by filtering non-drone detections before fire control. Maneuver classification adapts tracker covariance based on detected flight behavior (evasive targets get 2.5× covariance, hovering targets get 0.5×). Anomaly detection flags acoustically novel targets via reconstruction error when the primary classifier is uncertain. Trained weights for the source, maneuver and fusion classifiers are included in `output/models/`; the anomaly detector must be trained locally (see [ML training](#ml-training)). All ML components are disabled by default; with ML disabled, the pipeline produces identical results to a signal-processing-only baseline.
+**ML classifiers (integrated into the detection pipeline).** PyTorch classifiers for source type (CNN on mel spectrograms, 6 classes: quadcopter, hexacopter, fixed wing, bird, ground vehicle, unknown), maneuver state (1D CNN on kinematic features, 6 classes: steady, turning, accelerating, diving, evasive, hovering), a fusion classifier that combines acoustic and kinematic inputs, and a CVAE anomaly detector for novel threat flagging are wired into the production pipeline as optional components. Source classification gates engagement decisions by filtering non-drone detections before fire control. Maneuver classification adapts tracker covariance based on detected flight behavior (evasive targets get 2.5× covariance, hovering targets get 0.5×). Anomaly detection flags acoustically novel targets via reconstruction error when the primary classifier is uncertain. Trained weights for the source, maneuver and fusion classifiers are included in `output/air/models/`; the anomaly detector must be trained locally (see [ML training](#ml-training)). All ML components are disabled by default; with ML disabled, the pipeline produces identical results to a signal-processing-only baseline.
 
 **FNO surrogate (included but not integrated).** A Fourier Neural Operator infrastructure to replace the FDTD solver for rapid forward propagation is included with data generation, training, and inference modules. The motivation is that the FDTD solver is too slow for real-time ensemble analysis or rapid parameter studies. An FNO trained on FDTD output could provide forward model evaluations at a fraction of the cost.
 
@@ -101,7 +101,7 @@ Quick examples (every example script, by folder and in workflow order, is listed
 python examples/harbor/01_datasets/harbor_m2_dataset.py
 
 # The harbor system on a recording: tracks, what each object is, picture.jsonl and the operator view.
-python -m acoustic_sim.water.stream --observation output/harbor_simple/fine/dataset.observation.npz \
+python -m acoustic_sim.water.stream --observation output/recordings/simple/dataset.observation.npz \
     --processing examples/configs/processing/simple.json --out output/picture_simple
 
 # Every number of docs/harbor.md, on every tuning and test recording.
@@ -209,7 +209,7 @@ python examples/air/01_simulation/run_fdtd.py \
     --domain hills_vegetation \
     --source-type moving --source-signal propeller \
     --array circular --receiver-count 16 --receiver-radius 2.0 \
-    --total-time 3.0 --dx 0.18 --output-dir output/valley_test \
+    --total-time 3.0 --dx 0.18 --output-dir output/air/valley_test \
     --use-cuda
 ```
 
@@ -228,18 +228,18 @@ Or directly:
 
 ```bash
 # Baseline (no ML)
-python examples/air/02_pipeline/run_pipeline.py output/valley_test
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_test
 
 # With source classification gate
-python examples/air/02_pipeline/run_pipeline.py output/valley_test --enable-classification
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_test --enable-classification
 
 # Full ML (classification + maneuver + anomaly)
-python examples/air/02_pipeline/run_pipeline.py output/valley_test \
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_test \
     --enable-classification --enable-maneuver --enable-anomaly
 ```
 
 ML flags need the `[ml]` extra. `--enable-anomaly` needs locally trained weights
-(`output/models/anomaly_detector.pt` and `anomaly_threshold.json`); without them the pipeline
+(`output/air/models/anomaly_detector.pt` and `anomaly_threshold.json`); without them the pipeline
 prints a warning and runs without anomaly detection.
 
 ML flags can also be set via environment variables on the shell scripts:
@@ -265,7 +265,7 @@ acoustic-sim --model-preset gradient --frequency 40
 ### ML training
 
 ```bash
-# Train the source, maneuver and fusion classifiers into output/models/
+# Train the source, maneuver and fusion classifiers into output/air/models/
 python examples/air/03_ml/train_all_ml.py
 
 # Train and calibrate the CVAE anomaly detector (writes anomaly_detector.pt + anomaly_threshold.json)
@@ -312,7 +312,7 @@ Python ≥ 3.10.
 
 The repository tracks the *metadata and results* of the drone reference runs under `output/`
 (`metadata.json`, `results_*.json`, a `README.md` per run), the trained ML weights in
-`output/models/`, and selected harbor and performance results and figures.  Traces, datasets,
+`output/air/models/`, and selected harbor and performance results and figures.  Traces, datasets,
 caches and other figures are not tracked (see `.gitignore`). Regenerate the drone traces with
 `python examples/air/01_simulation/generate_traces.py` (fast analytic forward model, all four datasets) or re-run the
 FDTD (`examples/air/01_simulation/run_valley.sh`, `run_valley_3d.sh`, `run_fdtd_erratic.py`).  [Generated outputs](docs/outputs.md) lists what is

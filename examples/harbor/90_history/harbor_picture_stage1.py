@@ -57,7 +57,7 @@ Usage::
 
     python examples/harbor/90_history/harbor_picture_stage1.py [--dataset all|bistatic|multistatic|harbor]
         [--chain all|passive|echo] [--propagator free_field|simulator] [--cuda] [--workers 1]
-        [--split both|tuning|test] [--out output/harbor_picture/stage1]
+        [--split both|tuning|test] [--out output/studies/history/harbor_picture_stage1]
 """
 
 from __future__ import annotations
@@ -90,6 +90,7 @@ from acoustic_sim.water.dataset import render_vessel_gathers  # noqa: E402
 from acoustic_sim.water.detection import ProcessingConfig  # noqa: E402
 from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, true_illuminator_waveform  # noqa: E402
 from acoustic_sim.water.occupancy import OccupancyConfig, OccupancyGrid  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.plotting import draw_frame_geometry  # noqa: E402
 from acoustic_sim.water.propagation import FreeFieldPropagator  # noqa: E402
 from acoustic_sim.water.scoreboard import ChainMaps, Scoreboard, plot_map, score, set_threshold  # noqa: E402
@@ -110,10 +111,10 @@ class Spec:
 
 
 DATASETS = {
-    "bistatic": Spec("output/harbor_bistatic/fine/dataset.npz", "output/harbor_bistatic/cache", False, (100.0, 760.0), ("echo",), ("ferry",)),
-    "multistatic": Spec("output/harbor_multistatic/fine/dataset.npz", "output/harbor_multistatic/cache", True, (100.0, 760.0),
+    "bistatic": Spec("output/recordings/bistatic/dataset.npz", "output/recordings/bistatic/cache", False, (100.0, 760.0), ("echo",), ("ferry",)),
+    "multistatic": Spec("output/recordings/multistatic/dataset.npz", "output/recordings/multistatic/cache", True, (100.0, 760.0),
                         ("passive", "echo"), ("ferry", "tug")),
-    "harbor": Spec("output/harbor/dataset.npz", "output/harbor/cache", False, (12.0, 78.0), ("passive",)),
+    "harbor": Spec("output/recordings/harbor/dataset.npz", "output/recordings/harbor/cache", False, (12.0, 78.0), ("passive",)),
 }
 ECHO_CONFIGS = {
     # name: (direct path in the traces, reference, exact track)
@@ -469,25 +470,31 @@ def plot_frame(key: str, run: ChainMaps, T: float, truth, reports: AISReports, c
     below = not len(peaks)
     if below:                                                  # nothing above T: show the strongest cell, marked as such
         peaks = run.grid[[int(np.argmax(B[:, k]))]]
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = new_figure((12, 10))
     x0, x1, y0, y1 = env.extent
     ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
     im = draw_frame_geometry(ax, run.grid, run.B[:, k], layout, rads, peaks, echo=chain == "echo",
                              threshold=T, exclusion=run.exclusion[:, k])
     for oid, tr in truth.tracks.items():
         ax.plot(*tr.position_at(t)[0], "o", ms=11, mfc="none", mec="deepskyblue" if tr.level_pa > 0 else "orange", mew=1.6)
-        ax.annotate(oid, tr.position_at(t)[0], xytext=(5, -10), textcoords="offset points", fontsize=7)
+        if not (oid.startswith("piling") and oid != "piling1"):
+            ax.annotate(oid if not oid.startswith("piling") else "pilings", tr.position_at(t)[0], xytext=(5, -14),
+                        textcoords="offset points", fontsize=11)
+    ax.plot([], [], "o", ms=11, mfc="none", mec="deepskyblue", mew=1.6, label="true position, radiating (scoring side)")
+    ax.plot([], [], "o", ms=11, mfc="none", mec="orange", mew=1.6, label="true position, silent (scoring side)")
+    for txt in ax.texts:
+        txt.set_fontsize(max(txt.get_fontsize(), 11.0))
     fig.colorbar(im, ax=ax, shrink=0.7, label="dB re frame peak")
     ax.set_xlim(x0, x1)
     ax.set_ylim(y0, y1)
     ax.set_aspect("equal")
-    ax.legend(fontsize=7, loc="lower left")
-    ax.set_title(f"{key}, test seed, t = {t:.2f} s: " + ("no local maximum above T = {:.4g}; the strongest cell is marked".format(T)
-                 if below else f"{len(peaks)} local maxima above T = {T:.4g}") + "\n"
-                 f"AIS ships at their predicted positions; circles: true positions (scoring side)", fontsize=10)
-    annotate_figure(fig, run.provenance)
-    fig.savefig(path, dpi=110, bbox_inches="tight")
-    plt.close(fig)
+    ax.set_xlabel("x (east) [m]")
+    ax.set_ylabel("y (north) [m]")
+    ax.legend(fontsize=11, loc="lower left")
+    ax.set_title(f"{key}, test seed, t = {t:.2f} s: map with its geometry\n" + ("no local maximum above T = {:.4g}; the strongest cell is marked".format(T)
+                 if below else f"{len(peaks)} local maxima above T = {T:.4g}"))
+    fig.axes[0].set_title(fig.axes[0].get_title() + '\n' + run.provenance.label())
+    save_figure(fig, path, recording=key.split("/")[0])
 
 
 def _after(m: ChainMaps, t0: float) -> ChainMaps:
@@ -546,47 +553,42 @@ def argmax_diagnostic(cfg: str, results: dict, truths: dict, seeds) -> dict:
 
 
 def plot_scoreboard_pair(sbs: dict, path: Path, title: str) -> None:
-    """Tuning and test tables side by side."""
-    splits = [s for s in ("tuning", "test") if s in sbs]
-    rows = max(len(sbs[s].per_object) for s in splits)
-    fig, axes = plt.subplots(1, len(splits), figsize=(9.5 * len(splits), 1.4 + 0.34 * (rows + 3)), squeeze=False)
-    for ax, split in zip(axes[0], splits):
+    """One figure per split (``<path stem>_<split>.png``): Pd per object as bars, the median error [m] beside each
+    (the full table is in the JSON)."""
+    dataset = title.split("/")[0].strip()
+    for split in ("tuning", "test"):
+        if split not in sbs:
+            continue
         sb: Scoreboard = sbs[split]
-        ax.axis("off")
-        cols = ["object", "kind", "rad.", "AIS", "moving", "frames", "Pd", "med. err", "p90 err", "full record"]
-        cells = [[o.id, o.kind, "y" if o.radiates else "n", "y" if o.ais else "n", "y" if o.moving else "n", str(o.frames),
-                  f"{o.pd:.2f}", "-" if not np.isfinite(o.median_error_m) else f"{o.median_error_m:.1f}",
-                  "-" if not np.isfinite(o.p90_error_m) else f"{o.p90_error_m:.1f}",
-                  "-" if o.full_record_detected is None else f"{o.full_record_detected:.2f}"] for o in sb.per_object]
-        tab = ax.table(cellText=cells, colLabels=cols, loc="upper center", cellLoc="center")
-        tab.auto_set_font_size(False)
-        tab.set_fontsize(8.5)
-        tab.scale(1.0, 1.3)
-        for (r, c), cell in tab.get_celld().items():
-            if r > 0 and c == 6:
-                cell.set_facecolor(plt.cm.RdYlGn(0.15 + 0.7 * sb.per_object[r - 1].pd))
-        sep = (f"\npilings resolved on the full record map: {sb.separation['resolved_per_run']}" if sb.separation else "")
-        ax.set_title(f"{split} set (seeds {sb.meta['seeds']}): T = {sb.threshold.T:.4g}, full record T = {sb.threshold.T_full:.4g}\n"
-                     f"false alarms {sb.false_alarm_rate:.2f} per frame ({sb.false_alarms} in {sb.n_frames} frames), frames with a "
-                     f"false alarm {100 * sb.false_alarm_frame_rate:.0f} % (threshold set for {100 * sb.threshold.pfa:.0f} %){sep}", fontsize=9)
-        ax.text(0.5, -0.02, sb.provenance.label(), transform=ax.transAxes, ha="center", va="top", fontsize=7.5,
-                color="0.25" if sb.provenance.all_estimated else "firebrick")
-    h = fig.get_size_inches()[1]
-    fig.suptitle(title + "\nPd over active frames; errors [m] over detected frames; full record: fraction of runs whose full record map "
-                 "detects the static object", fontsize=10, y=1.0 + 0.75 / h, va="bottom")
-    fig.savefig(path, dpi=110, bbox_inches="tight")
-    plt.close(fig)
+        objs = sb.per_object
+        fig, ax = new_figure((12, max(7.0, 1.5 + 0.55 * len(objs))))
+        y = np.arange(len(objs))
+        ax.barh(y, [o.pd for o in objs], color=[plt.cm.RdYlGn(0.15 + 0.7 * o.pd) for o in objs], label="Pd over active frames")
+        for yi, o in zip(y, objs):
+            err = "-" if not np.isfinite(o.median_error_m) else f"{o.median_error_m:.1f} m"
+            ax.text(min(o.pd, 0.75) + 0.02, yi, f"{o.pd:.2f}, median error {err}", va="center", fontsize=11)
+        ax.set_yticks(y)
+        ax.set_yticklabels([f"{o.id} ({o.kind}{', radiates' if o.radiates else ''})" for o in objs])
+        ax.invert_yaxis()
+        ax.set_xlim(0, 1.05)
+        ax.set_xlabel("Pd (fraction of active frames detected)")
+        ax.set_ylabel("object")
+        sep = (f"; pilings resolved {sb.separation['resolved_per_run']}" if sb.separation else "")
+        ax.set_title(f"{title}, {split} set (seeds {sb.meta['seeds']}): Pd per object\nT = {sb.threshold.T:.4g}; false alarms "
+                     f"{sb.false_alarm_rate:.2f} per frame, frames with a false alarm {100 * sb.false_alarm_frame_rate:.0f} % "
+                     f"(threshold set for {100 * sb.threshold.pfa:.0f} %){sep}")
+        ax.legend(loc="lower right")
+        fig.axes[0].set_title(fig.axes[0].get_title() + '\n' + sb.provenance.label())
+        save_figure(fig, path.with_name(f"{path.stem}_{split}.png"), recording=dataset)
 
 
 def plot_pd_summary(summary: list[dict], path: Path) -> None:
-    """One figure: every object, every configuration, tuning and test side by side (rows), Pd in the cells."""
-    panels: dict[str, list[dict]] = {}
+    """One figure per dataset and chain (``pd_summary_<dataset>_<chain>.png``): every object, every configuration,
+    tuning and test (rows), Pd in the cells."""
+    panels: dict[tuple, list[dict]] = {}
     for e in summary:
-        panels.setdefault(f"{e['dataset']} / {e['chain']}", []).append(e)
-    heights = [2 * len(v) for v in panels.values()]
-    fig, axes = plt.subplots(len(panels), 1, figsize=(14, 0.42 * sum(heights) + 1.3 * len(panels)), squeeze=False,
-                             gridspec_kw={"height_ratios": heights})
-    for ax, (name, entries) in zip(axes[:, 0], panels.items()):
+        panels.setdefault((e["dataset"], e["chain"]), []).append(e)
+    for (dataset, chain), entries in panels.items():
         objects = list(dict.fromkeys(o for e in entries for s_ in ("tuning", "test") for o in e["pd"].get(s_, {})))
         rows, labels = [], []
         for e in entries:
@@ -594,52 +596,55 @@ def plot_pd_summary(summary: list[dict], path: Path) -> None:
                 rows.append([e["pd"].get(split, {}).get(o, np.nan) for o in objects])
                 labels.append(f"{e['config']}  ({split})")
         M = np.array(rows, dtype=float)
-        ax.imshow(np.ma.masked_invalid(M), cmap="RdYlGn", vmin=0.0, vmax=1.0, aspect="auto")
+        fig, ax = new_figure((max(12.0, 1.3 * len(objects) + 6), max(7.0, 0.6 * len(labels) + 3)))
+        im = ax.imshow(np.ma.masked_invalid(M), cmap="RdYlGn", vmin=0.0, vmax=1.0, aspect="auto")
         for r in range(M.shape[0]):
             for c in range(M.shape[1]):
-                ax.text(c, r, "-" if not np.isfinite(M[r, c]) else f"{M[r, c]:.2f}", ha="center", va="center", fontsize=8,
+                ax.text(c, r, "-" if not np.isfinite(M[r, c]) else f"{M[r, c]:.2f}", ha="center", va="center", fontsize=11,
                         fontweight="bold" if labels[r].endswith("(test)") else "normal")
         for r in range(1, M.shape[0], 2):
             ax.axhline(r + 0.5, color="w", lw=2.5)
         ax.set_yticks(np.arange(len(labels)))
-        ax.set_yticklabels(labels, fontsize=8)
+        ax.set_yticklabels(labels)
         ax.set_xticks(np.arange(len(objects)))
-        ax.set_xticklabels(objects, fontsize=8.5)
-        ax.xaxis.tick_top()
-        ax.set_title(name, fontsize=10, loc="left")
-    fig.suptitle("Harbor picture stage 1: Pd per object at the 5 % threshold (tuning set: seed 0; test set, bold: seeds 1 to 5)",
-                 fontsize=11)
-    fig.tight_layout()
-    fig.savefig(path, dpi=110, bbox_inches="tight")
-    plt.close(fig)
+        ax.set_xticklabels(objects, rotation=30, ha="right")
+        ax.set_xlabel("object")
+        ax.set_ylabel("configuration (split)")
+        fig.colorbar(im, ax=ax, label="Pd (fraction of active frames)")
+        ax.set_title(f"{dataset}, {chain}: Pd per object at the 5 % threshold\n(tuning set: seed 0; test set, bold: seeds 1 to 5)")
+        tag = chain.split(",")[0].replace(" ", "_")
+        save_figure(fig, path.with_name(f"{path.stem}_{dataset}_{tag}.png"), recording=dataset)
 
 
 def plot_misses(dataset: str, misses: dict, env, layout, truth, path: Path) -> None:
-    configs = list(misses)
-    fig, axes = plt.subplots(1, len(configs), figsize=(6.2 * len(configs), 5.2), squeeze=False)
+    """One map per configuration (``<path stem>_<configuration>.png``)."""
     colours = dict(zip(MISS_CLASSES, ("tab:red", "tab:orange", "tab:blue", "0.4")))
     x0, x1, y0, y1 = env.extent
-    for ax, cfg in zip(axes[0], configs):
+    for cfg in misses:
+        fig, ax = new_figure((12, 10))
         ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
-        ax.plot(layout.das_positions[:, 0], layout.das_positions[:, 1], ".", color="k", ms=1.5)
-        for oid, tr in truth.tracks.items():
+        ax.plot(layout.das_positions[:, 0], layout.das_positions[:, 1], ".", color="k", ms=1.5, label="DAS channels")
+        for j, (oid, tr) in enumerate(truth.tracks.items()):
             ax.plot(tr.xy[:, 0], tr.xy[:, 1], "-" if np.ptp(tr.xy, axis=0).max() > 0 else "o", color="lime" if tr.level_pa == 0 else "deepskyblue",
                     lw=1.2, ms=3)
+        ax.plot([], [], "-", color="deepskyblue", label="true track, radiating")
+        ax.plot([], [], "-", color="lime", label="true track or position, silent")
         m = misses[cfg]["frames"]
         counts = {c: 0 for c in MISS_CLASSES}
         for e in m:
             counts[e["class"]] += 1
         for c in MISS_CLASSES:
             pts = np.array([e["xy"] for e in m if e["class"] == c]).reshape(-1, 2)
-            ax.plot(pts[:, 0], pts[:, 1], "o", color=colours[c], ms=3.5, alpha=0.7, label=f"{c}: {counts[c]}")
+            ax.plot(pts[:, 0], pts[:, 1], "o", color=colours[c], ms=3.5, alpha=0.7, label=f"frame peak, {c}: {counts[c]}")
         ax.set_xlim(x0, x1)
         ax.set_ylim(y0, y1)
         ax.set_aspect("equal")
-        ax.legend(fontsize=7, loc="upper right")
-        ax.set_title(f"{cfg}\n{len(m)} of {misses[cfg]['frames_total']} frames peak > 20 m from every UUV", fontsize=9)
-    fig.suptitle(f"{dataset}: where the echo chain's frame peak goes when it misses the UUV (all seeds)", fontsize=11)
-    fig.savefig(path, dpi=110, bbox_inches="tight")
-    plt.close(fig)
+        ax.set_xlabel("x (east) [m]")
+        ax.set_ylabel("y (north) [m]")
+        ax.legend(fontsize=11, loc="upper right")
+        ax.set_title(f"{dataset}, {cfg}: where the echo chain's frame peak goes when it misses the UUV (all seeds)\n"
+                     f"{len(m)} of {misses[cfg]['frames_total']} frames peak > 20 m from every UUV")
+        save_figure(fig, path.with_name(f"{path.stem}_{cfg.replace('/', '_')}.png"), recording=dataset)
 
 
 # ----------------------------------------------------------------------
@@ -681,7 +686,7 @@ def main() -> None:
     ap.add_argument("--cuda", action="store_true", help="GPU for every chain that supports it (falls back to the CPU)")
     ap.add_argument("--workers", type=int, default=1, help="runs in parallel (processes)")
     ap.add_argument("--split", default="both", choices=("both", "tuning", "test"))
-    ap.add_argument("--out", default="output/harbor_picture/stage1")
+    ap.add_argument("--out", default="output/studies/history/harbor_picture_stage1")
     ap.add_argument("--allow-fdtd", action="store_true", help="run FDTD for gathers missing from the cache (never needed here)")
     args = ap.parse_args()
     out = ROOT / args.out
@@ -828,7 +833,7 @@ def main() -> None:
                         "config": e["config"].split("/")[-1] + ("" if e["chain"] == "echo" else f" / {e['map']} map"),
                         "pd": {s: {r["id"]: r["pd"] for r in e[s]["per_object"]} for s in ("tuning", "test") if s in e}})
     if summary:
-        plot_pd_summary(summary, out / "pd_summary.png")
+        plot_pd_summary(summary, out / "pd_summary.png")       # pd_summary_<dataset>_<chain>.png
     res_path.write_text(json.dumps(results_json, indent=2))
     say(f"wrote {out}")
 

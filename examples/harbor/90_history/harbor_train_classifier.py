@@ -8,8 +8,8 @@ with cross-entropy loss, evaluates per-class accuracy, and saves a checkpoint.
 Usage::
 
     python examples/harbor/90_history/harbor_train_classifier.py \
-        [--dataset output/harbor/classifier_dataset.npz] \
-        [--out output/harbor] \
+        [--dataset output/studies/history/harbor_build_classifier_dataset/classifier_dataset.npz] \
+        [--out output/studies/history/harbor_train_classifier] \
         [--epochs 30] \
         [--batch 64] \
         [--lr 1e-3]
@@ -40,8 +40,8 @@ TEST_SEEDS = {6, 7}
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--dataset", default="output/harbor/classifier_dataset.npz")
-    ap.add_argument("--out", default="output/harbor")
+    ap.add_argument("--dataset", default="output/studies/history/harbor_build_classifier_dataset/classifier_dataset.npz")
+    ap.add_argument("--out", default="output/studies/history/harbor_train_classifier")
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--batch", type=int, default=64)
     ap.add_argument("--lr", type=float, default=1e-3)

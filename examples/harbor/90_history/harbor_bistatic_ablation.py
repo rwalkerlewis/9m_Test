@@ -31,7 +31,7 @@ Configurations 1 to 3 assemble their input from the truth components (that is wh
 read their other truth inputs from the dataset's ``Truth``; their ``provenance`` says so
 (``truth_inputs`` includes ``"components"``).  The default replicas are the free field ones;
 ``--propagator simulator`` gives configurations 1 to 3 the FDTD dispersion corrected replicas
-(simulator knowledge, flagged; that is how stage 0b was first run, ``output/harbor_bistatic/ablation/``).
+(simulator knowledge, flagged; that is how stage 0b was first run, ``output/studies/history/harbor_bistatic_ablation/simulator/``).
 The band is a stated processing choice: 100 to 380 Hz on the 1 m coarse dataset, 100 to 760 Hz on the
 0.5 m fine one.
 
@@ -41,8 +41,8 @@ variants and are not part of the criterion.
 
 Usage::
 
-    python examples/harbor/90_history/harbor_bistatic_ablation.py [--fine output/harbor_bistatic/fine/dataset.npz]
-        [--coarse output/harbor_bistatic/coarse/dataset.npz] [--out output/harbor_bistatic/ablation_freefield]
+    python examples/harbor/90_history/harbor_bistatic_ablation.py [--fine output/recordings/bistatic/dataset.npz]
+        [--coarse output/recordings/bistatic/coarse/dataset.npz] [--out output/studies/history/harbor_bistatic_ablation/freefield]
         [--propagator {free_field,simulator}]
         [--doppler] [--configs direct_removed_exactly,true_waveform_exact_track,estimated_waveform_exact_track,all_estimated]
 """
@@ -67,6 +67,7 @@ from acoustic_sim.contract import Provenance, dataset_exists  # noqa: E402
 from acoustic_sim.water import HarborDataset  # noqa: E402
 from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, eca_stage, run_bistatic, stft  # noqa: E402
 from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, true_illuminator_waveform  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.water.propagation import FreeFieldPropagator  # noqa: E402
 
@@ -163,11 +164,11 @@ def run_config(name: str, obs, truth, band: tuple[float, float], doppler: bool =
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--fine", default="output/harbor_bistatic/fine/dataset.npz")
-    ap.add_argument("--coarse", default="output/harbor_bistatic/coarse/dataset.npz")
-    ap.add_argument("--demo-summary", default="output/harbor_bistatic/demo/demo_summary.json")
-    ap.add_argument("--out", default=None, help="default: output/harbor_bistatic/ablation_freefield (free field) or "
-                    "output/harbor_bistatic/ablation (--propagator simulator)")
+    ap.add_argument("--fine", default="output/recordings/bistatic/dataset.npz")
+    ap.add_argument("--coarse", default="output/recordings/bistatic/coarse/dataset.npz")
+    ap.add_argument("--demo-summary", default="output/studies/history/harbor_bistatic_demo/demo_summary.json")
+    ap.add_argument("--out", default=None, help="default: output/studies/history/harbor_bistatic_ablation/freefield (free field) or "
+                    "output/studies/history/harbor_bistatic_ablation/simulator (--propagator simulator)")
     ap.add_argument("--configs", default=",".join(CONFIGS))
     ap.add_argument("--doppler", action="store_true", help="also run configurations 2 to 4 with eca_doppler=True")
     ap.add_argument("--smooth", type=float, default=0.0, help="track_smooth_s of the Doppler variants (local straight line fit of the refined track)")
@@ -177,7 +178,7 @@ def main() -> None:
     ap.add_argument("--cuda", action="store_true", help="run the chain on the GPU (maps within 1e-12 of the CPU)")
     ap.add_argument("--frame", type=int, default=40, help="frame index of maps_by_config.png")
     args = ap.parse_args()
-    out = Path(args.out or ("output/harbor_bistatic/ablation" if args.propagator == "simulator" else "output/harbor_bistatic/ablation_freefield"))
+    out = Path(args.out or ("output/studies/history/harbor_bistatic_ablation/simulator" if args.propagator == "simulator" else "output/studies/history/harbor_bistatic_ablation/freefield"))
     out.mkdir(parents=True, exist_ok=True)
     log = open(out / "run.log", "w")
 
@@ -237,36 +238,34 @@ def main() -> None:
         say("contrast lost per step (fine): " + ", ".join(f"{k} {v:+.1f} dB" for k, v in drops.items()))
     (out / "results.json").write_text(json.dumps(results, indent=2))
 
-    # Bar figure per metric.
+    # Bar figure per metric (metrics_by_config_<metric>.png).
     tags = list(results["metrics"])
     keys = [k for k in results["metrics"][tags[0]]]
-    fig, axes = plt.subplots(2, 4, figsize=(20, 9))
-    for ax, m in zip(axes.ravel(), METRICS):
+    replicas = "FDTD dispersion corrected (simulator knowledge)" if args.propagator == "simulator" else "free field (nothing beyond the chart)"
+    for m in METRICS:
+        fig, ax = new_figure((13, 8))
         w = 0.8 / max(len(tags), 1)
         for j, tag in enumerate(tags):
             vals = [results["metrics"][tag][k].get(m) for k in keys]
             vals = [np.nan if v is None else v for v in vals]
-            ax.bar(np.arange(len(keys)) + (j - 0.5 * (len(tags) - 1)) * w, vals, w, label=tag)
+            ax.bar(np.arange(len(keys)) + (j - 0.5 * (len(tags) - 1)) * w, vals, w, label=f"bistatic {tag} grid")
         ax.set_xticks(np.arange(len(keys)))
-        ax.set_xticklabels(keys, rotation=30, ha="right", fontsize=8)
-        ax.set_title(METRIC_LABELS[m], fontsize=10)
+        ax.set_xticklabels(keys, rotation=30, ha="right")
+        ax.set_xlabel("configuration (truth inputs removed one at a time)")
+        ax.set_ylabel(METRIC_LABELS[m])
         ax.grid(alpha=0.3, axis="y")
         if m == "contrast_db_median":
             ax.axhline(CRITERION["contrast_db_median_min"], color="r", ls="--", label="criterion")
         if m == "within_5m":
             ax.axhline(CRITERION["within_5m_min"], color="r", ls="--", label="criterion")
-    axes[0, 0].legend(fontsize=8)
-    fig.suptitle("Bistatic ablation: truth inputs removed one at a time (coherent map, 0.5 s frames)\n"
-                 f"replicas: {'FDTD dispersion corrected (simulator knowledge)' if args.propagator == 'simulator' else 'free field (nothing beyond the chart)'}",
-                 fontsize=12)
-    fig.savefig(out / "metrics_by_config.png", dpi=110, bbox_inches="tight")
+        ax.legend()
+        ax.set_title(f"bistatic ablation: {METRIC_LABELS[m]} by configuration\nreplicas: {replicas}")
+        save_figure(fig, out / f"metrics_by_config_{m}.png", recording="bistatic")
 
-    # Maps: one frame per configuration and dataset.
-    rows = tags
-    fig, axes = plt.subplots(len(rows), len(keys), figsize=(4.6 * len(keys), 4.2 * len(rows)), squeeze=False)
-    for i, tag in enumerate(rows):
-        for j, key in enumerate(keys):
-            ax = axes[i, j]
+    # Maps: one frame per configuration and dataset (maps_by_config_<grid>_<configuration>.png).
+    for tag in tags:
+        for key in keys:
+            fig, ax = new_figure((12, 10))
             run, uuv, est, env, layout = maps[tag, key]
             B, grid, times = run.scan.B, run.grid, run.sp.times
             k = min(args.frame, len(times) - 1)
@@ -276,18 +275,20 @@ def main() -> None:
             img = np.full((len(ys), len(xs)), np.nan)
             img[iy, ix] = 10 * np.log10(np.maximum(B[:, k], 1e-12))
             plot_harbor(env, layout, ax=ax, show_depth=False)
-            ax.imshow(img, origin="lower", extent=(xs[0], xs[-1], ys[0], ys[-1]), cmap="magma", vmin=-20, vmax=0, alpha=0.9, zorder=2)
-            ax.plot(*run.ship.refined[k], "s", color="deepskyblue", ms=8, mec="k", zorder=5)
-            ax.plot(*uuv[k], "o", mfc="none", mec="lime", mew=2, ms=14, zorder=5)
-            ax.plot(*est[k], "x", color="w", ms=10, mew=2, zorder=6)
+            im = ax.imshow(img, origin="lower", extent=(xs[0], xs[-1], ys[0], ys[-1]), cmap="magma", vmin=-20, vmax=0, alpha=0.9, zorder=2)
+            ax.plot(*run.ship.refined[k], "s", color="deepskyblue", ms=8, mec="k", zorder=5, label="ship position used")
+            ax.plot(*uuv[k], "o", mfc="none", mec="lime", mew=2, ms=14, zorder=5, label="UUV true position")
+            ax.plot(*est[k], "x", color="w", ms=10, mew=2, zorder=6, label="estimate (map peak)")
+            fig.colorbar(im, ax=ax, shrink=0.7, label="dB re frame peak")
             s = results["metrics"][tag][key]
             prov = Provenance.from_dict(s["provenance"])
-            ax.set_title(f"{tag}: {key} [{'all estimated' if prov.all_estimated else 'not all estimated'}]\nt = {times[k]:.1f} s, err {np.hypot(*(est[k] - uuv[k])):.1f} m, contrast {s['contrast_db_median']:.1f} dB", fontsize=9)
+            ax.set_title(f"bistatic {tag} grid, {key} [{'all estimated' if prov.all_estimated else 'not all estimated'}]: echo map\n"
+                         f"t = {times[k]:.1f} s, error {np.hypot(*(est[k] - uuv[k])):.1f} m, contrast {s['contrast_db_median']:.1f} dB")
             ax.set_xlim(xs[0], xs[-1]); ax.set_ylim(ys[0], ys[-1])
-            if ax.get_legend():
-                ax.get_legend().remove()
-    fig.suptitle("Bistatic maps by configuration (dB re frame peak; square: ship position used, circle: UUV truth, x: estimate)", fontsize=11)
-    fig.savefig(out / "maps_by_config.png", dpi=100, bbox_inches="tight")
+            ax.set_xlabel("x (east) [m]")
+            ax.set_ylabel("y (north) [m]")
+            ax.legend(fontsize=11, loc="upper right")
+            save_figure(fig, out / f"maps_by_config_{tag}_{key}.png", recording="bistatic")
     say(f"wrote {out}")
 
 

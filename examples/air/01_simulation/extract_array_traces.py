@@ -9,8 +9,8 @@ re-running the forward model.
 Usage
 -----
     python examples/air/01_simulation/extract_array_traces.py \
-        --input-dir output/valley_cuda \
-        --output-dir output/valley_array2 \
+        --input-dir output/air/valley_cuda \
+        --output-dir output/air/valley_array2 \
         --array circular --receiver-count 16 --receiver-radius 2.0 \
         --receiver-cx -5.0 --receiver-cy 7.0 --receiver-cz 5.5
 """

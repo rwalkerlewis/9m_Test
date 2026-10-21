@@ -20,13 +20,13 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
 from acoustic_sim.contract import Observation, Truth, contract_paths  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.streaming import ais_crosscheck  # noqa: E402
 from acoustic_sim.water.stream import load_processing, run  # noqa: E402
 
@@ -124,8 +124,14 @@ def chart(ax, obs: Observation, sensors: bool = True) -> None:
     ax.set_xlim(x0, x1)
     ax.set_ylim(y0, y1)
     ax.set_aspect("equal")
-    ax.set_xlabel("x [m]")
-    ax.set_ylabel("y [m]")
+    ax.set_xlabel("x (east) [m]")
+    ax.set_ylabel("y (north) [m]")
+
+
+def trace_unit(obs: Observation) -> str:
+    """The unit of a DAS channel of *obs*: pressure, or the second difference of pressure over the gauge length."""
+    cab = obs.geometry.cables[0]
+    return "second difference of pressure over the gauge [Pa]" if cab.is_strain else "pressure [Pa]"
 
 
 def zoom(ax, grid: np.ndarray, margin: float = 15.0) -> None:
@@ -135,7 +141,13 @@ def zoom(ax, grid: np.ndarray, margin: float = 15.0) -> None:
 
 
 def truth_overlay(ax, tru: Truth, t: float | None = None, labels: bool = True, alpha: float = 0.9) -> None:
-    """True tracks (dashed) or positions at *t* (circles): blue radiating, orange silent."""
+    """True tracks (dashed) or positions at *t* (circles): blue radiating, orange silent (with their legend entries)."""
+    if t is None:
+        ax.plot([], [], "--", color=RADIATOR, lw=1.2, label="true track, radiating (for comparison)")
+        ax.plot([], [], "--", color=SILENT, lw=1.2, label="true track or position, silent (for comparison)")
+    else:
+        ax.plot([], [], "o", ms=11, mfc="none", mec=RADIATOR, mew=1.6, ls="none", label="true position, radiating (for comparison)")
+        ax.plot([], [], "o", ms=11, mfc="none", mec=SILENT, mew=1.6, ls="none", label="true position, silent (for comparison)")
     for oid, tr in tru.tracks.items():
         col = RADIATOR if tr.level_pa > 0 else SILENT
         if t is None:
@@ -151,7 +163,7 @@ def truth_overlay(ax, tru: Truth, t: float | None = None, labels: bool = True, a
             ax.plot(*p, "o", ms=11, mfc="none", mec=col, mew=1.6, alpha=alpha)
         if labels and not (oid.startswith("piling") and oid != "piling1"):
             ax.annotate(oid if not oid.startswith("piling") else "pilings", p, xytext=(4, 4), textcoords="offset points",
-                        fontsize=7, color=col)
+                        fontsize=11, color=col)
 
 
 def map_image(grid: np.ndarray, values: np.ndarray):
@@ -165,30 +177,40 @@ def map_image(grid: np.ndarray, values: np.ndarray):
 
 class Figures:
     """One plot per image: :meth:`new` gives the axes of a new figure saved by :meth:`save_all` as
-    ``<step>_<name>.png``, each headed by the step's title."""
+    ``<step>_<name>.png`` through ``save_figure`` (the figure rule), each titled with the step's title (which names the
+    recording) above its own.  *note* is kept for the scripts' docstrings; it is not drawn (it would be below 11 pt)."""
 
     def __init__(self, a: argparse.Namespace, step: str, title: str, note: str = "") -> None:
-        self.dir, self.step, self.title, self.note = out_dir(a), step, title, note
+        self.dir, self.step, self.title, self.note, self.dataset = out_dir(a), step, title, note, a.dataset
         self.figs: list[tuple[str, object]] = []
 
     def new(self, name: str, size=(12.0, 10.0)):
-        fig, ax = plt.subplots(figsize=size)
+        w, h = size
+        fig, ax = new_figure((max(w, 12.0), max(h, 6.5)))
         self.figs.append((name, fig))
         return fig, ax
 
     def save_all(self) -> None:
+        import textwrap
+
+        from matplotlib.text import Annotation
+
+        from acoustic_sim.water.plotting import declutter_labels
+
         for name, fig in self.figs:
-            fig.tight_layout(rect=(0.0, 0.02, 1.0, 0.95))
-            fig.suptitle(self.title, fontsize=12, y=0.995)
-            save(fig, self.dir / f"{self.step}_{name}.png", self.note)
-
-
-def save(fig, path: Path, note: str = "") -> None:
-    if note:
-        fig.text(0.5, -0.01, note, ha="center", va="top", fontsize=7.5, color="0.35")
-    fig.savefig(path, dpi=120, bbox_inches="tight")
-    plt.close(fig)
-    print(f"wrote {path.relative_to(ROOT)}")
+            ax = fig.axes[0]
+            sub = ax.get_title()
+            head = textwrap.fill(self.title, 95)
+            ax.set_title(head + ("\n" + sub if sub else ""), fontsize=13)
+            if ax.get_legend() is None and ax.get_legend_handles_labels()[1]:
+                ax.legend(loc="lower left")
+            anns = [t for t in ax.texts if isinstance(t, Annotation)]
+            for t in anns:                                      # readable over lines and maps
+                if t.get_bbox_patch() is None:
+                    t.set_bbox(dict(boxstyle="round,pad=0.15", fc="w", ec="none", alpha=0.7))
+            declutter_labels(ax, anns)
+            save_figure(fig, self.dir / f"{self.step}_{name}.png", recording=self.dataset)
+            print(f"wrote {(self.dir / f'{self.step}_{name}.png').relative_to(ROOT)}")
 
 
 NOTE = "Processing: traces, sensor positions and the chart only (AIS only labels tracks). Dashed / circles: true positions, for comparison."

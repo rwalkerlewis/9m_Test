@@ -6,7 +6,7 @@ a ±20 m domain, mimicking a small drone manoeuvring aggressively.
 
 Usage::
 
-    python examples/air/01_simulation/run_fdtd_erratic.py --output-dir output/erratic_quadcopter
+    python examples/air/01_simulation/run_fdtd_erratic.py --output-dir output/air/erratic_quadcopter
 
 The script saves:
   - traces.npy        receiver time-series
@@ -85,7 +85,7 @@ def parse_args(argv=None):
     p.add_argument("--fd-order", type=int, default=8)
 
     # Output
-    p.add_argument("--output-dir", default="output/erratic_quadcopter")
+    p.add_argument("--output-dir", default="output/air/erratic_quadcopter")
 
     return p.parse_args(argv)
 
@@ -226,47 +226,30 @@ def main(argv=None):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, axes = plt.subplots(1, 2, figsize=(18, 8))
+    from acoustic_sim.air.pipeline_plots import finish
 
-    # x-y plan view
-    ax = axes[0]
-    ax.plot(traj[:, 0], traj[:, 1], "r-", lw=1.2, label="Source path")
-    ax.scatter(traj[0, 0], traj[0, 1], c="yellow", s=100, marker="*",
-               edgecolors="k", zorder=6, label="Start")
-    ax.scatter(traj[-1, 0], traj[-1, 1], c="orange", s=80, marker="s",
-               edgecolors="k", zorder=6, label="End")
-    ax.scatter(receivers[:, 0], receivers[:, 1], s=20, c="cyan",
-               edgecolors="k", linewidths=0.4, zorder=5, label="Receivers")
-    ax.set_xlim(-half * 1.05, half * 1.05)
-    ax.set_ylim(-half * 1.05, half * 1.05)
-    ax.set_xlabel("x [m]")
-    ax.set_ylabel("y [m]")
-    ax.set_title("Domain (x-y): erratic quadcopter")
-    ax.set_aspect("equal")
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.3)
-
-    # x-z side view
-    ax = axes[1]
-    ax.plot(traj[:, 0], traj[:, 2], "r-", lw=1.2, label="Source path")
-    ax.scatter(traj[0, 0], traj[0, 2], c="yellow", s=100, marker="*",
-               edgecolors="k", zorder=6, label="Start")
-    ax.scatter(traj[-1, 0], traj[-1, 2], c="orange", s=80, marker="s",
-               edgecolors="k", zorder=6, label="End")
-    ax.scatter(receivers[:, 0], receivers[:, 2], s=20, c="cyan",
-               edgecolors="k", linewidths=0.4, zorder=5, label="Receivers")
-    ax.set_xlim(-half * 1.05, half * 1.05)
-    ax.set_ylim(args.z_min, args.z_max)
-    ax.set_xlabel("x [m]")
-    ax.set_ylabel("z [m]")
-    ax.set_title("Domain (x-z): erratic quadcopter")
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.3)
-
-    fig.tight_layout()
-    fig.savefig(str(out / "domain_trajectory.png"), dpi=170)
-    plt.close(fig)
-    print(f"Saved domain plot to {out / 'domain_trajectory.png'}")
+    # One figure per view: plan (x-y) and side (x-z).
+    for view, k, lim, ylabel in (("xy", 1, (-half * 1.05, half * 1.05), "y [m]"),
+                                 ("xz", 2, (args.z_min, args.z_max), "z [m]")):
+        fig, ax = plt.subplots(figsize=(12, 10) if view == "xy" else (12, 7))
+        ax.plot(traj[:, 0], traj[:, k], "r-", lw=1.2, label="Source path")
+        ax.scatter(traj[0, 0], traj[0, k], c="yellow", s=100, marker="*",
+                   edgecolors="k", zorder=6, label="Start")
+        ax.scatter(traj[-1, 0], traj[-1, k], c="orange", s=80, marker="s",
+                   edgecolors="k", zorder=6, label="End")
+        ax.scatter(receivers[:, 0], receivers[:, k], s=20, c="cyan",
+                   edgecolors="k", linewidths=0.4, zorder=5, label="Receivers")
+        ax.set_xlim(-half * 1.05, half * 1.05)
+        ax.set_ylim(*lim)
+        ax.set_xlabel("x [m]")
+        ax.set_ylabel(ylabel)
+        if view == "xy":
+            ax.set_aspect("equal")
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        path = out / f"domain_trajectory_{view}.png"
+        finish(fig, ax, path, f"erratic_quadcopter: domain ({view[0]}-{view[1]}) and trajectory", verbose=False)
+        print(f"Saved domain plot to {path}")
 
     # -- Gather plot -------------------------------------------------------
     from acoustic_sim.air.plotting import plot_gather

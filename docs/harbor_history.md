@@ -7,6 +7,16 @@ scripts these sections cite are in `examples/harbor/90_history/` (still runnable
 quoted here) unless they are part of the system.  Every number below was measured by the script cited with it, at the
 time; [scripts/reproduce.py](../scripts/reproduce.py) does not regenerate them.
 
+The outputs of the history (the figures, `results.json` files and logs of the batch chains, stage 0 and stage 1, the
+performance work: `output/harbor_demo/`, `harbor_domain/`, `harbor_domain_video/`, `harbor_shore0.5/`,
+`harbor_shore1.0/`, `harbor_cancel/`, `harbor_m1_uuv/`, `harbor_presentation/`, `harbor_picture/`, `performance/`,
+`harbor_detect/`, `harbor_stream/`, the `ablation`, `ablation_freefield`, `demo`, `eval`, `coarse` folders and the
+budget figures of `harbor_bistatic/`, the `coarse` folder of `harbor_multistatic/`, and the `m1`, `m2`, `m3` figures
+and `m3_results.json` of the 5 m harbor in `output/harbor/`) were removed from `output/` when it was restructured
+(`docs/outputs.md`); every one of them is in git history at commit `fd12458` under the path this page gives
+(`git show fd12458:output/harbor_cancel/results.json`, `git checkout fd12458 -- output/harbor_demo`). Run again, a
+history script writes to `output/studies/history/<script>/`; every figure it writes now has one panel.
+
 ## The default scenarios
 
 | Item | Default |
@@ -107,7 +117,7 @@ portable runtime guarantees; unavailable CUDA hardware falls back to the CPU wit
 Branch `performance` (October 2026).  Goal: an order of magnitude less compute for the harbor
 forward model and the processing chain with no change of results beyond stated tolerances.  Every
 change is measured twice by `scripts/bench_harbor.py`: wall time against the original code and
-accuracy against the outputs the original code produced (saved once, gitignored).  All numbers below are on the Quadro RTX 4000 (`output/performance/*.json`; the baseline is
+accuracy against the outputs the original code produced (saved once, gitignored).  All numbers below are on the Quadro RTX 4000 (`output/performance/*.json` at commit `fd12458`; the baseline is
 `baseline.json`, from commit `ca42d55`). The refreshed final run used Python 3.13.13 / NumPy 2.4.3;
 the original baseline used Python 3.12.3 / NumPy 2.5.4, so the end-to-end ratio is indicative, not
 a strictly controlled same-interpreter comparison. The stage 0 cases:
@@ -282,7 +292,7 @@ scores every track that was ever confirmed), and the "found" columns are fractio
 
 Detect once, check every detection against the true positions (`examples/harbor/05_detection/harbor_detect.py`,
 everything estimated from the traces, free field replicas, the 3 strongest map peaks per frame as
-detections, a hit within 5 m of an object; `output/harbor_detect/<dataset>/`). The seed 0 mix of
+detections, a hit within 5 m of an object; `output/harbor_detect/<dataset>/` at commit `fd12458`). The seed 0 mix of
 each dataset.
 
 | Dataset | Chain | Found (frames with a detection within 5 m, median error) | Not found | Detections > 10 m from every object | Time |
@@ -358,7 +368,7 @@ against 20 dB given both the true waveform and the exact track, which is where t
 **Scoreboard (stage 1, partial).** `water/scoreboard.py` implements the definitions of
 [Architecture, Scoreboard](architecture.md#scoreboard) and `examples/harbor/90_history/harbor_picture_stage1.py`
 runs it (tuning set seed 0, test set seeds 1 to 5). The run was stopped after the bistatic dataset
-and the multistatic passive chain (`output/harbor_picture/stage1/results.json`); with the threshold
+and the multistatic passive chain (`output/harbor_picture/stage1/results.json` at commit `fd12458`); with the threshold
 at 5 % of object free frames:
 
 | Dataset / chain | Configuration | Pd tuning | Pd test | Frames with a false alarm, tuning / test (target 5 %) |
@@ -458,13 +468,13 @@ experiment had its pass/fail criterion in the script docstring and `results.json
 **Stage 0a, direct path cancellation against range** (`examples/harbor/90_history/harbor_cancellation_depth.py`,
 fine 0.5 m grid, 10 s, the ferry signature alone at nearest channel ranges of 193, 99 and 29 m,
 stationary and at 4 m/s parallel to the first cable leg; ECA depth over the live cable channels
-in 100 to 760 Hz; `output/harbor_cancel/`). References: `data` (delay and sum beam at the AIS
+in 100 to 760 Hz; `output/harbor_cancel/` at commit `fd12458`). References: `data` (delay and sum beam at the AIS
 refined position, estimated from the traces), `true_waveform` (true waveform, AIS refined position), `true_waveform_exact_track` (true
 waveform, exact position). Criterion: median depth with the `data` reference at least 20 dB.
 The AIS refinement of every column used the FDTD dispersion corrected replicas (simulator
 knowledge, so even the `data` column was not everything estimated); the rows marked *free field replicas* are the
 same runs with the free field replicas a deployed system would use
-(`--propagator free` at the time, `output/harbor_cancel/freefield/`), and only their `data` column has everything estimated
+(`--propagator free` at the time, `output/harbor_cancel/freefield/` at commit `fd12458`), and only their `data` column has everything estimated
 (the `true_waveform` columns still use the true waveform).
 
 | Source | Range | `data` | `true_waveform` | `true_waveform_exact_track` | `data`, Doppler + 4 s fit | `true_waveform`, Doppler + 4 s fit | `true_waveform_exact_track`, Doppler |
@@ -515,7 +525,7 @@ phase at that range), so the AIS refined `true_waveform` column falls from 34 to
   unaffected (8.8 dB either way).
 
 **Stage 0b, the bistatic demo without its truth inputs** (`examples/harbor/90_history/harbor_bistatic_ablation.py`,
-coarse and fine datasets, `output/harbor_bistatic/ablation/`). Configurations: 1 `direct_removed_exactly`
+coarse and fine datasets, `output/harbor_bistatic/ablation/` at commit `fd12458`). Configurations: 1 `direct_removed_exactly`
 (direct path removed with the truth component, true waveform, exact track: the demo), 2 `true_waveform_exact_track` (direct path in
 the traces, removed by ECA; true waveform; exact track), 3 `estimated_waveform_exact_track` (data reference, exact
 track), 4 `all_estimated` (data reference, AIS track with refinement). Criterion for `all_estimated` on the
@@ -523,7 +533,7 @@ fine dataset: median echo contrast at least 10 dB and at least half the frames w
 Every configuration of the original run used the FDTD dispersion corrected replicas, so the rows
 named `all_estimated` used simulator knowledge. The rows marked *free field (everything estimated)*
 are the same configurations with free field replicas and no truth input at all
-(`--propagator free --cuda` at the time, `output/harbor_bistatic/ablation_freefield/`); they are the rows of this table with everything estimated from the traces. The committed `results.json` files keep the configuration names of the time.
+(`--propagator free --cuda` at the time, `output/harbor_bistatic/ablation_freefield/` at commit `fd12458`); they are the rows of this table with everything estimated from the traces. The committed `results.json` files keep the configuration names of the time.
 
 | Configuration | coarse: median error | within 5 m | 1.5 s within 5 m | contrast | ECA depth | fine: median error | within 5 m | 1.5 s within 5 m | contrast | ECA depth |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -568,7 +578,7 @@ refined track, whose jitter the per sample delays read as velocity noise (track 
 recovers most of it); the echo loss in the ECA is small throughout (0.3 to 1.9 dB).
 
 **Stage 0c, multistatic scenario and dataset** (`examples/configs/harbor_multistatic.scenario.json`,
-`examples/harbor/01_datasets/harbor_multistatic_dataset.py`, `output/harbor_multistatic/`). Same 0.5 m crop and
+`examples/harbor/01_datasets/harbor_multistatic_dataset.py`, now `output/recordings/multistatic/`). Same 0.5 m crop and
 sensors as the bistatic scenario with three illuminators (the AIS ferry; an AIS tug crossing
 the ferry's geometry from the north east; a small radiating boat without AIS), three silent
 moving bodies (`uuv1` and `uuv2`, 1 m x 3 m soft hulls on different headings at 2 and 1.5 m/s;
@@ -625,8 +635,8 @@ deliberately not started.
 | `examples/harbor/90_history/harbor_m3_detect.py` | Baseline CFAR detection sweeps **without** AIS suppression (the loud ships hide the UUV); `--empirical-refine` uses the `localiser.py` calibration | processing sweep; reuses cache |
 | `examples/harbor/90_history/harbor_survey_grid.py` | Pre-computes per-cell FDTD transfer functions for `harbor_m3_detect.py --empirical-refine grid_survey` (resume-safe cache) | one FDTD run per water cell of the scan grid |
 | `examples/harbor/90_history/harbor_m4_dlc.py` | Detect–locate–classify experiment, noise-only CFAR calibration, optional AIS suppression, CNN/CVAE classification and evaluation | varies; FDTD gathers are cached |
-| `examples/harbor/90_history/harbor_mfp_demo.py` | Analytic (free-field, exact replica) reference for the whole chain: AIS refinement, ferry and pier projection, passive 400 Hz MFP (motor on), bistatic echo MFP (motor off), occupancy track, Bartlett vs MVDR under replica mismatch, Pd vs UUV level. Figures and `results.json` in `output/harbor_demo/` | ~26 min on 16 CPU cores (`--trials 0` skips the Pd sweep: ~4 min) |
-| `examples/harbor/90_history/harbor_mfp_domain.py` | The same analytic chain in the domain of `output/harbor/dataset.npz` (land, cable + hydrophones, 120 s tracks, AIS, signatures, band, noise and DAS gains from the dataset; analytic propagation with opaque land). Adds AIS-ship gain calibration, re-whitening on the cleaned residual, DAS common-mode and distant-shipping plane-wave projection. Figures and `results.json` in `output/harbor_domain/` | ~1 h on 16 CPU cores (`--pd-windows 0`: ~20 min) |
+| `examples/harbor/90_history/harbor_mfp_demo.py` | Analytic (free-field, exact replica) reference for the whole chain: AIS refinement, ferry and pier projection, passive 400 Hz MFP (motor on), bistatic echo MFP (motor off), occupancy track, Bartlett vs MVDR under replica mismatch, Pd vs UUV level. Figures and `results.json` in `output/harbor_demo/` at commit `fd12458` (now written to `output/studies/history/harbor_mfp_demo/`) | ~26 min on 16 CPU cores (`--trials 0` skips the Pd sweep: ~4 min) |
+| `examples/harbor/90_history/harbor_mfp_domain.py` | The same analytic chain in the domain of `output/recordings/harbor/dataset.npz` (land, cable + hydrophones, 120 s tracks, AIS, signatures, band, noise and DAS gains from the dataset; analytic propagation with opaque land). Adds AIS-ship gain calibration, re-whitening on the cleaned residual, DAS common-mode and distant-shipping plane-wave projection. Figures and `results.json` in `output/harbor_domain/` at commit `fd12458` (now written to `output/studies/history/harbor_mfp_domain/`) | ~1 h on 16 CPU cores (`--pd-windows 0`: ~20 min) |
 | `examples/harbor/02_forward_model/harbor_m1_uuv.py` | Single Ricker pulse with and without a stationary finite-size UUV; plots the difference as the scattered field | one FDTD pair |
 | `examples/harbor/02_forward_model/harbor_m1_uuv_video.py` | Animate the pulse and predicted UUV echo on the cable | one FDTD pair |
 | `examples/harbor/90_history/harbor_bistatic_budget.py` | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
@@ -636,8 +646,8 @@ deliberately not started.
 | `examples/harbor/90_history/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the truth inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit, `--propagator simulator` the dispersion corrected replicas, `--cuda` the GPU chain); every result records its `provenance` | about 1.5 h of processing for both datasets |
 | `examples/harbor/01_datasets/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and a ferry-only check map given the truth | 6 FDTD runs (fine: about 1 h on the GPU) |
 | `examples/harbor/06_walkthrough/` | [Walkthrough](#walkthrough-from-the-traces-to-the-harbor-picture): eight scripts, one figure per step of the chain (recording, passive map, tracks, AIS labels, direct path removal, echo map, harbor picture, geometry); `run_all.sh DATASET --cuda` | about 1 min per recording |
-| `examples/harbor/05_detection/harbor_stream.py` | The real-time system (`water/streaming.py`): passive chain without AIS, tracker, echo chain on the tracks, AIS labels afterwards; feeds a recording in 0.25 s chunks, reports compute per second of data and latency, checks every output against the true positions; `--dataset multistatic|bistatic|harbor [--echo] --cuda`; writes `output/harbor_stream/<dataset>/` | 15 to 60 s per run |
-| `examples/harbor/90_history/harbor_picture_stage1.py` | Harbor picture stage 1: the [scoreboard](architecture.md#scoreboard) on the bistatic, multistatic and 5 m harbor datasets, tuning set (noise seed 0) and test set (seeds 1 to 5, remixed from the cached gathers), passive and echo chains; `--dataset`, `--chain`, `--propagator {free_field,simulator}`, `--cuda`, `--workers`; writes `output/harbor_picture/stage1/` | about 1.2 h on the GPU (runs are cached in `cache/`) |
+| `examples/harbor/05_detection/harbor_stream.py` | The real-time system (`water/streaming.py`): passive chain without AIS, tracker, echo chain on the tracks, AIS labels afterwards; feeds a recording in 0.25 s chunks, reports compute per second of data and latency, checks every output against the true positions; `--dataset multistatic|bistatic|harbor [--echo] --cuda`; writes `output/reproduce/runs/<dataset>/` | 15 to 60 s per run |
+| `examples/harbor/90_history/harbor_picture_stage1.py` | Harbor picture stage 1: the [scoreboard](architecture.md#scoreboard) on the bistatic, multistatic and 5 m harbor datasets, tuning set (noise seed 0) and test set (seeds 1 to 5, remixed from the cached gathers), passive and echo chains; `--dataset`, `--chain`, `--propagator {free_field,simulator}`, `--cuda`, `--workers`; writes `output/studies/history/harbor_picture_stage1/` (its earlier outputs: `output/harbor_picture/stage1/` at commit `fd12458`) | about 1.2 h on the GPU (runs are cached in `cache/`) |
 | `examples/harbor/02_forward_model/harbor_domain_video.py`, `examples/harbor/90_history/harbor_stack_movie.py`, `examples/harbor/90_history/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
 | `examples/harbor/90_history/harbor_train_classifier.py`, `examples/harbor/90_history/harbor_train_anomaly.py`, `examples/harbor/90_history/harbor_build_classifier_dataset.py` | Build harbor classification data and train CNN/CVAE models | training workload |
 
@@ -653,7 +663,7 @@ Run the passive scenario and detection/classification workflow:
 
 ```bash
 python examples/harbor/01_datasets/harbor_m2_dataset.py
-python examples/harbor/90_history/harbor_m4_dlc.py --config examples/configs/harbor.scenario.json --out output/harbor
+python examples/harbor/90_history/harbor_m4_dlc.py --config examples/configs/harbor.scenario.json --out output/studies/history/harbor_m4_dlc
 ```
 
 The M4 script can skip AIS suppression with `--no-suppress`, enable GPU processing with
@@ -664,11 +674,11 @@ Check each script's `--help` for current flags.
 For the cropped strain-DAS bistatic setup:
 
 ```bash
-python examples/harbor/90_history/harbor_bistatic_budget.py --out output/harbor_bistatic
+python examples/harbor/90_history/harbor_bistatic_budget.py --out output/studies/history/harbor_bistatic_budget
 python examples/harbor/01_datasets/harbor_bistatic_dataset.py --coarse
 python examples/harbor/90_history/harbor_bistatic_demo.py \
-    --dataset output/harbor_bistatic/coarse/dataset.npz \
-    --out output/harbor_bistatic/demo
+    --dataset output/recordings/bistatic/coarse/dataset.npz \
+    --out output/studies/history/harbor_bistatic_demo
 ```
 
 `--coarse` switches from the default 0.5 m grid to 1 m and proportionally scales the sample
@@ -682,7 +692,7 @@ from acoustic_sim.water.detection import ProcessingConfig, build_grid
 from acoustic_sim.water.suppression import SuppressionConfig, run_ais_aware
 from acoustic_sim.water.occupancy import OccupancyConfig, OccupancyGrid
 
-obs = Observation.load("output/harbor/dataset.observation.npz")   # or HarborDataset.load(...).observation
+obs = Observation.load("output/recordings/harbor/dataset.observation.npz")   # or HarborDataset.load(...).observation
 pc = ProcessingConfig(win_s=2.0, hop_s=1.0, use_cuda=True)       # free field replicas: nothing beyond the chart
 run = run_ais_aware(obs.traces, obs.geometry, obs.fs, obs.environment, obs.reports, pc, SuppressionConfig(),
                     grid=build_grid(obs.environment, pc))
@@ -691,7 +701,7 @@ print(run.provenance.to_dict())
 ```
 
 Replicas that follow the simulator's grid dispersion are a diagnostic: they need the truth file
-(`propagator=SimulatorAwarePropagator.from_truth(Truth.load("output/harbor/dataset.truth.npz"))`
+(`propagator=SimulatorAwarePropagator.from_truth(Truth.load("output/recordings/harbor/dataset.truth.npz"))`
 from `acoustic_sim.water.diagnostics`), they model the simulator's grid, not the ocean, and the
 run's provenance then lists `"dispersion"`.
 

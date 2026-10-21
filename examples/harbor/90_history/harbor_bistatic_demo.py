@@ -12,8 +12,8 @@ the coherent bistatic matched filter of ``water/bistatic.py``.
 
 Usage::
 
-    python examples/harbor/90_history/harbor_bistatic_demo.py [--dataset output/harbor_bistatic/coarse/dataset.npz]
-        [--out output/harbor_bistatic/demo] [--noise 1.0]
+    python examples/harbor/90_history/harbor_bistatic_demo.py [--dataset output/recordings/bistatic/coarse/dataset.npz]
+        [--out output/studies/history/harbor_bistatic_demo] [--noise 1.0]
 """
 
 from __future__ import annotations
@@ -37,13 +37,14 @@ from acoustic_sim.contract import Provenance, annotate_figure  # noqa: E402
 from acoustic_sim.water import HarborDataset  # noqa: E402
 from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, run_bistatic  # noqa: E402
 from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, true_illuminator_waveform  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dataset", default="output/harbor_bistatic/coarse/dataset.npz")
-    ap.add_argument("--out", default="output/harbor_bistatic/demo")
+    ap.add_argument("--dataset", default="output/recordings/bistatic/coarse/dataset.npz")
+    ap.add_argument("--out", default="output/studies/history/harbor_bistatic_demo")
     ap.add_argument("--noise", type=float, default=1.0, help="noise scale relative to the dataset (1 = as simulated)")
     ap.add_argument("--direct", type=float, default=0.0, help="fraction of the direct path left in (0 = ideal cancellation)")
     ap.add_argument("--propagator", choices=("free_field", "simulator"), default="free_field",
@@ -115,37 +116,42 @@ def main() -> None:
         img[iy, ix] = 10 * np.log10(np.maximum(B[:, k], 1e-12))
         return img
 
-    # Figure 1: six frames of the bistatic map.
+    # Figures: six frames of the bistatic map, one figure each (demo_maps_<k>.png).
     picks = np.linspace(2, len(times) - 3, 6).astype(int)
-    fig, axes = plt.subplots(2, 3, figsize=(16, 8.5))
-    for ax, k in zip(axes.ravel(), picks):
+    for n, k in enumerate(picks, 1):
+        fig, ax = new_figure((12, 10))
         plot_harbor(env, layout, ax=ax, show_depth=False)
         im = ax.imshow(image(k), origin="lower", extent=(xs[0], xs[-1], ys[0], ys[-1]), cmap="magma", vmin=-20, vmax=0,
                        alpha=0.9, zorder=2)
         ax.plot(*ship_xy[k], "s", color="deepskyblue", ms=9, mec="k", label="ferry (AIS)", zorder=5)
         ax.plot(*uuv[k], "o", mfc="none", mec="lime", mew=2, ms=14, label="UUV truth", zorder=5)
         ax.plot(*est[k], "x", color="w", ms=10, mew=2, label="estimate", zorder=6)
-        ax.set_title(f"t = {times[k]:.2f} s, error {err[k]:.1f} m")
+        ax.set_title(f"bistatic coarse recording, t = {times[k]:.2f} s: coherent bistatic map, error {err[k]:.1f} m\n"
+                     f"{bc.f_lo:.0f} to {bc.f_hi:.0f} Hz, {tag}")
         ax.set_xlim(xs[0], xs[-1]); ax.set_ylim(ys[0], ys[-1])
-        if ax is axes[0, 0]:
-            ax.legend(loc="lower left", fontsize=7, framealpha=0.7)
-        else:
-            ax.get_legend().remove()
-    fig.colorbar(im, ax=axes, shrink=0.6, label="coherent bistatic map [dB re peak]")
-    fig.suptitle(f"Silent UUV located from the ferry's echo on a strain DAS cable (FDTD, {bc.f_lo:.0f}-{bc.f_hi:.0f} Hz)\n"
-                 f"{tag}", fontsize=12)
-    annotate_figure(fig, prov)
-    fig.savefig(out / "demo_maps.png", dpi=110, bbox_inches="tight")
+        ax.set_xlabel("x (east) [m]")
+        ax.set_ylabel("y (north) [m]")
+        ax.legend(loc="lower left", fontsize=11, framealpha=0.7)
+        fig.colorbar(im, ax=ax, shrink=0.6, label="coherent bistatic map [dB re peak]")
+        fig.axes[0].set_title(fig.axes[0].get_title() + '\n' + prov.label())
+        save_figure(fig, out / f"demo_maps_{n}.png", recording="bistatic")
 
-    # Figure 2: tracks and error over time.
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(15, 6), gridspec_kw={"width_ratios": [1.2, 1]})
+    # Figure: the estimates over the run (demo_track_map.png).
+    fig, a1 = new_figure((12, 10))
     plot_harbor(env, layout, ax=a1, show_depth=False)
     a1.plot(*ship_xy.T, "-", color="deepskyblue", lw=3, label="ferry track (AIS illuminator)")
     a1.plot(*uuv.T, "-", color="lime", lw=3, label="UUV truth (silent, 1 m x 3 m body)")
     sc = a1.scatter(*est.T, c=times, cmap="viridis", s=28, edgecolor="k", lw=0.4, zorder=6, label="per frame estimate")
-    a1.legend(loc="lower left", fontsize=8, framealpha=0.8)
-    a1.set_title("Estimates per 0.5 s frame over the 20 s run")
+    a1.legend(loc="lower left", fontsize=11, framealpha=0.8)
+    a1.set_xlabel("x (east) [m]")
+    a1.set_ylabel("y (north) [m]")
+    a1.set_title(f"bistatic coarse recording: UUV estimates per 0.5 s frame over the run\n{tag}")
     fig.colorbar(sc, ax=a1, shrink=0.7, label="time [s]")
+    fig.axes[0].set_title(fig.axes[0].get_title() + '\n' + prov.label())
+    save_figure(fig, out / "demo_track_map.png", recording="bistatic")
+
+    # Figure: position error over time (demo_track_error.png).
+    fig, a2 = new_figure((12, 8))
     a2.plot(times, np.minimum(err, 14.5), "o-", ms=4, color="0.6", label=f"single 0.5 s frame: median {summary['median_error_m']:.1f} m, "
             f"{100 * summary['within_5m']:.0f} % within 5 m")
     a2.plot(times, np.minimum(err3, 14.5), "o-", ms=4, color="k", label=f"1.5 s integration: median {np.median(err3):.1f} m, "
@@ -153,27 +159,28 @@ def main() -> None:
     a2.axhline(5.0, color="r", ls="--", label="5 m")
     a2.set_xlabel("time [s]"); a2.set_ylabel("position error [m] (clipped at 15)")
     a2.set_ylim(0, 15)
-    a2.set_title("Position error per frame")
-    a2.legend(fontsize=9, loc="upper right")
-    fig.suptitle(f"Bistatic localisation of a silent UUV: {tag}", fontsize=12)
-    annotate_figure(fig, prov)
-    fig.savefig(out / "demo_track.png", dpi=110, bbox_inches="tight")
+    a2.set_title(f"bistatic coarse recording: UUV position error per frame\n{tag}")
+    a2.legend(loc="upper right")
+    fig.axes[0].set_title(fig.axes[0].get_title() + '\n' + prov.label())
+    save_figure(fig, out / "demo_track_error.png", recording="bistatic")
 
-    # Figure 3: echo and noise on the cable (what the processor sees).
+    # Figures: echo and noise on the cable (what the processor sees), same colour scale (demo_cable_<part>.png).
     sl = layout.slices["cable1"]
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
     sos = butter(4, [bc.f_lo, bc.f_hi], btype="bandpass", fs=obs.fs, output="sos")
-    for ax, (key, x) in zip(axes, (("echo of the ferry from the UUV alone (truth component)", gain * comps["scattered:ferry>uuv1"].astype(float)),
-                                   ("echo + noise: what the processor sees", traces))):
+    v = np.percentile(np.abs(sosfiltfilt(sos, traces[sl], axis=-1)), 99.5)
+    for part, key, x in (("echo", "echo of the ferry from the UUV alone (truth component)", gain * comps["scattered:ferry>uuv1"].astype(float)),
+                         ("echo_and_noise", "echo + noise: what the processor sees", traces)):
+        fig, ax = new_figure((12, 8))
         y = sosfiltfilt(sos, x[sl], axis=-1)
-        v = np.percentile(np.abs(sosfiltfilt(sos, traces[sl], axis=-1)), 99.5)
-        ax.imshow(y[:, ::10], aspect="auto", origin="lower", cmap="RdBu_r", vmin=-v, vmax=v, extent=(0, obs.t[-1], 0, layout.cables[0].length),
-                  interpolation="nearest")
-        ax.set_title(key); ax.set_xlabel("time [s]")
-    axes[0].set_ylabel("distance along cable [m]")
-    fig.suptitle("Strain DAS cable, 100 to 380 Hz, same colour scale: the echo is 12 dB below the noise on the median channel", fontsize=12)
-    annotate_figure(fig, prov)
-    fig.savefig(out / "demo_cable.png", dpi=110, bbox_inches="tight")
+        im = ax.imshow(y[:, ::10], aspect="auto", origin="lower", cmap="RdBu_r", vmin=-v, vmax=v, extent=(0, obs.t[-1], 0, layout.cables[0].length),
+                       interpolation="nearest")
+        ax.set_title(f"bistatic coarse recording, strain DAS cable, {bc.f_lo:.0f} to {bc.f_hi:.0f} Hz: {key}\n"
+                     "same colour scale in both figures")
+        ax.set_xlabel("time [s]")
+        ax.set_ylabel("distance along cable [m]")
+        fig.colorbar(im, ax=ax, label="band passed strain [trace units]")
+        fig.axes[0].set_title(fig.axes[0].get_title() + '\n' + prov.label())
+        save_figure(fig, out / f"demo_cable_{part}.png", recording="bistatic")
     print("wrote", out)
 
 

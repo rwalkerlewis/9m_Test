@@ -53,7 +53,7 @@ def build_run_name(domain: str, source_type: str, array: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--np", type=int, default=4, help="Number of MPI ranks")
-    parser.add_argument("--output-root", type=str, default="output", help="Top-level output dir")
+    parser.add_argument("--output-root", type=str, default="output/air", help="Top-level output dir")
     args = parser.parse_args()
 
     script = str(Path(__file__).resolve().parent / "run_fdtd.py")

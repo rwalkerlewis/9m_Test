@@ -43,7 +43,7 @@ MPI_RANKS=0             # 0 = no MPI; >1 = mpirun -n $MPI_RANKS
 FD_ORDER=2              # spatial FD accuracy order (2, 4, 6, …)
 
 # Output ----------------------------------------------------------------
-OUTPUT_DIR=output/my_test
+OUTPUT_DIR=output/air/my_test
 
 # -----------------------------------------------------------------------
 CUDA_FLAG=""                # the FDTD runs on the GPU by default

@@ -18,7 +18,7 @@ obs, tru = c.observation(a.dataset), c.truth(a.dataset)
 run = c.products(a)
 grid, frames = run["passive"]["grid"], run["passive"]["frames"]
 pick = [frames[int(q * (len(frames) - 1))] for q in (0.2, 0.5, 0.8)]
-F = c.Figures(a, "02_passive_map", f"Step 2 - passive location without AIS ({a.dataset}): every radiating object, ships included",
+F = c.Figures(a, "02_passive_map", f"Step 2: passive location without AIS ({a.dataset}): every radiating object, ships included",
               c.NOTE)
 for q, (t, xy, score, B) in enumerate(pick):
     fig, ax = F.new(f"{q + 1}")
@@ -27,8 +27,9 @@ for q, (t, xy, score, B) in enumerate(pick):
     im = ax.imshow(img, origin="lower", extent=ext, cmap="viridis", vmin=-20, vmax=0, alpha=0.9)
     c.truth_overlay(ax, tru, t=t)
     for r, p in enumerate(xy):
-        ax.plot(*p, "x", color="w" if r else "r", ms=11 if r == 0 else 8, mew=2.2)
-    ax.set_title(f"t = {t:.2f} s: matched field map (dB re frame peak)\nred x: strongest peak, white x: next 4", fontsize=10)
+        ax.plot(*p, "x", color="w" if r else "r", ms=11 if r == 0 else 8, mew=2.2,
+                label=("strongest peak" if r == 0 else "next 4 peaks") if r < 2 else None)
+    ax.set_title(f"t = {t:.2f} s: matched field map")
     c.zoom(ax, grid)
-    fig.colorbar(im, ax=ax, shrink=0.8, label="dB")
+    fig.colorbar(im, ax=ax, shrink=0.8, label="map level [dB re frame peak]")
 F.save_all()

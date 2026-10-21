@@ -1554,7 +1554,7 @@ hexacopter, fixed_wing).*  Requires `torch`.
 | `train_anomaly_detector(model, X_train, X_val, n_epochs=100, lr=0.001, batch_size=32, ...)` | Training loop; returns a history dict |
 | `calibrate_threshold(model, X_val)` | Returns `mean`, `std`, `threshold_3sigma` of validation scores |
 
-CLI: `python -m acoustic_sim.ml.anomaly_training [--quick] [--output-dir output/models]` writes
+CLI: `python -m acoustic_sim.ml.anomaly_training [--quick] [--output-dir output/air/models]` writes
 `anomaly_detector.pt` and `anomaly_threshold.json`.
 
 ---

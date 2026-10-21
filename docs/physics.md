@@ -142,7 +142,7 @@ grid above 380 Hz, not used by any recording); the pressure release
 walls, placed on node lines (0.31 rad at 100 to 760 Hz on the 0.5 m grid,
 history); the sponge.
 
-Cost (`output/<recording>/build.json`, Quadro RTX 4000, float64, all
+Cost (`output/recordings/<recording>/build.json`, Quadro RTX 4000, float64, all
 runs of a recording batched):
 
 | Recording | Grid | Steps | FDTD runs | FDTD wall time | Per run per simulated second |

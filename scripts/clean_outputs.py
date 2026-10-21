@@ -1,21 +1,34 @@
 #!/usr/bin/env python3
-"""List, and optionally delete, regenerable files under ``output/``.
+"""Check the layout of ``output/``, and list (optionally delete) its regenerable files.
 
-Only files that git reports as *ignored and untracked* below ``output/`` are candidates (datasets,
-FDTD caches, ``*.npy``/``*.npz``, untracked figures and checkpoints).  Tracked deliverables are never
-touched, nor is anything outside ``output/``.  The default is a dry run that prints the space per
-directory; nothing is removed without ``--delete``.
+``--check`` fails (exit 1) on any file under ``output/`` outside the layout of ``AGENTS.md`` (The output folder):
 
+* ``output/recordings/<recording>/``: the files of one recording (scenario used, levels, map, components, propagation
+  error, build information, logs, the observation and truth files), ``seed<n>/`` (test recordings mixed from the
+  cached gathers) and ``cache/`` (FDTD gathers);
+* ``output/reproduce/``: ``summary.json``, ``latest.json``, ``tables.md``, ``run.log`` and ``runs/<recording>/``;
+* ``output/walkthrough/<recording>/``;
+* ``output/studies/<study>/`` (anything below; ``history/<script>/`` for the history scripts);
+* ``output/air/<scenario>/`` and ``output/air/comparison_results.json``;
+* ``output/reports/*.md``;
+
+and on any committed file that ``AGENTS.md`` says is never committed (``*.npz``, ``*.npy``, ``*.mp4``, caches).
+
+Without ``--check`` it lists the files that git reports as *ignored and untracked* below ``output/`` (datasets, FDTD
+caches, ``*.npy``/``*.npz``, videos) with the space per directory; nothing is removed without ``--delete``, tracked
+deliverables are never candidates, nor is anything outside ``output/``.
+
+    python scripts/clean_outputs.py --check                  # every file inside the layout?
     python scripts/clean_outputs.py                          # dry run over all of output/
-    python scripts/clean_outputs.py harbor_bistatic/cache    # dry run, one subtree
-    python scripts/clean_outputs.py harbor_bistatic/cache --delete
+    python scripts/clean_outputs.py recordings/bistatic/cache --delete
 
-See docs/outputs.md for what each directory holds and how to regenerate it.
+See docs/outputs.md for what each directory holds, what writes it and what reads it.
 """
 
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 from collections import defaultdict
@@ -64,11 +77,52 @@ def candidates(subdirs: list[str]) -> list[Path]:
     return files
 
 
+RECORDINGS = ("simple", "bistatic", "multistatic", "multistatic_b", "harbor")
+NAME = r"[A-Za-z0-9_.+-]+"
+LAYOUT = [re.compile(p) for p in (
+    rf"recordings/({'|'.join(RECORDINGS)})/{NAME}",
+    rf"recordings/({'|'.join(RECORDINGS)})/seed\d+/dataset\.(observation|truth)\.npz",
+    rf"recordings/({'|'.join(RECORDINGS)})/cache/.+",
+    r"reproduce/(summary\.json|latest\.json|tables\.md|run\.log)",
+    rf"reproduce/runs/{NAME}/.+",
+    rf"walkthrough/({'|'.join(RECORDINGS)})/.+",
+    rf"studies/{NAME}/.+",
+    rf"air/{NAME}/.+",
+    r"air/comparison_results\.json",
+    rf"reports/{NAME}\.md",
+)]
+NEVER_COMMITTED = re.compile(r"(\.npz|\.npy|\.mp4)$|(^|/)cache/")
+
+
+def layout_problems() -> list[str]:
+    """Every file under ``output/`` (on disk or tracked) outside the layout, and every tracked file that is never
+    committed."""
+    problems = []
+    on_disk = {p.relative_to(OUTPUT).as_posix() for p in OUTPUT.rglob("*") if p.is_file() or p.is_symlink()} \
+        if OUTPUT.exists() else set()
+    tracked = {f[len("output/"):] for f in _git_files("--", "output")}
+    for rel in sorted(on_disk | tracked):
+        if rel == ".gitkeep":
+            continue
+        if not any(p.fullmatch(rel) for p in LAYOUT):
+            problems.append(f"outside the layout: output/{rel}")
+        elif rel in tracked and NEVER_COMMITTED.search(rel):
+            problems.append(f"committed but never to be committed: output/{rel}")
+    return problems
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("subdirs", nargs="*", help="paths relative to output/ (default: all of output/)")
     ap.add_argument("--delete", action="store_true", help="actually delete the listed files")
+    ap.add_argument("--check", action="store_true", help="fail on any file outside the layout of output/")
     args = ap.parse_args()
+    if args.check:
+        problems = layout_problems()
+        for p in problems:
+            print(p)
+        print(f"{len(problems)} files outside the layout of output/ (AGENTS.md, The output folder; docs/outputs.md)")
+        sys.exit(1 if problems else 0)
 
     files = candidates(args.subdirs)
     per_dir: dict[str, list[int]] = defaultdict(lambda: [0, 0])

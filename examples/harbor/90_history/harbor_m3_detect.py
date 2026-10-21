@@ -13,7 +13,7 @@ show how much the known ships hide the UUV.  Everything reads the FDTD cache wri
 
 Usage::
 
-    python examples/harbor/90_history/harbor_m3_detect.py [--out output/harbor] [--cal-seeds 4] [--pfa 0.01]
+    python examples/harbor/90_history/harbor_m3_detect.py [--out output/studies/history/harbor_m3_detect] [--cal-seeds 4] [--pfa 0.01]
     python examples/harbor/90_history/harbor_m3_detect.py --no-suppress   # bare matched-field scan for comparison
 """
 
@@ -49,6 +49,7 @@ from acoustic_sim.water.detection import (  # noqa: E402
     threshold_from_maxima,
 )
 from acoustic_sim.water.evaluate import score_detections  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.water.suppression import AISAwareRun, SuppressionConfig, run_ais_aware  # noqa: E402
 
@@ -60,7 +61,7 @@ UUV_ONLY = {"ferry": 0.0, "tug": 0.0, "moored": 0.0}
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default=str(Path(__file__).resolve().parents[2] / "configs" / "harbor.scenario.json"))
-    ap.add_argument("--out", default="output/harbor")
+    ap.add_argument("--out", default="output/studies/history/harbor_m3_detect")
     ap.add_argument("--cal-seeds", type=int, default=4)
     ap.add_argument("--eval-seed", type=int, default=7)
     ap.add_argument("--pfa", type=float, default=0.01, help="per-frame false-alarm probability")
@@ -223,41 +224,46 @@ def main() -> None:
     (out / "m3_results.json").write_text(json.dumps(results, indent=2, default=float))
 
     # ---- figures ---------------------------------------------------------------
-    fig, ax = plt.subplots(1, 2, figsize=(12, 4.5))
-    for name, entry in results["configs"].items():
-        db = [v["level_db_re_1pa_100m"] for v in entry["levels"].values()]
-        if name == "fused_suppressed":
-            ax[0].plot(db, [v["pd"] for v in entry["levels"].values()], "s--", label="fused+suppress")
-            ax[1].plot(db, [v["rmse_m"] for v in entry["levels"].values()], "s--", label="fused+suppress")
-        else:
-            ax[0].plot(db, [v["pd"] for v in entry["levels"].values()], "o-", label=name)
-            ax[1].plot(db, [v["rmse_m"] for v in entry["levels"].values()], "o-", label=name)
-    ax[0].set(xlabel="UUV source level [dB re 1 Pa @ 100 m]", ylabel="Pd (per frame)", title=f"Detection (Pfa/frame = {args.pfa})", ylim=(0, 1.02))
-    ax[1].set(xlabel="UUV source level [dB re 1 Pa @ 100 m]", ylabel="RMSE [m]", title="Localisation error of detections")
-    for a in ax:
-        a.grid(alpha=0.3)
-        a.legend()
-    if runs:
-        annotate_figure(fig, next(iter(runs.values()))[1].provenance)
-    fig.savefig(out / "m3_pd_vs_level.png", dpi=100, bbox_inches="tight")
+    for part, ykey, ylabel, what in (("pd", "pd", "Pd (per frame)", f"detection probability (Pfa per frame = {args.pfa})"),
+                                      ("rmse", "rmse_m", "RMSE [m]", "localisation error of detections")):
+        fig, ax = new_figure((12, 8))
+        for name, entry in results["configs"].items():
+            db = [v["level_db_re_1pa_100m"] for v in entry["levels"].values()]
+            if name == "fused_suppressed":
+                ax.plot(db, [v[ykey] for v in entry["levels"].values()], "s--", label="fused+suppress")
+            else:
+                ax.plot(db, [v[ykey] for v in entry["levels"].values()], "o-", label=name)
+        ax.set_xlabel("UUV source level [dB re 1 Pa @ 100 m]")
+        ax.set_ylabel(ylabel)
+        if part == "pd":
+            ax.set_ylim(0, 1.02)
+        ax.set_title(f"harbor (5 m): {what} against UUV source level")
+        ax.grid(alpha=0.3)
+        ax.legend()
+        if runs:
+            fig.axes[0].set_title(fig.axes[0].get_title() + '\n' + next(iter(runs.values()))[1].provenance.label())
+        save_figure(fig, out / f"m3_pd_vs_level_{part}.png", recording="harbor")
 
     for key, fname, title in [(("fused", 1.0), "m3_uuv_only.png", "UUV only (fused sensors)"),
-                              (("all", 1.0), "m3_all_vessels.png", "All vessels, no AIS suppression")]:
+                              (("all", 1.0), "m3_all_vessels.png", "all vessels, no AIS suppression")]:
         if key not in runs:
             continue
         ds, run, sc, thr = runs[key]
-        fig, ax = plt.subplots(figsize=(10, 7.5))
+        fig, ax = new_figure((12, 10))
         plot_harbor(env, layout, ax=ax)
         for vid, tr in ds.tracks.items():
             if tr.level_pa > 0:
                 ax.plot(*tr.xy[tr.active].T, "-" if tr.ais else "--", lw=1.5, label=f"truth {vid}")
         d = run.dets.above(thr)
-        sc_ = ax.scatter(*d.xy.T, c=d.t, cmap="viridis", s=18 + 40 * (d.rank == 0), edgecolor="k", linewidths=0.3, zorder=5)
+        sc_ = ax.scatter(*d.xy.T, c=d.t, cmap="viridis", s=18 + 40 * (d.rank == 0), edgecolor="k", linewidths=0.3, zorder=5,
+                         label="detections (large: strongest of the frame)")
         plt.colorbar(sc_, ax=ax, label="detection time [s]", shrink=0.6, location="left")
-        ax.set_title(title)
-        ax.legend(loc="upper left", fontsize=8)
-        annotate_figure(fig, run.provenance)
-        fig.savefig(out / fname, dpi=100, bbox_inches="tight")
+        ax.set_xlabel("x (east) [m]")
+        ax.set_ylabel("y (north) [m]")
+        ax.set_title(f"harbor (5 m): detections, {title}")
+        ax.legend(loc="upper left", fontsize=11)
+        fig.axes[0].set_title(fig.axes[0].get_title() + '\n' + run.provenance.label())
+        save_figure(fig, out / fname, recording="harbor")
     print("wrote", out)
 
 

@@ -45,17 +45,16 @@ saved in ``budget.json``; the printed table and the summary lines use the synchr
 
 Figures:
 
-* ``budget.png``: required direct-path cancellation along the synchronous track (sampled at
-  ``--n-fig`` positions; the ``budget.json`` positions are marked) for every grid, ship spectrum
-  and cylinder model.  Values are shown without the clip at 0, so negative values show how far
+* ``budget_dx<dx>_<spectrum>.png``, one per grid and ship spectrum: required direct-path cancellation along the
+  synchronous track (sampled at ``--n-fig`` positions; the ``budget.json`` positions are marked) for every cylinder model.  Values are shown without the clip at 0, so negative values show how far
   the echo already clears the direct path after processing gain and margin.
-* ``budget_geometry.png``: plan view of the cable, hydrophones, ship and UUV paths with the
-  mid-track propagation paths, and the band levels of the direct arrival, each echo model and
-  the noise along the DAS cable at mid-track.
+* ``budget_geometry_map.png``: plan view of the cable, hydrophones, ship and UUV paths with the
+  mid-track propagation paths; ``budget_geometry_cable_levels.png``: the band levels of the direct arrival, each echo
+  model and the noise along the DAS cable at mid-track.
 
 Usage::
 
-    python examples/harbor/90_history/harbor_bistatic_budget.py [--out output/harbor_bistatic] [--dx 0.5 1.0]
+    python examples/harbor/90_history/harbor_bistatic_budget.py [--out output/studies/history/harbor_bistatic_budget] [--dx 0.5 1.0]
         [--ship-level 1.0] [--radii 0.5 1.0] [--margin-db 10] [--t-ref 2.0] [--n-fig 41]
 """
 
@@ -78,6 +77,7 @@ from scipy.special import h1vp, hankel1, jv, jvp
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.noise import NoiseConfig  # noqa: E402
 from acoustic_sim.water.signatures import R_REF, f_max_for_grid  # noqa: E402
 
@@ -245,8 +245,8 @@ def dense_track(args, rx, f, w, model, a, n):
 
 
 def plot_requirement(path, args, curves, track, grids, tkey):
-    """Required direct-path cancellation along the track, one panel per grid and ship spectrum."""
-    n_r, n_c = len(args.dx), len(SPECTRA)
+    """Required direct-path cancellation along the track, one figure per grid and ship spectrum
+    (``<path stem>_dx<dx>_<spectrum>.png``)."""
     pg = {dx: grids[f"{dx:g}"]["processing_gain_db"][tkey] for dx in args.dx}
     values = np.concatenate([np.r_[b, m] - pg[key[0]] for key, (_, b, m) in curves.items()])
     y_lo = min(values.min(), -5.0) - 3.0
@@ -255,12 +255,10 @@ def plot_requirement(path, args, curves, track, grids, tkey):
     if stop_on_scale:
         y_hi = max(y_hi, args.stop_db + 4.0)
 
-    fig, axes = plt.subplots(n_r, n_c, figsize=(6.4 * n_c, 4.0 * n_r + 1.0), squeeze=False, sharex=True, sharey=True,
-                             layout="constrained")
-    for r, dx in enumerate(args.dx):
+    for dx in args.dx:
         g = grids[f"{dx:g}"]
-        for c_, spectrum in enumerate(SPECTRA):
-            ax = axes[r, c_]
+        for spectrum in SPECTRA:
+            fig, ax = new_figure((13, 8.5))
             ax.axhspan(y_lo, 0.0, color="#1baf7a", alpha=0.06, lw=0)
             ax.axhline(0.0, color="#1baf7a", lw=1.0)
             if stop_on_scale:
@@ -280,39 +278,34 @@ def plot_requirement(path, args, curves, track, grids, tkey):
                             "o", color=col, ms=5, mec="white", mew=0.8, zorder=3)
             if stop_on_scale:
                 ax.text(0.99, args.stop_db, f" {args.stop_db:g} dB stop criterion", transform=ax.get_yaxis_transform(),
-                        ha="right", va="bottom", fontsize=8, color=NOISE_COLOR)
+                        ha="right", va="bottom", fontsize=11, color=NOISE_COLOR)
             else:
                 ax.text(0.99, 0.98, f"\u2191 {args.stop_db:g} dB stop criterion (off scale)", transform=ax.transAxes,
-                        ha="right", va="top", fontsize=8, color=NOISE_COLOR)
+                        ha="right", va="top", fontsize=11, color=NOISE_COLOR)
             ax.text(0.99, 0.02, "below 0 dB: no cancellation needed", transform=ax.transAxes,
-                    ha="right", va="bottom", fontsize=8, color="#127a55")
+                    ha="right", va="bottom", fontsize=11, color="#127a55")
             spec_label = "flat" if spectrum == "flat" else "\u22126 dB/oct"
-            ax.set_title(f"dx = {dx:g} m: {args.f_min:.0f}\u2013{g['f_max_hz']:.0f} Hz, {spec_label} ship spectrum\n"
-                         f"processing gain {pg[dx]:.1f} dB (T = {args.t_ref:g} s), margin {args.margin_db:g} dB",
-                         fontsize=9.5)
+            ax.set_title(f"bistatic link budget, dx = {dx:g} m: direct path cancellation needed to see the UUV echo\n"
+                         f"{args.f_min:.0f} to {g['f_max_hz']:.0f} Hz, {spec_label} ship spectrum, "
+                         f"processing gain {pg[dx]:.1f} dB (T = {args.t_ref:g} s), margin {args.margin_db:g} dB")
             ax.set_ylim(y_lo, y_hi)
             ax.grid(alpha=0.25)
-            if r == n_r - 1:
-                ax.set_xlabel("time along the UUV crossing [s]  (ship at the same fraction of its run)")
-            if c_ == 0:
-                ax.set_ylabel("required direct-path cancellation [dB]")
-
-    handles = [Line2D([], [], color=COLORS.get((m, a), "#52514e"), lw=2.2, label=cylinder_label(m, a))
-               for m in MODELS for a in args.radii]
-    handles += [Line2D([], [], color="k", lw=2.2, label="best receiver (highest echo/direct)"),
-                Line2D([], [], color="k", lw=1.3, ls="--", label="median receiver"),
-                Patch(color="k", alpha=0.12, label="spread best \u2194 median"),
-                Line2D([], [], color="k", marker="o", ls="", mec="white", label="positions saved in budget.json")]
-    fig.legend(handles=handles, loc="outside lower center", ncol=4, fontsize=8, frameon=False)
-    fig.suptitle("Bistatic link budget: direct-path cancellation needed to see the UUV echo\n"
-                 "(below 0 dB the echo already clears the direct path after processing gain and margin; values are not clipped)",
-                 fontsize=11)
-    fig.savefig(path, dpi=130)
-    plt.close(fig)
+            ax.set_xlabel("time along the UUV crossing [s]  (ship at the same fraction of its run)")
+            ax.set_ylabel("required direct path cancellation [dB]")
+            handles = [Line2D([], [], color=COLORS.get((m, a), "#52514e"), lw=2.2, label=cylinder_label(m, a))
+                       for m in MODELS for a in args.radii]
+            handles += [Line2D([], [], color="k", lw=2.2, label="best receiver (highest echo/direct)"),
+                        Line2D([], [], color="k", lw=1.3, ls="--", label="median receiver"),
+                        Patch(color="k", alpha=0.12, label="spread best to median"),
+                        Line2D([], [], color="k", marker="o", ls="", mec="white", label="positions saved in budget.json")]
+            ax.legend(handles=handles, loc="upper left", fontsize=11, framealpha=0.9)
+            tag = "flat" if spectrum == "flat" else "6db_per_octave"
+            save_figure(fig, path.with_name(f"{path.stem}_dx{dx:g}_{tag}.png"), recording="bistatic")
 
 
 def plot_geometry(path, args, rx, is_das, ship_xy, uuv_xy, uuv_t, f, noise_p):
-    """Plan view of the scenario and the band levels along the DAS cable at mid-track."""
+    """Plan view of the scenario (``<path stem>_map.png``) and the band levels along the DAS cable at mid-track
+    (``<path stem>_cable_levels.png``)."""
     dx, spectrum = args.dx[0], "flat"
     w = ship_weights(f, spectrum)
     mid = len(ship_xy) // 2
@@ -322,9 +315,8 @@ def plot_geometry(path, args, rx, is_das, ship_xy, uuv_xy, uuv_t, f, noise_p):
     ref = levels[(ref_model, ref_a)]
     best = int(np.argmax(db(ref["echo"]) - db(ref["direct"])))
 
-    fig, (ax_map, ax_prof) = plt.subplots(1, 2, figsize=(15, 5.8), gridspec_kw={"width_ratios": [1.0, 1.25]}, layout="constrained")
-
     # plan view
+    fig, ax_map = new_figure((13, 9))
     W, H = args.domain
     ax_map.add_patch(Rectangle((0, 0), W, H, facecolor="#eaf3fb", edgecolor="#9fb8cc", lw=1.0))
     ax_map.plot(rx[is_das, 0], rx[is_das, 1], color=DAS_COLOR, lw=3.5, solid_capstyle="round",
@@ -334,8 +326,8 @@ def plot_geometry(path, args, rx, is_das, ship_xy, uuv_xy, uuv_t, f, noise_p):
                                  (uuv_xy, UUV_COLOR, "silent UUV", args.uuv_speed)):
         ax_map.annotate("", xy=xy[-1], xytext=xy[0], arrowprops=dict(arrowstyle="-|>", color=col, lw=2.0, mutation_scale=16))
         ax_map.plot(xy[:, 0], xy[:, 1], "o", color=col, ms=5, label=f"{name}, {speed:g} m/s")
-        for p, ti in zip(xy, uuv_t):
-            ax_map.annotate(f"{ti:.0f} s", p, textcoords="offset points", xytext=(5, 5), fontsize=7, color=col)
+        for p, ti in list(zip(xy, uuv_t))[::2]:
+            ax_map.annotate(f"{ti:.0f} s", p, textcoords="offset points", xytext=(5, 5), fontsize=11, color=col)
     sx, ux, bx = ship_xy[mid], uuv_xy[mid], rx[best]
     ax_map.plot(*np.c_[sx, bx], "--", color=NOISE_COLOR, lw=1.0, label="direct path (mid-track)")
     ax_map.plot(*np.c_[sx, ux], ":", color=SHIP_COLOR, lw=1.6, label="incident path")
@@ -345,12 +337,14 @@ def plot_geometry(path, args, rx, is_das, ship_xy, uuv_xy, uuv_t, f, noise_p):
     ax_map.set_aspect("equal")
     ax_map.set_xlim(-10, W + 10)
     ax_map.set_ylim(-10, H + 10)
-    ax_map.set_xlabel("x [m]")
-    ax_map.set_ylabel("y [m]")
-    ax_map.set_title("Geometry (positions labelled with the synchronous UUV time)", fontsize=10)
-    ax_map.legend(loc="upper right", fontsize=7.5, framealpha=0.9)
+    ax_map.set_xlabel("x (east) [m]")
+    ax_map.set_ylabel("y (north) [m]")
+    ax_map.set_title("bistatic link budget: geometry (positions labelled with the synchronous UUV time)")
+    ax_map.legend(loc="upper right", fontsize=11, framealpha=0.9)
+    save_figure(fig, path.with_name(f"{path.stem}_map.png"), recording="bistatic")
 
     # levels along the cable
+    fig, ax_prof = new_figure((13, 8.5))
     x = rx[is_das, 0]
     ax_prof.plot(x, db(ref["direct"][is_das]), color="k", lw=2.2, label="direct ship arrival")
     for (m, a), lv in levels.items():
@@ -362,21 +356,19 @@ def plot_geometry(path, args, rx, is_das, ship_xy, uuv_xy, uuv_t, f, noise_p):
                          arrowprops=dict(arrowstyle="<->", color="#eda100", lw=1.5))
         ax_prof.text(rx[best, 0], 0.5 * (db(ref["echo"][best]) + db(ref["direct"][best])),
                      f"  {db(ref['direct'][best]) - db(ref['echo'][best]):.1f} dB\n  direct/echo\n  ({ref_model}, a = {ref_a:g} m)",
-                     fontsize=8, color="#9a6a00", va="center")
+                     fontsize=11, color="#9a6a00", va="center")
     ax_prof.set_xlabel("position along the DAS cable, x [m]")
     ax_prof.set_ylabel("band level [dB re 1 Pa]")
-    ax_prof.set_title(f"Band levels on the cable at mid-track (t = {uuv_t[mid]:.0f} s)\n"
-                      f"dx = {dx:g} m, {args.f_min:.0f}\u2013{f[-1]:.0f} Hz, flat ship spectrum, {args.ship_level:g} Pa rms at 100 m",
-                      fontsize=10)
+    ax_prof.set_title(f"bistatic link budget: band levels on the cable at mid-track (t = {uuv_t[mid]:.0f} s)\n"
+                      f"dx = {dx:g} m, {args.f_min:.0f} to {f[-1]:.0f} Hz, flat ship spectrum, {args.ship_level:g} Pa rms at 100 m")
     ax_prof.grid(alpha=0.25)
-    ax_prof.legend(loc="center left", fontsize=7.5, framealpha=0.9)
-    fig.savefig(path, dpi=130)
-    plt.close(fig)
+    ax_prof.legend(loc="center left", fontsize=11, framealpha=0.9)
+    save_figure(fig, path.with_name(f"{path.stem}_cable_levels.png"), recording="bistatic")
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default="output/harbor_bistatic")
+    ap.add_argument("--out", default="output/studies/history/harbor_bistatic_budget")
     ap.add_argument("--dx", type=float, nargs="+", default=[0.5, 1.0], help="grid spacings [m]; f_max = f_max_for_grid(dx), fs = 600*5/dx")
     ap.add_argument("--f-min", type=float, default=100.0)
     ap.add_argument("--df", type=float, default=10.0, help="integration step [Hz]")
@@ -546,7 +538,7 @@ def main() -> None:
     plot_requirement(out / "budget.png", args, curves, track, results["grids"], tkey)
     f0, noise0 = bands[args.dx[0]]
     plot_geometry(out / "budget_geometry.png", args, rx, is_das, ship_xy, uuv_xy, uuv_t, f0, noise0)
-    print(f"\nwrote {out / 'budget.json'}, {out / 'budget.png'} and {out / 'budget_geometry.png'} ({time.time() - t0:.1f} s)")
+    print(f"\nwrote {out / 'budget.json'}, budget_dx*_*.png, budget_geometry_map.png and budget_geometry_cable_levels.png ({time.time() - t0:.1f} s)")
 
 
 if __name__ == "__main__":

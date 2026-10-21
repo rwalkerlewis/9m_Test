@@ -5,7 +5,7 @@ Usage::
 
     python examples/air/01_simulation/run_fdtd_3d.py --domain hills_vegetation \\
         --source-type moving --source-signal propeller \\
-        --array circular --output-dir output/valley_3d
+        --array circular --output-dir output/air/valley_3d
 
 This is the 3-D counterpart of ``run_fdtd.py``.  It uses
 :class:`~acoustic_sim.solver.fdtd_3d.FDTD3DSolver` and the 3-D domain /
@@ -64,13 +64,15 @@ def _plot_domain_xy(
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    from acoustic_sim.air.pipeline_plots import finish
+
     if z_index is None:
         z_index = model.nz // 2
     z_index = max(0, min(z_index, model.nz - 1))
     z_val = float(model.z[z_index])
     vel_slice = model.values[z_index, :, :]  # (ny, nx)
 
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig, ax = plt.subplots(figsize=(12, 10))
     ext = model.extent_xy
     im = ax.imshow(
         vel_slice, origin="lower",
@@ -124,11 +126,8 @@ def _plot_domain_xy(
 
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
-    ax.set_title(f"{title}  (z = {z_val:.1f} m)")
-    ax.legend(loc="upper right", fontsize=8)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
+    ax.legend(loc="upper right")
+    finish(fig, ax, output_path, f"{title}  (z = {z_val:.1f} m)", verbose=False)
     print(f"Wrote x-y domain plot to {output_path}")
 
 
@@ -144,13 +143,15 @@ def _plot_domain_xz(
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    from acoustic_sim.air.pipeline_plots import finish
+
     if y_index is None:
         y_index = model.ny // 2
     y_index = max(0, min(y_index, model.ny - 1))
     y_val = float(model.y[y_index])
     vel_slice = model.values[:, y_index, :]  # (nz, nx)
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(12, 7))
     ext = model.extent_xz
     im = ax.imshow(
         vel_slice, origin="lower",
@@ -171,10 +172,7 @@ def _plot_domain_xz(
 
     ax.set_xlabel("x [m]")
     ax.set_ylabel("z [m]")
-    ax.set_title(f"{title}  (y = {y_val:.1f} m)")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
+    finish(fig, ax, output_path, f"{title}  (y = {y_val:.1f} m)", verbose=False)
     print(f"Wrote x-z domain plot to {output_path}")
 
 
@@ -280,7 +278,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         "(default 4; with dx=0.25 → 1.0 m spacing)")
 
     # Output
-    p.add_argument("--output-dir", default="output/test_3d")
+    p.add_argument("--output-dir", default="output/air/test_3d")
 
     return p.parse_args(argv)
 

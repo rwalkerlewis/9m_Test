@@ -11,9 +11,11 @@ the window gated around the direct arrival.  A negative error is an early arriva
 ``straight_path_ms``: the travel time along the straight line through the scenario's sound speed map minus range over
 the chart's speed, what the water itself contributes (refraction aside).
 
-The result goes into the truth file's ``meta`` as ``propagation_error_ms`` and the figure ``propagation_error.png``.
-Variants (``--scheme``, ``--uniform-speed``, ``--dx``) describe the scenario changed, not the recording, and are written
-beside it as ``propagation_error_<variant>.json``, never into the truth.
+The result goes into the truth file's ``meta`` as ``propagation_error_ms``, ``propagation_error.json`` and the figure
+``propagation_error.png`` in the recording's folder.  Variants (``--scheme``, ``--uniform-speed``, ``--dx``) describe
+the scenario changed, not the recording, and are written to ``output/studies/propagation_error/<recording>/`` as
+``propagation_error_<variant>.json`` and ``.png``, never into the truth.  ``--plot-only`` redraws the figures of a
+recording and of its variants from their JSON (no FDTD run).
 
 Criterion (fixed before the k space recordings were built, task ``forward_fidelity``): the direct path arrival error
 at every hydrophone within 0.2 ms on the 0.5 m and 1 m recordings, within 0.1 ms on the simple harbor (whose water has
@@ -22,8 +24,8 @@ result (``None`` where there is no criterion).
 
 Usage::
 
-    python examples/harbor/01_datasets/harbor_propagation_error.py --dataset output/harbor_multistatic/fine/dataset
-        [--out output/harbor_multistatic] [--cpu]
+    python examples/harbor/01_datasets/harbor_propagation_error.py --dataset output/recordings/multistatic/dataset
+        [--out output/recordings/multistatic] [--cpu] [--plot-only]
 """
 
 from __future__ import annotations
@@ -36,7 +38,6 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import butter, hilbert, sosfiltfilt
 
@@ -44,6 +45,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
 from acoustic_sim.contract import Truth, contract_paths  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.sources import make_wavelet_ricker  # noqa: E402
 from acoustic_sim.water import HarborScenarioConfig, build_environment, build_layout, build_track, simulate_source  # noqa: E402
 from acoustic_sim.water.propagation import green2d  # noqa: E402
@@ -125,7 +127,7 @@ def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | No
     fs, n = cfg.fdtd.fs, cfg.fdtd.n_steps
     sig = make_wavelet_ricker(n, 1.0 / fs, 0.5 * (f_lo + f_hi))
     g = simulate_source(env, layout, cfg.fdtd, sig, position=(float(pos[0]), float(pos[1])),
-                        cache_dir=dataset.parent.parent / "cache" if (dataset.parent.parent / "cache").exists() else None)
+                        cache_dir=dataset.parent / "cache" if (dataset.parent / "cache").exists() else None)
     c = env.public().c_nominal
     rows = layout.slices["hydrophones"]
     sos = butter(4, (f_lo, f_hi), btype="bandpass", fs=fs, output="sos")
@@ -159,27 +161,57 @@ def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | No
     return res
 
 
-def figure(res: dict, path: Path, title: str) -> None:
-    fig, ax = plt.subplots(figsize=(10, 7))
+def figure(res: dict, path: Path, recording: str, variant: str = "") -> None:
+    """The arrival error at every hydrophone against its direction from the source (one panel)."""
+    fig, ax = new_figure((12.0, 8.0))
     h = res["hydrophones"]
-    ax.axhline(0.0, color="0.5", lw=1)
-    ax.plot([o["direction_deg"] for o in h], [o["error_ms"] for o in h], "o", ms=9, color="#1f77b4", label="envelope (group) arrival")
-    ax.plot([o["direction_deg"] for o in h], [o["phase_error_ms"] for o in h], "s", ms=7, mfc="none", color="#d62728",
+    ax.axhline(0.0, color="0.5", lw=1, label="no error")
+    ax.plot([o["direction_deg"] for o in h], [o["error_ms"] for o in h], "o", ms=10, color="#1f77b4", label="envelope (group) arrival")
+    ax.plot([o["direction_deg"] for o in h], [o["phase_error_ms"] for o in h], "s", ms=8, mfc="none", color="#d62728",
             label="nearest phase peak (ambiguous by a period)")
-    ax.legend(fontsize=9)
-    for o in h:
+    if all("straight_path_ms" in o for o in h):
+        ax.plot([o["direction_deg"] for o in h], [o["straight_path_ms"] for o in h], "x", ms=10, mew=2, color="#2ca02c",
+                label="straight path through the sound speed map")
+    ax.legend(fontsize=11, loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=2)
+    order = np.argsort([o["direction_deg"] for o in h])
+    for k, i in enumerate(order):                           # alternate above and below so neighbours do not overlap
+        o = h[i]
+        right = o["direction_deg"] > 270.0                  # labels near the right edge go to the left of the point
         ax.annotate(f"hydrophone {o['hydrophone'] + 1}, {o['range_m']:.0f} m", (o["direction_deg"], o["error_ms"]),
-                    xytext=(6, 4), textcoords="offset points", fontsize=9)
+                    xytext=(-8 if right else 8, 10 if k % 2 == 0 else -18), textcoords="offset points", fontsize=11,
+                    ha="right" if right else "left")
     ax.set_xlim(0, 360)
     ax.set_xlabel("direction from the source [degrees clockwise from north]")
     ax.set_ylabel("arrival minus range / chart speed [ms]")
-    ax.set_title(f"{title}: propagation error of the forward model, stationary pulse at ({res['source_xy'][0]:.0f}, "
-                 f"{res['source_xy'][1]:.0f}) m,\n{res['band_hz'][0]:.0f}-{res['band_hz'][1]:.0f} Hz, chart speed "
-                 f"{res['c_chart']:.1f} m/s (negative: faster than the chart)", fontsize=10)
+    ax.set_title(f"{recording}{variant}: propagation error, pulse at ({res['source_xy'][0]:.0f}, {res['source_xy'][1]:.0f}) m, "
+                 f"{res['band_hz'][0]:.0f} to {res['band_hz'][1]:.0f} Hz,\nchart speed {res['c_chart']:.1f} m/s "
+                 f"(negative: faster than the chart)")
     ax.grid(alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(path, dpi=110)
-    plt.close(fig)
+    save_figure(fig, path, recording=recording)
+
+
+def variant_name(stem: str) -> str:
+    """The variant of a ``propagation_error_<variant>`` file stem in words (empty for the recording itself)."""
+    parts = stem.removeprefix("propagation_error").strip("_").split("_")
+    words = []
+    for p in filter(None, parts):
+        if p == "uniform":
+            words.append("uniform speed")
+        elif p.startswith("dx"):
+            words.append(f"{p[2:]} m grid")
+        else:
+            words.append(p)
+    return "".join(f", {w}" for w in words)
+
+
+def plot_only(ds: Path) -> None:
+    """Redraw the figures of the recording of *ds* and of its variants from their JSON."""
+    rec = ds.parent.name
+    files = [ds.parent / "propagation_error.json"] + sorted((ROOT / "output" / "studies" / "propagation_error" / rec).glob("propagation_error*.json"))
+    for js in files:
+        if js.exists():
+            figure(json.loads(js.read_text()), js.with_suffix(".png"), rec, variant_name(js.stem))
+            print(f"wrote {js.with_suffix('.png')}")
 
 
 def main() -> None:
@@ -194,18 +226,22 @@ def main() -> None:
     ap.add_argument("--dx", type=float, default=None,
                     help="grid spacing [m] instead of the scenario's (a variant: propagation_error_dx<dx>.json, not into the truth)")
     ap.add_argument("--cpu", action="store_true")
+    ap.add_argument("--plot-only", action="store_true", help="redraw the figures from the JSON of the recording and its variants (no FDTD)")
     a = ap.parse_args()
     ds = Path(a.dataset)
-    out = Path(a.out) if a.out else (ds.parent.parent if ds.parent.name == "fine" else ds.parent)
+    if a.plot_only:
+        plot_only(ds)
+        return
+    variant = bool(a.scheme or a.uniform_speed or a.dx)
+    out = Path(a.out) if a.out else (ROOT / "output" / "studies" / "propagation_error" / ds.parent.name if variant else ds.parent)
     res = measure(ds, use_cuda=not a.cpu, band=tuple(a.band) if a.band else None, scheme=a.scheme, uniform_speed=a.uniform_speed,
                   dx=a.dx)
     out.mkdir(parents=True, exist_ok=True)
     stem = ("propagation_error" + (f"_{a.scheme}" if a.scheme else "") + ("_uniform" if a.uniform_speed else "")
             + (f"_dx{a.dx:g}" if a.dx else ""))
     (out / f"{stem}.json").write_text(json.dumps(res, indent=2))
-    figure(res, out / f"{stem}.png", out.name + (f", {a.scheme}" if a.scheme else "") + (", uniform speed" if a.uniform_speed else "")
-           + (f", {a.dx:g} m grid" if a.dx else ""))
-    print(f"{out.name}: " + ", ".join(f"hydrophone {o['hydrophone'] + 1} {o['error_ms']:+.2f} ms ({o['direction_deg']:.0f} deg, "
+    figure(res, out / f"{stem}.png", ds.parent.name, variant_name(stem))
+    print(f"{ds.parent.name}: " + ", ".join(f"hydrophone {o['hydrophone'] + 1} {o['error_ms']:+.2f} ms ({o['direction_deg']:.0f} deg, "
                                       f"{o['range_m']:.0f} m)" for o in res["hydrophones"]))
 
 

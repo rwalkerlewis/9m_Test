@@ -205,7 +205,7 @@ def test_signal_threshold(output_dir: Path, verbose: bool = True) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="Test signal threshold fix")
-    parser.add_argument("--output-dir", "-o", type=str, default="output/valley_test",
+    parser.add_argument("--output-dir", "-o", type=str, default="output/air/valley_test",
                        help="FDTD output directory")
     args = parser.parse_args()
     

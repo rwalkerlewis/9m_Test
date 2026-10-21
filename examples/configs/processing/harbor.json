@@ -1,6 +1,6 @@
 {
   "recording": "harbor",
-  "observation": "output/harbor/dataset.observation.npz",
+  "observation": "output/recordings/harbor/dataset.observation.npz",
   "band_hz": [
     12.0,
     78.0

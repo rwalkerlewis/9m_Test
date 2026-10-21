@@ -10,7 +10,7 @@ Configurations tested:
 3. Source classification + maneuver detection
 4. Fusion classification + maneuver detection
 
-Saves results to ``output/comparison_results.json`` and prints a
+Saves results to ``output/air/comparison_results.json`` and prints a
 formatted comparison table.
 
 Usage::
@@ -38,10 +38,10 @@ from run_pipeline import load_config, run_pipeline
 # ============================================================================
 
 SCENARIOS = [
-    ("valley_test",        Path("output/valley_test")),
-    ("valley_3d_test",     Path("output/valley_3d_test")),
-    ("isotropic_2D",       Path("output/isotropic_2D")),
-    ("erratic_quadcopter", Path("output/erratic_quadcopter")),
+    ("valley_test",        Path("output/air/valley_test")),
+    ("valley_3d_test",     Path("output/air/valley_3d_test")),
+    ("isotropic_2D",       Path("output/air/isotropic_2D")),
+    ("erratic_quadcopter", Path("output/air/erratic_quadcopter")),
 ]
 
 CONFIGS = [
@@ -241,7 +241,7 @@ def main():
     parser.add_argument("--hit-threshold", type=float, default=None,
                         help="Override hit threshold for all runs")
     parser.add_argument("--output", type=Path,
-                        default=Path("output/comparison_results.json"),
+                        default=Path("output/air/comparison_results.json"),
                         help="Output JSON path")
     args = parser.parse_args()
 
@@ -281,7 +281,7 @@ def main():
             cfg["ml"].update(config["ml"])
 
             # Use a temporary output dir to avoid overwriting.
-            out_dir = Path(f"output/comparison/{scenario_name}/{config['name']}")
+            out_dir = Path(f"output/air/comparison/{scenario_name}/{config['name']}")
             out_dir.mkdir(parents=True, exist_ok=True)
 
             try:

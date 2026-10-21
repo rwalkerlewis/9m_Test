@@ -30,21 +30,21 @@ source altitude), which are flagged in ``results_*.json`` under ``provenance`` a
 Usage::
 
     # Baseline (no ML)
-    python examples/air/02_pipeline/run_pipeline.py output/valley_test
+    python examples/air/02_pipeline/run_pipeline.py output/air/valley_test
 
     # 3-D valley
-    python examples/air/02_pipeline/run_pipeline.py output/valley_3d_test
+    python examples/air/02_pipeline/run_pipeline.py output/air/valley_3d_test
 
     # Source classification gate
-    python examples/air/02_pipeline/run_pipeline.py output/valley_test \\
+    python examples/air/02_pipeline/run_pipeline.py output/air/valley_test \\
         --enable-classification
 
     # Full ML (classification + maneuver + anomaly)
-    python examples/air/02_pipeline/run_pipeline.py output/valley_test \\
+    python examples/air/02_pipeline/run_pipeline.py output/air/valley_test \\
         --enable-classification --enable-maneuver --enable-anomaly
 
     # Custom config
-    python examples/air/02_pipeline/run_pipeline.py output/valley_3d_test \\
+    python examples/air/02_pipeline/run_pipeline.py output/air/valley_3d_test \\
         --config examples/configs/pipeline.config.json
 """
 
@@ -150,12 +150,12 @@ _DEFAULTS = {
         "enable_fusion_classification": False,
         "enable_fno_surrogate": False,
         "enable_anomaly_detection": False,
-        "classification_checkpoint": "output/models/acoustic_classifier.pt",
-        "maneuver_checkpoint": "output/models/maneuver_classifier.pt",
-        "fusion_checkpoint": "output/models/fusion_classifier.pt",
+        "classification_checkpoint": "output/air/models/acoustic_classifier.pt",
+        "maneuver_checkpoint": "output/air/models/maneuver_classifier.pt",
+        "fusion_checkpoint": "output/air/models/fusion_classifier.pt",
         "fno_checkpoint": "checkpoints/fno_demo/fno_final.pt",
-        "anomaly_checkpoint": "output/models/anomaly_detector.pt",
-        "anomaly_threshold_file": "output/models/anomaly_threshold.json",
+        "anomaly_checkpoint": "output/air/models/anomaly_detector.pt",
+        "anomaly_threshold_file": "output/air/models/anomaly_threshold.json",
         "anomaly_override_confidence_threshold": 0.7,
         "classification_confidence_threshold": 0.7,
         "maneuver_window_size": 20,
@@ -262,7 +262,7 @@ def load_ml_models(cfg_ml: dict) -> dict:
     if cfg_ml.get("enable_source_classification") or cfg_ml.get("enable_fusion_classification"):
         # Always load acoustic model as primary or fallback for fusion.
         ckpt = cfg_ml.get("classification_checkpoint",
-                          "output/models/acoustic_classifier.pt")
+                          "output/air/models/acoustic_classifier.pt")
         if Path(ckpt).exists():
             model = AcousticClassifier(n_classes=6)
             model.load_state_dict(torch.load(ckpt, map_location=device,
@@ -275,7 +275,7 @@ def load_ml_models(cfg_ml: dict) -> dict:
 
     if cfg_ml.get("enable_maneuver_detection"):
         ckpt = cfg_ml.get("maneuver_checkpoint",
-                          "output/models/maneuver_classifier.pt")
+                          "output/air/models/maneuver_classifier.pt")
         if Path(ckpt).exists():
             model = ManeuverClassifier(n_classes=6)
             model.load_state_dict(torch.load(ckpt, map_location=device,
@@ -288,7 +288,7 @@ def load_ml_models(cfg_ml: dict) -> dict:
 
     if cfg_ml.get("enable_fusion_classification"):
         ckpt = cfg_ml.get("fusion_checkpoint",
-                          "output/models/fusion_classifier.pt")
+                          "output/air/models/fusion_classifier.pt")
         if Path(ckpt).exists():
             model = FusionClassifier(n_classes=6)
             model.load_state_dict(torch.load(ckpt, map_location=device,
@@ -302,9 +302,9 @@ def load_ml_models(cfg_ml: dict) -> dict:
     if cfg_ml.get("enable_anomaly_detection"):
         from acoustic_sim.ml.anomaly_integration import AnomalyDetector
         anomaly_ckpt = cfg_ml.get("anomaly_checkpoint",
-                                   "output/models/anomaly_detector.pt")
+                                   "output/air/models/anomaly_detector.pt")
         anomaly_thresh = cfg_ml.get("anomaly_threshold_file",
-                                     "output/models/anomaly_threshold.json")
+                                     "output/air/models/anomaly_threshold.json")
         if Path(anomaly_ckpt).exists() and Path(anomaly_thresh).exists():
             models["anomaly"] = AnomalyDetector(
                 model_path=anomaly_ckpt,
@@ -1128,7 +1128,7 @@ def main():
     )
     parser.add_argument(
         "sim_dir", type=Path, nargs="?",
-        default=Path("output/valley_3d_test"),
+        default=Path("output/air/valley_3d_test"),
         help="Simulation output directory",
     )
     parser.add_argument(

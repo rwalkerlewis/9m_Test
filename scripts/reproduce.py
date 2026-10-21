@@ -21,12 +21,19 @@ exactly, compute time and latency informational.
     python scripts/reproduce.py              # run what is missing, compare, exit 1 on a failed comparison
     python scripts/reproduce.py --check      # only compare latest.json with summary.json
     python scripts/reproduce.py --update     # run, then make latest.json the committed summary.json
+    python scripts/reproduce.py --fill-docs  # only fill the docs' reproduce markers from summary.json
+
+Every number of ``docs/harbor.md``, in its tables and its prose, sits in a ``<!-- reproduce:KEY -->`` marker or a
+``<!-- reproduce-table:NAME -->`` block (:func:`resolve`); every run fills them from the committed ``summary.json`` and
+``--check`` fails when one differs.
 """
 
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -68,17 +75,18 @@ class Family:
 
 
 FAMILIES = {
-    "simple": Family("simple", "output/harbor_simple/fine/dataset", "output/harbor_simple/cache", True,
+    "simple": Family("simple", "output/recordings/simple/dataset", "output/recordings/simple/cache", True,
                      ["examples/harbor/01_datasets/harbor_multistatic_dataset.py", "--config", "examples/configs/harbor_simple.scenario.json",
-                      "--out", "output/harbor_simple"]),
-    "bistatic": Family("bistatic", "output/harbor_bistatic/fine/dataset", "output/harbor_bistatic/cache", False,
-                       ["examples/harbor/01_datasets/harbor_bistatic_dataset.py"]),
-    "multistatic": Family("multistatic", "output/harbor_multistatic/fine/dataset", "output/harbor_multistatic/cache", True,
-                          ["examples/harbor/01_datasets/harbor_multistatic_dataset.py"]),
-    "harbor": Family("harbor", "output/harbor/dataset", "output/harbor/cache", False, ["examples/harbor/01_datasets/harbor_m2_dataset.py"]),
-    "multistatic_b": Family("multistatic_b", "output/harbor_multistatic_b/fine/dataset", "output/harbor_multistatic_b/cache", True,
+                      "--out", "output/recordings/simple"]),
+    "bistatic": Family("bistatic", "output/recordings/bistatic/dataset", "output/recordings/bistatic/cache", False,
+                       ["examples/harbor/01_datasets/harbor_bistatic_dataset.py", "--out", "output/recordings/bistatic"]),
+    "multistatic": Family("multistatic", "output/recordings/multistatic/dataset", "output/recordings/multistatic/cache", True,
+                          ["examples/harbor/01_datasets/harbor_multistatic_dataset.py", "--out", "output/recordings/multistatic"]),
+    "harbor": Family("harbor", "output/recordings/harbor/dataset", "output/recordings/harbor/cache", False, ["examples/harbor/01_datasets/harbor_m2_dataset.py",
+                                                                                                         "--out", "output/recordings/harbor"]),
+    "multistatic_b": Family("multistatic_b", "output/recordings/multistatic_b/dataset", "output/recordings/multistatic_b/cache", True,
                             ["examples/harbor/01_datasets/harbor_multistatic_dataset.py", "--config",
-                             "examples/configs/harbor_multistatic_b.scenario.json", "--out", "output/harbor_multistatic_b"]),
+                             "examples/configs/harbor_multistatic_b.scenario.json", "--out", "output/recordings/multistatic_b"]),
 }
 
 
@@ -95,10 +103,7 @@ class Recording:
         base = ROOT / FAMILIES[self.family].dataset
         if self.seed == 0:
             return base
-        # output/harbor_<x>/seed<n>/dataset beside output/harbor_<x>/fine/dataset; output/harbor/seed<n>/dataset beside
-        # output/harbor/dataset (that one was output/seed<n>/ before, outside the recording's folder).
-        top = base.parent.parent if base.parent.name == "fine" else base.parent
-        return top / f"seed{self.seed}" / "dataset"
+        return base.parent / f"seed{self.seed}" / "dataset"     # output/recordings/<x>/seed<n>/dataset
 
 
 def recordings() -> list[Recording]:
@@ -165,28 +170,31 @@ def build_seed(fam: Family, seed: int, path: Path) -> None:
 
 
 def recording_dir(family: str) -> Path:
-    """``output/harbor_<x>`` of a family (where its propagation error figure goes)."""
-    ds = ROOT / FAMILIES[family].dataset
-    return ds.parent.parent if ds.parent.name == "fine" else ds.parent
+    """``output/recordings/<x>`` of a family (where its propagation error figure goes)."""
+    return (ROOT / FAMILIES[family].dataset).parent
 
 
-def propagation_error(fam: Family, band, rerun: bool) -> dict:
+def propagation_error(fam: Family, band, remeasure: bool) -> dict:
+    """The forward model's propagation error of *fam*: measured (one FDTD run of a pulse) only when its
+    ``propagation_error.json`` is missing or *remeasure*; otherwise its figure is redrawn from the JSON."""
     from acoustic_sim.contract import Truth, contract_paths
 
     ds = ROOT / fam.dataset
     out = recording_dir(fam.name)
     js = out / "propagation_error.json"
-    if rerun or not js.exists():
-        say(f"propagation error of {fam.name}")
-        python("examples/harbor/01_datasets/harbor_propagation_error.py", "--dataset", str(ds), "--out", str(out),
-               "--band", str(band[0]), str(band[1]))
+    script = "examples/harbor/01_datasets/harbor_propagation_error.py"
+    args = ("--dataset", str(ds), "--out", str(out), "--band", str(band[0]), str(band[1]))
+    if remeasure or not js.exists():
+        say(f"propagation error of {fam.name} (FDTD)")
+        python(script, *args)
     res = json.loads(js.read_text())
     truth_p = contract_paths(ds.with_suffix(".npz"))[1]
     meta = Truth.load(truth_p).meta.get("propagation_error_ms")
     if meta != res:                                                 # the truth file must carry it too
-        python("examples/harbor/01_datasets/harbor_propagation_error.py", "--dataset", str(ds), "--out", str(out),
-               "--band", str(band[0]), str(band[1]))
+        python(script, *args)
         res = json.loads(js.read_text())
+    else:
+        python(script, *args, "--plot-only")
     return res
 
 
@@ -311,13 +319,30 @@ def _pct(v) -> str:
     return "-" if v is None else f"{100 * v:.0f} %"
 
 
+HEADINGS = {
+    "realtime": "### Real time, tuning recordings beside test recordings\n\nPd: fraction of frames, from the first frame the "
+                "object could have been confirmed, with a confirmed track matched to it within 5 m (radiator tracks for what "
+                "radiates, echo tracks for silent bodies); test: the three noise seeds (each value) and multistatic_b. False "
+                "tracks: confirmed tracks matched to no object, per minute.",
+    "criteria": "### Criteria",
+    "characteristics": "### Characteristics against the truth (objects detected in at least 10 frames; the multistatic "
+                       "recordings, and the tuning and first test recording of the simple and bistatic harbors, where bodies "
+                       "are tracked by their echo)",
+    "source_levels": "### Source level estimates against the truth (radiator tracks)",
+    "propagation_error": "### Propagation error of the forward model (stationary pulse, arrival minus range over the chart speed)",
+}
+
+
 def tables(numbers: dict) -> str:
+    """``tables.md``: every table of :func:`tables_by_name` under its heading."""
+    return "\n".join(f"{HEADINGS[k]}\n\n{v}" for k, v in tables_by_name(numbers).items())
+
+
+def tables_by_name(numbers: dict) -> dict[str, str]:
+    """The tables of ``docs/harbor.md`` (markdown, no heading) by the name their ``reproduce-table`` block uses."""
     rec = numbers["recordings"]
-    lines = ["### Real time, tuning recordings beside test recordings", "",
-             "Pd: fraction of frames, from the first frame the object could have been confirmed, with a confirmed track matched to "
-             "it within 5 m (radiator tracks for what radiates, echo tracks for silent bodies); test: the three noise seeds "
-             "(each value) and multistatic_b. False tracks: confirmed tracks matched to no object, per minute.", "",
-             "| Recording | Split | Compute per s of data | Latency (median) | Pd per object | False tracks (per minute) |",
+    out = {}
+    lines = ["| Recording | Split | Compute per s of data | Latency (median) | Pd per object | False tracks (per minute) |",
              "|---|---|---|---|---|---|"]
     for fam in ("simple", "bistatic", "multistatic", "harbor", "multistatic_b"):
         names = [n for n, r in rec.items() if r["family"] == fam]
@@ -343,7 +368,8 @@ def tables(numbers: dict) -> str:
             lat = " / ".join(f"{rec[n]['latency_s']['median']:.1f} s" for n in sel)
             ft = " / ".join(f"{rec[n]['false_tracks']['count']} ({rec[n]['false_tracks']['per_minute']:.1f})" for n in sel)
             lines.append(f"| {fam} | {split} | {comp} | {lat} | {'; '.join(objs)} | {ft} |")
-    lines += ["", "### Criteria", "", "| Criterion | Values | Result |", "|---|---|---|"]
+    out["realtime"] = "\n".join(lines) + "\n"
+    lines = ["| Criterion | Values | Result |", "|---|---|---|"]
     for c in numbers["criteria"]:
         vals = c.get("values")
         if c["id"] == "false_tracks":
@@ -354,9 +380,8 @@ def tables(numbers: dict) -> str:
             vals = {k: None if v is None else round(v, 2) for k, v in vals.items()}
         result = "pass" if c["passed"] else ("**not met: not testable**" if c.get("note") else "**fail**")
         lines.append(f"| {c['text']} | {vals} | {result} |")
-    lines += ["", "### Characteristics against the truth (objects detected in at least 10 frames; the multistatic recordings, and "
-              "the tuning and first test recording of the simple and bistatic harbors, where bodies are tracked by their echo)", "",
-              "| Recording | Object | True type, size | Seen | Detected frames | Size ratio [dB] | Size indicator | Echo extent along / across [m] | "
+    out["criteria"] = "\n".join(lines) + "\n"
+    lines = ["| Recording | Object | True type, size | Seen | Detected frames | Size ratio [dB] | Size indicator | Echo extent along / across [m] | "
               "Source level [Pa] (true) | Half max width [m] | Speed [m/s] (true) |", "|---|---|---|---|---|---|---|---|---|---|---|"]
     thr = numbers.get("size_threshold_db", 0.0)
     for name in ("multistatic", "multistatic_b", "simple", "simple_seed1", "bistatic", "bistatic_seed1"):
@@ -371,17 +396,17 @@ def tables(numbers: dict) -> str:
             sp = "-" if m["speed"] is None else f"{m['speed']:.1f} ({r['true_speed']:.1f})"
             lines.append(f"| {name} | {r['object']} | {r['type']}, {size} | {', '.join(f'{k} {v}' for k, v in r['seen'].items())} | "
                          f"{r['detected_frames']} | {'-' if ratio is None else f'{ratio:+.1f}'} | {ind} | {ext} | {sl} | {w} | {sp} |")
-    lines += ["", "### Source level estimates against the truth (radiator tracks; calibration constant "
-              f"{numbers['level_calibration']:.4f} from the simple harbor's tuning recording)", "",
-              "| Recording | Object | True [Pa] | Estimate [Pa] | Error [dB] |", "|---|---|---|---|---|"]
+    out["characteristics"] = "\n".join(lines) + "\n"
+    lines = ["| Recording | Object | True [Pa] | Estimate [Pa] | Error [dB] |", "|---|---|---|---|---|"]
     for row in numbers["source_levels"]:
         lines.append(f"| {row['recording']} | {row['object']} | {row['true_pa']:g} | {row['estimate_pa']:.3f} | {row['error_db']:+.1f} |")
-    lines += ["", "### Propagation error of the forward model (stationary pulse, arrival minus range over the chart speed)", "",
-              "| Recording | Band [Hz] | Chart speed [m/s] | Per hydrophone: error [ms] (direction, range) |", "|---|---|---|---|"]
+    out["source_levels"] = "\n".join(lines) + "\n"
+    lines = ["| Recording | Band [Hz] | Chart speed [m/s] | Per hydrophone: error [ms] (direction, range) |", "|---|---|---|---|"]
     for fam, p in numbers["propagation_error_ms"].items():
         per = "; ".join(f"{o['error_ms']:+.2f} ({o['direction_deg']:.0f} deg, {o['range_m']:.0f} m)" for o in p["hydrophones"])
         lines.append(f"| {fam} | {p['band_hz'][0]:.0f}-{p['band_hz'][1]:.0f} | {p['c_chart']:.1f} | {per} |")
-    return "\n".join(lines) + "\n"
+    out["propagation_error"] = "\n".join(lines) + "\n"
+    return out
 
 
 def source_levels(numbers: dict) -> list[dict]:
@@ -396,12 +421,154 @@ def source_levels(numbers: dict) -> list[dict]:
 
 
 # ----------------------------------------------------------------------
+# Numbers in the prose of the docs: <!-- reproduce:KEY -->text<!-- /reproduce -->
+# ----------------------------------------------------------------------
+#
+# KEY is ``[aggregate:][@file:]path[|format]``:
+#
+# * path: a slash separated path into ``output/reproduce/summary.json`` (``recordings/simple/objects/wreck/pd/echo``);
+#   ``*`` and ``?`` match within a key (``recordings/*_seed*/false_tracks/per_minute``; ``?`` also matches a slash
+#   inside a key), ``[i]`` indexes a list, ``[*]`` takes every element and ``[field=pattern]`` the elements whose
+#   field matches one of the comma separated patterns (``source_levels[recording=simple*][object=ferry,boat]/error_db``);
+# * ``@file:``: the path is into another regenerated JSON under ``output/`` instead
+#   (``@recordings/simple/build.json:fdtd_wall_s``);
+# * aggregate (over every value the path matches, None dropped): ``min``, ``max``, ``absmax`` (the value of largest
+#   magnitude), ``range`` ("a to b", one value when equal), ``count``, ``ntrue`` (how many are true), ``sum``;
+# * format: ``pct`` (percent, no decimals: "86 %"), ``frac2`` (0.86), ``f0`` ``f1`` ``f2`` ``f3`` (decimals), ``+f1``
+#   ``+f2`` (signed), ``absf2`` (magnitude), ``int``, ``db`` (20 log10, one decimal, signed: "+2.4"), ``str`` (default).
+#
+# Tables: <!-- reproduce-table:NAME --> ... <!-- /reproduce-table --> holds the table NAME of :func:`tables` (or, for
+# ``file:<path under output/>``, that generated markdown file) and is rewritten on every run.
+
+DOCS = [ROOT / "docs" / "harbor.md"]
+MARK = re.compile(r"<!-- reproduce:(?P<key>[^>]*?) -->(?P<text>.*?)<!-- /reproduce -->", re.S)
+TABLE = re.compile(r"(<!-- reproduce-table:(?P<name>[^>]*?) -->\n)(?P<text>.*?)(<!-- /reproduce-table -->)", re.S)
+
+
+def _match(node, parts: list[str]) -> list:
+    if not parts:
+        return [node]
+    head, rest = parts[0], parts[1:]
+    m = re.fullmatch(r"(.*?)((?:\[[^\]]+\])*)", head)
+    name, idx = m.group(1), re.findall(r"\[([^\]]+)\]", m.group(2))
+    if not isinstance(node, dict):
+        return []
+    keys = [k for k in node if fnmatch.fnmatchcase(k, name)] if any(c in name for c in "*?[") else ([name] if name in node else [])
+    vals = [node[k] for k in keys]
+    for i in idx:
+        nxt = []
+        for v in vals:
+            if "=" in i:                                       # [field=pattern]: the list elements whose field matches
+                f, pat = i.split("=", 1)
+                nxt += [x for x in (v if isinstance(v, list) else [v])
+                        if isinstance(x, dict) and any(fnmatch.fnmatchcase(str(x.get(f)), p) for p in pat.split(","))]
+            elif isinstance(v, list):
+                nxt += v if i == "*" else ([v[int(i)]] if int(i) < len(v) else [])
+        vals = nxt
+    out = []
+    for v in vals:
+        out += _match(v, rest)
+    return out
+
+
+def _fmt(v, fmt: str) -> str:
+    if v is None:
+        return "-"
+    if fmt == "pct":
+        return f"{100 * v:.0f} %"
+    if fmt == "frac2":
+        return f"{v:.2f}"
+    if fmt == "int":
+        return f"{int(round(v))}"
+    if fmt.startswith("absf"):
+        return f"{abs(v):.{int(fmt[4:])}f}"
+    if fmt == "db":
+        return f"{20 * np.log10(v):+.1f}"
+    if fmt.startswith("+f"):
+        return f"{v:+.{int(fmt[2:])}f}"
+    if fmt.startswith("f"):
+        return f"{v:.{int(fmt[1:])}f}"
+    return str(v)
+
+
+def resolve(key: str, summary: dict) -> str:
+    """The text of the marker *key* (see above) from *summary* or the file the key names."""
+    key, _, fmt = key.partition("|")
+    agg = None
+    m = re.match(r"(min|max|absmax|range|count|ntrue|sum):(.*)", key)
+    if m:
+        agg, key = m.group(1), m.group(2)
+    src = summary
+    if key.startswith("@"):
+        f, _, key = key[1:].partition(":")
+        src = json.loads((ROOT / "output" / f).read_text())
+    vals = _match(src, key.split("/"))
+    if agg is None:
+        if len(vals) != 1:
+            raise KeyError(f"reproduce marker {key!r}: {len(vals)} values")
+        return _fmt(vals[0], fmt)
+    vals = [v for v in vals if v is not None]
+    if agg == "count":
+        return str(len(vals))
+    if agg == "ntrue":
+        return str(sum(bool(v) for v in vals))
+    if agg == "sum":
+        return _fmt(sum(vals), fmt or "int")
+    if not vals:
+        raise KeyError(f"reproduce marker {key!r}: no values")
+    if agg == "absmax":
+        return _fmt(max(vals, key=abs), fmt)
+    lo, hi = _fmt(min(vals), fmt), _fmt(max(vals), fmt)
+    if agg == "min":
+        return lo
+    if agg == "max":
+        return hi
+    if lo == hi:
+        return lo
+    if fmt == "pct":
+        return f"{lo[:-2]} to {hi}"
+    return f"{lo} to {hi}"
+
+
+def fill_docs(summary: dict, write: bool) -> list[str]:
+    """Every marker and table block of :data:`DOCS` filled from *summary*; written when *write*.  Returns the markers
+    whose text in the docs differs from what *summary* gives (empty: the docs are current)."""
+    named = tables_by_name(summary)
+    stale = []
+    for doc in DOCS:
+        text = doc.read_text()
+
+        def mark(m):
+            new = resolve(m.group("key"), summary)
+            if new != m.group("text"):
+                stale.append(f"{doc.name}: {m.group('key')}: {m.group('text')!r} -> {new!r}")
+            return f"<!-- reproduce:{m.group('key')} -->{new}<!-- /reproduce -->"
+
+        def table(m):
+            name = m.group("name")
+            if name.startswith("file:"):
+                new = (ROOT / "output" / name[5:]).read_text().strip() + "\n"
+            else:
+                new = named[name].strip() + "\n"
+            if new != m.group("text"):
+                stale.append(f"{doc.name}: table {name}")
+            return m.group(1) + new + m.group(4)
+
+        out = TABLE.sub(table, MARK.sub(mark, text))
+        if write and out != text:
+            doc.write_text(out)
+    return stale
+
+
+# ----------------------------------------------------------------------
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--check", action="store_true", help="only compare output/reproduce/latest.json with the committed summary.json")
     ap.add_argument("--update", action="store_true", help="after the run, copy latest.json to summary.json (commit it)")
     ap.add_argument("--rerun", action="store_true", help="run the chain again on recordings that already have results")
+    ap.add_argument("--fill-docs", action="store_true", help="only fill the reproduce markers of the docs from summary.json")
+    ap.add_argument("--remeasure", action="store_true", help="measure the propagation error again (one FDTD run per geometry)")
     ap.add_argument("--only", nargs="*", default=None, help="recordings to run (default: all)")
     ap.add_argument("--no-walkthrough", action="store_true")
     ap.add_argument("--no-video", action="store_true")
@@ -410,7 +577,17 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     latest = OUT / "latest.json"
     if a.check:
-        return 0 if print_comparison(json.loads(latest.read_text()), committed_summary()) else 1
+        ok = print_comparison(json.loads(latest.read_text()), committed_summary())
+        stale = fill_docs(json.loads((OUT / "summary.json").read_text()), write=False)
+        for line in stale:
+            print(f"docs not filled from summary.json: {line}")
+        print(f"docs: {len(stale)} markers or tables differ from output/reproduce/summary.json"
+              + (" (run scripts/reproduce.py --fill-docs)" if stale else ""))
+        return 0 if ok and not stale else 1
+    if a.fill_docs:
+        stale = fill_docs(json.loads((OUT / "summary.json").read_text()), write=True)
+        print(f"filled {len(stale)} markers or tables of {', '.join(d.name for d in DOCS)} from output/reproduce/summary.json")
+        return 0
 
     import harbor_stream as hs
 
@@ -426,7 +603,7 @@ def main() -> int:
             build_seed(FAMILIES[r.family], r.seed, r.dataset)
     for fam in sorted({r.family for r in recs}):
         band = load_processing(CONFIGS / "processing" / f"{'multistatic' if fam == 'multistatic_b' else fam}.json").band
-        propagation_error(FAMILIES[fam], band, a.rerun)
+        propagation_error(FAMILIES[fam], band, a.remeasure)
     for r in recs:
         out = OUT / "runs" / r.name
         if (out / "summary.json").exists() and not a.rerun:
@@ -454,7 +631,7 @@ def main() -> int:
             numbers["recordings"][r.name] = collect(r, json.loads(p.read_text()))
     for name in ("multistatic", "multistatic_b", "simple", "simple_seed1", "bistatic", "bistatic_seed1"):
         numbers["characteristics"][name] = characteristics_rows(name)
-    cal = json.loads((ROOT / "output" / "harbor_level_calibration" / "calibration.json").read_text())
+    cal = json.loads((ROOT / "output" / "studies" / "level_calibration" / "calibration.json").read_text())
     numbers["level_calibration"] = cal["level_calibration"]
     numbers["size_threshold_db"] = load_processing(CONFIGS / "processing" / "multistatic.json").characteristics().size_threshold_db
     numbers["source_levels"] = source_levels(numbers)
@@ -475,8 +652,9 @@ def main() -> int:
     if a.update:
         shutil.copy(latest, OUT / "summary.json")
         print("updated output/reproduce/summary.json")
-        return 0
-    return 0 if ok else 1
+    stale = fill_docs(json.loads((OUT / "summary.json").read_text()), write=True)
+    print(f"filled {len(stale)} markers or tables of {', '.join(d.name for d in DOCS)} from output/reproduce/summary.json")
+    return 0 if ok or a.update else 1
 
 
 if __name__ == "__main__":

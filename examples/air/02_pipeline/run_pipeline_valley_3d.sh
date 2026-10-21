@@ -2,7 +2,7 @@
 # Pipeline run — valley_3d_test (3-D hills_vegetation domain)
 set -euo pipefail
 
-SIM_DIR=output/valley_3d_test
+SIM_DIR=output/air/valley_3d_test
 SOURCE_SPEED=50.0
 CONFIG=examples/configs/pipeline.config.json
 

@@ -12,7 +12,7 @@ Run once and reuse; existing cells are skipped (resume-safe).
 
 Usage::
 
-    python examples/harbor/90_history/harbor_survey_grid.py [--grid-dx 20] [--out output/harbor] \\
+    python examples/harbor/90_history/harbor_survey_grid.py [--grid-dx 20] [--out output/studies/history/harbor_survey_grid] \\
                                           [--time 6] [--workers 4]
 """
 
@@ -85,7 +85,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default=str(Path(__file__).resolve().parents[2] / "configs" / "harbor.scenario.json"))
     ap.add_argument("--grid-dx", type=float, default=20.0, help="scan grid spacing [m]")
-    ap.add_argument("--out", default="output/harbor")
+    ap.add_argument("--out", default="output/studies/history/harbor_survey_grid")
     ap.add_argument("--time", type=float, default=6.0, help="simulated seconds per cell")
     ap.add_argument("--workers", type=int, default=4)
     args = ap.parse_args()

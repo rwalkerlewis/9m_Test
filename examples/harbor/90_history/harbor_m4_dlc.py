@@ -16,9 +16,9 @@ Usage::
 
     python examples/harbor/90_history/harbor_m4_dlc.py \\
         [--config examples/configs/harbor.scenario.json] \\
-        [--out output/harbor] \\
-        [--cnn output/harbor/cnn_classifier.pt] \\
-        [--cvae output/harbor/cvae_anomaly.pt] \\
+        [--out output/studies/history/harbor_m4_dlc] \\
+        [--cnn output/studies/history/harbor_train_classifier/cnn_classifier.pt] \\
+        [--cvae output/studies/history/harbor_train_anomaly/cvae_anomaly.pt] \\
         [--pfa 0.01] \\
         [--cal-seeds 4] \\
         [--no-suppress]
@@ -56,6 +56,7 @@ from acoustic_sim.water.detection import (  # noqa: E402
     threshold_from_maxima,
 )
 from acoustic_sim.water.evaluate import score_detections, truth_labels  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.water.suppression import run_ais_aware  # noqa: E402
 from acoustic_sim.ml.features import compute_mel_spectrogram  # noqa: E402
@@ -212,9 +213,9 @@ def _compute_roc(
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default=str(Path(__file__).resolve().parents[2] / "configs" / "harbor.scenario.json"))
-    ap.add_argument("--out", default="output/harbor")
-    ap.add_argument("--cnn", default="output/harbor/cnn_classifier.pt")
-    ap.add_argument("--cvae", default="output/harbor/cvae_anomaly.pt")
+    ap.add_argument("--out", default="output/studies/history/harbor_m4_dlc")
+    ap.add_argument("--cnn", default="output/studies/history/harbor_train_classifier/cnn_classifier.pt")
+    ap.add_argument("--cvae", default="output/studies/history/harbor_train_anomaly/cvae_anomaly.pt")
     ap.add_argument("--pfa", type=float, default=0.01,
                     help="per-frame false-alarm probability for CFAR threshold")
     ap.add_argument("--cal-seeds", type=int, default=4,
@@ -356,7 +357,7 @@ def main() -> None:
     # Step 7a — m4_track_map.png
     # ------------------------------------------------------------------
     print("Plotting track map …", flush=True)
-    fig, ax = plt.subplots(figsize=(10, 7.5))
+    fig, ax = new_figure((12, 10))
     plot_harbor(env, layout, ax=ax)
 
     # Truth tracks.
@@ -397,20 +398,18 @@ def main() -> None:
                    edgecolors="k", linewidths=0.4, zorder=5,
                    label="detections (colour=CNN label, size∝anomaly)")
 
-    ax.set_title(
-        f"M4 DLC — detect–locate–classify  "
-        f"(Pfa={args.pfa}, suppress={args.suppress})"
-    )
+    ax.set_title(f"harbor (5 m): detect, locate, classify (Pfa={args.pfa}, suppress={args.suppress})")
+    ax.set_xlabel("x (east) [m]")
+    ax.set_ylabel("y (north) [m]")
     # Deduplicate legend entries.
     handles, labels_leg = ax.get_legend_handles_labels()
     seen: dict[str, object] = {}
     for h, l in zip(handles, labels_leg):
         if l not in seen:
             seen[l] = h
-    ax.legend(list(seen.values()), list(seen.keys()), loc="upper left", fontsize=8)
-    annotate_figure(fig, run.provenance)
-    fig.savefig(out / "m4_track_map.png", dpi=100, bbox_inches="tight")
-    plt.close(fig)
+    ax.legend(list(seen.values()), list(seen.keys()), loc="upper left", fontsize=11)
+    fig.axes[0].set_title(fig.axes[0].get_title() + '\n' + run.provenance.label())
+    save_figure(fig, out / "m4_track_map.png", recording="harbor")
     print(f"  → {out / 'm4_track_map.png'}", flush=True)
 
     # ------------------------------------------------------------------
@@ -437,19 +436,18 @@ def main() -> None:
             if np.isnan(roc_auc):
                 roc_skip_reason = "only one class present in labels — ROC not computed"
             else:
-                fig_roc, ax_roc = plt.subplots(figsize=(6, 5))
+                fig_roc, ax_roc = new_figure((11, 9))
                 ax_roc.plot(fpr, tpr, "b-", lw=2, label=f"CVAE anomaly score (AUC = {roc_auc:.3f})")
                 ax_roc.plot([0, 1], [0, 1], "k--", lw=0.8, label="chance")
                 ax_roc.set_xlabel("False Positive Rate (ship labelled non-ship)")
                 ax_roc.set_ylabel("True Positive Rate (non-ship correctly identified)")
-                ax_roc.set_title("ROC: CVAE anomaly score — non-ship (uuv/diver) vs ship")
-                ax_roc.legend(loc="lower right", fontsize=9)
+                ax_roc.set_title("harbor (5 m): ROC of the CVAE anomaly score, non-ship (uuv, diver) against ship")
+                ax_roc.legend(loc="lower right")
                 ax_roc.set_xlim(0, 1)
                 ax_roc.set_ylim(0, 1.02)
                 ax_roc.grid(alpha=0.3)
-                annotate_figure(fig_roc, run.provenance)
-                fig_roc.savefig(out / "m4_roc.png", dpi=100, bbox_inches="tight")
-                plt.close(fig_roc)
+                fig_roc.axes[0].set_title(fig_roc.axes[0].get_title() + '\n' + run.provenance.label())
+                save_figure(fig_roc, out / "m4_roc.png", recording="harbor")
                 print(f"  → {out / 'm4_roc.png'}  AUC = {roc_auc:.3f}", flush=True)
     else:
         roc_skip_reason = "classifier not available"

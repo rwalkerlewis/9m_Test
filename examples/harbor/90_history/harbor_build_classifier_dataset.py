@@ -9,7 +9,7 @@ Usage::
 
     python examples/harbor/90_history/harbor_build_classifier_dataset.py \
         [--config examples/configs/harbor.scenario.json] \
-        [--out output/harbor] \
+        [--out output/studies/history/harbor_build_classifier_dataset] \
         [--n-seeds 8] \
         [--win-s 4.0] \
         [--hop-s 2.0] \
@@ -87,7 +87,7 @@ def _extract_windows(
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default=str(Path(__file__).resolve().parents[2] / "configs" / "harbor.scenario.json"))
-    ap.add_argument("--out", default="output/harbor")
+    ap.add_argument("--out", default="output/studies/history/harbor_build_classifier_dataset")
     ap.add_argument("--n-seeds", type=int, default=8)
     ap.add_argument("--win-s", type=float, default=4.0)
     ap.add_argument("--hop-s", type=float, default=2.0)

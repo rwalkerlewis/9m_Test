@@ -166,7 +166,7 @@ python examples/air/01_simulation/run_fdtd.py \
     --source-speed 50 --blade-count 3 --rpm 3600 --harmonics 14 \
     --array circular --receiver-count 16 --receiver-radius 2.0 \
     --total-time 3.0 --dx 0.18 --fd-order 2 \
-    --output-dir output/valley_test --use-cuda
+    --output-dir output/air/valley_test --use-cuda
 ```
 
 ### With MPI
@@ -176,7 +176,7 @@ mpirun -np 4 python examples/air/01_simulation/run_fdtd.py \
     --domain isotropic --source-type static \
     --source-signal ricker --source-freq 25 \
     --array circular --total-time 0.3 \
-    --output-dir output/test
+    --output-dir output/air/test
 ```
 
 ### All 18 combinations
@@ -240,7 +240,7 @@ python examples/air/01_simulation/run_fdtd_3d.py \
     --array circular --receiver-count 16 --receiver-radius 2.0 \
     --receiver-cz 5.5 \
     --total-time 3.0 --fd-order 8 \
-    --output-dir output/valley_3d_test --use-cuda
+    --output-dir output/air/valley_3d_test --use-cuda
 ```
 
 ---
@@ -251,17 +251,17 @@ python examples/air/01_simulation/run_fdtd_3d.py \
 
 ```bash
 # 2-D
-python examples/air/02_pipeline/run_pipeline.py output/valley_test
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_test
 
 # 3-D
-python examples/air/02_pipeline/run_pipeline.py output/valley_3d_test
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_3d_test
 
 # Custom config
-python examples/air/02_pipeline/run_pipeline.py output/valley_test \
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_test \
     --config examples/configs/pipeline.config.json
 
 # CLI overrides
-python examples/air/02_pipeline/run_pipeline.py output/valley_test \
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_test \
     --source-speed 60 --hit-threshold 3.0 --max-hits 5
 ```
 
@@ -269,14 +269,14 @@ python examples/air/02_pipeline/run_pipeline.py output/valley_test \
 
 ```bash
 # With source classification gate
-python examples/air/02_pipeline/run_pipeline.py output/valley_test --enable-classification
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_test --enable-classification
 
 # Full ML stack
-python examples/air/02_pipeline/run_pipeline.py output/valley_test \
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_test \
     --enable-classification --enable-maneuver --enable-anomaly
 
 # Custom classification threshold
-python examples/air/02_pipeline/run_pipeline.py output/valley_test \
+python examples/air/02_pipeline/run_pipeline.py output/air/valley_test \
     --enable-classification --classification-threshold 0.8
 ```
 
@@ -287,7 +287,7 @@ in `metadata.json`.
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `sim_dir` | `output/valley_3d_test` | simulation output directory |
+| `sim_dir` | `output/air/valley_3d_test` | simulation output directory |
 | `--config` | `examples/configs/pipeline.config.json` | JSON config file |
 | `--output-dir` | same as `sim_dir` | output directory for plots |
 | `--source-speed` | from config (50.0) | override ground-truth source speed |
@@ -313,7 +313,7 @@ in `metadata.json`.
 
 ## ML Training
 
-Pre-trained weights are shipped in `output/models/`.  To retrain:
+Pre-trained weights are shipped in `output/air/models/`.  To retrain:
 
 ```bash
 # Train the source, maneuver and fusion classifiers (generates synthetic data + trains)
@@ -326,8 +326,8 @@ python src/acoustic_sim/ml/anomaly_training.py
 python examples/air/03_ml/run_ml_demo.py
 ```
 
-Both training scripts write to `output/models/`, replacing the shipped weights. The ML tests
-train small models of their own in a temporary directory and leave `output/models/` untouched.
+Both training scripts write to `output/air/models/`, replacing the shipped weights. The ML tests
+train small models of their own in a temporary directory and leave `output/air/models/` untouched.
 
 ---
 
@@ -347,7 +347,7 @@ bash examples/air/01_simulation/run_wind_circular.sh
 ```
 
 Each script sets all parameters as shell variables and runs `run_fdtd.py`
-or `run_fdtd_3d.py` (`run_wind_circular.sh` writes to `output/my_test`).
+or `run_fdtd_3d.py` (`run_wind_circular.sh` writes to `output/air/my_test`).
 `run_pipeline_{valley,valley_3d,erratic,isotropic}.sh` run only the pipeline on a
 pre-computed dataset; set `ENABLE_CLASSIFICATION=true` (or `ENABLE_MANEUVER`,
 `ENABLE_FUSION`, `ENABLE_ANOMALY`) to add ML flags.
@@ -362,8 +362,8 @@ interpolated without re-running the FDTD:
 
 ```bash
 python examples/air/01_simulation/extract_array_traces.py \
-    --input-dir output/valley_3d_test \
-    --output-dir output/valley_3d_array2 \
+    --input-dir output/air/valley_3d_test \
+    --output-dir output/air/valley_3d_array2 \
     --array circular --receiver-count 16 --receiver-radius 2.0 \
     --receiver-cx -5.0 --receiver-cy 7.0 --receiver-cz 5.5
 ```
@@ -379,7 +379,7 @@ python -m acoustic_sim.air.detection_main \
     --trajectory loiter_approach \
     --domain isotropic \
     --total-time 60 \
-    --output-dir output/mfp_demo
+    --output-dir output/air/mfp_demo
 ```
 
 Or programmatically:
@@ -414,12 +414,12 @@ compute-intensive, so source gathers are cached and reused.
 ### Generate a passive-sensing dataset
 
 ```bash
-python examples/harbor/02_forward_model/harbor_m1_demo.py --out output/harbor_m1
+python examples/harbor/02_forward_model/harbor_m1_demo.py --out output/studies/history/harbor_m1_demo
 
 # Full default harbor: cached vessel gathers, noisy traces, AIS, overview figures.
 python examples/harbor/01_datasets/harbor_m2_dataset.py \
     --config examples/configs/harbor.scenario.json \
-    --out output/harbor --workers 4
+    --out output/recordings/harbor --workers 4
 ```
 
 The default scenario includes the ferry, tug and moored ship plus two UUV tracks, a diver, and a
@@ -431,11 +431,11 @@ and optional direct/scattered/noise components.
 
 ```bash
 # Baseline detection/localization sweeps and comparison with AIS suppression.
-python examples/harbor/90_history/harbor_m3_detect.py --out output/harbor --pfa 0.01
+python examples/harbor/90_history/harbor_m3_detect.py --out output/studies/history/harbor_m3_detect --pfa 0.01
 
 # Detection, localization, optional classifier/anomaly inference and scoring.
 python examples/harbor/90_history/harbor_m4_dlc.py \
-    --config examples/configs/harbor.scenario.json --out output/harbor
+    --config examples/configs/harbor.scenario.json --out output/studies/history/harbor_m4_dlc
 ```
 
 M3 and M4 consume the dataset/cache generated by M2. M4 can be run without CNN/CVAE checkpoints;
@@ -451,16 +451,16 @@ python examples/harbor/90_history/harbor_train_anomaly.py --epochs 50
 ### Simulate a body echo and localize it bistatically
 
 The link-budget script is analytic and quick; the FDTD dataset is the expensive step. It uses a
-separate fine-grid scenario file and writes under `output/harbor_bistatic/`.
+separate fine-grid scenario file and writes under `output/recordings/bistatic/`.
 
 ```bash
-python examples/harbor/90_history/harbor_bistatic_budget.py --out output/harbor_bistatic
+python examples/harbor/90_history/harbor_bistatic_budget.py --out output/studies/history/harbor_bistatic_budget
 
 # --coarse uses dx=1 m instead of 0.5 m to reduce runtime.
 python examples/harbor/01_datasets/harbor_bistatic_dataset.py --coarse --workers 2
 python examples/harbor/90_history/harbor_bistatic_demo.py \
-    --dataset output/harbor_bistatic/coarse/dataset.npz \
-    --out output/harbor_bistatic/demo
+    --dataset output/recordings/bistatic/coarse/dataset.npz \
+    --out output/studies/history/harbor_bistatic_demo
 ```
 
 The demo is intentionally given the true ferry waveform and exact track and removes the direct path
@@ -509,7 +509,7 @@ from pathlib import Path
 from examples.run_pipeline import load_config, run_pipeline
 
 cfg = load_config(Path("examples/configs/pipeline.config.json"))
-results = run_pipeline(Path("output/valley_test"), Path("output/valley_test"), cfg)
+results = run_pipeline(Path("output/air/valley_test"), Path("output/air/valley_test"), cfg)
 ```
 
 ### Use DetectionEngine directly

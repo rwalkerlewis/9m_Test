@@ -3,7 +3,7 @@
 Analytic matched field test in the harbor domain of a saved FDTD dataset.
 
 The chain of ``examples/harbor/90_history/harbor_mfp_demo.py`` (AIS -> refine ships -> project ships and stored clutter out ->
-passive / bistatic scan -> candidates -> refine) run in the scenario of ``output/harbor/dataset.npz``:
+passive / bistatic scan -> candidates -> refine) run in the scenario of ``output/recordings/harbor/dataset.npz``:
 
 * from the dataset: the domain and land mask, the 125 channel cable and 4 hydrophones, the 120 s truth tracks of
   ferry, tug, moored ship and UUV, the AIS reports, the source signatures and levels (same generator and seeds as
@@ -19,7 +19,7 @@ scatters all three ships; target strength re 1 m with 2-D spreading from the bod
 
 Usage::
 
-    python examples/harbor/90_history/harbor_mfp_domain.py [--dataset output/harbor/dataset.npz] [--out output/harbor_domain]
+    python examples/harbor/90_history/harbor_mfp_domain.py [--dataset output/recordings/harbor/dataset.npz] [--out output/studies/history/harbor_mfp_domain]
         [--pd-windows 10]
 """
 import argparse, json, os, sys, time
@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 from acoustic_sim.water import HarborDataset, build_environment  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.water.signatures import R_REF, f_max_for_grid, make_reference_signal  # noqa: E402
 
@@ -360,26 +361,26 @@ def show(dom, ax, P, title, tc, est=None, ships=None, ais=None, vmin=-25):
     plot_harbor(dom.env, dom.ds.layout, ax=ax, show_depth=False)
     Z = 10 * np.log10(np.maximum(image(dom, P), 1e-30)); Z -= np.nanmax(Z)
     im = ax.imshow(Z, origin="lower", extent=dom.env.extent, cmap="viridis", vmin=vmin, vmax=0, zorder=2, alpha=0.95)
-    for v in SHIPS: ax.plot(*dom.truth(v, tc), "^", ms=9, mfc="none", mec="w", mew=1.5, zorder=5)
+    for j, v in enumerate(SHIPS): ax.plot(*dom.truth(v, tc), "^", ms=9, mfc="none", mec="w", mew=1.5, zorder=5, label="ships truth" if j == 0 else None)
     if ais is not None: ax.plot(*ais.T, "x", color="w", ms=7, mew=1.5, zorder=5, label="ships AIS")
     if ships is not None: ax.plot(*ships.T, "+", color="#ffd60a", ms=12, mew=2, zorder=6, label="ships refined")
     ax.plot(*CLUTTER.T, "s", ms=6, mfc="none", mec="w", zorder=5, label="stored clutter")
     ax.plot(*dom.truth(UUV, tc), "o", ms=14, mfc="none", mec="#ff7f0e", mew=2, zorder=6, label="UUV truth")
     if est is not None: ax.plot(*est, "x", color="#ff2d55", ms=10, mew=2.5, zorder=7, label="UUV estimate")
-    ax.set_title("")                                              # plot_harbor's centred title
-    ax.set_title(title, loc="left", color=INK, fontweight="bold", fontsize=10)
-    ax.legend(loc="upper right", fontsize=7, framealpha=0.7)
+    ax.set_title(title)
+    ax.set_xlabel("x (east) [m]"); ax.set_ylabel("y (north) [m]")
+    ax.legend(loc="upper right", fontsize=11, framealpha=0.7)
     return im
 
 
 def save(fig, out, name):
-    fig.savefig(out / name, bbox_inches="tight"); plt.close(fig); print("wrote", name, flush=True)
+    save_figure(fig, out / name, recording="harbor"); print("wrote", name, flush=True)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dataset", default=str(ROOT / "output" / "harbor" / "dataset.npz"))
-    ap.add_argument("--out", default=str(ROOT / "output" / "harbor_domain"))
+    ap.add_argument("--dataset", default=str(ROOT / "output" / "recordings" / "harbor" / "dataset.npz"))
+    ap.add_argument("--out", default=str(ROOT / "output/studies/history" / "harbor_mfp_domain"))
     ap.add_argument("--pd-windows", type=int, default=10, help="windows per level in the Pd sweep (0 skips it)")
     args = ap.parse_args()
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True); t0 = time.time()
@@ -399,15 +400,16 @@ def main():
     print(f"{len(dom.cells)} water cells, {dom.m} receivers, {dom.nf} bins, {len(centers)} windows", flush=True)
 
     # ---------- map ----------
-    fig, ax = plt.subplots(figsize=(10, 7.5))
+    fig, ax = new_figure((12, 10))
     plot_harbor(dom.env, dom.ds.layout, ax=ax)
     for v, col in zip(SHIPS + (UUV,), ("#1d4ed8", "#16a34a", "#7c3aed", "#ff7f0e")):
         tr = dom.ds.tracks[v]; ax.plot(*tr.xy.T, "--" if v == UUV else "-", color=col, lw=2, label=f"{v} ({'AIS' if v in SHIPS else 'hidden'})")
         ax.plot(*tr.xy[0], "o", color=col, ms=7, mec="k", zorder=5)                 # start (the moored ship has no track)
     ax.plot(*dom.ds.ais.xy.T, ".", color="k", ms=3, label="AIS reports")
     ax.plot(*CLUTTER.T, "s", ms=7, mfc="#9ca3af", mec=INK, label="stored clutter (TS 0 dB)")
-    ax.legend(loc="upper left", fontsize=7, framealpha=0.85)
-    ax.set_title(f"Domain of {res['dataset']}: 125 ch cable + 4 hydrophones, 120 s, analytic propagation", fontsize=10)
+    ax.legend(loc="upper left", fontsize=11, framealpha=0.85)
+    ax.set_xlabel("x (east) [m]"); ax.set_ylabel("y (north) [m]")
+    ax.set_title(f"harbor (5 m), domain of {res['dataset']}:\n125 ch cable + 4 hydrophones, 120 s, analytic propagation")
     save(fig, out, "map.png")
 
     # ---------- analytic vs FDTD levels ----------
@@ -417,30 +419,31 @@ def main():
         _, p = dom.synth(tc, parts=True); ana.append(np.mean(np.abs(p["ships"] + p["uuv"]) ** 2, axis=(0, 1)))
     ana = np.array(ana); noi = np.array([np.mean(np.abs(dom.stft(dom.noise, tc)) ** 2, axis=(0, 1)) for tc in centers])
     db = lambda x: 10 * np.log10(np.maximum(x, 1e-30))
-    fig = plt.figure(figsize=(14, 7.5)); gs = fig.add_gridspec(2, 2, height_ratios=[1.3, 1], hspace=0.4, wspace=0.08)
     lo, hi = np.percentile(db(fdtd), 5), np.percentile(db(fdtd), 99.5)
-    for j, (A, name) in enumerate(((fdtd, "FDTD clean field (dataset)"), (ana, "Analytic field (this test)"))):
-        ax = fig.add_subplot(gs[0, j])
+    for A, name, tag in ((fdtd, "FDTD clean field (dataset)", "fdtd"), (ana, "analytic field (this test)", "analytic")):
+        fig, ax = new_figure((12, 8))
         im = ax.imshow(db(A).T, aspect="auto", origin="lower", extent=[centers[0], centers[-1], 0, dom.m], cmap="magma", vmin=lo, vmax=hi)
-        ax.axhline(dom.n_das, color="w", lw=0.8, ls="--"); ax.set_xlabel("time (s)"); ax.tick_params(colors=MUTED)
-        ax.set_title(name + ", 12 to 78 Hz, all vessels", loc="left", color=INK, fontweight="bold", fontsize=10)
-        if j == 0: ax.set_ylabel("receiver (cable | hydrophones)")
-        else: ax.set_yticklabels([])
-    fig.colorbar(im, ax=fig.axes, fraction=0.02, pad=0.01, label="mean level per bin (dB)")
-    ax = fig.add_subplot(gs[1, :])
+        ax.axhline(dom.n_das, color="w", lw=0.8, ls="--", label="cable | hydrophones")
+        ax.set_xlabel("time [s]"); ax.set_ylabel("receiver index (cable, then hydrophones)")
+        ax.set_title(f"harbor (5 m): {name}, 12 to 78 Hz, all vessels")
+        ax.legend(loc="upper right")
+        fig.colorbar(im, ax=ax, label="mean level per bin [dB]")
+        save(fig, out, f"analytic_vs_fdtd_{tag}.png")
+    fig, ax = new_figure((13, 8))
     ax.plot(db(fdtd.mean(0)), color=INK, label="FDTD clean"); ax.plot(db(ana.mean(0)), color="#ff7f0e", label="analytic")
     ax.plot(np.where(dom.dead, np.nan, db(noi.mean(0))), color=MUTED, lw=0.8, label="dataset noise (dead channels omitted)")
     good = ~dom.dead; diff = db(ana.mean(0))[good] - db(fdtd.mean(0))[good]
-    ax.axvline(dom.n_das, color="k", lw=0.8, ls="--"); ax.set_xlim(0, dom.m); ax.set_xlabel("receiver"); ax.set_ylabel("dB")
-    ax.set_title(f"Run-average level per receiver: analytic - FDTD median {np.median(diff):+.1f} dB, "
-                 f"spread (IQR) {np.subtract(*np.percentile(diff, [75, 25])):.1f} dB", loc="left", color=INK, fontweight="bold", fontsize=10)
-    ax.legend(frameon=False, fontsize=8); ax.tick_params(colors=MUTED)
-    save(fig, out, "analytic_vs_fdtd.png")
+    ax.axvline(dom.n_das, color="k", lw=0.8, ls="--", label="cable | hydrophones"); ax.set_xlim(0, dom.m)
+    ax.set_xlabel("receiver index (cable, then hydrophones)"); ax.set_ylabel("run average level [dB]")
+    ax.set_title(f"harbor (5 m): run average level per receiver, analytic minus FDTD median {np.median(diff):+.1f} dB,\n"
+                 f"spread (IQR) {np.subtract(*np.percentile(diff, [75, 25])):.1f} dB")
+    ax.legend(frameon=False)
+    save(fig, out, "analytic_vs_fdtd_per_receiver.png")
     res["analytic_minus_fdtd_db"] = {"median": float(np.median(diff)), "iqr": float(np.subtract(*np.percentile(diff, [75, 25])))}
 
     # ---------- processors ----------
     procs = {}
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(14, 4.2)); res["calibration"] = {}
+    fig1, a1 = new_figure((12, 9)); fig2, a2 = new_figure((13, 8)); res["calibration"] = {}
     for (mode, kw), col in zip((("passive", {}), ("bistatic", {"uuv_level": 0.0, "ts": UUV_TS})), ("#7c3aed", "#047857")):
         t1 = time.time(); pr = Processor(dom, noise_floor(dom, centers, **kw)); pr.calibrate(centers[::5], **kw); procs[mode] = pr
         ratio = pr.g[pr.good] / dom.gain[pr.good]; ratio /= np.median(ratio)
@@ -451,30 +454,31 @@ def main():
         a1.plot(dom.gain[pr.good], pr.g[pr.good] / np.median(pr.g[pr.good] / dom.gain[pr.good]), "o", ms=3, color=col,
                 label=f"{mode}: error {100 * np.std(ratio):.1f} % rms")
         az, B = pr.az_scan; a2.plot(az, 10 * np.log10(B / np.median(B)), color=col, lw=1, label=f"{mode}: picked {np.round(np.degrees(pr.az), 1)}")
-    lim = [dom.gain[~dom.dead].min() * 0.95, dom.gain[~dom.dead].max() * 1.05]; a1.plot(lim, lim, "k:", lw=0.8)
-    a1.set_xlabel("true DAS gain (dataset)"); a1.set_ylabel("estimated gain"); a1.legend(frameon=False, fontsize=8); a1.tick_params(colors=MUTED)
-    a1.set_title(f"Gain calibration from the AIS ships (true scatter {100 * np.std(dom.gain[~dom.dead]):.0f} %)", loc="left", color=INK, fontweight="bold", fontsize=10)
+    lim = [dom.gain[~dom.dead].min() * 0.95, dom.gain[~dom.dead].max() * 1.05]; a1.plot(lim, lim, "k:", lw=0.8, label="equal")
+    a1.set_xlabel("true DAS gain (dataset) [ratio]"); a1.set_ylabel("estimated gain [ratio]"); a1.legend(frameon=False)
+    a1.set_title(f"harbor (5 m): gain calibration from the AIS ships (true scatter {100 * np.std(dom.gain[~dom.dead]):.0f} %)")
     for k, a in enumerate(dom.ds.meta["shipping_azimuth_deg"]): a2.axvline(a, color="#dc2626", ls="--", lw=0.8, label="true shipping azimuth" if k == 0 else None)
     a2.axhline(6, color=MUTED, ls=":", lw=0.8, label="pick threshold (6 dB)")
-    a2.set_xlabel("azimuth (deg, source direction)"); a2.set_ylabel("dB over median"); a2.legend(frameon=False, fontsize=8); a2.tick_params(colors=MUTED)
-    a2.set_title("Far-field interference scan of the residual (projected replicas)", loc="left", color=INK, fontweight="bold", fontsize=10)
-    save(fig, out, "calibration.png")
+    a2.set_xlabel("azimuth [deg, source direction]"); a2.set_ylabel("scan level over median [dB]"); a2.legend(frameon=False)
+    a2.set_title("harbor (5 m): far field interference scan of the residual (projected replicas)")
+    save(fig1, out, "calibration_gain.png")
+    save(fig2, out, "calibration_interference.png")
 
     # ---------- one window ----------
     tc = centers[len(centers) // 3]
     one = {}
-    fig, axs = plt.subplots(1, 2, figsize=(16, 6.5))
-    for ax, (mode, kw) in zip(axs, (("passive", {}), ("bistatic", {"uuv_level": 0.0, "ts": UUV_TS}))):
+    for mode, kw in (("passive", {}), ("bistatic", {"uuv_level": 0.0, "ts": UUV_TS})):
+        fig, ax = new_figure((12, 10))
         r = procs[mode].run(dom.synth(tc, **kw), tc, mode)
         err = float(np.linalg.norm(r["est"] - dom.truth(UUV, tc)))
         one[mode] = {"t_s": float(tc), "error_m": err, "contrast_db": r["contrast"],
                      "ship_refined_error_m": np.linalg.norm(r["ships"] - np.array([dom.truth(v, tc) for v in SHIPS]), axis=1).tolist(),
                      "ship_ais_error_m": np.linalg.norm(r["ais"] - np.array([dom.truth(v, tc) for v in SHIPS]), axis=1).tolist()}
         lab = "passive, UUV radiating 0.03 Pa at 100 m (motor ON)" if mode == "passive" else f"bistatic, silent UUV TS {UUV_TS:.0f} dB, 3 illuminators"
-        im = show(dom, ax, r["P"], f"{lab}\nt = {tc:.1f} s: error {err:.1f} m, peak {r['contrast']:.1f} dB over median",
+        im = show(dom, ax, r["P"], f"harbor (5 m), {lab}\nt = {tc:.1f} s: error {err:.1f} m, peak {r['contrast']:.1f} dB over median",
                   tc, est=r["est"], ships=r["ships"], ais=r["ais"])
-    fig.colorbar(im, ax=axs, fraction=0.015, pad=0.01, label="map, dB rel. peak (10 m grid)")
-    save(fig, out, "maps.png")
+        fig.colorbar(im, ax=ax, shrink=0.7, label="map, dB re peak (10 m grid)")
+        save(fig, out, f"maps_{mode}.png")
     res["single_window"] = one
 
     # ---------- track over the run ----------
@@ -487,7 +491,7 @@ def main():
               f"{rows['passive'][-1][2]:5.1f} dB, bistatic {np.linalg.norm(rows['bistatic'][-1][1] - dom.truth(UUV, tc)):6.1f} m "
               f"{rows['bistatic'][-1][2]:5.1f} dB", flush=True)
     truth = np.array([dom.truth(UUV, tc) for tc in centers])
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(16, 6), gridspec_kw={"width_ratios": [1.1, 1]})
+    fig1, a1 = new_figure((12, 10)); fig2, a2 = new_figure((13, 8))
     plot_harbor(dom.env, dom.ds.layout, ax=a1, show_depth=False)
     a1.plot(*dom.ds.tracks[UUV].xy.T, "-", color="#ff7f0e", lw=3, label="UUV truth")
     tr = {}
@@ -496,11 +500,12 @@ def main():
         a1.plot(*est.T, mk, color=col, ms=5, mfc="none" if mk == "o" else col, label=f"{mode} estimate")
         a2.plot(centers, np.minimum(e, 99), mk + "-", color=col, ms=4, lw=1, mfc="none" if mk == "o" else col,
                 label=f"{mode}: median {np.median(e):.1f} m, {100 * np.mean(e <= 20):.0f} % within 20 m")
-    a1.legend(loc="upper left", fontsize=8); a1.set_title("UUV estimates per 3 s window", fontsize=10)
-    a2.axhline(20, color="r", ls="--", lw=0.8); a2.set_ylim(0, 100); a2.set_xlabel("time (s)"); a2.set_ylabel("error (m), clipped at 100")
-    a2.legend(frameon=False, fontsize=8); a2.set_title("Position error per window", loc="left", color=INK, fontweight="bold", fontsize=10)
-    a2.tick_params(colors=MUTED)
-    save(fig, out, "tracks.png")
+    a1.legend(loc="upper left", fontsize=11); a1.set_title("harbor (5 m): UUV estimates per 3 s window")
+    a1.set_xlabel("x (east) [m]"); a1.set_ylabel("y (north) [m]")
+    a2.axhline(20, color="r", ls="--", lw=0.8, label="20 m"); a2.set_ylim(0, 100); a2.set_xlabel("time [s]"); a2.set_ylabel("error [m], clipped at 100")
+    a2.legend(frameon=False); a2.set_title("harbor (5 m): UUV position error per window")
+    save(fig1, out, "tracks_map.png")
+    save(fig2, out, "tracks_error.png")
     res["track"] = {m: {"median_m": float(np.median(e)), "p90_m": float(np.percentile(e, 90)), "within_20m": float(np.mean(e <= 20)),
                         "contrast_db_median": float(np.median([r[2] for r in rows[m]]))} for m, e in tr.items()}
     res["track"]["ship_refined_error_median_m"] = {
@@ -513,8 +518,9 @@ def main():
                               20 * np.log10(dom.level[UUV]), "UUV radiated level (dB re 1 Pa at 100 m)"),
                   "bistatic": (np.arange(-40.0, 1.0, 5.0), lambda lv: {"uuv_level": 0.0, "ts": lv}, {"uuv_level": 0.0, "ts": -np.inf},
                                UUV_TS, "UUV target strength (dB re 1 m, 2-D)")}
-        fig, axs = plt.subplots(1, 2, figsize=(13, 4.2)); res["pd"] = {"windows": len(sub), "pfa": 0.05, "gate_m": 20.0}
-        for ax, (mode, (levels, kw, kw0, default, xlabel)) in zip(axs, sweeps.items()):
+        res["pd"] = {"windows": len(sub), "pfa": 0.05, "gate_m": 20.0}
+        for mode, (levels, kw, kw0, default, xlabel) in sweeps.items():
+            fig, ax = new_figure((12, 8))
             t1 = time.time()
             h0 = np.array([procs[mode].run(dom.synth(tc, **kw0), tc, mode)["contrast"] for tc in sub])
             thr = float(np.quantile(h0, 0.95)); pd = []
@@ -527,13 +533,13 @@ def main():
             print(f"  {mode}: threshold {thr:.1f} dB, Pd {np.round(pd, 2).tolist()} ({time.time() - t1:.0f} s)", flush=True)
             res["pd"][mode] = {"levels": levels.tolist(), "pd": pd, "threshold_db": thr, "noise_contrast_db_median": float(np.median(h0)),
                                "default": float(default)}
-            ax.plot(levels, pd, "o-", color=INK); ax.axvline(default, color="#ff7f0e", ls="--", lw=1, label=f"scenario ({default:.1f})")
+            ax.plot(levels, pd, "o-", color=INK, label="Pd"); ax.axvline(default, color="#ff7f0e", ls="--", lw=1, label=f"scenario ({default:.1f})")
             ax.axhline(0.05, color=MUTED, ls=":", lw=1, label=f"Pfa 0.05 (threshold {thr:.1f} dB)")
-            ax.set_ylim(-0.03, 1.03); ax.set_xlabel(xlabel); ax.set_ylabel("Pd"); ax.tick_params(colors=MUTED)
-            ax.set_title(f"{mode.capitalize()}, {len(sub)} windows along the UUV track", loc="left", color=INK, fontweight="bold", fontsize=10)
-            ax.legend(frameon=False, fontsize=8, loc="lower right")
-        fig.suptitle("Pd against UUV level in the dataset domain (peak above the no-UUV threshold and within 20 m)", color=INK, fontsize=10)
-        save(fig, out, "pd_vs_level.png")
+            ax.set_ylim(-0.03, 1.03); ax.set_xlabel(xlabel); ax.set_ylabel("Pd (fraction of windows)")
+            ax.set_title(f"harbor (5 m), {mode}: Pd against UUV level, {len(sub)} windows along the UUV track\n"
+                         "(peak above the no UUV threshold and within 20 m)")
+            ax.legend(frameon=False, loc="lower right")
+            save(fig, out, f"pd_vs_level_{mode}.png")
 
     res["runtime_s"] = round(time.time() - t0, 1)
     (out / "results.json").write_text(json.dumps(res, indent=2))

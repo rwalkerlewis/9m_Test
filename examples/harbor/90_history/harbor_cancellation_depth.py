@@ -24,7 +24,7 @@ harbor).
 
 Usage::
 
-    python examples/harbor/90_history/harbor_cancellation_depth.py [--time 10] [--workers 2] [--out output/harbor_cancel]
+    python examples/harbor/90_history/harbor_cancellation_depth.py [--time 10] [--workers 2] [--out output/studies/history/harbor_cancellation_depth]
         [--cuda] [--gate 50] [--doppler]
 
 ``--gate`` excludes channels closer than that to the source from the statistics; ``--doppler``
@@ -58,6 +58,7 @@ from acoustic_sim.contract import Provenance  # noqa: E402
 from acoustic_sim.water.diagnostics import SimulatorAwarePropagator  # noqa: E402
 from acoustic_sim.water.fdtd_runner import _fused_available, simulate_source, simulate_sources  # noqa: E402
 from acoustic_sim.water.noise import generate_noise  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
 from acoustic_sim.water.vessels import VesselConfig  # noqa: E402
@@ -122,8 +123,8 @@ def band_energy(x: np.ndarray, sos: np.ndarray) -> np.ndarray:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=str(Path(__file__).resolve().parents[2] / "configs" / "harbor_bistatic.scenario.json"))
-    ap.add_argument("--out", default="output/harbor_cancel")
-    ap.add_argument("--cache", default="output/harbor_cancel/cache")
+    ap.add_argument("--out", default="output/studies/history/harbor_cancellation_depth")
+    ap.add_argument("--cache", default="output/studies/history/harbor_cancellation_depth/cache")
     ap.add_argument("--time", type=float, default=10.0, help="simulated duration [s]")
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--gate", type=float, default=0.0, help="exclude channels closer than this [m] to the source from the statistics")
@@ -260,9 +261,11 @@ def main() -> None:
     summary["track_smooth_s"] = args.smooth
     (out / f"results{sfx}.json").write_text(json.dumps(summary, indent=2))
 
-    # Figure 1: depth against range.
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
-    for ax, mode in zip(axes, ("stationary", "moving")):
+    # Figures: depth against range, one per source mode.
+    detail = (f"{bc.f_lo:.0f} to {0.95 * f_max:.0f} Hz" + (f", channels within {args.gate:g} m excluded" if args.gate else "")
+              + (", per sample delays" if args.doppler else "") + (f", track smoothed over {args.smooth:g} s" if args.smooth else ""))
+    for mode in ("stationary", "moving"):
+        fig, ax = new_figure((12, 8))
         for ref, c in zip(REFERENCES, ("C0", "C1", "C2")):
             rows = [x for x in results if x["mode"] == mode]
             rr = [x["range_min_m"] for x in rows]
@@ -270,41 +273,41 @@ def main() -> None:
             ax.plot(rr, [x[ref]["cable_p10_db"] for x in rows], "o:", color=c, alpha=0.6, label=f"{ref}: 10th percentile")
         ax.axhline(CRITERION_DB, color="r", ls="--", label="criterion")
         ax.set_xlabel("nearest channel range [m]")
-        ax.set_title(f"{mode} source" + ("" if mode == "stationary" else f", {SPEED:g} m/s parallel to the cable"))
+        ax.set_ylabel("ECA cancellation depth, live cable channels [dB]")
+        ax.set_title(f"bistatic harbor, {mode} source" + ("" if mode == "stationary" else f" ({SPEED:g} m/s)")
+                     + f": direct path cancellation depth\n{detail}")
         ax.grid(alpha=0.3)
-    axes[0].set_ylabel("ECA cancellation depth, live cable channels [dB]")
-    axes[1].legend(fontsize=8)
-    fig.suptitle(f"Direct path cancellation by ECA, fine grid, {bc.f_lo:.0f} to {0.95 * f_max:.0f} Hz" + (f", channels within {args.gate:g} m excluded" if args.gate else "")
-                 + (", per sample delays (eca_doppler)" if args.doppler else "") + (f", track smoothed over {args.smooth:g} s" if args.smooth else ""))
-    fig.savefig(out / f"depth_vs_range{sfx}.png", dpi=110, bbox_inches="tight")
+        ax.legend()
+        save_figure(fig, out / f"depth_vs_range{sfx}_{mode}.png", recording="bistatic")
 
-    # Figure 2: depth per channel against its range, data reference.
-    fig, axes = plt.subplots(2, 3, figsize=(16, 8), sharey=True)
-    for j, r in enumerate(RANGES):
-        for i, mode in enumerate(("stationary", "moving")):
-            ax = axes[i, j]
+    # Figures: depth per channel against its range, one per case.
+    for r in RANGES:
+        for mode in ("stationary", "moving"):
+            fig, ax = new_figure((12, 8))
             for ref, c in zip(("data", "true_waveform_exact_track"), ("C0", "C2")):
                 rng_, depth, keep = per_channel[(r, mode, ref)]
                 m = keep.copy()
                 m[hyd] = False
-                ax.plot(rng_[m], depth[m], ".", color=c, ms=3, label=ref)
-            ax.axhline(CRITERION_DB, color="r", ls="--")
-            ax.set_title(f"{mode}, target range {r:g} m")
+                ax.plot(rng_[m], depth[m], ".", color=c, ms=4, label=ref)
+            ax.axhline(CRITERION_DB, color="r", ls="--", label="criterion")
+            ax.set_title(f"bistatic harbor, {mode} source at {r:g} m: cancellation depth per cable channel\n{detail}")
             ax.set_xlabel("channel to source range [m]")
+            ax.set_ylabel("depth [dB]")
             ax.grid(alpha=0.3)
-    axes[0, 0].set_ylabel("depth [dB]"); axes[1, 0].set_ylabel("depth [dB]")
-    axes[0, 0].legend()
-    fig.savefig(out / f"depth_per_channel{sfx}.png", dpi=110, bbox_inches="tight")
+            ax.legend()
+            save_figure(fig, out / f"depth_per_channel{sfx}_{mode}_{r:g}m.png", recording="bistatic")
 
-    # Figure 3: source positions.
-    fig, ax = plt.subplots(figsize=(8, 6))
+    # Figure: source positions.
+    fig, ax = new_figure((12, 9))
     plot_harbor(env, layout, ax=ax, show_depth=False, sponge_cells=cfg.fdtd.damping_width)
     for r, mode, v in cases:
         xy = tracks[v.id].xy
         ax.plot(*xy.T, "-" if mode == "moving" else "", marker="o" if mode == "stationary" else None, lw=2, label=f"{mode} {r:g} m")
-    ax.legend(fontsize=8)
-    ax.set_title("Source positions for the cancellation depth test")
-    fig.savefig(out / "positions.png", dpi=100, bbox_inches="tight")
+    ax.legend(fontsize=11, loc="upper right")
+    ax.set_xlabel("x (east) [m]")
+    ax.set_ylabel("y (north) [m]")
+    ax.set_title("bistatic harbor: source positions of the cancellation depth test")
+    save_figure(fig, out / "positions.png", recording="bistatic")
     say(f"wrote {out}")
 
 

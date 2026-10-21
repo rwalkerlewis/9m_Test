@@ -1,6 +1,6 @@
 {
   "recording": "multistatic",
-  "observation": "output/harbor_multistatic/fine/dataset.observation.npz",
+  "observation": "output/recordings/multistatic/dataset.observation.npz",
   "band_hz": [
     100.0,
     760.0

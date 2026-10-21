@@ -106,11 +106,11 @@ produces identical results to a signal-processing-only baseline.
 | `enable_fno_surrogate` | bool | false | Enable FNO data augmentation path |
 | `fno_checkpoint` | str | `"checkpoints/fno_demo/fno_final.pt"` | Path to FNO weights (written by `examples/air/03_ml/run_fno.py`; not shipped) |
 | `enable_anomaly_detection` | bool | false | Enable CVAE anomaly detection |
-| `classification_checkpoint` | str | `"output/models/acoustic_classifier.pt"` | Path to acoustic classifier weights |
-| `maneuver_checkpoint` | str | `"output/models/maneuver_classifier.pt"` | Path to maneuver classifier weights |
-| `fusion_checkpoint` | str | `"output/models/fusion_classifier.pt"` | Path to fusion classifier weights |
-| `anomaly_checkpoint` | str | `"output/models/anomaly_detector.pt"` | Path to CVAE anomaly detector weights (not shipped; train with `src/acoustic_sim/ml/anomaly_training.py`) |
-| `anomaly_threshold_file` | str | `"output/models/anomaly_threshold.json"` | Path to anomaly threshold calibration |
+| `classification_checkpoint` | str | `"output/air/models/acoustic_classifier.pt"` | Path to acoustic classifier weights |
+| `maneuver_checkpoint` | str | `"output/air/models/maneuver_classifier.pt"` | Path to maneuver classifier weights |
+| `fusion_checkpoint` | str | `"output/air/models/fusion_classifier.pt"` | Path to fusion classifier weights |
+| `anomaly_checkpoint` | str | `"output/air/models/anomaly_detector.pt"` | Path to CVAE anomaly detector weights (not shipped; train with `src/acoustic_sim/ml/anomaly_training.py`) |
+| `anomaly_threshold_file` | str | `"output/air/models/anomaly_threshold.json"` | Path to anomaly threshold calibration |
 | `anomaly_override_confidence_threshold` | float | 0.7 | CNN confidence below this + anomaly novel = NOVEL_THREAT |
 | `classification_confidence_threshold` | float | 0.95 (built-in 0.7) | P(non-drone) must exceed this to reject a detection |
 | `maneuver_window_size` | int | 20 | Number of kinematic history steps for maneuver classifier |

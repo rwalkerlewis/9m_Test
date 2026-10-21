@@ -12,14 +12,15 @@ Differences relative to the reference run give the isolated scattered fields:
   scattered_soft = with_soft - without
 
 A 3-panel figure is saved:
-  Panel 1: Hard scattered DAS gather (seismic colormap, waterfall)
-  Panel 2: Soft scattered DAS gather
-  Panel 3: Ratio in dB per channel per time sample: 20*log10(|hard| / (|soft| + eps))
+Figures, one panel each, in ``--out`` (default ``output/studies/history/harbor_m1_scatterer_compare/``):
+  ``m1_scatterer_hard.png``: hard scattered DAS gather (seismic colormap, waterfall);
+  ``m1_scatterer_soft.png``: soft scattered DAS gather;
+  ``m1_scatterer_ratio.png``: ratio in dB per channel per time sample, 20*log10(|hard| / (|soft| + eps)).
 
 Usage::
 
     python examples/harbor/02_forward_model/harbor_m1_scatterer_compare.py \\
-        [--out output/harbor] [--time 5] [--source 900 900] \\
+        [--out output/studies/history/harbor_m1_scatterer_compare] [--time 5] [--source 900 900] \\
         [--body 1200 600] [--body-size 10 5] [--shore-loss 0.15]
 """
 
@@ -33,7 +34,6 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
@@ -44,7 +44,7 @@ from acoustic_sim.water import (  # noqa: E402
     build_environment,
     build_layout,
 )
-from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.scatterer import Scatterer  # noqa: E402
 from acoustic_sim.water.vessels import Track  # noqa: E402
 from acoustic_sim.sources import StaticSource  # noqa: E402
@@ -77,7 +77,7 @@ def run_fdtd(env, cfg, src, receivers, label: str, scatterers: tuple = ()) -> np
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default="output/harbor")
+    ap.add_argument("--out", default="output/studies/history/harbor_m1_scatterer_compare")
     ap.add_argument("--time", type=float, default=5.0, help="simulated seconds")
     ap.add_argument("--shore-loss", type=float, default=0.15)
     ap.add_argument("--source", type=float, nargs=2, default=[900.0, 900.0], metavar=("X", "Y"))
@@ -129,56 +129,24 @@ def main() -> None:
     eps = np.abs(scattered_soft).max() * 1e-6 + 1e-30
     ratio_db = 20.0 * np.log10(np.abs(scattered_hard) / (np.abs(scattered_soft) + eps))
 
-    plt.rcParams.update({
-        "font.family": "DejaVu Sans",
-        "font.size": 10,
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-    })
-
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6.5), sharey=True)
-
-    # Panel 1 — hard scattered gather
-    im1 = axes[0].imshow(
-        scattered_hard, aspect="auto", origin="lower", cmap="seismic",
-        vmin=-v, vmax=v, extent=ext, interpolation="nearest",
-    )
-    axes[0].set_title("Hard body — scattered field", loc="left", fontweight="bold")
-    axes[0].set_xlabel("time [s]")
-    axes[0].set_ylabel("distance along cable [m]")
-    plt.colorbar(im1, ax=axes[0], shrink=0.85, label="pressure [Pa]")
-
-    # Panel 2 — soft scattered gather
-    im2 = axes[1].imshow(
-        scattered_soft, aspect="auto", origin="lower", cmap="seismic",
-        vmin=-v, vmax=v, extent=ext, interpolation="nearest",
-    )
-    axes[1].set_title("Soft body — scattered field", loc="left", fontweight="bold")
-    axes[1].set_xlabel("time [s]")
-    plt.colorbar(im2, ax=axes[1], shrink=0.85, label="pressure [Pa]")
-
-    # Panel 3 — ratio in dB
-    vr = max(np.percentile(np.abs(ratio_db), 95), 1.0)
-    im3 = axes[2].imshow(
-        ratio_db, aspect="auto", origin="lower", cmap="RdBu_r",
-        vmin=-vr, vmax=vr, extent=ext, interpolation="nearest",
-    )
-    axes[2].set_title("Ratio: 20·log₁₀(|hard|/|soft|) [dB]", loc="left", fontweight="bold")
-    axes[2].set_xlabel("time [s]")
-    plt.colorbar(im3, ax=axes[2], shrink=0.85, label="dB")
-
     S, B = np.array(args.source), np.array(args.body)
     c = float(np.mean(env.model.values[env.water]))
-    fig.text(
-        0.995, 0.005,
-        f"FDTD dx={env.dx:.0f} m, fs={fs:.0f} Hz, shore_loss={args.shore_loss}; "
-        f"source ({S[0]:.0f},{S[1]:.0f}) m; body ({B[0]:.0f},{B[1]:.0f}) m "
-        f"{args.body_size[0]:.0f}×{args.body_size[1]:.0f} m; c={c:.0f} m/s",
-        ha="right", va="bottom", fontsize=8, color="#6b7280",
-    )
-    fig.savefig(out / "m1_scatterer_compare.png", dpi=120, bbox_inches="tight")
-    plt.close(fig)
-    print("wrote", out / "m1_scatterer_compare.png")
+    name = "default 5 m harbor scenario"
+    setup = (f"source ({S[0]:.0f}, {S[1]:.0f}) m, body ({B[0]:.0f}, {B[1]:.0f}) m {args.body_size[0]:.0f} x {args.body_size[1]:.0f} m; "
+             f"dx {env.dx:.0f} m, fs {fs:.0f} Hz, c {c:.0f} m/s")
+    vr = max(np.percentile(np.abs(ratio_db), 95), 1.0)
+    for file, data, cmap, lim, label, what in (
+            ("m1_scatterer_hard.png", scattered_hard, "seismic", v, "pressure [Pa]", "hard body, scattered field"),
+            ("m1_scatterer_soft.png", scattered_soft, "seismic", v, "pressure [Pa]", "soft body, scattered field"),
+            ("m1_scatterer_ratio.png", ratio_db, "RdBu_r", vr, "20 log10(|hard| / |soft|) [dB]", "hard over soft scattered field")):
+        fig, ax = new_figure((12.0, 8.0))
+        im = ax.imshow(data, aspect="auto", origin="lower", cmap=cmap, vmin=-lim, vmax=lim, extent=ext, interpolation="nearest")
+        fig.colorbar(im, ax=ax, label=label)
+        ax.set_xlabel("time [s]")
+        ax.set_ylabel("distance along cable [m]")
+        ax.set_title(f"{name}: {what}\n{setup}")
+        save_figure(fig, out / file)
+        print("wrote", out / file)
 
 
 if __name__ == "__main__":
