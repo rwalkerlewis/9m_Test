@@ -8,8 +8,8 @@ an anomaly threshold on a held-out validation set.
 
 Outputs
 -------
-- Model weights:  ``output/models/anomaly_detector.pt``
-- Threshold file: ``output/models/anomaly_threshold.json``
+- Model weights:  ``output/air/models/anomaly_detector.pt``
+- Threshold file: ``output/air/models/anomaly_threshold.json``
 
 The threshold JSON contains::
 
@@ -323,7 +323,7 @@ def main():
     parser.add_argument("--latent-dim", type=int, default=12,
                         help="Latent space dimensionality (default: 12)")
     parser.add_argument("--output-dir", type=Path,
-                        default=Path("output/models"),
+                        default=Path("output/air/models"),
                         help="Output directory for model and threshold")
     args = parser.parse_args()
 

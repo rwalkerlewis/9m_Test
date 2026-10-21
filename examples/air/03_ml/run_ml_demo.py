@@ -18,7 +18,7 @@ Usage::
     python examples/air/03_ml/run_ml_demo.py --n-samples 50 --n-epochs 5
 
     # Custom output directory
-    python examples/air/03_ml/run_ml_demo.py --output-dir output/my_run
+    python examples/air/03_ml/run_ml_demo.py --output-dir output/air/my_run
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+
 import numpy as np  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
@@ -48,6 +49,7 @@ except ImportError:
     sys.exit(1)
 
 from acoustic_sim.air.forward import simulate_3d_traces
+from acoustic_sim.air.pipeline_plots import finish
 from acoustic_sim.ml.acoustic_classifier import AcousticClassifier
 from acoustic_sim.ml.data_generation import (
     CLASS_TO_IDX,
@@ -142,26 +144,15 @@ def plot_mel_examples(
     vmin = min(s.min() for _, s in specs)
     vmax = max(s.max() for _, s in specs)
 
-    fig, axes = plt.subplots(2, 3, figsize=(13, 6))
-    axes_flat = axes.ravel()
-    im = None
-    for ax, (cls_name, mel) in zip(axes_flat, specs):
-        im = ax.imshow(
-            mel, aspect="auto", origin="lower", cmap="viridis",
-            vmin=vmin, vmax=vmax,
-        )
-        ax.set_title(cls_name)
-        ax.set_xlabel("Time frame")
-        ax.set_ylabel("Mel band")
-
-    fig.subplots_adjust(right=0.88)
-    cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7])
-    fig.colorbar(im, cax=cbar_ax, label="Log power")
-    fig.suptitle("Mel Spectrogram Examples by Source Class", fontsize=13)
-    path = output_dir / "mel_spectrogram_examples.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    print(f"         Saved {path}")
+    for cls_name, mel in specs:
+        fig, ax = plt.subplots(figsize=(12, 8))
+        im = ax.imshow(mel, aspect="auto", origin="lower", cmap="viridis", vmin=vmin, vmax=vmax)
+        ax.set_xlabel("time frame")
+        ax.set_ylabel("mel band")
+        fig.colorbar(im, ax=ax, label="log power")
+        path = output_dir / f"mel_spectrogram_{cls_name}.png"
+        finish(fig, ax, path, f"mel spectrogram example: {cls_name}", verbose=False)
+        print(f"         Saved {path}")
 
 
 # ====================================================================
@@ -211,33 +202,24 @@ def plot_training_curves(history: dict, output_dir: Path) -> None:
 
     epochs = np.arange(1, len(history["train_loss"]) + 1)
 
-    fig, ax1 = plt.subplots(figsize=(8, 5))
-    color_tl = "#1f77b4"
-    color_vl = "#ff7f0e"
-    color_va = "#2ca02c"
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.plot(epochs, history["train_loss"], color="#1f77b4", label="Train loss")
+    ax.plot(epochs, history["val_loss"], color="#ff7f0e", label="Validation loss")
+    ax.set_xlabel("epoch")
+    ax.set_ylabel("loss")
+    ax.legend(loc="upper right")
+    path = output_dir / "training_curves_loss.png"
+    finish(fig, ax, path, "acoustic classifier training: loss", verbose=False)
+    print(f"         Saved {path}")
 
-    ax1.set_xlabel("Epoch")
-    ax1.set_ylabel("Loss")
-    ln1 = ax1.plot(epochs, history["train_loss"], color=color_tl,
-                   label="Train loss")
-    ln2 = ax1.plot(epochs, history["val_loss"], color=color_vl,
-                   label="Val loss")
-
-    ax2 = ax1.twinx()
-    ax2.set_ylabel("Accuracy")
-    ln3 = ax2.plot(epochs, history["val_acc"], color=color_va,
-                   linestyle="--", label="Val accuracy")
-    ax2.set_ylim(0, 1.05)
-
-    lns = ln1 + ln2 + ln3
-    labs = [ln.get_label() for ln in lns]
-    ax1.legend(lns, labs, loc="center right")
-
-    ax1.set_title("Acoustic Classifier Training")
-    fig.tight_layout()
-    path = output_dir / "training_curves.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.plot(epochs, history["val_acc"], color="#2ca02c", linestyle="--", label="Validation accuracy")
+    ax.set_ylim(0, 1.05)
+    ax.set_xlabel("epoch")
+    ax.set_ylabel("accuracy")
+    ax.legend(loc="lower right")
+    path = output_dir / "training_curves_accuracy.png"
+    finish(fig, ax, path, "acoustic classifier training: validation accuracy", verbose=False)
     print(f"         Saved {path}")
 
 
@@ -276,7 +258,7 @@ def plot_confusion_matrix(metrics: dict, output_dir: Path) -> None:
     cm_norm = cm / row_sums
 
     n_cls = len(SOURCE_CLASSES)
-    fig, ax = plt.subplots(figsize=(7, 6))
+    fig, ax = plt.subplots(figsize=(12, 10))
     im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1)
 
     for i in range(n_cls):
@@ -284,7 +266,7 @@ def plot_confusion_matrix(metrics: dict, output_dir: Path) -> None:
             val = cm_norm[i, j] * 100
             color = "white" if cm_norm[i, j] > 0.5 else "black"
             ax.text(j, i, f"{val:.1f}%", ha="center", va="center",
-                    color=color, fontsize=8)
+                    color=color, fontsize=11)
 
     ax.set_xticks(range(n_cls))
     ax.set_xticklabels(SOURCE_CLASSES, rotation=45, ha="right")
@@ -292,14 +274,9 @@ def plot_confusion_matrix(metrics: dict, output_dir: Path) -> None:
     ax.set_yticklabels(SOURCE_CLASSES)
     ax.set_xlabel("Predicted class")
     ax.set_ylabel("True class")
-    ax.set_title(
-        f"Confusion Matrix (accuracy={metrics['accuracy']:.1%})"
-    )
-    fig.colorbar(im, ax=ax, label="Fraction")
-    fig.tight_layout()
+    fig.colorbar(im, ax=ax, label="fraction of the true class")
     path = output_dir / "confusion_matrix.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    finish(fig, ax, path, f"confusion matrix (accuracy {metrics['accuracy']:.1%})", verbose=False)
     print(f"         Saved {path}")
 
 
@@ -319,21 +296,19 @@ def plot_per_class_metrics(metrics: dict, output_dir: Path) -> None:
     x = np.arange(len(classes))
     width = 0.25
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(12, 8))
     ax.bar(x - width, precision, width, label="Precision", color="#1f77b4")
     ax.bar(x, recall, width, label="Recall", color="#ff7f0e")
     ax.bar(x + width, f1, width, label="F1", color="#2ca02c")
 
     ax.set_xticks(x)
     ax.set_xticklabels(classes, rotation=30, ha="right")
-    ax.set_ylabel("Score")
+    ax.set_xlabel("source class")
+    ax.set_ylabel("score")
     ax.set_ylim(0, 1.1)
     ax.legend()
-    ax.set_title("Per-Class Classification Metrics")
-    fig.tight_layout()
     path = output_dir / "per_class_metrics.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    finish(fig, ax, path, "classification metrics per class", verbose=False)
     print(f"         Saved {path}")
 
 
@@ -372,21 +347,18 @@ def plot_accuracy_vs_snr(
         accs.append(acc)
         errs.append(se)
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(12, 8))
     ax.errorbar(centers, accs, yerr=errs, fmt="o-", capsize=4,
-                linewidth=2, markersize=6, color="#1f77b4")
+                linewidth=2, markersize=6, color="#1f77b4", label="Accuracy (standard error)")
     ax.axhline(1.0 / len(SOURCE_CLASSES), color="gray", linestyle="--",
                label="Chance (1/6)")
-    ax.set_xlabel("SNR (dB)")
-    ax.set_ylabel("Classification Accuracy")
+    ax.set_xlabel("SNR [dB]")
+    ax.set_ylabel("classification accuracy")
     ax.set_ylim(0, 1.05)
-    ax.set_title("Classification Accuracy vs SNR")
     ax.legend()
     ax.grid(True, alpha=0.3)
-    fig.tight_layout()
     path = output_dir / "accuracy_vs_snr.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    finish(fig, ax, path, "classification accuracy against SNR", verbose=False)
     print(f"         Saved {path}")
 
 
@@ -405,7 +377,7 @@ def plot_roc_curves(
     probs = metrics["probabilities"]  # (N, n_classes)
     n_cls = len(SOURCE_CLASSES)
 
-    fig, ax = plt.subplots(figsize=(7, 7))
+    fig, ax = plt.subplots(figsize=(12, 11))
     colors = plt.cm.tab10(np.linspace(0, 1, n_cls))
 
     for cls_idx in range(n_cls):
@@ -433,17 +405,14 @@ def plot_roc_curves(
                 label=f"{SOURCE_CLASSES[cls_idx]} (AUC={auc:.2f})")
 
     ax.plot([0, 1], [0, 1], "k--", alpha=0.4, label="Chance")
-    ax.set_xlabel("False Positive Rate")
-    ax.set_ylabel("True Positive Rate")
-    ax.set_title("One-vs-Rest ROC Curves")
-    ax.legend(loc="lower right", fontsize=8)
+    ax.set_xlabel("false positive rate")
+    ax.set_ylabel("true positive rate")
+    ax.legend(loc="lower right")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.02)
     ax.grid(True, alpha=0.3)
-    fig.tight_layout()
     path = output_dir / "roc_curves.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    finish(fig, ax, path, "one against the rest ROC curves", verbose=False)
     print(f"         Saved {path}")
 
 
@@ -531,50 +500,46 @@ def plot_detection_gate(
     rms_threshold = 3.0 * float(np.median(noise_rms))
 
     # --- Plot ---
-    fig, (ax1, ax2, ax3) = plt.subplots(
-        3, 1, figsize=(10, 7), sharex=True,
-    )
     windows = np.arange(n_windows)
+    head = "detection gate and classifier"
 
-    # Top: RMS energy.
-    ax1.plot(windows, rms_values, "k-", linewidth=1.2)
-    ax1.axhline(rms_threshold, color="red", linestyle="--",
-                label="Detection threshold")
-    ax1.set_ylabel("RMS Energy")
-    ax1.legend(loc="upper left", fontsize=8)
-    ax1.set_title("Detection Gate + Classifier Integration")
+    # RMS energy with the gate.
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.plot(windows, rms_values, "k-", linewidth=1.2, label="RMS of the beam")
+    ax.axhline(rms_threshold, color="red", linestyle="--", label="Detection threshold")
+    ax.set_xlabel("window index")
+    ax.set_ylabel("RMS [Pa]")
+    ax.legend(loc="upper left")
+    path = output_dir / "detection_gate_demo_rms.png"
+    finish(fig, ax, path, f"{head}: RMS energy", verbose=False)
+    print(f"         Saved {path}")
 
-    # Middle: classifier confidence, colored by predicted class.
+    # Classifier confidence, coloured by predicted class.
     colors_map = plt.cm.tab10(np.linspace(0, 1, len(SOURCE_CLASSES)))
+    fig, ax = plt.subplots(figsize=(12, 7))
     for w in range(n_windows):
         c = colors_map[pred_classes[w]] if pred_classes[w] >= 0 else "gray"
-        ax2.bar(w, max_probs[w], width=0.8, color=c, edgecolor="none")
-    ax2.set_ylabel("Max class probability")
-    ax2.set_ylim(0, 1.05)
-    # Legend for class colours.
-    handles = []
-    for ci, cname in enumerate(SOURCE_CLASSES):
-        handles.append(plt.Line2D(
-            [0], [0], marker="s", color="w",
-            markerfacecolor=colors_map[ci], markersize=7, label=cname,
-        ))
-    ax2.legend(handles=handles, loc="upper left", fontsize=6,
-               ncol=3)
+        ax.bar(w, max_probs[w], width=0.8, color=c, edgecolor="none")
+    ax.set_ylim(0, 1.05)
+    handles = [plt.Line2D([0], [0], marker="s", color="w", markerfacecolor=colors_map[ci], markersize=10, label=cname)
+               for ci, cname in enumerate(SOURCE_CLASSES)]
+    ax.legend(handles=handles, loc="upper left", ncol=3)
+    ax.set_xlabel("window index")
+    ax.set_ylabel("largest class probability")
+    path = output_dir / "detection_gate_demo_confidence.png"
+    finish(fig, ax, path, f"{head}: classifier confidence by predicted class", verbose=False)
+    print(f"         Saved {path}")
 
-    # Bottom: ground truth.
-    ax3.fill_between(windows, ground_truth, step="mid",
-                     alpha=0.4, color="#2ca02c")
-    ax3.step(windows, ground_truth, where="mid", color="#2ca02c",
-             linewidth=1.5)
-    ax3.set_ylabel("Source present")
-    ax3.set_xlabel("Window index")
-    ax3.set_yticks([0, 1])
-    ax3.set_yticklabels(["Absent", "Present"])
-
-    fig.tight_layout()
-    path = output_dir / "detection_gate_demo.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    # Where the source was present.
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.fill_between(windows, ground_truth, step="mid", alpha=0.4, color="#2ca02c")
+    ax.step(windows, ground_truth, where="mid", color="#2ca02c", linewidth=1.5)
+    ax.set_xlabel("window index")
+    ax.set_ylabel("source present")
+    ax.set_yticks([0, 1])
+    ax.set_yticklabels(["absent", "present"])
+    path = output_dir / "detection_gate_demo_truth.png"
+    finish(fig, ax, path, f"{head}: where the source was present", verbose=False)
     print(f"         Saved {path}")
 
 
@@ -602,9 +567,9 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--output-dir", type=Path, default=Path("output/ml_demo"),
+        "--output-dir", type=Path, default=Path("output/air/ml_demo"),
         help="Directory for plots and model weights "
-             "(default: output/ml_demo)",
+             "(default: output/air/ml_demo)",
     )
     parser.add_argument(
         "--n-samples", type=int, default=300,

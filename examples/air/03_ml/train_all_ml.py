@@ -7,7 +7,7 @@ Generates synthetic training data and trains three models end-to-end:
 2. ManeuverClassifier — 1D CNN on kinematic time series (6 maneuver classes)
 3. FusionClassifier — Two-branch acoustic+kinematic network (6 source classes)
 
-Checkpoints are saved to ``output/models/``.  This script must be
+Checkpoints are saved to ``output/air/models/``.  This script must be
 runnable standalone::
 
     python examples/air/03_ml/train_all_ml.py
@@ -353,7 +353,7 @@ def main():
     parser.add_argument("--n-epochs", type=int, default=None,
                         help="Override training epochs")
     parser.add_argument("--output-dir", type=Path,
-                        default=Path("output/models"),
+                        default=Path("output/air/models"),
                         help="Model checkpoint directory")
     args = parser.parse_args()
 

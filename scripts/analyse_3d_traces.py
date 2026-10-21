@@ -6,7 +6,7 @@ to guide MFP parameter tuning.
 
 Usage::
 
-    python scripts/analyse_3d_traces.py output/valley_3d_test
+    python scripts/analyse_3d_traces.py output/air/valley_3d_test
 
 Expected output: frequency peaks, RMS values, and energy distribution
 that inform the choice of fundamental, harmonics, and detection thresholds.

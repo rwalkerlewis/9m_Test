@@ -21,11 +21,11 @@ Usage::
     python scripts/bench_harbor.py --tag baseline --cuda --save-reference
     python scripts/bench_harbor.py --tag stage1_fused64 --cuda --kernel fused
     python scripts/bench_harbor.py --tag stage1_fused32 --cuda --kernel fused --precision float32 \
-        --ref-dir output/performance/runs/stage1_fused64
+        --ref-dir output/studies/performance/runs/stage1_fused64
 
-Timings and comparison metrics go to ``output/performance/<tag>.json`` (committed); the outputs
-of a run go to ``output/performance/runs/<tag>/`` or, with ``--save-reference``, to
-``output/performance/reference/`` (both gitignored through ``*.npz``).
+Timings and comparison metrics go to ``output/studies/performance/<tag>.json`` (committed); the outputs
+of a run go to ``output/studies/performance/runs/<tag>/`` or, with ``--save-reference``, to
+``output/studies/performance/reference/`` (both gitignored through ``*.npz``).
 """
 
 from __future__ import annotations
@@ -78,9 +78,9 @@ from acoustic_sim.sources import CustomTrajectorySource  # noqa: E402
 
 BISTATIC_SCENARIO = ROOT / "examples" / "configs" / "harbor_bistatic.scenario.json"
 MULTISTATIC_SCENARIO = ROOT / "examples" / "configs" / "harbor_multistatic.scenario.json"
-DATA_ROOT = Path(__import__("os").environ.get("BENCH_DATA_ROOT", ROOT))      # where output/harbor_bistatic and output/harbor_cancel live
-FINE_DATASET = DATA_ROOT / "output" / "harbor_bistatic" / "fine" / "dataset.npz"
-CANCEL_CACHE = DATA_ROOT / "output" / "harbor_cancel" / "cache"
+DATA_ROOT = Path(__import__("os").environ.get("BENCH_DATA_ROOT", ROOT))      # where output/recordings/bistatic and output/studies/history/harbor_cancellation_depth live
+FINE_DATASET = DATA_ROOT / "output" / "recordings" / "bistatic" / "dataset.npz"
+CANCEL_CACHE = DATA_ROOT / "output" / "studies" / "history" / "harbor_cancellation_depth" / "cache"
 
 FDTD_CASES = {
     # name: (scenario, total_time, bodies)
@@ -455,11 +455,11 @@ def compare_case(name: str, out: dict, ref: dict, out_all: dict, ref_all: dict) 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--tag", required=True, help="name of the run (output/performance/<tag>.json)")
+    ap.add_argument("--tag", required=True, help="name of the run (output/studies/performance/<tag>.json)")
     ap.add_argument("--cases", default="all", help="comma separated case names, or 'all', 'fdtd', 'proc', 'eca'")
     ap.add_argument("--cuda", action="store_true", help="FDTD on the GPU")
-    ap.add_argument("--out", default=str(ROOT / "output" / "performance"))
-    ap.add_argument("--save-reference", action="store_true", help="save the outputs as the reference (output/performance/reference)")
+    ap.add_argument("--out", default=str(ROOT / "output" / "studies" / "performance"))
+    ap.add_argument("--save-reference", action="store_true", help="save the outputs as the reference (output/studies/performance/reference)")
     ap.add_argument("--ref-dir", default=None, help="compare against the outputs in this directory (default: the reference)")
     ap.add_argument("--no-compare", action="store_true")
     ap.add_argument("--repeat", type=int, default=1, help="repeat the FDTD cases and keep the best wall time")

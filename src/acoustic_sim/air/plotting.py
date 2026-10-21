@@ -1,6 +1,11 @@
-"""Plotting utilities for velocity models and wavefields."""
+"""Plotting utilities for velocity models, wavefields and the drone pipeline.
+
+Every figure is one panel written by :func:`acoustic_sim.plotting.save_figure`; a display of several quantities or
+snapshots is one figure per panel, ``<stem>_<panel>.png`` beside the path the caller gave."""
 
 from __future__ import annotations
+
+import re
 
 import matplotlib
 import numpy as np
@@ -8,11 +13,16 @@ from matplotlib import pyplot as plt
 
 # Moved out of this module; re-exported so the old import paths keep working.
 from acoustic_sim.air.pipeline_plots import (  # noqa: F401
+    MAP_SIZE,
+    PANEL_SIZE,
+    finish,
+    panel_path,
     plot_beamformer_diagnostic,
     plot_pipeline_summary,
     plot_radial_engagement,
 )
 from acoustic_sim.model import VelocityModel
+from acoustic_sim.plotting import new_figure
 from acoustic_sim.solver.snapshots import _P_REF, _to_db_spl, save_snapshot, save_snapshot_3d  # noqa: F401
 
 matplotlib.use("Agg")
@@ -26,7 +36,7 @@ def plot_velocity_model(
     title: str = "Velocity Model",
 ) -> None:
     """Save a figure of the velocity field with optional overlays."""
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig, ax = new_figure(MAP_SIZE)
     ext = model.extent
     im = ax.imshow(
         model.values,
@@ -53,10 +63,8 @@ def plot_velocity_model(
     ax.set_ylabel("y [m]")
     ax.set_title(title)
     if receivers is not None or source_xy is not None:
-        ax.legend(loc="upper right", fontsize=8)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
+        ax.legend(loc="upper right")
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote velocity model plot to {output_path}")
 
 
@@ -69,7 +77,7 @@ def plot_wavefield(
     title: str = "Helmholtz wavefield",
 ) -> None:
     """Save a figure of the Helmholtz pressure magnitude with optional overlays."""
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig, ax = new_figure(MAP_SIZE)
     ext = model.extent
     im = ax.imshow(
         field,
@@ -97,10 +105,8 @@ def plot_wavefield(
     ax.set_ylabel("y [m]")
     ax.set_title(title)
     if receivers is not None or source_xy is not None:
-        ax.legend(loc="upper right", fontsize=8)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
+        ax.legend(loc="upper right")
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote wavefield plot to {output_path}")
 
 
@@ -133,7 +139,7 @@ def plot_gather(
     db_max = float(np.max(db))
     db_min = db_max - db_range
 
-    fig, ax = plt.subplots(figsize=(10, 7))
+    fig, ax = new_figure(PANEL_SIZE)
     im = ax.imshow(
         db.T,
         aspect="auto",
@@ -149,9 +155,7 @@ def plot_gather(
     ax.set_xlabel("Receiver index")
     ax.set_ylabel("Time [s]")
     ax.set_title(title)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote gather plot to {output_path}")
 
 
@@ -178,7 +182,7 @@ def plot_domain(
     * Receiver and source markers.
     """
     ext = model.extent
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig, ax = new_figure(MAP_SIZE)
     im = ax.imshow(
         model.values,
         origin="lower",
@@ -218,7 +222,7 @@ def plot_domain(
         ax.text(
             cx, cy - 0.04 * (ext[3] - ext[2]),
             f"Wind {mag:.1f} m/s",
-            color="white", fontsize=7, ha="center",
+            color="white", fontsize=11, ha="center",
         )
 
     if receivers is not None:
@@ -267,10 +271,8 @@ def plot_domain(
     ax.set_ylabel("y [m]")
     ax.set_title(title)
     if receivers is not None or source_xy is not None:
-        ax.legend(loc="upper right", fontsize=8)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
+        ax.legend(loc="upper right")
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote domain plot to {output_path}")
 
 
@@ -298,7 +300,7 @@ def plot_detection_domain(
     stationary_pos : (2,) or None
     """
     ext = model.extent
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig, ax = new_figure(MAP_SIZE)
     im = ax.imshow(
         model.values, origin="lower",
         extent=[ext[0], ext[1], ext[2], ext[3]],
@@ -333,10 +335,8 @@ def plot_detection_domain(
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
     ax.set_title(title)
-    ax.legend(loc="upper right", fontsize=7)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
+    ax.legend(loc="upper right")
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote detection domain plot to {output_path}")
 
 
@@ -348,7 +348,7 @@ def plot_detection_gather(
     title: str = "Receiver Gather",
     db_range: float = 60.0,
 ) -> None:
-    """Two-panel seismological gather: raw (left) and filtered (right).
+    """Seismological gathers, one figure each: raw (``<stem>_raw.png``) and filtered (``<stem>_filtered.png``).
 
     Parameters
     ----------
@@ -358,30 +358,18 @@ def plot_detection_gather(
     """
     n_recv, n_samp = traces.shape
     t_axis = np.arange(n_samp) * dt
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7), sharey=True)
-
-    for ax, data, label in [(ax1, traces, "Raw"),
-                             (ax2, filtered_traces, "Filtered")]:
+    for data, label in ((traces, "raw"), (filtered_traces, "filtered")):
+        fig, ax = new_figure(PANEL_SIZE)
         db = _to_db_spl(data, floor_db=-db_range)
         db_max = float(np.max(db))
-        db_min = db_max - db_range
-        im = ax.imshow(
-            db.T, aspect="auto", cmap="inferno",
-            vmin=db_min, vmax=db_max, origin="upper",
-            extent=[0, n_recv, t_axis[-1], t_axis[0]],
-            interpolation="bicubic",
-        )
+        im = ax.imshow(db.T, aspect="auto", cmap="inferno", vmin=db_max - db_range, vmax=db_max, origin="upper",
+                       extent=[0, n_recv, t_axis[-1], t_axis[0]], interpolation="bicubic")
         fig.colorbar(im, ax=ax, label="SPL [dB re 20 µPa]")
-        ax.set_xlabel("Receiver index")
-        ax.set_title(label)
+        ax.set_xlabel("receiver index")
+        ax.set_ylabel("time [s]")
+        finish(fig, ax, panel_path(output_path, label), f"{title}: {label} traces", verbose=False)
+    print(f"Wrote detection gathers to {panel_path(output_path, 'raw')} and {panel_path(output_path, 'filtered')}")
 
-    ax1.set_ylabel("Time [s]")
-    fig.suptitle(title)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
-    print(f"Wrote detection gather to {output_path}")
 
 
 def plot_beam_power(
@@ -392,7 +380,7 @@ def plot_beam_power(
     output_path: str = "beam_power.png",
     n_panels: int = 9,
 ) -> None:
-    """Multi-panel beam-power / coherence snapshots.
+    """Beam power / coherence snapshots, one figure per snapshot (``<stem>_<k>.png``, k = 1 .. *n_panels*).
 
     Parameters
     ----------
@@ -400,71 +388,35 @@ def plot_beam_power(
     true_positions : (n_steps, 2) true drone positions at each time step.
     grid_x, grid_y : 1-D MFP grid coordinates.
     n_panels : int
-        Number of panels to show.
+        Number of snapshots to show.
     """
     n = len(results)
     if n == 0:
         return
     n_panels = min(n_panels, n)
     indices = np.linspace(0, n - 1, n_panels, dtype=int)
-
-    ncols = int(np.ceil(np.sqrt(n_panels)))
-    nrows = int(np.ceil(n_panels / ncols))
-    fig, axes = plt.subplots(nrows, ncols, figsize=(4 * ncols, 3.5 * nrows))
-    if nrows * ncols == 1:
-        axes = np.array([axes])
-    axes = np.atleast_2d(axes)
-
-    # Track history for blue line.
     est_xs, est_ys = [], []
-
     for panel, idx in enumerate(indices):
         r = results[idx]
-        row, col = divmod(panel, ncols)
-        ax = axes[row, col]
-
-        bpm = r["beam_power_map"]
-        ax.imshow(
-            bpm.T, origin="lower", aspect="equal",
-            extent=[grid_x[0], grid_x[-1], grid_y[0], grid_y[-1]],
-            cmap="hot", interpolation="bicubic",
-        )
-
-        # True position (interpolate to detection time).
-        t = r["time"]
+        fig, ax = new_figure(MAP_SIZE)
+        im = ax.imshow(r["beam_power_map"].T, origin="lower", aspect="equal",
+                       extent=[grid_x[0], grid_x[-1], grid_y[0], grid_y[-1]], cmap="hot", interpolation="bicubic")
+        fig.colorbar(im, ax=ax, label="beam power (coherence)")
         n_steps_true = true_positions.shape[0]
-        frac = t  # we'll use time directly if available
-        # Find closest true position by time index.
-        total_det = len(results)
-        true_idx = min(int(idx * n_steps_true / max(total_det, 1)),
-                       n_steps_true - 1)
-        ax.plot(true_positions[true_idx, 0], true_positions[true_idx, 1],
-                "ro", ms=5, label="True" if panel == 0 else "")
-
-        # Estimated position.
+        true_idx = min(int(idx * n_steps_true / max(len(results), 1)), n_steps_true - 1)
+        ax.plot(true_positions[true_idx, 0], true_positions[true_idx, 1], "ro", ms=7, label="True position")
         if r["detected"]:
-            ax.plot(r["x"], r["y"], "bx", ms=6, mew=2,
-                    label="Est" if panel == 0 else "")
+            ax.plot(r["x"], r["y"], "bx", ms=9, mew=2, label="Estimated position")
             est_xs.append(r["x"])
             est_ys.append(r["y"])
-
-        # Track history.
         if len(est_xs) > 1:
-            ax.plot(est_xs, est_ys, "b-", lw=0.8, alpha=0.6)
+            ax.plot(est_xs, est_ys, "b-", lw=0.8, alpha=0.6, label="Estimated track")
+        ax.set_xlabel("x [m]")
+        ax.set_ylabel("y [m]")
+        ax.legend(loc="upper right")
+        finish(fig, ax, panel_path(output_path, str(panel + 1)), f"beam power map at t = {r['time']:.2f} s", verbose=False)
+    print(f"Wrote {n_panels} beam power maps beside {output_path}")
 
-        ax.set_title(f"t={t:.2f}s", fontsize=8)
-        ax.tick_params(labelsize=6)
-
-    # Hide unused axes.
-    for panel in range(n_panels, nrows * ncols):
-        row, col = divmod(panel, ncols)
-        axes[row, col].set_visible(False)
-
-    fig.suptitle("Beam Power / Coherence Maps")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=150)
-    plt.close(fig)
-    print(f"Wrote beam power plot to {output_path}")
 
 
 def plot_tracking(
@@ -475,76 +427,67 @@ def plot_tracking(
     weapon_pos: tuple[float, float] | np.ndarray,
     output_path: str = "tracking.png",
 ) -> None:
-    """Four-panel tracking and fire-control display.
-
-    Panels: bearing vs time, range vs time, lead angle vs time,
-    engagement status vs time.
-    """
+    """Tracking and fire control, one figure per quantity: ``<stem>_bearing.png``, ``_range.png``,
+    ``_lead_angle.png``, ``_engagement.png``."""
     wp = np.asarray(weapon_pos, dtype=np.float64)
     t_track = track["times"]
     pos_track = track["positions"]
-
-    # True bearing & range vs time.
     true_dx = true_positions[:, 0] - wp[0]
     true_dy = true_positions[:, 1] - wp[1]
     true_bearing = np.degrees(np.arctan2(true_dy, true_dx))
     true_range = np.sqrt(true_dx ** 2 + true_dy ** 2)
-
-    # Estimated bearing & range.
     est_dx = pos_track[:, 0] - wp[0]
     est_dy = pos_track[:, 1] - wp[1]
     est_bearing = np.degrees(np.arctan2(est_dy, est_dx))
     est_range = np.sqrt(est_dx ** 2 + est_dy ** 2)
-
-    fig, axes = plt.subplots(4, 1, figsize=(10, 12), sharex=True)
-
-    # Panel 1: Bearing.
-    ax = axes[0]
-    ax.plot(true_times, true_bearing, "r-", lw=1, label="True")
     valid = ~np.isnan(pos_track[:, 0])
-    ax.plot(t_track[valid], est_bearing[valid], "b.", ms=3, label="Estimated")
-    ax.set_ylabel("Bearing [deg]")
-    ax.legend(fontsize=7)
-    ax.set_title("Bearing to Target")
+    _true_and_estimated(output_path, "bearing", true_times, true_bearing, t_track[valid], est_bearing[valid],
+                        "bearing [deg]", "tracking: bearing to the target")
+    _true_and_estimated(output_path, "range", true_times, true_range, t_track[valid], est_range[valid],
+                        "range [m]", "tracking: range to the target")
+    _lead_angle(output_path, fire_control, "tracking: lead angle")
+    _engagement(output_path, fire_control, "tracking: engagement envelope")
+    print(f"Wrote tracking plots beside {output_path}")
 
-    # Panel 2: Range.
-    ax = axes[1]
-    ax.plot(true_times, true_range, "r-", lw=1, label="True")
-    ax.plot(t_track[valid], est_range[valid], "b.", ms=3, label="Estimated")
-    ax.set_ylabel("Range [m]")
-    ax.legend(fontsize=7)
-    ax.set_title("Range to Target")
 
-    # Panel 3: Lead angle.
-    ax = axes[2]
+def _true_and_estimated(output_path, panel, t_true, v_true, t_est, v_est, ylabel, title) -> None:
+    fig, ax = new_figure(PANEL_SIZE)
+    ax.plot(t_true, v_true, "r-", lw=1, label="True")
+    ax.plot(t_est, v_est, "b.", ms=4, label="Estimated")
+    ax.set_xlabel("time [s]")
+    ax.set_ylabel(ylabel)
+    ax.legend()
+    finish(fig, ax, panel_path(output_path, panel), title, verbose=False)
+
+
+def _lead_angle(output_path, fire_control: dict, title: str) -> None:
+    fig, ax = new_figure(PANEL_SIZE)
     leads = np.degrees(fire_control["lead_angles"])
     valid_fc = ~np.isnan(leads)
-    ax.plot(fire_control["times"][valid_fc], leads[valid_fc], "g.-", ms=3,
-            lw=0.8, label="Lead angle")
-    ax.set_ylabel("Lead angle [deg]")
+    ax.plot(fire_control["times"][valid_fc], leads[valid_fc], "g.-", ms=3, lw=0.8, label="Lead angle (azimuth)")
+    if "lead_angles_el" in fire_control:
+        leads_el = np.degrees(fire_control["lead_angles_el"])
+        valid_el = ~np.isnan(leads_el)
+        ax.plot(fire_control["times"][valid_el], leads_el[valid_el], "m.-", ms=3, lw=0.8, label="Lead angle (elevation)")
     ax.axhline(0, color="gray", ls="--", lw=0.5)
-    ax.legend(fontsize=7)
-    ax.set_title("Lead Angle")
+    ax.set_xlabel("time [s]")
+    ax.set_ylabel("lead angle [deg]")
+    ax.legend()
+    finish(fig, ax, panel_path(output_path, "lead_angle"), title, verbose=False)
 
-    # Panel 4: Engagement envelope.
-    ax = axes[3]
+
+def _engagement(output_path, fire_control: dict, title: str) -> None:
+    fig, ax = new_figure(PANEL_SIZE)
     cf = fire_control["can_fire"]
     t_fc = fire_control["times"]
-    ax.fill_between(t_fc, 0, cf.astype(float),
-                    step="mid", alpha=0.4, color="green", label="FIRE")
-    ax.fill_between(t_fc, 0, (~cf).astype(float),
-                    step="mid", alpha=0.3, color="red", label="NO FIRE")
+    ax.fill_between(t_fc, 0, cf.astype(float), step="mid", alpha=0.4, color="green", label="FIRE")
+    ax.fill_between(t_fc, 0, (~cf).astype(float), step="mid", alpha=0.3, color="red", label="NO FIRE")
     ax.set_ylim(-0.1, 1.2)
-    ax.set_ylabel("Engagement")
-    ax.set_xlabel("Time [s]")
-    ax.legend(fontsize=7)
-    ax.set_title("Engagement Envelope")
+    ax.set_xlabel("time [s]")
+    ax.set_ylabel("engagement (1: on)")
+    ax.legend()
+    finish(fig, ax, panel_path(output_path, "engagement"), title, verbose=False)
 
-    fig.suptitle("Tracking & Fire Control")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
-    print(f"Wrote tracking plot to {output_path}")
 
 
 def plot_vespagram(
@@ -614,7 +557,7 @@ def plot_vespagram(
 
     t_axis = np.arange(n_windows) * hop * dt
 
-    fig, ax = plt.subplots(figsize=(12, 5))
+    fig, ax = new_figure(PANEL_SIZE)
     im = ax.imshow(
         vespa, origin="lower", aspect="auto",
         extent=[t_axis[0], t_axis[-1], slownesses[0] * 1e3,
@@ -627,10 +570,8 @@ def plot_vespagram(
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Slowness [ms/m]")
     ax.set_title(title)
-    ax.legend(fontsize=7)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
+    ax.legend()
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote vespagram to {output_path}")
 
 
@@ -644,36 +585,28 @@ def plot_study_comparison(
     output_path: str = "study_comparison.png",
     title: str = "Study Comparison",
 ) -> None:
-    """Bar-chart comparison of metrics across study cases.
+    """Bar chart comparison of metrics across study cases, one figure per metric (``<stem>_<metric>.png``).
 
     Parameters
     ----------
     labels : list of case names (x-axis categories).
     metrics : dict mapping metric name → list of values (one per case).
     """
-    n_metrics = len(metrics)
-    n_cases = len(labels)
-    if n_metrics == 0 or n_cases == 0:
+    if not metrics or not labels:
         return
-
-    fig, axes = plt.subplots(1, n_metrics, figsize=(5 * n_metrics, 5))
-    if n_metrics == 1:
-        axes = [axes]
-
-    x = np.arange(n_cases)
-    for ax, (name, values) in zip(axes, metrics.items()):
+    x = np.arange(len(labels))
+    for name, values in metrics.items():
+        fig, ax = new_figure(PANEL_SIZE)
         vals = [v if np.isfinite(v) else 0.0 for v in values]
         ax.bar(x, vals, color="steelblue", edgecolor="black", linewidth=0.5)
         ax.set_xticks(x)
-        ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=7)
+        ax.set_xticklabels(labels, rotation=45, ha="right")
+        ax.set_xlabel("case")
         ax.set_ylabel(name)
-        ax.set_title(name, fontsize=9)
+        slug = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").lower() or "metric"
+        finish(fig, ax, panel_path(output_path, slug), f"{title}: {name}", verbose=False)
+    print(f"Wrote study comparison beside {output_path}")
 
-    fig.suptitle(title, fontsize=11)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=150)
-    plt.close(fig)
-    print(f"Wrote study comparison to {output_path}")
 
 
 def plot_multi_track(
@@ -689,7 +622,7 @@ def plot_multi_track(
     tracks : list of track dicts from MultiTargetTracker.
     true_positions_list : list of (n_steps, 2) arrays, one per true source.
     """
-    fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = new_figure(MAP_SIZE)
     colours = plt.cm.tab10.colors  # type: ignore[attr-defined]
 
     if true_positions_list:
@@ -707,11 +640,9 @@ def plot_multi_track(
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
     ax.set_title(title)
-    ax.legend(fontsize=7)
+    ax.legend()
     ax.set_aspect("equal")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=150)
-    plt.close(fig)
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote multi-track plot to {output_path}")
 
 
@@ -728,70 +659,37 @@ def plot_polar_beam_power(
     output_path: str = "polar_beam_power.png",
     n_panels: int = 6,
 ) -> None:
-    """Multi-panel polar beam-power maps.
-
-    Each panel shows the beam power map for one time window in
-    polar coordinates (azimuth vs range), with the true and
-    estimated source positions.
-    """
+    """Polar beam power maps (azimuth against range), one figure per time window (``<stem>_<k>.png``), with the true
+    and estimated source positions."""
     n = len(results)
     if n == 0:
         return
     n_panels = min(n_panels, n)
     indices = np.linspace(0, n - 1, n_panels, dtype=int)
-
-    ncols = min(3, n_panels)
-    nrows = int(np.ceil(n_panels / ncols))
-    fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows))
-    if n_panels == 1:
-        axes = np.array([[axes]])
-    axes = np.atleast_2d(axes)
-
     cx, cy = array_center
     az_deg = np.degrees(azimuths)
-
     for panel, idx in enumerate(indices):
         r = results[idx]
-        row, col = divmod(panel, ncols)
-        ax = axes[row, col]
-
         bpm = r.get("beam_power_map", None)
         if bpm is None:
             continue
-
-        ax.imshow(
-            bpm.T, origin="lower", aspect="auto",
-            extent=[az_deg[0], az_deg[-1], ranges[0], ranges[-1]],
-            cmap="hot", interpolation="bicubic",
-        )
-
-        # True position → polar.
+        fig, ax = new_figure(PANEL_SIZE)
+        im = ax.imshow(bpm.T, origin="lower", aspect="auto", extent=[az_deg[0], az_deg[-1], ranges[0], ranges[-1]],
+                       cmap="hot", interpolation="bicubic")
+        fig.colorbar(im, ax=ax, label="beam power (MVDR)")
         n_true = true_positions.shape[0]
-        true_idx = min(int(idx * n_true / max(n, 1)), n_true - 1)
-        tp = true_positions[true_idx]
-        true_az = np.degrees(np.arctan2(tp[1] - cy, tp[0] - cx)) % 360
-        true_rng = np.hypot(tp[0] - cx, tp[1] - cy)
-        ax.plot(true_az, true_rng, "ro", ms=5)
-
-        # Estimated.
+        tp = true_positions[min(int(idx * n_true / max(n, 1)), n_true - 1)]
+        ax.plot(np.degrees(np.arctan2(tp[1] - cy, tp[0] - cx)) % 360, np.hypot(tp[0] - cx, tp[1] - cy), "ro", ms=7,
+                label="True position")
         if r["detected"]:
-            ax.plot(r.get("bearing_deg", 0), r.get("range", 0), "cx", ms=6, mew=2)
+            ax.plot(r.get("bearing_deg", 0), r.get("range", 0), "cx", ms=9, mew=2, label="Estimated position")
+        ax.set_xlabel("azimuth [deg]")
+        ax.set_ylabel("range [m]")
+        ax.legend(loc="upper right")
+        finish(fig, ax, panel_path(output_path, str(panel + 1)), f"polar beam power (MVDR) at t = {r['time']:.2f} s",
+               verbose=False)
+    print(f"Wrote polar beam power plots beside {output_path}")
 
-        ax.set_title(f"t={r['time']:.2f}s", fontsize=8)
-        ax.set_xlabel("Azimuth [°]")
-        if col == 0:
-            ax.set_ylabel("Range [m]")
-        ax.tick_params(labelsize=6)
-
-    for panel in range(n_panels, nrows * ncols):
-        row, col = divmod(panel, ncols)
-        axes[row, col].set_visible(False)
-
-    fig.suptitle("Polar Beam Power (MVDR)")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=150)
-    plt.close(fig)
-    print(f"Wrote polar beam power plot to {output_path}")
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -815,8 +713,7 @@ def plot_3d_trajectory(
     mic_positions : (n_mics, 3) or None.
     weapon_pos : (3,) or None.
     """
-    fig = plt.figure(figsize=(12, 9))
-    ax = fig.add_subplot(111, projection="3d")
+    fig, ax = plt.subplots(figsize=(12, 10), subplot_kw={"projection": "3d"})
 
     # True trajectory.
     ax.plot(true_positions[:, 0], true_positions[:, 1], true_positions[:, 2],
@@ -852,10 +749,8 @@ def plot_3d_trajectory(
     ax.set_ylabel("Y [m]")
     ax.set_zlabel("Z [m]")
     ax.set_title(title)
-    ax.legend(fontsize=8)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=150)
-    plt.close(fig)
+    ax.legend()
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote 3D trajectory plot to {output_path}")
 
 
@@ -868,7 +763,7 @@ def plot_altitude_vs_time(
     output_path: str = "altitude_time.png",
 ) -> None:
     """Plot altitude over time for true and estimated trajectories."""
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = new_figure(PANEL_SIZE)
     ax.plot(times, true_z, "g-", lw=2, label="True altitude")
     if estimated_z is not None and estimated_times is not None:
         valid = ~np.isnan(estimated_z)
@@ -878,11 +773,9 @@ def plot_altitude_vs_time(
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Altitude [m]")
     ax.set_title(title)
-    ax.legend(fontsize=8)
+    ax.legend()
     ax.grid(True, alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=150)
-    plt.close(fig)
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote altitude plot to {output_path}")
 
 
@@ -897,126 +790,62 @@ def plot_tracking_3d(
     class_label: str | None = None,
     class_confidence: float | None = None,
 ) -> None:
-    """Six-panel tracking and fire-control display with altitude and maneuver.
-
-    Panels: bearing, range, altitude, lead angle, engagement, maneuver/class.
-    """
+    """3-D tracking and fire control, one figure per quantity: ``<stem>_bearing.png``, ``_range.png``,
+    ``_altitude.png``, ``_lead_angle.png``, ``_engagement.png`` and, with maneuver labels or a class,
+    ``_maneuver.png``."""
     wp = np.asarray(weapon_pos, dtype=np.float64)
     if len(wp) == 2:
         wp = np.array([wp[0], wp[1], 0.0])
     t_track = track["times"]
     pos_track = track["positions"]
-
-    # True values.
     true_dx = true_positions[:, 0] - wp[0]
     true_dy = true_positions[:, 1] - wp[1]
     true_dz = true_positions[:, 2] - wp[2] if true_positions.shape[1] > 2 else np.zeros(len(true_dx))
     true_bearing = np.degrees(np.arctan2(true_dy, true_dx))
     true_range = np.sqrt(true_dx ** 2 + true_dy ** 2 + true_dz ** 2)
     true_z = true_positions[:, 2] if true_positions.shape[1] > 2 else np.zeros(len(true_dx))
-
-    # Estimated values.
     est_dx = pos_track[:, 0] - wp[0]
     est_dy = pos_track[:, 1] - wp[1]
     est_dz = pos_track[:, 2] - wp[2] if pos_track.shape[1] > 2 else np.zeros(len(est_dx))
     est_bearing = np.degrees(np.arctan2(est_dy, est_dx))
     est_range = np.sqrt(est_dx ** 2 + est_dy ** 2 + est_dz ** 2)
     est_z = pos_track[:, 2] if pos_track.shape[1] > 2 else np.zeros(len(est_dx))
-
     valid = ~np.isnan(pos_track[:, 0])
 
-    n_panels = 6 if maneuver_labels or class_label else 5
-    fig, axes = plt.subplots(n_panels, 1, figsize=(10, 3 * n_panels), sharex=True)
+    _true_and_estimated(output_path, "bearing", true_times, true_bearing, t_track[valid], est_bearing[valid],
+                        "bearing [deg]", "3-D tracking: bearing to the target")
+    _true_and_estimated(output_path, "range", true_times, true_range, t_track[valid], est_range[valid],
+                        "range [m]", "3-D tracking: range to the target")
+    _true_and_estimated(output_path, "altitude", true_times, true_z, t_track[valid], est_z[valid],
+                        "altitude [m]", "3-D tracking: target altitude")
+    _lead_angle(output_path, fire_control, "3-D tracking: lead angle")
+    _engagement(output_path, fire_control, "3-D tracking: engagement envelope")
 
-    # Panel 1: Bearing.
-    ax = axes[0]
-    ax.plot(true_times, true_bearing, "r-", lw=1, label="True")
-    ax.plot(t_track[valid], est_bearing[valid], "b.", ms=3, label="Estimated")
-    ax.set_ylabel("Bearing [deg]")
-    ax.legend(fontsize=7)
-    ax.set_title("Bearing to Target")
-
-    # Panel 2: Range.
-    ax = axes[1]
-    ax.plot(true_times, true_range, "r-", lw=1, label="True")
-    ax.plot(t_track[valid], est_range[valid], "b.", ms=3, label="Estimated")
-    ax.set_ylabel("Range [m]")
-    ax.legend(fontsize=7)
-    ax.set_title("Range to Target")
-
-    # Panel 3: Altitude.
-    ax = axes[2]
-    ax.plot(true_times, true_z, "r-", lw=1, label="True")
-    ax.plot(t_track[valid], est_z[valid], "b.", ms=3, label="Estimated")
-    ax.set_ylabel("Altitude [m]")
-    ax.legend(fontsize=7)
-    ax.set_title("Target Altitude")
-
-    # Panel 4: Lead angle.
-    ax = axes[3]
-    leads = np.degrees(fire_control["lead_angles"])
-    valid_fc = ~np.isnan(leads)
-    ax.plot(fire_control["times"][valid_fc], leads[valid_fc], "g.-", ms=3,
-            lw=0.8, label="Lead angle (az)")
-    if "lead_angles_el" in fire_control:
-        leads_el = np.degrees(fire_control["lead_angles_el"])
-        valid_el = ~np.isnan(leads_el)
-        ax.plot(fire_control["times"][valid_el], leads_el[valid_el], "m.-",
-                ms=3, lw=0.8, label="Lead angle (el)")
-    ax.set_ylabel("Lead angle [deg]")
-    ax.axhline(0, color="gray", ls="--", lw=0.5)
-    ax.legend(fontsize=7)
-    ax.set_title("Lead Angle")
-
-    # Panel 5: Engagement.
-    ax = axes[4]
-    cf = fire_control["can_fire"]
-    t_fc = fire_control["times"]
-    ax.fill_between(t_fc, 0, cf.astype(float),
-                    step="mid", alpha=0.4, color="green", label="FIRE")
-    ax.fill_between(t_fc, 0, (~cf).astype(float),
-                    step="mid", alpha=0.3, color="red", label="NO FIRE")
-    ax.set_ylim(-0.1, 1.2)
-    ax.set_ylabel("Engagement")
-    ax.set_xlabel("Time [s]")
-    ax.legend(fontsize=7)
-    ax.set_title("Engagement Envelope")
-
-    # Panel 6: Maneuver classification + source class (optional).
-    if n_panels == 6:
-        ax = axes[5]
+    if maneuver_labels or class_label:
+        fig, ax = new_figure(PANEL_SIZE)
         if maneuver_labels:
-            # Map maneuver labels to numeric codes for step plot.
             maneuver_names = sorted(set(maneuver_labels))
             maneuver_map = {n: i for i, n in enumerate(maneuver_names)}
             maneuver_codes = [maneuver_map[m] for m in maneuver_labels]
-            # Use track times or generate equally spaced times.
             if len(maneuver_codes) == len(t_track):
-                ax.step(t_track, maneuver_codes, where="mid", lw=1.5,
-                        color="purple", label="Maneuver")
+                t_man = t_track
             else:
                 t_man = np.linspace(t_track[0], t_track[-1], len(maneuver_codes))
-                ax.step(t_man, maneuver_codes, where="mid", lw=1.5,
-                        color="purple", label="Maneuver")
+            ax.step(t_man, maneuver_codes, where="mid", lw=1.5, color="purple", label="Maneuver")
             ax.set_yticks(range(len(maneuver_names)))
-            ax.set_yticklabels(maneuver_names, fontsize=7)
+            ax.set_yticklabels(maneuver_names)
+            ax.legend()
         if class_label:
             conf_str = f" ({class_confidence:.2f})" if class_confidence else ""
             ax.axhline(0, color="gray", ls="--", lw=0.5)
-            ax.text(0.02, 0.95, f"Class: {class_label}{conf_str}",
-                    transform=ax.transAxes, fontsize=9,
-                    verticalalignment="top",
+            ax.text(0.02, 0.95, f"Class: {class_label}{conf_str}", transform=ax.transAxes, verticalalignment="top",
                     bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.7))
-        ax.set_xlabel("Time [s]")
-        ax.set_ylabel("Maneuver / Class")
-        ax.set_title("Maneuver Detection & Source Classification")
-        ax.legend(fontsize=7)
+        ax.set_xlabel("time [s]")
+        ax.set_ylabel("maneuver / class")
+        finish(fig, ax, panel_path(output_path, "maneuver"), "3-D tracking: maneuver detection and source classification",
+               verbose=False)
+    print(f"Wrote 3D tracking plots beside {output_path}")
 
-    fig.suptitle("3D Tracking & Fire Control")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=170)
-    plt.close(fig)
-    print(f"Wrote 3D tracking plot to {output_path}")
 
 
 def plot_kinematic_scatter(
@@ -1032,7 +861,7 @@ def plot_kinematic_scatter(
     features_by_class : dict mapping class_name → (N, 2) array of feature pairs.
     feature_names : (x_name, y_name).
     """
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = new_figure(PANEL_SIZE)
     colors = plt.cm.tab10.colors
     for i, (cls, feats) in enumerate(features_by_class.items()):
         c = colors[i % len(colors)]
@@ -1040,9 +869,7 @@ def plot_kinematic_scatter(
     ax.set_xlabel(feature_names[0])
     ax.set_ylabel(feature_names[1])
     ax.set_title(title)
-    ax.legend(fontsize=8)
+    ax.legend()
     ax.grid(True, alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=150)
-    plt.close(fig)
+    finish(fig, ax, output_path, ax.get_title(), verbose=False)
     print(f"Wrote kinematic scatter plot to {output_path}")

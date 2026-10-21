@@ -2,7 +2,7 @@
 """Debug fire control decisions to understand why shots aren't being fired.
 
 Usage:
-    python scripts/debug_fire_control.py output/valley_test --source-speed 50
+    python scripts/debug_fire_control.py output/air/valley_test --source-speed 50
 """
 
 import argparse
@@ -18,7 +18,7 @@ from run_pipeline import run_pipeline, load_config
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("sim_dir", type=Path, nargs="?", default=Path("output/valley_test"))
+    parser.add_argument("sim_dir", type=Path, nargs="?", default=Path("output/air/valley_test"))
     parser.add_argument("--source-speed", type=float, default=50.0)
     args = parser.parse_args()
 

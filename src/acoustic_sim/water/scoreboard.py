@@ -513,50 +513,55 @@ def _fmt(v, f="{:.2f}") -> str:
     return "-" if v is None or (isinstance(v, float) and not np.isfinite(v)) else f.format(v)
 
 
-def plot_table(sb: Scoreboard, path, title: str = "") -> None:
-    """``scoreboard.png``: one table, a row per object."""
+def _wrap(text: str, width: int = 100) -> str:
+    import textwrap
+
+    return "\n".join(textwrap.fill(line, width) for line in text.split("\n"))
+
+
+def plot_table(sb: Scoreboard, path, title: str = "", recording: str | None = None) -> None:
+    """``scoreboard.png``: Pd per object as horizontal bars (coloured by Pd), with each object's median and 90th
+    percentile error printed beside its bar; the threshold, the false alarms and the provenance in the title."""
     import matplotlib.pyplot as plt
 
-    from acoustic_sim.contract import annotate_figure
+    from acoustic_sim.plotting import new_figure, save_figure
 
-    cols = ["object", "kind", "radiates", "AIS", "moving", "frames", "Pd", "median err [m]", "p90 err [m]", "full record (fraction of runs)"]
-    cells = [[o.id, o.kind, "yes" if o.radiates else "no", "yes" if o.ais else "no", "yes" if o.moving else "no",
-              str(o.frames), _fmt(o.pd), _fmt(o.median_error_m, "{:.1f}"), _fmt(o.p90_error_m, "{:.1f}"),
-              _fmt(o.full_record_detected)]
-             for o in sb.per_object]
-    fig, ax = plt.subplots(figsize=(12, 0.8 + 0.32 * (len(cells) + 3)))
-    ax.axis("off")
-    tab = ax.table(cellText=cells, colLabels=cols, loc="upper center", cellLoc="center")
-    tab.auto_set_font_size(False)
-    tab.set_fontsize(9)
-    tab.scale(1.0, 1.3)
-    for (r, c), cell in tab.get_celld().items():
-        if r > 0 and c == 6:
-            pd = sb.per_object[r - 1].pd
-            if np.isfinite(pd):
-                cell.set_facecolor(plt.cm.RdYlGn(0.15 + 0.7 * pd))
+    objs = sb.per_object
+    fig, ax = new_figure((12.0, max(6.0, 1.5 + 0.55 * len(objs))))
+    y = np.arange(len(objs))[::-1]
+    pd = np.array([o.pd if np.isfinite(o.pd) else 0.0 for o in objs])
+    ax.barh(y, pd, color=[plt.cm.RdYlGn(0.15 + 0.7 * o.pd) if np.isfinite(o.pd) else "0.7" for o in objs], ec="k", lw=0.6)
+    for yi, o, v in zip(y, objs, pd):
+        txt = f"Pd {_fmt(o.pd)}, median err {_fmt(o.median_error_m, '{:.1f}')} m, p90 {_fmt(o.p90_error_m, '{:.1f}')} m"
+        if o.full_record_detected is not None:
+            txt += f", full record {_fmt(o.full_record_detected)}"
+        ax.text(min(v, 1.0) + 0.01, yi, txt, va="center", fontsize=11)
+    ax.set_yticks(y)
+    ax.set_yticklabels([f"{o.id} ({o.kind}{', AIS' if o.ais else ''}{', moving' if o.moving else ''})" for o in objs])
+    ax.set_xlim(0.0, 1.9)
+    ax.set_xlabel("Pd (fraction of frames)")
+    ax.set_ylabel("object")
     sep = (f", pilings resolved {sb.separation['resolved_per_run']} of {sb.separation['pilings']}" if sb.separation else "")
-    ax.set_title(f"{title or sb.label}\nthreshold T = {sb.threshold.T:.4g} (at most {100 * sb.threshold.pfa:.0f} % of "
-                 f"{sb.threshold.n_frames} object free frames above), false alarms {sb.false_alarm_rate:.2f} per frame, "
-                 f"frames with a false alarm {100 * sb.false_alarm_frame_rate:.0f} %{sep}",
-                 fontsize=10)
-    annotate_figure(fig, sb.provenance)
-    fig.savefig(path, dpi=110, bbox_inches="tight")
-    plt.close(fig)
+    ax.set_title(_wrap(f"{title or sb.label}\nthreshold T = {sb.threshold.T:.4g} (at most {100 * sb.threshold.pfa:.0f} % of "
+                       f"{sb.threshold.n_frames} object free frames above), false alarms {sb.false_alarm_rate:.2f} per frame, "
+                       f"frames with a false alarm {100 * sb.false_alarm_frame_rate:.0f} %{sep}\n{sb.provenance.label()}"))
+    save_figure(fig, path, recording=recording)
 
 
-def plot_map(sb: Scoreboard, truth: Truth, env, path, layout=None, title: str = "") -> None:
+def plot_map(sb: Scoreboard, truth: Truth, env, path, layout=None, title: str = "", recording: str | None = None) -> None:
     """Every object's track (or position) with its Pd printed beside it, on the chart."""
     import matplotlib.pyplot as plt
 
-    from acoustic_sim.contract import annotate_figure
+    from acoustic_sim.plotting import new_figure, save_figure
+    from acoustic_sim.water.plotting import declutter_labels
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = new_figure((12.0, 10.0))
     x0, x1, y0, y1 = env.extent
     ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
     if layout is not None:
         r = layout.receivers
         ax.plot(r[:, 0], r[:, 1], ".", color="0.35", ms=2, label="sensors")
+    anns = []
     for o in sb.per_object:
         tr = truth.tracks[o.id]
         c = plt.cm.RdYlGn(0.15 + 0.7 * o.pd) if np.isfinite(o.pd) else "0.5"
@@ -566,17 +571,19 @@ def plot_map(sb: Scoreboard, truth: Truth, env, path, layout=None, title: str = 
         else:
             p = tr.xy[0]
             ax.plot(*p, "o", color=c, mec="k", ms=7)
-        txt = f"{o.id}\nPd {_fmt(o.pd)}"
+        txt = f"{o.id}: Pd {_fmt(o.pd)}"
         if o.full_record_detected is not None:
-            txt += f"\nfull record {o.full_record_detected:.2f}"
-        ax.annotate(txt, p, xytext=(4, 4), textcoords="offset points", fontsize=7.5,
-                    bbox=dict(boxstyle="round,pad=0.2", fc="w", ec=c, alpha=0.85))
+            txt += f", full record {o.full_record_detected:.2f}"
+        anns.append(ax.annotate(txt, p, xytext=(5, 5), textcoords="offset points", fontsize=11,
+                                bbox=dict(boxstyle="round,pad=0.2", fc="w", ec=c, alpha=0.85)))
+    ax.plot([], [], "-", color="0.4", lw=2.5, label="true track of a moving object (colour: Pd)")
+    ax.plot([], [], "o", color="0.4", mec="k", ms=7, ls="none", label="static object (colour: Pd)")
     ax.set_xlim(x0, x1)
     ax.set_ylim(y0, y1)
     ax.set_aspect("equal")
-    ax.set_xlabel("x [m]")
-    ax.set_ylabel("y [m]")
-    ax.set_title(title or sb.label, fontsize=10)
-    annotate_figure(fig, sb.provenance)
-    fig.savefig(path, dpi=110, bbox_inches="tight")
-    plt.close(fig)
+    ax.set_xlabel("x (east) [m]")
+    ax.set_ylabel("y (north) [m]")
+    ax.legend(loc="lower left")
+    ax.set_title(_wrap(f"{title or sb.label}\n{sb.provenance.label()}"))
+    declutter_labels(ax, anns)
+    save_figure(fig, path, recording=recording)

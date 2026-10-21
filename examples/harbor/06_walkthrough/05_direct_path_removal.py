@@ -4,7 +4,7 @@
 A silent body only reflects ship noise, and its echo is 10 to 20 dB weaker than the ship's direct sound on
 the same channels.  For every strong track the chain forms a reference (the beam toward the track) and
 removes from every channel the part that is a delayed copy of it (ECA, the delays following the moving
-ship).  Left: one DAS channel before and after; middle: its spectrum; right: how much was removed on every
+ship).  One image each: one DAS channel before and after; its spectrum; how much was removed on every
 channel.
 
     python examples/harbor/06_walkthrough/05_direct_path_removal.py [--dataset bistatic] [--cuda]
@@ -31,29 +31,30 @@ das = obs.geometry.slices[obs.geometry.cables[0].name]
 e_raw, e_cl = np.sum(rb[das] ** 2, axis=1), np.sum(cb[das] ** 2, axis=1)
 db = 10 * np.log10(np.maximum(e_raw, 1e-30) / np.maximum(e_cl, 1e-30))
 ch = int(np.argmax(e_raw))
-F = c.Figures(a, "05_direct_path_removal", f"Step 5 - the direct sound of the tracked radiators removed ({a.dataset}; tracks used: "
+F = c.Figures(a, "05_direct_path_removal", f"Step 5: the direct sound of the tracked radiators removed ({a.dataset}; tracks used: "
               f"{', '.join(run['strong'])})", "The removal uses the passive tracks only (no AIS, no truth).")
-axes = [F.new(n, size=(10, 5))[1] for n in ("trace", "spectrum", "channels")]
+axes = [F.new(n, size=(12, 7))[1] for n in ("trace", "spectrum", "channels")]
 t = (s0 + lo + np.arange(rb.shape[1])) / fs
 w = slice(0, int(0.25 * fs))
 axes[0].plot(t[w], rb[ch, w], color="0.6", lw=1, label="recorded")
 axes[0].plot(t[w], cb[ch, w], color=c.HIT, lw=1, label="direct paths removed")
 axes[0].set_xlabel("time [s]")
-axes[0].set_title(f"DAS channel {ch} ({band[0]:.0f}-{band[1]:.0f} Hz), 0.25 s", fontsize=10)
-axes[0].legend(fontsize=8)
+axes[0].set_ylabel(f"band passed trace: {c.trace_unit(obs)}")
+axes[0].set_title(f"DAS channel {ch} ({band[0]:.0f}-{band[1]:.0f} Hz), 0.25 s")
+axes[0].legend()
 f, p_raw = welch(raw[das.start + ch], fs=fs, nperseg=int(0.5 * fs))
 _, p_cl = welch(clean[das.start + ch], fs=fs, nperseg=int(0.5 * fs))
 m = (f >= band[0]) & (f <= band[1])
 axes[1].plot(f[m], 10 * np.log10(p_raw[m]), color="0.6", label="recorded")
 axes[1].plot(f[m], 10 * np.log10(p_cl[m]), color=c.HIT, label="direct paths removed")
 axes[1].set_xlabel("frequency [Hz]")
-axes[1].set_ylabel("power [dB]")
-axes[1].set_title("Spectrum of the same channel", fontsize=10)
-axes[1].legend(fontsize=8)
-axes[2].plot(np.arange(len(db)), db, ".", color=c.TRACK, ms=3)
+axes[1].set_ylabel("power spectral density [dB re 1 Pa^2/Hz]")
+axes[1].set_title("Spectrum of the same channel")
+axes[1].legend()
+axes[2].plot(np.arange(len(db)), db, ".", color=c.TRACK, ms=3, label="one DAS channel")
 axes[2].axhline(np.median(db), color=c.MISS, ls="--", label=f"median {np.median(db):.1f} dB")
 axes[2].set_xlabel("DAS channel")
 axes[2].set_ylabel("energy removed [dB]")
-axes[2].set_title("Removed on every channel (direct paths, mostly)", fontsize=10)
-axes[2].legend(fontsize=8)
+axes[2].set_title("Removed on every channel (direct paths, mostly)")
+axes[2].legend()
 F.save_all()

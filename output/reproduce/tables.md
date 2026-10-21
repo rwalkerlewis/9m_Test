@@ -4,15 +4,15 @@ Pd: fraction of frames, from the first frame the object could have been confirme
 
 | Recording | Split | Compute per s of data | Latency (median) | Pd per object | False tracks (per minute) |
 |---|---|---|---|---|---|
-| simple | tuning | 0.71 | 1.9 s | ferry 100 %; boat 100 %; uuv1 28 %; wreck 86 % | 2 (6.0) |
+| simple | tuning | 0.72 | 1.9 s | ferry 100 %; boat 100 %; uuv1 28 %; wreck 86 % | 2 (6.0) |
 | simple | test | 0.70 / 0.70 / 0.70 | 1.9 s / 1.9 s / 1.9 s | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 23 % / 30 % / 25 %; wreck 67 % / 86 % / 98 % | 1 (3.0) / 1 (3.0) / 2 (6.0) |
-| bistatic | tuning | 0.97 | 2.0 s | ferry 100 %; uuv1 67 % | 3 (9.0) |
-| bistatic | test | 0.98 / 0.99 / 1.07 | 2.0 s / 2.0 s / 2.0 s | ferry 100 % / 100 % / 100 %; uuv1 69 % / 59 % / 67 % | 2 (6.0) / 2 (6.0) / 2 (6.0) |
-| multistatic | tuning | 1.39 | 2.6 s | ferry 100 %; tug 100 %; boat 100 %; uuv2 83 %; not tracked: uuv1, diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 2 (6.0) |
-| multistatic | test | 1.58 / 1.40 / 1.33 | 2.6 s / 2.6 s / 2.6 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 0 % / 30 % / 0 %; uuv2 83 % / 89 % / 86 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 2 (6.0) / 1 (3.0) / 2 (6.0) |
-| harbor | tuning | 0.52 | 1.1 s | ferry 72 %; tug 2 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | 5 (2.5) |
-| harbor | test | 0.52 / 0.53 / 0.53 | 1.1 s / 1.1 s / 1.1 s | ferry 72 % / 78 % / 61 %; tug 6 % / 9 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | 4 (2.0) / 4 (2.0) / 4 (2.0) |
-| multistatic_b | test | 1.41 | 2.5 s | ferry 100 %; tug 86 %; boat 80 %; uuv1 27 %; uuv2 45 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 6 (6.0) |
+| bistatic | tuning | 1.07 | 2.0 s | ferry 100 %; uuv1 67 % | 3 (9.0) |
+| bistatic | test | 1.24 / 1.08 / 1.16 | 2.0 s / 2.0 s / 2.0 s | ferry 100 % / 100 % / 100 %; uuv1 69 % / 59 % / 67 % | 2 (6.0) / 2 (6.0) / 2 (6.0) |
+| multistatic | tuning | 1.49 | 2.6 s | ferry 100 %; tug 100 %; boat 100 %; uuv2 83 %; not tracked: uuv1, diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 2 (6.0) |
+| multistatic | test | 1.35 / 1.50 / 1.72 | 2.6 s / 2.6 s / 2.6 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 0 % / 30 % / 0 %; uuv2 83 % / 89 % / 86 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 2 (6.0) / 1 (3.0) / 2 (6.0) |
+| harbor | tuning | 0.53 | 1.1 s | ferry 72 %; tug 2 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | 5 (2.5) |
+| harbor | test | 0.52 / 0.52 / 0.53 | 1.1 s / 1.1 s / 1.1 s | ferry 72 % / 78 % / 61 %; tug 6 % / 9 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | 4 (2.0) / 4 (2.0) / 4 (2.0) |
+| multistatic_b | test | 1.50 | 2.5 s | ferry 100 %; tug 86 %; boat 80 %; uuv1 27 %; uuv2 45 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 6 (6.0) |
 
 ### Criteria
 
@@ -49,7 +49,7 @@ Pd: fraction of frames, from the first frame the object could have been confirme
 | bistatic_seed1 | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.36 (1) | 6.9 x 2.3 | 4.0 (4.0) |
 | bistatic_seed1 | uuv1 | uuv, 3 x 1 m | own noise 28, echo 44 | 44 | -0.5 | about a wavelength or larger | 3.9 / 3.0 | 0.18 (0) | 7.7 x 2.9 | 2.1 (2.0) |
 
-### Source level estimates against the truth (radiator tracks; calibration constant 5.1152 from the simple harbor's tuning recording)
+### Source level estimates against the truth (radiator tracks)
 
 | Recording | Object | True [Pa] | Estimate [Pa] | Error [dB] |
 |---|---|---|---|---|

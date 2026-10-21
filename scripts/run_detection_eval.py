@@ -9,7 +9,7 @@ Usage:
     python scripts/run_detection_eval.py [--output-dir OUTPUT_DIR]
 
 Example:
-    python scripts/run_detection_eval.py --output-dir output/valley_test
+    python scripts/run_detection_eval.py --output-dir output/air/valley_test
 """
 
 import argparse
@@ -31,8 +31,8 @@ def main():
     parser.add_argument(
         "--output-dir", "-o",
         type=Path,
-        default=Path("output/valley_test"),
-        help="Simulation output directory (default: output/valley_test)",
+        default=Path("output/air/valley_test"),
+        help="Simulation output directory (default: output/air/valley_test)",
     )
     parser.add_argument(
         "--source-speed",

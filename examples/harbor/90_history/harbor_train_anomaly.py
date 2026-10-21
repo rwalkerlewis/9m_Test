@@ -3,7 +3,7 @@
 
 Loads ``classifier_dataset.npz``, filters to ship-only rows (label 0), trains
 ``ConvVAE`` using the standard VAE training loop, and saves the checkpoint to
-``output/harbor/cvae_anomaly.pt``.
+``output/studies/history/harbor_train_anomaly/cvae_anomaly.pt``.
 
 After training, evaluates the anomaly score on ship vs. non-ship examples and
 prints mean scores per class so the ship/non-ship separation can be assessed.
@@ -11,8 +11,8 @@ prints mean scores per class so the ship/non-ship separation can be assessed.
 Usage::
 
     python examples/harbor/90_history/harbor_train_anomaly.py \\
-        [--dataset output/harbor/classifier_dataset.npz] \\
-        [--out output/harbor] \\
+        [--dataset output/studies/history/harbor_build_classifier_dataset/classifier_dataset.npz] \\
+        [--out output/studies/history/harbor_train_anomaly] \\
         [--epochs 50] \\
         [--batch 64] \\
         [--lr 1e-3] \\
@@ -66,9 +66,9 @@ def _evaluate_scores(
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dataset", default="output/harbor/classifier_dataset.npz",
+    ap.add_argument("--dataset", default="output/studies/history/harbor_build_classifier_dataset/classifier_dataset.npz",
                     help="Path to classifier_dataset.npz")
-    ap.add_argument("--out", default="output/harbor",
+    ap.add_argument("--out", default="output/studies/history/harbor_train_anomaly",
                     help="Output directory for the CVAE checkpoint")
     ap.add_argument("--epochs", type=int, default=50,
                     help="Number of training epochs (default: 50)")

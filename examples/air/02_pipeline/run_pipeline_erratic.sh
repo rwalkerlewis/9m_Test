@@ -2,7 +2,7 @@
 # Pipeline run — erratic_quadcopter (3-D isotropic domain, erratic trajectory)
 set -euo pipefail
 
-SIM_DIR=output/erratic_quadcopter
+SIM_DIR=output/air/erratic_quadcopter
 SOURCE_SPEED=8.0        # mean speed from metadata
 CONFIG=examples/configs/pipeline.config.json
 

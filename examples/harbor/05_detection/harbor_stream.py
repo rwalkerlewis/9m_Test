@@ -15,9 +15,11 @@ Then, and only then, the truth is read for the check (``water/scoreboard.py``, t
   true size and type (``characteristics.json``).
 
 Outputs in ``--out/<name>/``: ``picture.jsonl`` (the operator output), ``summary.json`` (with the ``run`` block),
-``characteristics.json``, ``tracks.csv``, ``check_<chain>_tracks.png`` (tracks and peaks over the true tracks) and
-``check_<chain>_frame.png`` (one frame of each chain with its map and geometry), ``picture.mp4`` and ``picture_frame.png`` (the operator view; truth drawn only
-with ``--truth-in-video``).
+``characteristics.json``, ``tracks.csv``, ``check_<chain>_tracks.png`` (tracks and peaks over the true tracks),
+``check_<chain>_frame_map.png`` (one frame of each chain: its map and peaks), ``check_echo_frame_rays.png`` and
+``check_echo_frame_ellipse.png`` (that echo frame's ray paths and equal delay ellipse), ``picture.mp4`` and
+``picture_frame.png`` (the operator view; truth drawn only with ``--truth-in-video``).  The default ``--out`` is
+``output/reproduce/runs``, the folder ``scripts/reproduce.py`` writes.
 
 Usage::
 
@@ -37,14 +39,14 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
 from acoustic_sim.contract import Observation, Provenance, Truth, contract_paths  # noqa: E402
-from acoustic_sim.water.plotting import HarborPictureView, draw_frame_geometry  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
+from acoustic_sim.water.plotting import HarborPictureView  # noqa: E402
 from acoustic_sim.water.scoreboard import peak_hits, score_picture  # noqa: E402
 from acoustic_sim.water.stream import load_processing, run  # noqa: E402
 
@@ -172,49 +174,79 @@ def report(s: dict) -> None:
           "".join(f"; {t['track']} at {t['median_xy']}, {t['median_error_m']:.1f} m from {t['nearest_object']}" for t in ft["tracks"]))
 
 
-def check_figure(name: str, obs, truth: Truth, pic, score: dict, out: Path) -> None:
-    """``check_<chain>_tracks.png``: the map peaks and the tracks over the true tracks; ``check_<chain>_frame.png``: one
-    frame of the chain with its map and geometry (one plot per image)."""
-    from acoustic_sim.water.scoreboard import picture_tracks
+def _scan_area(ax, pic) -> None:
+    zx, zy = pic.passive.grid[:, 0], pic.passive.grid[:, 1]          # the scan area, so the map fills the image
+    ax.set_xlim(zx.min() - 15.0, zx.max() + 15.0)
+    ax.set_ylim(zy.min() - 15.0, zy.max() + 15.0)
+    ax.set_aspect("equal")
+    ax.set_xlabel("x (east) [m]")
+    ax.set_ylabel("y (north) [m]")
 
+
+def _chart(ax, obs) -> None:
+    """Water and land, the DAS cable and the hydrophones, labelled for the legend."""
     env = obs.environment
     x0, x1, y0, y1 = env.extent
+    ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
+    lay = obs.geometry
+    das = lay.das_positions
+    ax.plot(das[:, 0], das[:, 1], ".", color="0.3", ms=2.5, label="DAS channels")
+    if lay.n_hydrophones:
+        ax.plot(lay.hydrophones[:, 0], lay.hydrophones[:, 1], "^", color="0.3", ms=8, ls="none", label="hydrophones")
+
+
+def _truth_at(ax, truth: Truth, t: float) -> None:
+    for i, (oid, tr) in enumerate(truth.tracks.items()):
+        ax.plot(*tr.position_at(t)[0], "o", ms=12, mfc="none", mec="deepskyblue" if tr.level_pa > 0 else "orange", mew=1.8)
+    ax.plot([], [], "o", ms=12, mfc="none", mec="deepskyblue", mew=1.8, ls="none", label="true position, radiating (for comparison)")
+    ax.plot([], [], "o", ms=12, mfc="none", mec="orange", mew=1.8, ls="none", label="true position, silent (for comparison)")
+
+
+def check_figure(name: str, obs, truth: Truth, pic, score: dict, out: Path) -> None:
+    """``check_<chain>_tracks.png``: the map peaks and the tracks over the true tracks; for one frame of each chain
+    ``check_<chain>_frame_map.png`` (its map and peaks), and on the echo chain ``check_echo_frame_rays.png`` (the direct
+    and echo ray paths) and ``check_echo_frame_ellipse.png`` (the equal delay ellipse through the strongest peak); one
+    plot per image."""
+    from acoustic_sim.water.plotting import declutter_labels, draw_frame_ellipse, draw_frame_map, draw_frame_rays
+    from acoustic_sim.water.scoreboard import picture_tracks
+
     matches = {m["track"]: m for m in score["tracks"]}
     has_echo = pic.echo is not None
     tracks = picture_tracks(pic.records)
     panels = [("passive", "passive peaks and radiator tracks", pic.p_frames, "radiator")] + \
         ([("echo", "echo peaks and echo tracks", pic.e_used, "echo")] if has_echo else [])
     for chain, title, frames, kind in panels:
-        fig, ax = plt.subplots(figsize=(12, 10))
-        ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
-        r = obs.geometry.positions()
-        ax.plot(r[:, 0], r[:, 1], ".", color="0.3", ms=1.5)
+        fig, ax = new_figure((12.0, 10.0))
+        _chart(ax, obs)
         pts = np.array([p for f in frames for p in f.xy]).reshape(-1, 2)
         ax.plot(pts[:, 0], pts[:, 1], ".", color="0.5", ms=2, alpha=0.4, label=f"map peaks ({len(pts)})")
         for oid, tr in truth.tracks.items():
             moving = np.ptp(tr.xy, axis=0).max() > 0
             ax.plot(tr.xy[:, 0], tr.xy[:, 1], "-" if moving else "s", color="deepskyblue" if tr.level_pa > 0 else "orange", lw=1.5,
-                    ms=4, mfc="none", alpha=0.8)
+                    ms=5, mfc="none", alpha=0.8)
+        ax.plot([], [], "-", color="deepskyblue", lw=1.5, label="true track, radiating")
+        ax.plot([], [], "-", color="orange", lw=1.5, label="true track or position, silent")
+        anns = []
         for k, t in tracks.items():
             if t["kind"] != kind:
                 continue
             xy = np.array([f[1] for f in t["fixes"]])
             m = matches.get(k, {})
             if m.get("false_track"):
-                ax.plot(xy[:, 0], xy[:, 1], "--", color="m", lw=1.2)
-                ax.annotate(f"{k}: false track", xy[-1], fontsize=7, color="m")
+                ax.plot(xy[:, 0], xy[:, 1], "--", color="m", lw=1.4)
+                anns.append(ax.annotate(f"{k}: false", xy[-1], xytext=(6, 4), textcoords="offset points", color="m",
+                                        bbox=dict(boxstyle="round,pad=0.15", fc="w", ec="none", alpha=0.7)))
             else:
-                ax.plot(xy[:, 0], xy[:, 1], "-", color="k", lw=0.9)
-                ax.annotate(f"{k} -> {m.get('true_object')}", xy[-1], fontsize=7, color="k")
-        zx, zy = pic.passive.grid[:, 0], pic.passive.grid[:, 1]          # the scan area, so the map fills the image
-        ax.set_xlim(zx.min() - 15.0, zx.max() + 15.0)
-        ax.set_ylim(zy.min() - 15.0, zy.max() + 15.0)
-        ax.set_aspect("equal")
-        ax.legend(fontsize=7, loc="lower left")
-        ax.set_title(f"{name}: {title}\ntrue tracks: blue radiating, orange silent; black: confirmed tracks -> matched object; "
-                     f"magenta dashed: false tracks", fontsize=9)
-        fig.savefig(out / f"check_{chain}_tracks.png", dpi=110, bbox_inches="tight")
-        plt.close(fig)
+                ax.plot(xy[:, 0], xy[:, 1], "-", color="k", lw=1.0)
+                anns.append(ax.annotate(f"{k}: {m.get('true_object')}", xy[-1], xytext=(6, 4), textcoords="offset points",
+                                        color="k", bbox=dict(boxstyle="round,pad=0.15", fc="w", ec="none", alpha=0.7)))
+        ax.plot([], [], "-", color="k", lw=1.0, label="confirmed track: matched object")
+        ax.plot([], [], "--", color="m", lw=1.4, label="false track")
+        _scan_area(ax, pic)
+        ax.legend(loc="lower left")
+        ax.set_title(f"{name}: {title}")
+        declutter_labels(ax, anns)
+        save_figure(fig, out / f"check_{chain}_tracks.png", recording=name)
     geo = []
     if pic.p_frames:
         geo.append(("passive", pic.p_frames[len(pic.p_frames) // 2]))
@@ -224,22 +256,35 @@ def check_figure(name: str, obs, truth: Truth, pic, score: dict, out: Path) -> N
     for chain, f in geo:
         if f.B is None:
             continue
-        fig, ax = plt.subplots(figsize=(12, 10))
-        ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
         rads = f.ships if chain == "echo" else {}
         grid = pic.passive.grid if chain == "passive" else pic.echo.grid
-        im = draw_frame_geometry(ax, grid, f.B, obs.geometry, rads, f.xy, echo=chain == "echo")
-        for oid, tr in truth.tracks.items():
-            ax.plot(*tr.position_at(f.t)[0], "o", ms=10, mfc="none", mec="deepskyblue" if tr.level_pa > 0 else "orange", mew=1.5)
-        fig.colorbar(im, ax=ax, shrink=0.7, label="dB re frame peak")
-        zx, zy = pic.passive.grid[:, 0], pic.passive.grid[:, 1]          # the scan area, so the map fills the image
-        ax.set_xlim(zx.min() - 15.0, zx.max() + 15.0)
-        ax.set_ylim(zy.min() - 15.0, zy.max() + 15.0)
-        ax.set_aspect("equal")
-        ax.legend(fontsize=7, loc="lower left")
-        ax.set_title(f"{name}: {chain} map at t = {f.t:.2f} s with its geometry; circles: true positions (for comparison)", fontsize=9)
-        fig.savefig(out / f"check_{chain}_frame.png", dpi=110, bbox_inches="tight")
-        plt.close(fig)
+        fig, ax = new_figure((12.0, 10.0))
+        _chart(ax, obs)
+        im = draw_frame_map(ax, grid, f.B, f.xy)
+        _truth_at(ax, truth, f.t)
+        fig.colorbar(im, ax=ax, shrink=0.7, label="map level [dB re frame peak]")
+        _scan_area(ax, pic)
+        ax.legend(loc="lower left")
+        ax.set_title(f"{name}: {chain} map at t = {f.t:.2f} s and its peaks")
+        save_figure(fig, out / f"check_{chain}_frame_map.png", recording=name)
+        if chain != "echo":
+            continue
+        fig, ax = new_figure((12.0, 10.0))
+        _chart(ax, obs)
+        draw_frame_rays(ax, obs.geometry, rads, f.xy, echo=True)
+        _truth_at(ax, truth, f.t)
+        _scan_area(ax, pic)
+        ax.legend(loc="lower left")
+        ax.set_title(f"{name}: ray paths of the echo frame at t = {f.t:.2f} s")
+        save_figure(fig, out / "check_echo_frame_rays.png", recording=name)
+        fig, ax = new_figure((12.0, 10.0))
+        _chart(ax, obs)
+        draw_frame_ellipse(ax, obs.geometry, rads, f.xy)
+        _truth_at(ax, truth, f.t)
+        _scan_area(ax, pic)
+        ax.legend(loc="lower left")
+        ax.set_title(f"{name}: equal delay ellipse through the strongest echo peak at t = {f.t:.2f} s")
+        save_figure(fig, out / "check_echo_frame_ellipse.png", recording=name)
 
 
 def main() -> None:
@@ -257,7 +302,7 @@ def main() -> None:
     ap.add_argument("--chunk", type=float, default=None, help="seconds of data per push (default: the config's)")
     ap.add_argument("--no-video", action="store_true")
     ap.add_argument("--truth-in-video", action="store_true", help="draw the true positions (dashed) in the operator view")
-    ap.add_argument("--out", default="output/harbor_stream")
+    ap.add_argument("--out", default="output/reproduce/runs")
     a = ap.parse_args()
     processing = Path(a.processing) if a.processing else CONFIGS / f"{a.dataset}.json"
     cfg = json.loads(processing.read_text())

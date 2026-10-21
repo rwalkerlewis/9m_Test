@@ -3,7 +3,7 @@
 Ten second movie: the echoes of a silent UUV are stacked pulse by pulse until it stands out unambiguously.
 
 Scene, data and detector are those of ``examples/harbor/90_history/harbor_presentation.py`` (one ship radiating a train of broadband
-pulses, one silent stopped UUV, the DAS cable of ``output/harbor/dataset.npz``; analytic propagation, exact removal
+pulses, one silent stopped UUV, the DAS cable of ``output/recordings/harbor/dataset.npz``; analytic propagation, exact removal
 of the ship's direct arrival, generous target strength) with the noise raised so that one pulse alone shows nothing
 and the stack is what reveals the UUV.  Each pulse's echo, back-projected over the harbor, is one noisy image; the
 ship moves, the UUV does not, so only the UUV adds up in phase from pulse to pulse.
@@ -13,7 +13,7 @@ readouts give pulses stacked and peak-to-background contrast, and the detection 
 
 Usage::
 
-    python examples/harbor/90_history/harbor_stack_movie.py [--out output/harbor_domain] [--seconds 10] [--fps 30] [--noise 3]
+    python examples/harbor/90_history/harbor_stack_movie.py [--out output/studies/history/harbor_stack_movie] [--seconds 10] [--fps 30] [--noise 3]
 """
 import argparse, shutil, subprocess, sys, time
 from pathlib import Path
@@ -27,8 +27,11 @@ from scipy.signal import hilbert
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "examples" / "harbor" / "90_history"))
+sys.path.insert(0, str(ROOT / "src"))
 import harbor_presentation as hp  # noqa: E402
-from harbor_presentation import Scene, ricker, encode, C, FS, T, UUV, CROP  # noqa: E402
+from harbor_presentation import Scene, ricker, C, FS, T, UUV, CROP  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
+from matplotlib.animation import FFMpegWriter  # noqa: E402
 
 BG, PANEL, INK, MUTED = "#0b1020", "#0f1730", "#f3f4f6", "#9ca3af"
 SHIP_C, UUV_C, CABLE_C, LOCK_C = "#38bdf8", "#f97316", "#facc15", "#22d3ee"
@@ -63,8 +66,8 @@ def ease(u):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dataset", default=str(ROOT / "output" / "harbor" / "dataset.npz"))
-    ap.add_argument("--out", default=str(ROOT / "output" / "harbor_domain"))
+    ap.add_argument("--dataset", default=str(ROOT / "output" / "recordings" / "harbor" / "dataset.npz"))
+    ap.add_argument("--out", default=str(ROOT / "output/studies/history" / "harbor_stack_movie"))
     ap.add_argument("--seconds", type=float, default=10.0)
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--dpi", type=int, default=120)
@@ -142,36 +145,52 @@ def main():
                handletextpad=0.6, labelspacing=1.0, markerscale=0.5)
     fig.text(0.985, 0.012, "idealised analytic simulation", ha="right", va="bottom", fontsize=9, color=MUTED)
 
-    fdir = out / "_reveal"; fdir.mkdir(exist_ok=True); keep = out / "frames_reveal"; keep.mkdir(exist_ok=True)
-    for f in keep.glob("*.png"): f.unlink()
     t1 = time.time(); lock_frame = None
-    for i, (t, s) in enumerate(zip(times, stack)):
-        img = image_at(s); n_shown = min(npulse, int(np.ceil(s)))
-        pk = img.max(); con = 10 * np.log10(pk / np.median(img[img > 0]))
-        Z = np.full(len(sc.grid), np.nan); Z[sc.water] = 10 * np.log10(np.maximum(img, 1e-30) / pk)
-        him.set_data(Z.reshape(sc.gshape))
-        k_cur = n_shown - 1; ship_m.set_data([sc.sk[k_cur, 0]], [sc.sk[k_cur, 1]]); emit.set_offsets(sc.sk[:n_shown])
-        bar.set_width(s); n_txt.set_text(f"{n_shown} / {npulse}"); c_txt.set_text(f"{con:.0f} dB")
-        locked = con >= LOCK_DB and s >= 0.5 * npulse
-        if locked and lock_frame is None: lock_frame = i
-        if locked:
-            p = pts[int(np.argmax(img))]; a = float(ease((i - lock_frame) / (0.6 * args.fps)))
-            lock_m.set_data([p[0]], [p[1]]); lock_m.set_alpha(a); lock_ring.set_data([p[0]], [p[1]]); lock_ring.set_alpha(a)
-            lock_ring.set_markersize(54 - 22 * a); truth_m.set_data([UUV[0]], [UUV[1]]); truth_m.set_alpha(0.9 * a)
-            lock_txt.set_text("UUV"); lock_txt.set_visible(True); lock_txt.set_alpha(a); lock_txt.xy = p; lock_txt.set_position(p + np.array([70, 110]))
-            v_txt.set_text(f"UUV detected\n{np.linalg.norm(p - UUV):.0f} m from truth"); v_txt.set_alpha(a); c_txt.set_color(LOCK_C)
-        else:
-            for m in (lock_m, lock_ring, truth_m): m.set_data([], [])
-            lock_txt.set_visible(False); v_txt.set_text(""); c_txt.set_color(INK)
-        fig.savefig(fdir / f"f{i:05d}.png", dpi=args.dpi, facecolor=BG)
-        if i % 30 == 0 or i == nfr - 1: shutil.copy(fdir / f"f{i:05d}.png", keep / f"reveal_{i:05d}.png")
+    mp4 = out / "uuv_reveal.mp4"
+    writer = FFMpegWriter(fps=args.fps, bitrate=6000)
+    with writer.saving(fig, str(mp4), dpi=args.dpi):
+        for i, (t, s) in enumerate(zip(times, stack)):
+            img = image_at(s); n_shown = min(npulse, int(np.ceil(s)))
+            pk = img.max(); con = 10 * np.log10(pk / np.median(img[img > 0]))
+            Z = np.full(len(sc.grid), np.nan); Z[sc.water] = 10 * np.log10(np.maximum(img, 1e-30) / pk)
+            him.set_data(Z.reshape(sc.gshape))
+            k_cur = n_shown - 1; ship_m.set_data([sc.sk[k_cur, 0]], [sc.sk[k_cur, 1]]); emit.set_offsets(sc.sk[:n_shown])
+            bar.set_width(s); n_txt.set_text(f"{n_shown} / {npulse}"); c_txt.set_text(f"{con:.0f} dB")
+            locked = con >= LOCK_DB and s >= 0.5 * npulse
+            if locked and lock_frame is None: lock_frame = i
+            if locked:
+                p = pts[int(np.argmax(img))]; a = float(ease((i - lock_frame) / (0.6 * args.fps)))
+                lock_m.set_data([p[0]], [p[1]]); lock_m.set_alpha(a); lock_ring.set_data([p[0]], [p[1]]); lock_ring.set_alpha(a)
+                lock_ring.set_markersize(54 - 22 * a); truth_m.set_data([UUV[0]], [UUV[1]]); truth_m.set_alpha(0.9 * a)
+                lock_txt.set_text("UUV"); lock_txt.set_visible(True); lock_txt.set_alpha(a); lock_txt.xy = p; lock_txt.set_position(p + np.array([70, 110]))
+                v_txt.set_text(f"UUV detected\n{np.linalg.norm(p - UUV):.0f} m from truth"); v_txt.set_alpha(a); c_txt.set_color(LOCK_C)
+            else:
+                for m in (lock_m, lock_ring, truth_m): m.set_data([], [])
+                lock_txt.set_visible(False); v_txt.set_text(""); c_txt.set_color(INK)
+            writer.grab_frame(facecolor=BG)
     plt.close(fig); print(f"{nfr} frames in {time.time() - t1:.0f} s; lock at frame {lock_frame}", flush=True)
-    mp4 = out / "uuv_reveal.mp4"; encode(fdir, "f%05d.png", args.fps, mp4)
-    shutil.copy(fdir / f"f{nfr - 1:05d}.png", out / "uuv_reveal_poster.png")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(mp4), "-vf",
                     "fps=15,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192[p];[b][p]paletteuse=dither=bayer:bayer_scale=4",
                     str(out / "uuv_reveal.gif")], check=True)
-    shutil.rmtree(fdir)
+
+    # poster: the full stack as one map (one panel, the figure rule)
+    plt.rcdefaults()
+    import acoustic_sim.plotting as ap_
+    ap_.apply_style()
+    fig, ax = new_figure((12, 11))
+    Z = np.full(len(sc.grid), np.nan); Z[sc.water] = 10 * np.log10(np.maximum(full, 1e-30) / full.max())
+    h = ax.imshow(Z.reshape(sc.gshape), origin="lower", extent=CROP, cmap="inferno", vmin=VMIN_DB, vmax=0, zorder=2)
+    ax.imshow(np.where(sc.land_crop, 1.0, np.nan), origin="lower", extent=CROP, cmap=LAND, vmin=0, vmax=1, zorder=3)
+    ax.plot(*sc.rx.T, "-", color=CABLE_C, lw=3, zorder=4, label="DAS cable, 125 channels")
+    ax.plot(*sc.sk.T, "o", color=SHIP_C, ms=4, zorder=5, label="ship position at each pulse")
+    ax.plot(*est, "+", color=LOCK_C, ms=30, mew=3, zorder=8, label=f"detection ({err:.0f} m from truth)")
+    ax.plot(*UUV, "o", ms=18, mfc="none", mec="w", mew=2, zorder=8, label="UUV, truth")
+    ax.set_xlim(x0, x1); ax.set_ylim(y0, y1); ax.set_aspect("equal")
+    ax.set_xlabel("x (east) [m]"); ax.set_ylabel("y (north) [m]")
+    ax.set_title(f"harbor presentation: the echoes of all {npulse} pulses stacked, idealised analytic simulation")
+    ax.legend(loc="lower left", fontsize=11)
+    fig.colorbar(h, ax=ax, shrink=0.8, label="echo energy [dB re peak]")
+    save_figure(fig, out / "uuv_reveal_poster.png", recording="harbor presentation")
     print(f"wrote {mp4} ({args.seconds:.0f} s, {args.fps} fps), uuv_reveal.gif, uuv_reveal_poster.png in {time.time() - t_start:.0f} s")
 
 

@@ -38,10 +38,10 @@ from acoustic_sim.sources import (
 
 # Scenarios and their directories.
 SCENARIOS = {
-    "valley_test":         Path("output/valley_test"),
-    "valley_3d_test":      Path("output/valley_3d_test"),
-    "isotropic_2D":        Path("output/isotropic_2D"),
-    "erratic_quadcopter":  Path("output/erratic_quadcopter"),
+    "valley_test":         Path("output/air/valley_test"),
+    "valley_3d_test":      Path("output/air/valley_3d_test"),
+    "isotropic_2D":        Path("output/air/isotropic_2D"),
+    "erratic_quadcopter":  Path("output/air/erratic_quadcopter"),
 }
 
 

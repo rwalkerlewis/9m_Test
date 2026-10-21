@@ -398,7 +398,7 @@ def run_full_evaluation():
     )
 
     # Save models.
-    model_dir = Path("output/models")
+    model_dir = Path("output/air/models")
     model_dir.mkdir(parents=True, exist_ok=True)
     torch.save(model_a.state_dict(), model_dir / "acoustic_classifier.pt")
     torch.save(model_b.state_dict(), model_dir / "fusion_classifier.pt")

@@ -4,7 +4,7 @@
 Usage::
 
     python examples/air/01_simulation/run_fdtd.py --domain wind --source-type moving \\
-        --source-signal propeller --array circular --output-dir output/test
+        --source-signal propeller --array circular --output-dir output/air/test
 
 All domain / source / receiver construction is handled by
 ``acoustic_sim.air.setup``.  This script is just CLI parsing, wiring,
@@ -109,7 +109,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="FD spatial order of accuracy (2, 4, 6, …)")
 
     # Output
-    p.add_argument("--output-dir", default="output/test")
+    p.add_argument("--output-dir", default="output/air/test")
 
     return p.parse_args(argv)
 

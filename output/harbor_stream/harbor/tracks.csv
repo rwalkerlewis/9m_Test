@@ -1,3 +1,0 @@
-track,fixes,first_t,last_t,score,true_object,false_track,nearest_object,median_error_m,first_xy,last_xy,median_xy,ais_label
-r22,15,90.0,118.0,7912.757080078125,ferry,False,ferry,13.24532825604753,"[1490.0, 750.0]","[1590.0, 880.0]","[1530.0, 825.0]",ferry
-r26,3,110.0,116.0,2939.083251953125,tug,False,tug,8.378755170948104,"[1015.0, 880.0]","[1035.0, 865.0]","[1025.0, 875.0]",tug

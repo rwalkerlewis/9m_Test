@@ -37,8 +37,9 @@ output/performance/.*.log
 *.wav
 !/audio/*.wav
 
-# Images and videos
+# Images and videos (figures under output/ are committed: AGENTS.md, The output folder)
 *.png
+!output/**/*.png
 *.jpg
 *.jpeg
 *.mp4

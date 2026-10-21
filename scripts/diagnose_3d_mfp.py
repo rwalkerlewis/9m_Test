@@ -5,7 +5,7 @@ Prints per-window bearing, compares to ground truth, and saves beam-power
 polar plot to the output directory.
 
 Usage:
-    python scripts/diagnose_3d_mfp.py output/valley_3d_test
+    python scripts/diagnose_3d_mfp.py output/air/valley_3d_test
 """
 
 import argparse
@@ -147,11 +147,10 @@ def main():
         print("\nNo detections to plot.")
         sys.exit(0)
 
-    fig, axes = plt.subplots(2, n_plot, figsize=(5 * n_plot, 10))
-    if n_plot == 1:
-        axes = axes.reshape(2, 1)
+    from acoustic_sim.air.pipeline_plots import finish
 
-    for col, idx in enumerate(det_indices[:n_plot]):
+    # One figure per window and view: the polar map and its azimuth cut.
+    for idx in det_indices[:n_plot]:
         d = detections[idx]
         t = d["time"]
         gt_x, gt_y, gt_z = gt_fn(t)
@@ -161,50 +160,37 @@ def main():
         bpm_3d = d.get("beam_power_map_3d", None)
         bpm_2d = d.get("beam_power_map", None)
         if bpm_3d is not None and bpm_3d.ndim == 3:
-            # Max over z for top row
-            bpm_xy = np.max(bpm_3d, axis=2)
-            # Slice at best z for bottom row
-            iz_best = np.unravel_index(np.argmax(bpm_3d), bpm_3d.shape)[2]
+            bpm_xy = np.max(bpm_3d, axis=2)       # max over z
         elif bpm_2d is not None:
             bpm_xy = bpm_2d
-            iz_best = 0
         else:
             continue
 
-        # Top: polar plot (azimuth vs range)
-        ax = axes[0, col]
+        fig, ax = plt.subplots(figsize=(12, 9))
         az_mesh, rng_mesh = np.meshgrid(azimuths, ranges, indexing="ij")
-        c = ax.pcolormesh(
-            np.degrees(az_mesh), rng_mesh, bpm_xy,
-            shading="auto", cmap="inferno",
-        )
+        c = ax.pcolormesh(np.degrees(az_mesh), rng_mesh, bpm_xy, shading="auto", cmap="inferno")
         ax.axvline(math.degrees(true_brg_rad) % 360, color="cyan", ls="--", lw=1.5, label="True bearing")
         ax.axhline(true_rng, color="cyan", ls=":", lw=1, label="True range")
         if d["detected"]:
             ax.plot(d["bearing_deg"], d["range"], "g*", ms=12, label="MFP peak")
-        ax.set_xlabel("Azimuth (deg)")
-        ax.set_ylabel("Range (m)")
-        ax.set_title(f"Window {idx} t={t:.3f}s\nz-max projection")
-        ax.legend(fontsize=7, loc="upper right")
-        plt.colorbar(c, ax=ax)
+        ax.set_xlabel("azimuth [deg]")
+        ax.set_ylabel("range [m]")
+        ax.legend(loc="upper right")
+        fig.colorbar(c, ax=ax, label="beam power (max over z)")
+        out = Path(args.sim_dir) / f"mfp_diagnostic_3d_window{idx}_map.png"
+        finish(fig, ax, out, f"3-D MFP diagnostic, window {idx} at t = {t:.3f} s: map, max over z")
 
-        # Bottom: azimuth cut at best range bin
-        ax2 = axes[1, col]
+        fig, ax = plt.subplots(figsize=(12, 7))
         ir_peak = np.argmax(np.max(bpm_xy, axis=0))
-        az_cut = bpm_xy[:, ir_peak]
-        ax2.plot(np.degrees(azimuths), az_cut, "k-", lw=1)
-        ax2.axvline(math.degrees(true_brg_rad) % 360, color="cyan", ls="--", lw=1.5, label="True")
+        ax.plot(np.degrees(azimuths), bpm_xy[:, ir_peak], "k-", lw=1, label="Beam power")
+        ax.axvline(math.degrees(true_brg_rad) % 360, color="cyan", ls="--", lw=1.5, label="True")
         if d["detected"]:
-            ax2.axvline(d["bearing_deg"], color="lime", ls="--", lw=1.5, label="MFP peak")
-        ax2.set_xlabel("Azimuth (deg)")
-        ax2.set_ylabel("Norm. beam power")
-        ax2.set_title(f"Az cut at range={ranges[ir_peak]:.0f}m")
-        ax2.legend(fontsize=7)
-
-    fig.tight_layout()
-    out = Path(args.sim_dir) / "mfp_diagnostic_3d.png"
-    fig.savefig(out, dpi=150)
-    print(f"\nSaved: {out}")
+            ax.axvline(d["bearing_deg"], color="lime", ls="--", lw=1.5, label="MFP peak")
+        ax.set_xlabel("azimuth [deg]")
+        ax.set_ylabel("normalised beam power")
+        ax.legend()
+        out = Path(args.sim_dir) / f"mfp_diagnostic_3d_window{idx}_cut.png"
+        finish(fig, ax, out, f"3-D MFP diagnostic, window {idx}: azimuth cut at range {ranges[ir_peak]:.0f} m")
     sys.exit(0)
 
 

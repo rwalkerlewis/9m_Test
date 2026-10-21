@@ -26,7 +26,7 @@ Scenario, domain, pipeline and processing JSON files read by the scripts below.
 
 ## Harbor 1: build the recordings (`harbor/01_datasets/`)
 
-FDTD runs of the harbor scenarios, mixed into the recordings every later step reads (`output/harbor*/`). Run these first;
+FDTD runs of the harbor scenarios, mixed into the recordings every later step reads (`output/recordings/<recording>/`). Run these first;
 their gathers are cached. `scripts/reproduce.py` builds every recording it needs, the test recordings included.
 
 | File | What it does |
@@ -42,7 +42,7 @@ What the simulation does: one source, scattering bodies, wavefield and gather vi
 
 | File | What it does |
 |---|---|
-| `harbor_domain_video.py` | Videos of the wavefield and of the DAS gather in the harbor domain of ``output/harbor/dataset.npz``. |
+| `harbor_domain_video.py` | Videos of the wavefield and of the DAS gather in the harbor domain of ``output/recordings/harbor/dataset.npz``. |
 | `harbor_m1_demo.py` | Harbor M0/M1 demo: environment map, one FDTD source run, DAS gather and wavefield snapshots. |
 | `harbor_m1_scatterer_compare.py` | Harbor M1 variant: compare hard-body vs. soft-body scattering from a static reflector. |
 | `harbor_m1_uuv.py` | Harbor M1 variant: one static source, a single pulse, and a static UUV in the water. |

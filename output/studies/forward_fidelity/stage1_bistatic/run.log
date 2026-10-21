@@ -1,0 +1,38 @@
+
+=== 2026-10-21 21:02:59 --dataset bistatic --chain echo --split tuning --cuda --out output/forward_fidelity/stage1_bistatic
+criterion 1 (fixed before the run): passive chain, multistatic dataset: ferry, tug and boat each Pd >= 0.9 at the 5 % threshold
+criterion 2 (fixed before the run): echo chain, bistatic dataset: Pd of the UUV >= 0.5
+criterion 3 (fixed before the run): echo chain, multistatic dataset, ferry as illuminator: >= 3 of the 7 static bodies detected on the full record map
+expectation written before the run: criterion 1 passes; 2 and 3 fail, because the direct path of a moving ship is removed by 8 to 19 dB when its waveform is estimated from the traces and the echo sits 16 to 18 dB below it
+[bistatic] seed 0 remix against the dataset on disk: max |diff| 0 (traces rms 0.202)
+[bistatic/echo] 6 runs, propagator free_field
+  bistatic:echo:ferry/all_estimated:seed0: 67 s, direct path removed by 11.3 dB (diagnostic), illuminator track error 0.8 m
+  bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1: 32 s, illuminator track error 0.8 m
+  bistatic:echo:ferry/true_waveform_exact_track:seed0: 85 s, direct path removed by 21.9 dB (diagnostic), illuminator track error 0.0 m
+  bistatic:echo:ferry/true_waveform_exact_track:seed0:free_of_uuv1: 47 s, illuminator track error 0.0 m
+  bistatic:echo:ferry/direct_removed_exactly:seed0: 11 s, illuminator track error 0.0 m
+  bistatic:echo:ferry/direct_removed_exactly:seed0:free_of_uuv1: 11 s, illuminator track error 0.0 m
+[bistatic/echo] runs done in 253 s
+[bistatic/echo/ferry/all_estimated] tuning: T 2890, FA 0.67/frame, frames with a false alarm 4 % (threshold set for 5 %), Pd uuv1 0.56
+[bistatic/echo/ferry/true_waveform_exact_track] tuning: T 2168, FA 0.14/frame, frames with a false alarm 5 % (threshold set for 5 %), Pd uuv1 0.15
+[bistatic/echo/ferry/direct_removed_exactly] tuning: T 1286, FA 0.13/frame, frames with a false alarm 11 % (threshold set for 5 %), Pd uuv1 0.84
+wrote /workspace/output/forward_fidelity/stage1_bistatic
+
+=== 2026-10-21 22:56:30 --dataset bistatic --chain echo --split tuning --out output/studies/forward_fidelity/stage1_bistatic --cuda
+criterion 1 (fixed before the run): passive chain, multistatic dataset: ferry, tug and boat each Pd >= 0.9 at the 5 % threshold
+criterion 2 (fixed before the run): echo chain, bistatic dataset: Pd of the UUV >= 0.5
+criterion 3 (fixed before the run): echo chain, multistatic dataset, ferry as illuminator: >= 3 of the 7 static bodies detected on the full record map
+expectation written before the run: criterion 1 passes; 2 and 3 fail, because the direct path of a moving ship is removed by 8 to 19 dB when its waveform is estimated from the traces and the echo sits 16 to 18 dB below it
+[bistatic] seed 0 remix against the dataset on disk: max |diff| 0 (traces rms 0.202)
+[bistatic/echo] 6 runs, propagator free_field
+  bistatic:echo:ferry/all_estimated:seed0: 67 s, direct path removed by 11.3 dB (diagnostic), illuminator track error 0.8 m (cached)
+  bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1: 32 s, illuminator track error 0.8 m (cached)
+  bistatic:echo:ferry/true_waveform_exact_track:seed0: 85 s, direct path removed by 21.9 dB (diagnostic), illuminator track error 0.0 m (cached)
+  bistatic:echo:ferry/true_waveform_exact_track:seed0:free_of_uuv1: 47 s, illuminator track error 0.0 m (cached)
+  bistatic:echo:ferry/direct_removed_exactly:seed0: 11 s, illuminator track error 0.0 m (cached)
+  bistatic:echo:ferry/direct_removed_exactly:seed0:free_of_uuv1: 11 s, illuminator track error 0.0 m (cached)
+[bistatic/echo] runs done in 0 s
+[bistatic/echo/ferry/all_estimated] tuning: T 2890, FA 0.67/frame, frames with a false alarm 4 % (threshold set for 5 %), Pd uuv1 0.56
+[bistatic/echo/ferry/true_waveform_exact_track] tuning: T 2168, FA 0.14/frame, frames with a false alarm 5 % (threshold set for 5 %), Pd uuv1 0.15
+[bistatic/echo/ferry/direct_removed_exactly] tuning: T 1286, FA 0.13/frame, frames with a false alarm 11 % (threshold set for 5 %), Pd uuv1 0.84
+wrote /workspace/output/studies/forward_fidelity/stage1_bistatic

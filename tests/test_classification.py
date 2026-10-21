@@ -89,7 +89,7 @@ def test_acoustic_classifier(tmp_path):
         m = metrics["per_class"][name]
         print(f"  {name:>14s} {m['precision']:>10.3f} {m['recall']:>10.3f} {m['f1']:>10.3f}")
 
-    # Save and reload the weights (to a temporary directory: output/models holds the
+    # Save and reload the weights (to a temporary directory: output/air/models holds the
     # committed, trained weights and must not be overwritten by tests).
     checkpoint = tmp_path / "acoustic_classifier.pt"
     torch.save(model.state_dict(), checkpoint)

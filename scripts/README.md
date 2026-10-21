@@ -4,7 +4,7 @@ Standalone tools; pytest does not collect them.
 
 ## Drone pipeline diagnostics
 
-Most expect a dataset directory written by `examples/air/01_simulation/run_fdtd.py`, e.g. `output/valley_test`.
+Most expect a dataset directory written by `examples/air/01_simulation/run_fdtd.py`, e.g. `output/air/valley_test`.
 
 | Script | Purpose |
 |---|---|
@@ -18,12 +18,12 @@ Most expect a dataset directory written by `examples/air/01_simulation/run_fdtd.
 ## Harbor benchmarks
 
 GPU timing and accuracy harness for the harbor forward model and processing (see the Performance
-section of [docs/harbor.md](../docs/harbor.md#performance)).  Results go to `output/performance/`;
+section of [docs/harbor.md](../docs/harbor.md#performance)).  Results go to `output/studies/performance/`;
 run them only on an otherwise idle machine.
 
 | Script | Purpose |
 |---|---|
-| `bench_harbor.py` | Wall time and accuracy against saved reference outputs for every stage 0 case (`output/performance/<tag>.json`) |
+| `bench_harbor.py` | Wall time and accuracy against saved reference outputs for every stage 0 case (`output/studies/performance/<tag>.json`) |
 | `bench_fdtd_sweeps.py` | Stages 2 and 3: time per step against body count, throughput against batch size (`fdtd_sweeps.json`) |
 | `bench_cpml.py` | Stage 4: boundary reflection of the sponge and the CPML against angle and frequency (`cpml_reflection.json`) |
 | `bench_timestep.py` | Stage 6: phase accuracy and wall reflection of the time stepping prototypes (`timestep_schemes.json`) |

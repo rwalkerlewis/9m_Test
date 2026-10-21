@@ -1,0 +1,162 @@
+{
+  "components": {
+    "all_estimated": {
+      "depth_db": 11.3,
+      "echo_loss_db": 0.34,
+      "ship_error_m": 0.83,
+      "maps": {
+        "direct_residual": {
+          "max": 534.0,
+          "at_uuv": 107.0,
+          "peak_on_uuv": 0.0
+        },
+        "echo": {
+          "max": 2970.0,
+          "at_uuv": 2970.0,
+          "peak_on_uuv": 0.82
+        },
+        "rest": {
+          "max": 257.0,
+          "at_uuv": 24.4,
+          "peak_on_uuv": 0.0
+        }
+      },
+      "coherence": 0.74,
+      "delay_ms": -0.067,
+      "within_5m": 0.8,
+      "map_at_uuv": 3270.0,
+      "map_max": 3270.0
+    },
+    "true_waveform_exact_track": {
+      "depth_db": 21.9,
+      "echo_loss_db": 0.51,
+      "ship_error_m": 0.0,
+      "maps": {
+        "direct_residual": {
+          "max": 747.0,
+          "at_uuv": 59.4,
+          "peak_on_uuv": 0.0
+        },
+        "echo": {
+          "max": 1070.0,
+          "at_uuv": 1070.0,
+          "peak_on_uuv": 0.99
+        },
+        "rest": {
+          "max": 575.0,
+          "at_uuv": 50.4,
+          "peak_on_uuv": 0.0
+        }
+      },
+      "coherence": 1.0,
+      "delay_ms": -0.0,
+      "within_5m": 0.49,
+      "map_at_uuv": 1120.0,
+      "map_max": 1490.0
+    },
+    "data_ref_exact_track": {
+      "depth_db": 20.3,
+      "echo_loss_db": 0.37,
+      "ship_error_m": 0.0,
+      "maps": {
+        "direct_residual": {
+          "max": 634.0,
+          "at_uuv": 121.0,
+          "peak_on_uuv": 0.0
+        },
+        "echo": {
+          "max": 2780.0,
+          "at_uuv": 2780.0,
+          "peak_on_uuv": 1.0
+        },
+        "rest": {
+          "max": 256.0,
+          "at_uuv": 27.8,
+          "peak_on_uuv": 0.0
+        }
+      },
+      "coherence": 0.992,
+      "delay_ms": -0.052,
+      "within_5m": 0.96,
+      "map_at_uuv": 3280.0,
+      "map_max": 3280.0
+    },
+    "true_waveform_refined_track": {
+      "depth_db": 11.0,
+      "echo_loss_db": 0.52,
+      "ship_error_m": 0.83,
+      "maps": {
+        "direct_residual": {
+          "max": 650.0,
+          "at_uuv": 60.5,
+          "peak_on_uuv": 0.0
+        },
+        "echo": {
+          "max": 1030.0,
+          "at_uuv": 1030.0,
+          "peak_on_uuv": 0.81
+        },
+        "rest": {
+          "max": 529.0,
+          "at_uuv": 38.3,
+          "peak_on_uuv": 0.0
+        }
+      },
+      "coherence": 1.0,
+      "delay_ms": -0.0,
+      "within_5m": 0.44,
+      "map_at_uuv": 1100.0,
+      "map_max": 1420.0
+    }
+  },
+  "lags": {
+    "196": {
+      "range_m": [
+        206.0,
+        251.0
+      ],
+      "lag_ms": [
+        0.07,
+        0.26
+      ],
+      "median_ms": 0.17,
+      "corr": 0.69
+    },
+    "197": {
+      "range_m": [
+        214.0,
+        257.0
+      ],
+      "lag_ms": [
+        0.81,
+        0.92
+      ],
+      "median_ms": 0.88,
+      "corr": 0.71
+    },
+    "198": {
+      "range_m": [
+        126.0,
+        191.0
+      ],
+      "lag_ms": [
+        0.38,
+        0.52
+      ],
+      "median_ms": 0.45,
+      "corr": 0.7
+    },
+    "199": {
+      "range_m": [
+        180.0,
+        188.0
+      ],
+      "lag_ms": [
+        0.51,
+        0.62
+      ],
+      "median_ms": 0.57,
+      "corr": 0.7
+    }
+  }
+}

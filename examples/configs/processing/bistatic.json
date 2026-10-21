@@ -1,6 +1,6 @@
 {
   "recording": "bistatic",
-  "observation": "output/harbor_bistatic/fine/dataset.observation.npz",
+  "observation": "output/recordings/bistatic/dataset.observation.npz",
   "band_hz": [
     100.0,
     760.0

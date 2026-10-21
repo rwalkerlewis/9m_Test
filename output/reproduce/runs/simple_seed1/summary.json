@@ -4,14 +4,14 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.4220476866990793,
-    "echo": 0.2351145549037028,
-    "characteristics": 0.04127534115395974,
-    "total": 0.698437582756742
+    "passive": 0.42421734430390645,
+    "echo": 0.2358567685012531,
+    "characteristics": 0.04101274760687375,
+    "total": 0.7010868604120333
   },
   "latency_s": {
-    "median": 1.907,
-    "max": 2.899
+    "median": 1.905,
+    "max": 2.897
   },
   "objects": {
     "ferry": {
@@ -384,19 +384,19 @@
     }
   },
   "run": {
-    "git_commit": "270945d67307a81834182b19c281382c3446f58f",
+    "git_commit": "8dc4cf034f2288728e0cc2e3228a468cb2588ed3",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/simple.json",
-    "processing_config_sha256": "888d9e6f3cfd9adebc1636480701a73a1554fe7c84b7cf2fe93e1a8fe8393d28",
+    "processing_config_sha256": "cf68ee56587783343de46afb59df1293da8e7fe02d023704065ab3ba2acb3206",
     "processing_overrides": [],
-    "observation": "/workspace/output/harbor_simple/seed1/dataset.observation.npz",
+    "observation": "/workspace/output/recordings/simple/seed1/dataset.observation.npz",
     "observation_sha256": "cd4c1f8d54e11fad3cba95e3157ce04f3d2f2ec3b94871ce97227f29e4c6c3c9",
     "python": "3.12.3",
     "numpy": "2.5.4",
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 1,
-    "wall_s": 14.0760995229939,
+    "wall_s": 14.128486817004159,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

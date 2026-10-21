@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Harbor M0/M1 demo: environment map, one FDTD source run, DAS gather and wavefield snapshots.
 
+Figures, one panel each, in ``--out`` (default ``output/studies/history/harbor_m1_demo/``): ``m1_map.png``,
+``m1_snapshot_<t>s.png`` (one per snapshot time), ``m1_das.png``, ``m1_hydrophones.png``.
+
 Usage::
 
-    python examples/harbor/02_forward_model/harbor_m1_demo.py [--out output/harbor] [--time 12] [--shore-loss 0.15]
+    python examples/harbor/02_forward_model/harbor_m1_demo.py [--out output/studies/history/harbor_m1_demo] [--time 12] [--shore-loss 0.15]
 """
 
 from __future__ import annotations
@@ -16,7 +19,6 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
@@ -27,13 +29,16 @@ from acoustic_sim.water import (  # noqa: E402
     build_environment,
     build_layout,
 )
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
+
+NAME = "default 5 m harbor scenario"
 from acoustic_sim.sources import StaticSource  # noqa: E402
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", default="output/harbor")
+    ap.add_argument("--out", default="output/studies/history/harbor_m1_demo")
     ap.add_argument("--time", type=float, default=12.0, help="simulated seconds")
     ap.add_argument("--shore-loss", type=float, default=0.15, help="shore_loss_max (0 = perfectly reflecting quays)")
     ap.add_argument("--source", type=float, nargs=2, default=[900.0, 900.0], metavar=("X", "Y"))
@@ -68,43 +73,51 @@ def main() -> None:
     parts = layout.split(traces)
 
     # 1. Map
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig, ax = new_figure((13.0, 10.0))
     plot_harbor(env, layout, ax=ax, sponge_cells=cfg.fdtd.damping_width)
     ax.plot(*args.source, "r*", ms=14, label="source")
-    ax.legend(loc="upper right", fontsize=8)
-    fig.savefig(out / "m1_map.png", dpi=100, bbox_inches="tight")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.09), ncol=3, fontsize=11)
+    ax.set_title(f"{NAME}: chart, sensors and the pulse source")
+    save_figure(fig, out / "m1_map.png")
 
-    # 2. Wavefield snapshots
-    fig, axes = plt.subplots(2, 3, figsize=(15, 9))
+    # 2. Wavefield snapshots, one figure each
     x0, x1, y0, y1 = env.extent
-    for ax, n in zip(axes.ravel(), snap_steps):
+    for n in snap_steps:
         f = np.where(env.water, fields[n], np.nan)
         v = np.nanmax(np.abs(f)) * 0.5
-        ax.imshow(f, origin="lower", extent=(x0, x1, y0, y1), cmap="seismic", vmin=-v, vmax=v)
+        fig, ax = new_figure((13.0, 10.0))
+        im = ax.imshow(f, origin="lower", extent=(x0, x1, y0, y1), cmap="seismic", vmin=-v, vmax=v)
         ax.imshow(np.where(env.land, 1.0, np.nan), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys", vmin=0, vmax=2)
-        ax.plot(*layout.cables[0].positions.T, "-", color="orange", lw=1)
-        ax.plot(*args.source, "k*")
-        ax.set_title(f"t = {n / fs:.2f} s")
+        ax.plot(*layout.cables[0].positions.T, "-", color="orange", lw=1.5, label="DAS cable")
+        ax.plot(*args.source, "k*", ms=12, label="source")
         ax.set_aspect("equal")
-    fig.suptitle(f"Pressure snapshots (shore_loss_max = {args.shore_loss})")
-    fig.savefig(out / "m1_snapshots.png", dpi=80, bbox_inches="tight")
+        ax.set_xlabel("x [m]")
+        ax.set_ylabel("y [m]")
+        ax.legend(loc="upper right", fontsize=11)
+        fig.colorbar(im, ax=ax, shrink=0.8, label="pressure [Pa]")
+        ax.set_title(f"{NAME}: pressure at t = {n / fs:.2f} s (shore_loss_max = {args.shore_loss})")
+        save_figure(fig, out / f"m1_snapshot_{n / fs:.2f}s.png")
 
-    # 3. DAS waterfall + hydrophone traces
+    # 3. DAS waterfall and hydrophone traces, one figure each
     das = parts["cable1"]
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(14, 6), gridspec_kw={"width_ratios": [2, 1]})
+    fig, ax = new_figure((12.0, 8.0))
     v = np.abs(das).max() * 0.3
-    a1.imshow(das, aspect="auto", origin="lower", cmap="seismic", vmin=-v, vmax=v,
-              extent=(0, t[-1], 0, layout.cables[0].length))
-    a1.set_xlabel("time [s]")
-    a1.set_ylabel("distance along cable [m]")
-    a1.set_title("DAS channels (pressure at fiber nodes)")
+    im = ax.imshow(das, aspect="auto", origin="lower", cmap="seismic", vmin=-v, vmax=v,
+                   extent=(0, t[-1], 0, layout.cables[0].length))
+    fig.colorbar(im, ax=ax, label="pressure [Pa]")
+    ax.set_xlabel("time [s]")
+    ax.set_ylabel("distance along cable [m]")
+    ax.set_title(f"{NAME}: DAS channels (pressure at the fibre nodes)")
+    save_figure(fig, out / "m1_das.png")
     hyd = parts["hydrophones"]
+    fig, ax = new_figure((12.0, 8.0))
     for i, h in enumerate(hyd):
-        a2.plot(t, h / np.abs(hyd).max() + 1.5 * i, lw=0.7)
-    a2.set_xlabel("time [s]")
-    a2.set_yticks([])
-    a2.set_title("hydrophones")
-    fig.savefig(out / "m1_gather.png", dpi=100, bbox_inches="tight")
+        ax.plot(t, h / np.abs(hyd).max() + 1.5 * i, lw=0.7, label=f"hydrophone {i}")
+    ax.set_xlabel("time [s]")
+    ax.set_ylabel("pressure over the largest, offset by 1.5 per hydrophone [ratio]")
+    ax.legend(fontsize=11)
+    ax.set_title(f"{NAME}: hydrophone traces")
+    save_figure(fig, out / "m1_hydrophones.png")
     print("wrote", out)
 
 

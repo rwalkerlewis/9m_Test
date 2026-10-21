@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Presentation demo: one ship, one silent stopped UUV, a DAS cable, in the harbor of ``output/harbor/dataset.npz``.
+Presentation demo: one ship, one silent stopped UUV, a DAS cable, in the harbor of ``output/recordings/harbor/dataset.npz``.
 
 Built to be shown, not to be a fair test.  Deliberate simplifications (stated on the figures):
 
@@ -13,12 +13,13 @@ Built to be shown, not to be a fair test.  Deliberate simplifications (stated on
 Detection: matched filter + envelope on each channel of the cleaned DAS data, then back-projection of every pulse's
 echo over the harbor (delay ship -> x -> channel).  The stopped UUV adds up in one place; everything else does not.
 
-Outputs (``output/harbor_presentation``): scene.png, gather.png, detection.png, buildup.png, storyboard.png,
-wavefield.mp4, das_gather.mp4 and every 10th frame of both videos in frames_wavefield/ and frames_das/.
+Outputs (``output/studies/history/harbor_presentation``), one panel per figure: scene.png, gather_raw.png,
+gather_ship_removed.png, detection.png, detection_zoom.png, buildup_<n>_pulses.png, storyboard_<step>.png; wavefield.mp4,
+das_gather.mp4 (two panels sharing their axes) and every 10th frame of both videos in frames_wavefield/ and frames_das/.
 
 Usage::
 
-    python examples/harbor/90_history/harbor_presentation.py [--out output/harbor_presentation] [--fps 30]
+    python examples/harbor/90_history/harbor_presentation.py [--out output/studies/history/harbor_presentation] [--fps 30]
 """
 import argparse, json, shutil, subprocess, sys, time
 from pathlib import Path
@@ -26,11 +27,13 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.animation import FFMpegWriter
 from matplotlib.colors import ListedColormap
 from scipy.signal import hilbert
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water import HarborDataset, build_environment  # noqa: E402
 
 C, R_REF = 1500.0, 100.0
@@ -48,7 +51,8 @@ FRAME_DT = 0.02                            # simulated seconds per video frame
 
 SHIP_C, UUV_C, CABLE_C = "#38bdf8", "#f97316", "#facc15"
 INK, MUTED = "#111827", "#6b7280"
-plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11, "axes.spines.top": False, "axes.spines.right": False})
+plt.rcParams.update({"axes.spines.top": False, "axes.spines.right": False})
+REC = "harbor presentation"                 # every title names the scene
 
 
 def ricker(u, f=F0):
@@ -142,7 +146,7 @@ def base_map(sc, ax, land_alpha=1.0):
     ax.imshow(np.where(sc.land_crop, 1.0, np.nan), origin="lower", extent=CROP, cmap=LAND, vmin=0, vmax=1, alpha=land_alpha, zorder=3)
     ax.plot(*sc.rx.T, "-", color=CABLE_C, lw=2.5, zorder=4, label="DAS cable (125 ch)")
     ax.set_xlim(x0, x1); ax.set_ylim(y0, y1); ax.set_aspect("equal")
-    ax.set_xlabel("x (m)"); ax.set_ylabel("y (m)")
+    ax.set_xlabel("x (east) [m]"); ax.set_ylabel("y (north) [m]")
 
 
 def mark(ax, ship_xy, uuv=True, trail=None, big=False):
@@ -152,19 +156,20 @@ def mark(ax, ship_xy, uuv=True, trail=None, big=False):
 
 
 def caveat(fig, text="Analytic simulation, idealised for illustration: pulsed ship source, exact direct-path removal, strong UUV echo"):
-    fig.text(0.995, 0.005, text, ha="right", va="bottom", fontsize=8, color=MUTED)
+    if fig._suptitle is not None:                          # video frames: below their running title
+        fig.text(0.995, 0.005, text, ha="right", va="bottom", fontsize=11, color=MUTED)
+    else:                                                  # one panel figures: as the last line of the title
+        ax = fig.axes[0]; ax.set_title(ax.get_title() + "\n" + text, fontweight="bold", color=INK)
 
 
-def encode(frames_dir, pattern, fps, out):
-    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(fps), "-i", str(frames_dir / pattern),
-           "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", str(out)]
-    subprocess.run(cmd, check=True)
+def save(fig, path):
+    save_figure(fig, path, recording=REC); print("wrote", path.name, flush=True)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dataset", default=str(ROOT / "output" / "harbor" / "dataset.npz"))
-    ap.add_argument("--out", default=str(ROOT / "output" / "harbor_presentation"))
+    ap.add_argument("--dataset", default=str(ROOT / "output" / "recordings" / "harbor" / "dataset.npz"))
+    ap.add_argument("--out", default=str(ROOT / "output/studies/history" / "harbor_presentation"))
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--no-video", action="store_true", help="figures only")
     args = ap.parse_args()
@@ -184,9 +189,9 @@ def main():
     imgs_build = {n: sc.backproject(resid, range(n)) for n in (1, 3, 8, len(sc.tk))}
 
     # ---------------- figure: scene ----------------
-    fig, ax = plt.subplots(figsize=(9, 8.5))
+    fig, ax = new_figure((12, 11))
     ax.set_facecolor("#dbeafe"); base_map(sc, ax)
-    full = sc.ship(np.linspace(-30, T + 30, 200)); ax.plot(*full.T, ":", color=SHIP_C, lw=1.5)
+    full = sc.ship(np.linspace(-30, T + 30, 200)); ax.plot(*full.T, ":", color=SHIP_C, lw=1.5, label="ship route")
     trail = sc.ship(np.linspace(0, T, 50)); ax.plot(*trail.T, "-", color=SHIP_C, lw=4, label=f"ship track during the {T:.0f} s shown")
     mark(ax, sc.sk[0], big=True)
     ax.annotate("UUV\nsilent, stopped", UUV, UUV + [60, 90], color=UUV_C, fontweight="bold", fontsize=12, arrowprops=dict(arrowstyle="-", color=UUV_C))
@@ -194,27 +199,31 @@ def main():
                 arrowprops=dict(arrowstyle="-", color="#0369a1"))
     ax.annotate("DAS cable\n125 channels, 10 m", sc.rx[50], sc.rx[50] + [-260, -200], color="#a16207", fontweight="bold", fontsize=12,
                 arrowprops=dict(arrowstyle="-", color="#a16207"))
-    ax.set_title("The scene: one ship, one silent UUV, one fiber-optic cable", loc="left", fontweight="bold", color=INK)
-    ax.legend(loc="upper right", fontsize=9, framealpha=0.9); caveat(fig)
-    fig.savefig(out / "scene.png", dpi=150, bbox_inches="tight"); plt.close(fig); print("wrote scene.png", flush=True)
+    ax.set_title(f"{REC}: the scene, one ship, one silent UUV, one fiber optic cable", fontweight="bold", color=INK)
+    ax.legend(loc="upper right", fontsize=11, framealpha=0.9); caveat(fig)
+    save(fig, out / "scene.png")
 
-    # ---------------- figure: gather ----------------
+    # ---------------- figures: gather (raw, then the ship's sound removed) ----------------
     dist = sc.s; ext = [0, T, dist[0], dist[-1]]
-    fig, axs = plt.subplots(1, 2, figsize=(15, 6.5), sharey=True)
     v1 = np.percentile(np.abs(raw), 99.5); v2 = 0.7 * np.nanmax(np.abs(echo))
-    axs[0].imshow(raw, aspect="auto", origin="lower", extent=ext, cmap="RdBu_r", vmin=-v1, vmax=v1, interpolation="nearest")
-    axs[0].set_title("1. What the cable records\n(the ship's own sound dominates)", loc="left", fontweight="bold", color=INK)
-    axs[1].imshow(resid, aspect="auto", origin="lower", extent=ext, cmap="RdBu_r", vmin=-v2, vmax=v2, interpolation="nearest")
-    axs[1].set_title(f"2. Ship's sound removed (known signature + AIS track), shown {v1 / v2:.0f}x brighter:\n"
-                     "the curved echoes of each pulse off the UUV remain", loc="left", fontweight="bold", color=INK)
+    fig, ax = new_figure((12, 9))
+    h = ax.imshow(raw, aspect="auto", origin="lower", extent=ext, cmap="RdBu_r", vmin=-v1, vmax=v1, interpolation="nearest")
+    ax.set_title(f"{REC}, 1. what the cable records (the ship's own sound dominates)", fontweight="bold", color=INK)
+    ax.set_xlabel("time [s]"); ax.set_ylabel("distance along cable [m]")
+    fig.colorbar(h, ax=ax, label="pressure [model units]"); caveat(fig)
+    save(fig, out / "gather_raw.png")
+    fig, ax = new_figure((12, 9))
+    h = ax.imshow(resid, aspect="auto", origin="lower", extent=ext, cmap="RdBu_r", vmin=-v2, vmax=v2, interpolation="nearest")
+    ax.set_title(f"{REC}, 2. ship's sound removed (known signature + AIS track), shown {v1 / v2:.0f}x brighter:\n"
+                 "the curved echoes of each pulse off the UUV remain", fontweight="bold", color=INK)
     k = len(sc.arr_echo) // 2; j = int(np.nanargmin(sc.arr_echo[k]))
-    axs[1].annotate("echo from the UUV", (sc.arr_echo[k][j], dist[j]), (sc.arr_echo[k][j] + 1.2, dist[j] + 200), color=UUV_C,
-                    fontweight="bold", fontsize=12, arrowprops=dict(arrowstyle="->", color=UUV_C, lw=2))
-    for a in axs: a.set_xlabel("time (s)")
-    axs[0].set_ylabel("distance along cable (m)"); caveat(fig)
-    fig.savefig(out / "gather.png", dpi=150, bbox_inches="tight"); plt.close(fig); print("wrote gather.png", flush=True)
+    ax.annotate("echo from the UUV", (sc.arr_echo[k][j], dist[j]), (sc.arr_echo[k][j] + 1.2, dist[j] + 200), color=UUV_C,
+                fontweight="bold", fontsize=12, arrowprops=dict(arrowstyle="->", color=UUV_C, lw=2))
+    ax.set_xlabel("time [s]"); ax.set_ylabel("distance along cable [m]")
+    fig.colorbar(h, ax=ax, label="pressure [model units]"); caveat(fig)
+    save(fig, out / "gather_ship_removed.png")
 
-    # ---------------- figure: detection ----------------
+    # ---------------- figures: detection ----------------
     def show_img(ax, im, title, zoom=False):
         ax.set_facecolor("#0b1020")
         Z = 10 * np.log10(np.maximum(im, 1e-30) / np.nanmax(im)).reshape(sc.gshape)
@@ -224,31 +233,32 @@ def main():
         ax.plot(*UUV, "o", ms=16, mfc="none", mec="w", mew=2, zorder=6, label="UUV truth")
         if zoom:
             ax.set_xlim(UUV[0] - 150, UUV[0] + 150); ax.set_ylim(UUV[1] - 150, UUV[1] + 150)
-        ax.set_title(title, loc="left", fontweight="bold", color=INK, fontsize=11)
+        ax.set_title(f"{REC}, {title}", fontweight="bold", color=INK)
         return h
-    fig, axs = plt.subplots(1, 2, figsize=(16, 7.5), gridspec_kw={"width_ratios": [1.15, 1]})
-    h = show_img(axs[0], img, f"3. Echoes from all {len(sc.tk)} pulses stacked over the harbor:\none bright spot")
-    axs[0].plot(*est, "+", color="#22d3ee", ms=22, mew=3, zorder=7, label="detection")
-    axs[0].legend(loc="lower right", fontsize=9, framealpha=0.9)
-    show_img(axs[1], img, f"Zoom: UUV found {err:.0f} m from the truth\npeak {contrast:.0f} dB above the background", zoom=True)
-    axs[1].plot(*est, "+", color="#22d3ee", ms=26, mew=3, zorder=7)
-    fig.colorbar(h, ax=axs, fraction=0.02, pad=0.01, label="stacked echo energy (dB re peak)"); caveat(fig)
-    fig.savefig(out / "detection.png", dpi=150, bbox_inches="tight"); plt.close(fig); print("wrote detection.png", flush=True)
+    for zoom, name, title in ((False, "detection.png", f"3. echoes from all {len(sc.tk)} pulses stacked over the harbor: one bright spot"),
+                              (True, "detection_zoom.png", f"zoom: UUV found {err:.0f} m from the truth,\npeak {contrast:.0f} dB above the background")):
+        fig, ax = new_figure((12, 11))
+        h = show_img(ax, img, title, zoom=zoom)
+        ax.plot(*est, "+", color="#22d3ee", ms=22, mew=3, zorder=7, label="detection")
+        ax.legend(loc="lower right", fontsize=11, framealpha=0.9)
+        fig.colorbar(h, ax=ax, shrink=0.8, label="stacked echo energy [dB re peak]"); caveat(fig)
+        save(fig, out / name)
 
-    # ---------------- figure: build-up ----------------
-    fig, axs = plt.subplots(1, 4, figsize=(21, 5.8)); fig.subplots_adjust(wspace=0.25)
-    for ax, (n, im) in zip(axs, imgs_build.items()):
+    # ---------------- figures: build-up ----------------
+    for n, im in imgs_build.items():
+        fig, ax = new_figure((12, 11))
         kk = np.nanargmax(im); c = 10 * np.log10(im[kk] / np.nanmedian(im))
-        show_img(ax, im, f"{n} pulse{'s' if n > 1 else ''} ({n * PULSE_DT:.1f} s): peak {c:.0f} dB")
-        ax.plot(*sc.grid[kk], "+", color="#22d3ee", ms=18, mew=2.5, zorder=7)
-        if ax is not axs[0]: ax.set_ylabel("")
-    fig.suptitle("The UUV emerges as more echoes are stacked (the ship moves, the UUV does not)", fontweight="bold", color=INK, y=1.0)
-    caveat(fig); fig.savefig(out / "buildup.png", dpi=130, bbox_inches="tight"); plt.close(fig); print("wrote buildup.png", flush=True)
+        h = show_img(ax, im, f"{n} pulse{'s' if n > 1 else ''} stacked ({n * PULSE_DT:.1f} s): peak {c:.0f} dB\n"
+                             "(the UUV emerges as more echoes are stacked; the ship moves, the UUV does not)")
+        ax.plot(*sc.grid[kk], "+", color="#22d3ee", ms=18, mew=2.5, zorder=7, label="strongest cell")
+        ax.legend(loc="lower right", fontsize=11, framealpha=0.9)
+        fig.colorbar(h, ax=ax, shrink=0.8, label="stacked echo energy [dB re peak]"); caveat(fig)
+        save(fig, out / f"buildup_{n}_pulses.png")
 
     if args.no_video:
         print(f"detection error {err:.1f} m, contrast {contrast:.1f} dB ({time.time() - t_start:.0f} s)"); return
 
-    # ---------------- wavefield frames ----------------
+    # ---------------- wavefield video (two maps of the same area, read together) ----------------
     pts = sc.grid; lu = sc.los(UUV, pts)[0]; ru = np.linalg.norm(pts - UUV, axis=1)
     pulses = []
     for tk, sk in zip(sc.tk, sc.sk):
@@ -265,79 +275,81 @@ def main():
     times = np.arange(0, T, FRAME_DT)
     comp = lambda x, v: np.sign(x) * np.sqrt(np.abs(x) / v)            # square-root compression for display
     vd = 0.6; ve = np.sqrt(R_REF / 400) * 10 ** (TS / 20) * np.sqrt(1 / 150)
-    fdir = out / "_wf"; fdir.mkdir(exist_ok=True); keep = out / "frames_wavefield"; keep.mkdir(exist_ok=True)
-    fig, axs = plt.subplots(1, 2, figsize=(16, 8)); fig.subplots_adjust(left=0.05, right=0.98, top=0.88, bottom=0.08, wspace=0.12)
+    keep = out / "frames_wavefield"; keep.mkdir(exist_ok=True)
+    fig, axs = plt.subplots(1, 2, figsize=(16, 8.5), sharex=True, sharey=True)
     ims = []
-    for ax, title in zip(axs, ("Total pressure: the ship's pulses dominate", f"UUV echo only, shown {vd / ve:,.0f}x amplified")):
+    for ax, title in zip(axs, ("total pressure: the ship's pulses dominate", f"UUV echo only, shown {vd / ve:,.0f}x amplified")):
         ax.set_facecolor("#0b1020")
         ims.append(ax.imshow(np.zeros(sc.gshape), origin="lower", extent=CROP, cmap="RdBu_r", vmin=-1, vmax=1, zorder=2))
-        base_map(sc, ax); ax.set_title(title, loc="left", fontweight="bold", color=INK)
-    ship_m = [ax.plot([], [], "^", ms=12, color=SHIP_C, mec="k", zorder=6)[0] for ax in axs]
+        base_map(sc, ax); ax.set_title(f"{REC}: {title}", fontweight="bold", color=INK)
+    ship_m = [ax.plot([], [], "^", ms=12, color=SHIP_C, mec="k", zorder=6, label="ship (AIS)")[0] for ax in axs]
     trail_m = [ax.plot([], [], "-", color=SHIP_C, lw=1.5, zorder=5)[0] for ax in axs]
-    for ax in axs: ax.plot(*UUV, "o", ms=12, mfc="none", mec=UUV_C, mew=2.5, zorder=6)
+    for ax in axs: ax.plot(*UUV, "o", ms=12, mfc="none", mec=UUV_C, mew=2.5, zorder=6, label="UUV (silent, stopped)")
+    axs[0].legend(loc="lower right", fontsize=11, framealpha=0.9)
     ttl = fig.suptitle("", fontweight="bold", fontsize=15, color=INK, x=0.05, ha="left"); caveat(fig)
     t1 = time.time()
-    for i, t in enumerate(times):
-        d, e = field(t)
-        ims[0].set_data(np.clip(comp(d + e, vd), -1, 1)); ims[1].set_data(np.clip(comp(e, ve), -1, 1))
-        s = sc.ship(t)[0]; tr = sc.ship(np.linspace(max(0, t - 6), t, 20))
-        for m, l in zip(ship_m, trail_m): m.set_data([s[0]], [s[1]]); l.set_data(*tr.T)
-        ttl.set_text(f"Wavefield, t = {t:5.2f} s    (the ship pulses about every {PULSE_DT} s; the UUV re-radiates each pulse)")
-        fig.savefig(fdir / f"f{i:05d}.png", dpi=90)
-        if i % 10 == 0: shutil.copy(fdir / f"f{i:05d}.png", keep / f"wavefield_{i:05d}.png")
-    plt.close(fig); print(f"wavefield frames: {len(times)} in {time.time() - t1:.0f} s", flush=True)
-    encode(fdir, "f%05d.png", args.fps, out / "wavefield.mp4"); shutil.rmtree(fdir); print("wrote wavefield.mp4", flush=True)
+    writer = FFMpegWriter(fps=args.fps, bitrate=4000)
+    with writer.saving(fig, str(out / "wavefield.mp4"), dpi=90):
+        for i, t in enumerate(times):
+            d, e = field(t)
+            ims[0].set_data(np.clip(comp(d + e, vd), -1, 1)); ims[1].set_data(np.clip(comp(e, ve), -1, 1))
+            s = sc.ship(t)[0]; tr = sc.ship(np.linspace(max(0, t - 6), t, 20))
+            for m, l in zip(ship_m, trail_m): m.set_data([s[0]], [s[1]]); l.set_data(*tr.T)
+            ttl.set_text(f"Wavefield, t = {t:5.2f} s    (the ship pulses about every {PULSE_DT} s; the UUV re-radiates each pulse)")
+            writer.grab_frame()
+            if i % 10 == 0: save_figure(fig, keep / f"wavefield_{i:05d}.png", allow_two_panels=True, recording=REC, close=False)
+    plt.close(fig); print(f"wavefield frames: {len(times)} in {time.time() - t1:.0f} s; wrote wavefield.mp4", flush=True)
 
-    # ---------------- DAS gather frames ----------------
-    fdir = out / "_das"; fdir.mkdir(exist_ok=True); keep = out / "frames_das"; keep.mkdir(exist_ok=True)
-    fig = plt.figure(figsize=(17, 8)); gs = fig.add_gridspec(1, 3, width_ratios=[0.9, 1.2, 1.2], wspace=0.28)
-    fig.subplots_adjust(left=0.05, right=0.98, top=0.86, bottom=0.09)
-    axm = fig.add_subplot(gs[0]); axm.set_facecolor("#dbeafe"); base_map(sc, axm)
-    cs = axm.scatter(*sc.rx.T, c=sc.s, cmap="viridis", s=14, zorder=5)
-    axm.plot(*UUV, "o", ms=11, mfc="none", mec=UUV_C, mew=2.5, zorder=6)
-    shm = axm.plot([], [], "^", ms=11, color=SHIP_C, mec="k", zorder=6)[0]
-    axm.set_title("Cable (colour = distance)", loc="left", fontweight="bold", color=INK, fontsize=11)
+    # ---------------- DAS gather video (raw and ship removed, sharing the cable axis) ----------------
+    keep = out / "frames_das"; keep.mkdir(exist_ok=True)
+    fig, axs = plt.subplots(1, 2, figsize=(16, 8.5), sharey=True)
     gims = []
-    for j, (data, v, title) in enumerate(((raw, v1, "Raw DAS: the ship dominates"), (resid, v2, f"Ship removed, {v1 / v2:.0f}x brighter: UUV echoes"))):
-        ax = fig.add_subplot(gs[j + 1])
+    for ax, (data, v, title) in zip(axs, ((raw, v1, "raw DAS: the ship dominates"), (resid, v2, f"ship removed, {v1 / v2:.0f}x brighter: UUV echoes"))):
         gims.append(ax.imshow(np.full_like(data, np.nan), aspect="auto", origin="lower", extent=ext, cmap="RdBu_r", vmin=-v, vmax=v,
                               interpolation="nearest"))
-        ax.set_xlabel("time (s)"); ax.set_title(title, loc="left", fontweight="bold", color=INK, fontsize=11)
-        if j == 0: ax.set_ylabel("distance along cable (m)")
-        else:
-            ax.set_yticklabels([])
-            ax.set_xlim(0, T)
-        gims.append(ax.axvline(0, color="k", lw=1.2))
+        ax.set_xlabel("time [s]"); ax.set_ylabel("distance along cable [m]"); ax.set_xlim(0, T)
+        ax.set_title(f"{REC}: {title}", fontweight="bold", color=INK)
+        gims.append(ax.axvline(0, color="k", lw=1.2, label="now"))
+    axs[0].legend(loc="upper right", fontsize=11)
     ttl = fig.suptitle("", fontweight="bold", fontsize=15, color=INK, x=0.04, ha="left"); caveat(fig)
     t1 = time.time()
-    for i, t in enumerate(times):
-        n = int(t * FS)
-        for (img_h, cur), data in zip(((gims[0], gims[1]), (gims[2], gims[3])), (raw, resid)):
-            shown = np.full_like(data, np.nan); shown[:, :n] = data[:, :n]; img_h.set_data(shown); cur.set_xdata([t, t])
-        s = sc.ship(t)[0]; shm.set_data([s[0]], [s[1]])
-        ttl.set_text(f"DAS recording as it arrives, t = {t:5.2f} s")
-        fig.savefig(fdir / f"f{i:05d}.png", dpi=90)
-        if i % 10 == 0: shutil.copy(fdir / f"f{i:05d}.png", keep / f"das_{i:05d}.png")
-    plt.close(fig); print(f"DAS frames: {len(times)} in {time.time() - t1:.0f} s", flush=True)
-    encode(fdir, "f%05d.png", args.fps, out / "das_gather.mp4"); shutil.rmtree(fdir); print("wrote das_gather.mp4", flush=True)
+    writer = FFMpegWriter(fps=args.fps, bitrate=4000)
+    with writer.saving(fig, str(out / "das_gather.mp4"), dpi=90):
+        for i, t in enumerate(times):
+            n = int(t * FS)
+            for (img_h, cur), data in zip(((gims[0], gims[1]), (gims[2], gims[3])), (raw, resid)):
+                shown = np.full_like(data, np.nan); shown[:, :n] = data[:, :n]; img_h.set_data(shown); cur.set_xdata([t, t])
+            ttl.set_text(f"DAS recording as it arrives, t = {t:5.2f} s")
+            writer.grab_frame()
+            if i % 10 == 0: save_figure(fig, keep / f"das_{i:05d}.png", allow_two_panels=True, recording=REC, close=False)
+    plt.close(fig); print(f"DAS frames: {len(times)} in {time.time() - t1:.0f} s; wrote das_gather.mp4", flush=True)
 
-    # ---------------- storyboard ----------------
+    # ---------------- storyboard: one figure per step ----------------
     t_echo = pulses[len(pulses) // 2]["te"] + 0.18                    # an echo ring well clear of the UUV
     d, e = field(t_echo)
-    fig, axs = plt.subplots(2, 2, figsize=(16, 14.5)); fig.subplots_adjust(hspace=0.28, wspace=0.18)
-    ax = axs[0, 0]; ax.set_facecolor("#dbeafe"); base_map(sc, ax); mark(ax, sc.sk[0], trail=sc.ship(np.linspace(0, T, 50)), big=True)
-    ax.set_title("1. Ship (AIS) and a silent, stopped UUV", loc="left", fontweight="bold"); ax.legend(loc="lower right", fontsize=9)
-    ax = axs[0, 1]; ax.set_facecolor("#0b1020")
-    ax.imshow(np.clip(comp(e, ve), -1, 1), origin="lower", extent=CROP, cmap="RdBu_r", vmin=-1, vmax=1, zorder=2); base_map(sc, ax)
-    mark(ax, sc.ship(t_echo)[0]); ax.set_title(f"2. The UUV re-radiates each pulse (echo only, {vd / ve:.0f}x amplified)", loc="left", fontweight="bold")
-    ax = axs[1, 0]
-    ax.imshow(resid, aspect="auto", origin="lower", extent=ext, cmap="RdBu_r", vmin=-v2, vmax=v2, interpolation="nearest")
-    ax.set_xlabel("time (s)"); ax.set_ylabel("distance along cable (m)")
-    ax.set_title("3. The cable hears the echoes\nonce the ship's own sound is removed", loc="left", fontweight="bold")
-    show_img(axs[1, 1], img, f"4. Stacking the echoes finds the UUV\n{err:.0f} m error, peak {contrast:.0f} dB above the background")
-    axs[1, 1].title.set_fontsize(14)
-    axs[1, 1].plot(*est, "+", color="#22d3ee", ms=24, mew=3, zorder=7)
-    caveat(fig); fig.savefig(out / "storyboard.png", dpi=130, bbox_inches="tight"); plt.close(fig); print("wrote storyboard.png", flush=True)
+    fig, ax = new_figure((12, 11))
+    ax.set_facecolor("#dbeafe"); base_map(sc, ax); mark(ax, sc.sk[0], trail=sc.ship(np.linspace(0, T, 50)), big=True)
+    ax.set_title(f"{REC}, 1. ship (AIS) and a silent, stopped UUV", fontweight="bold"); ax.legend(loc="lower right", fontsize=11)
+    caveat(fig); save(fig, out / "storyboard_1_scene.png")
+    fig, ax = new_figure((12, 11))
+    ax.set_facecolor("#0b1020")
+    h = ax.imshow(np.clip(comp(e, ve), -1, 1), origin="lower", extent=CROP, cmap="RdBu_r", vmin=-1, vmax=1, zorder=2); base_map(sc, ax)
+    mark(ax, sc.ship(t_echo)[0]); ax.set_title(f"{REC}, 2. the UUV re-radiates each pulse (echo only, {vd / ve:.0f}x amplified)", fontweight="bold")
+    ax.legend(loc="lower right", fontsize=11)
+    fig.colorbar(h, ax=ax, shrink=0.8, label="pressure, square root compressed [re display scale]")
+    caveat(fig); save(fig, out / "storyboard_2_echo.png")
+    fig, ax = new_figure((12, 9))
+    h = ax.imshow(resid, aspect="auto", origin="lower", extent=ext, cmap="RdBu_r", vmin=-v2, vmax=v2, interpolation="nearest")
+    ax.set_xlabel("time [s]"); ax.set_ylabel("distance along cable [m]")
+    ax.set_title(f"{REC}, 3. the cable hears the echoes once the ship's own sound is removed", fontweight="bold")
+    fig.colorbar(h, ax=ax, label="pressure [model units]")
+    caveat(fig); save(fig, out / "storyboard_3_gather.png")
+    fig, ax = new_figure((12, 11))
+    h = show_img(ax, img, f"4. stacking the echoes finds the UUV\n{err:.0f} m error, peak {contrast:.0f} dB above the background")
+    ax.plot(*est, "+", color="#22d3ee", ms=24, mew=3, zorder=7, label="detection")
+    ax.legend(loc="lower right", fontsize=11)
+    fig.colorbar(h, ax=ax, shrink=0.8, label="stacked echo energy [dB re peak]")
+    caveat(fig); save(fig, out / "storyboard_4_detection.png")
 
     res = {"pulses": int(len(sc.tk)), "pulse_interval_s": PULSE_DT, "pulse_jitter_s": PULSE_JITTER, "ricker_hz": F0, "duration_s": T, "uuv_xy": UUV.tolist(),
            "uuv_ts_db": TS, "noise_over_median_echo_peak": NOISE_REL, "estimate_xy": est.tolist(), "error_m": err,

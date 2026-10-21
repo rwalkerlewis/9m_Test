@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 
 from acoustic_sim.contract import ChartEnvironment
+from acoustic_sim.plotting import new_figure, save_figure
 from acoustic_sim.water.sensors import SensorLayout
 
 
@@ -25,7 +26,7 @@ def plot_harbor(
     *sponge_cells* optionally outlines the absorbing grid-edge layer.
     """
     if ax is None:
-        _, ax = plt.subplots(figsize=(9, 7))
+        _, ax = new_figure()
     x0, x1, y0, y1 = env.extent
 
     if show_depth:
@@ -51,12 +52,38 @@ def plot_harbor(
             h = layout.hydrophones
             ax.plot(h[:, 0], h[:, 1], "v", color="k", mfc="yellow", ms=9, label="hydrophone")
 
-    ax.set_xlabel("x [m]")
-    ax.set_ylabel("y [m]")
+    ax.set_xlabel("x (east) [m]")
+    ax.set_ylabel("y (north) [m]")
     ax.set_title(env.name)
     ax.set_aspect("equal")
-    ax.legend(loc="upper right", fontsize=8)
+    ax.legend(loc="upper right")
     return ax
+
+
+def declutter_labels(ax, annotations, gap_px: float = 2.0, max_steps: int = 60) -> None:
+    """Move text annotations (offsets in points) so that no two overlap: each label, in order of its height on the
+    image, is shifted down until its box clears every label placed before it."""
+    anns = [a for a in annotations if a is not None and a.get_text()]
+    if len(anns) < 2:
+        return
+    fig = ax.figure
+    try:
+        fig.tight_layout()                              # the layout the figure is saved with
+    except Exception:
+        pass
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    pt_per_px = 72.0 / fig.dpi
+    boxes = []
+    for a in sorted(anns, key=lambda a: -a.get_window_extent(renderer).y1):
+        for _ in range(max_steps):
+            bb = a.get_window_extent(renderer)
+            hit = next((b for b in boxes if bb.x0 < b.x1 and bb.x1 > b.x0 and bb.y0 < b.y1 + gap_px and bb.y1 > b.y0 - gap_px), None)
+            if hit is None:
+                break
+            dx, dy = a.xyann
+            a.xyann = (dx, dy - (bb.y1 - hit.y0 + gap_px) * pt_per_px)
+        boxes.append(a.get_window_extent(renderer))
 
 
 # ----------------------------------------------------------------------
@@ -149,15 +176,10 @@ def grid_image(grid: np.ndarray, values: np.ndarray):
     return img, (xs[0] - dx / 2, xs[-1] + dx / 2, ys[0] - dx / 2, ys[-1] + dx / 2)
 
 
-def draw_frame_geometry(ax, grid: np.ndarray, B: np.ndarray, layout: SensorLayout, radiators: dict | None = None,
-                        peaks: np.ndarray | None = None, echo: bool = True, threshold: float | None = None,
-                        exclusion: np.ndarray | None = None):
-    """One frame's map (dB re its peak) with the geometry that produced it: every radiator in *radiators* (id ->
-    position the chain used) with its direct rays to a few sensors; for an echo map, the path radiator - strongest
-    peak - sensors and the equal delay ellipse through that peak (foci: the radiator and the array centre);
-    *peaks* (P, 2) marked, strongest in red; *threshold* drawn as a contour of the map; *exclusion* (G,) cells
-    hatched.  Returns the image handle (for a colour bar)."""
-    radiators = radiators or {}
+def draw_frame_map(ax, grid: np.ndarray, B: np.ndarray, peaks: np.ndarray | None = None, threshold: float | None = None,
+                   exclusion: np.ndarray | None = None):
+    """One frame's map (dB re its peak): *peaks* (P, 2) marked, strongest in red; *threshold* drawn as a contour of the
+    map; *exclusion* (G,) cells marked.  Returns the image handle (for a colour bar)."""
     B = np.asarray(B, dtype=float)
     img, ext = grid_image(grid, 10 * np.log10(np.maximum(B / max(B.max(), 1e-30), 1e-3)))
     im = ax.imshow(img, origin="lower", extent=ext, cmap="viridis", vmin=-20, vmax=0, alpha=0.85)
@@ -172,21 +194,70 @@ def draw_frame_geometry(ax, grid: np.ndarray, B: np.ndarray, layout: SensorLayou
         ex = grid[np.asarray(exclusion, bool)]
         ax.plot(ex[:, 0], ex[:, 1], ",", color="0.85", alpha=0.6)
         ax.plot([], [], "s", color="0.85", ms=5, label="exclusion zone (map zeroed)")
-    sensors = sensor_subset(layout)
-    centre = np.mean(layout.receivers, axis=0)
+    _draw_peaks(ax, peaks)
+    return im
+
+
+def _draw_peaks(ax, peaks) -> None:
+    if peaks is not None and len(peaks):
+        peaks = np.atleast_2d(peaks)
+        if len(peaks) > 1:
+            ax.plot(peaks[1:, 0], peaks[1:, 1], "x", color="0.15", mec="w", ms=9, mew=2, label="other peaks")
+        ax.plot(*peaks[0], "x", color="#d62728", ms=13, mew=2.5, label="strongest peak")
+
+
+def _draw_radiators(ax, radiators: dict) -> None:
     for j, (k, p) in enumerate(radiators.items()):
+        ax.plot(*p, "*", color="#1f77b4", ms=16, mec="w", label="radiator where the chain placed it" if j == 0 else None)
+        ax.annotate(str(k), p, xytext=(7, 7), textcoords="offset points", color="#1f77b4")
+
+
+def draw_frame_rays(ax, layout: SensorLayout, radiators: dict | None = None, peaks: np.ndarray | None = None,
+                    echo: bool = True) -> None:
+    """The ray paths of one frame: every radiator in *radiators* (id -> position the chain used) with its direct rays to
+    a few sensors; for an echo map, the path radiator - strongest peak - sensors."""
+    radiators = radiators or {}
+    sensors = sensor_subset(layout)
+    for j, p in enumerate(radiators.values()):
         draw_direct_rays(ax, p, sensors, color="#1f77b4", label="direct paths (radiator - sensors)" if j == 0 else None)
-        ax.plot(*p, "*", color="#1f77b4", ms=14, mec="w", label="radiator where the chain placed it" if j == 0 else None)
-        ax.annotate(str(k), p, xytext=(6, 6), textcoords="offset points", fontsize=8, color="#1f77b4")
+    _draw_radiators(ax, radiators)
     if peaks is not None and len(peaks):
         peaks = np.atleast_2d(peaks)
         if echo and radiators:
-            src = next(iter(radiators.values()))
-            draw_echo_rays(ax, src, peaks[0], sensors, color="#d62728", label="echo path (radiator - peak - sensors)")
-            draw_bistatic_ellipse(ax, src, centre, peaks[0], color="#d62728", label="equal delay ellipse through the peak")
-        ax.plot(peaks[1:, 0], peaks[1:, 1], "x", color="w", ms=8, mew=2, label="other peaks")
-        ax.plot(*peaks[0], "x", color="#d62728", ms=12, mew=2.5, label="strongest peak")
-    ax.plot(*centre, "+", color="k", ms=10, mew=2, label="array centre")
+            draw_echo_rays(ax, next(iter(radiators.values())), peaks[0], sensors, color="#d62728",
+                           label="echo path (radiator - peak - sensors)")
+        ax.plot(*peaks[0], "x", color="#d62728", ms=13, mew=2.5, label="strongest peak")
+    ax.plot(sensors[:, 0], sensors[:, 1], "o", color="0.2", mfc="none", ms=7, label="sensors the rays are drawn to")
+
+
+def draw_frame_ellipse(ax, layout: SensorLayout, radiators: dict | None = None, peaks: np.ndarray | None = None) -> None:
+    """The equal delay ellipse of one echo frame: foci the first radiator and the array centre, through the strongest
+    peak (an echo from anywhere on it arrives with the same delay)."""
+    radiators = radiators or {}
+    centre = np.mean(layout.receivers, axis=0)
+    _draw_radiators(ax, radiators)
+    if peaks is not None and len(peaks) and radiators:
+        peaks = np.atleast_2d(peaks)
+        draw_bistatic_ellipse(ax, next(iter(radiators.values())), centre, peaks[0], color="#d62728",
+                              label="equal delay ellipse through the peak")
+        ax.plot(*peaks[0], "x", color="#d62728", ms=13, mew=2.5, label="strongest peak")
+    ax.plot(*centre, "+", color="k", ms=12, mew=2, label="array centre")
+
+
+def draw_frame_geometry(ax, grid: np.ndarray, B: np.ndarray, layout: SensorLayout, radiators: dict | None = None,
+                        peaks: np.ndarray | None = None, echo: bool = True, threshold: float | None = None,
+                        exclusion: np.ndarray | None = None):
+    """One frame's map with all of its geometry in one axes (:func:`draw_frame_map`, :func:`draw_frame_rays`, and for an
+    echo map :func:`draw_frame_ellipse`).  The figures of the repository draw the three on their own; this stays for
+    callers that want them together.  Returns the image handle (for a colour bar)."""
+    im = draw_frame_map(ax, grid, B, None, threshold, exclusion)
+    draw_frame_rays(ax, layout, radiators, None, echo)
+    centre = np.mean(layout.receivers, axis=0)
+    if echo and radiators and peaks is not None and len(peaks):
+        draw_bistatic_ellipse(ax, next(iter(radiators.values())), centre, np.atleast_2d(peaks)[0], color="#d62728",
+                              label="equal delay ellipse through the peak")
+    ax.plot(*centre, "+", color="k", ms=12, mew=2, label="array centre")
+    _draw_peaks(ax, peaks)
     return im
 
 
@@ -207,7 +278,7 @@ class HarborPictureView:
             self._setup()
 
     def _setup(self) -> None:
-        self.fig, self.ax = plt.subplots(figsize=(12, 10))
+        self.fig, self.ax = new_figure((12.0, 10.0))
 
     def update(self, rec: dict) -> None:
         self.records.append(rec)
@@ -230,6 +301,7 @@ class HarborPictureView:
         if self.layout.n_hydrophones:
             ax.plot(self.layout.hydrophones[:, 0], self.layout.hydrophones[:, 1], "^", color="#555555", ms=6)
         t = rec["t"]
+        anns = []
         if self.truth is not None:
             for oid, tr in self.truth.tracks.items():
                 col = "#1f77b4" if tr.level_pa > 0 else "#ff7f0e"
@@ -257,24 +329,31 @@ class HarborPictureView:
                 lines.append(f"{o['echo']['size']} ({o['echo']['size_ratio_db']:+.1f} dB)")
             if "radiator" in o and o["radiator"]["source_level_100m_pa"] is not None:
                 lines.append(f"source level {o['radiator']['source_level_100m_pa']:.2f} Pa at 100 m")
-            ax.annotate("\n".join(lines), xy, xytext=(7, 5), textcoords="offset points", fontsize=7, color=col, alpha=alpha,
-                        bbox=dict(boxstyle="round,pad=0.2", fc="w", ec="none", alpha=0.6 * alpha))
+            anns.append(ax.annotate("\n".join(lines), xy, xytext=(8, 6), textcoords="offset points", fontsize=11, color=col,
+                                    alpha=alpha, bbox=dict(boxstyle="round,pad=0.2", fc="w", ec="none", alpha=0.6 * alpha)))
         r = self.layout.positions()                             # the area the sensors cover, with a margin
         m = 0.08 * max(np.ptp(r[:, 0]), np.ptp(r[:, 1]))
         ax.set_xlim(max(x0, r[:, 0].min() - m), min(x1, r[:, 0].max() + m))
         ax.set_ylim(max(y0, r[:, 1].min() - m), min(y1, r[:, 1].max() + m))
         ax.set_aspect("equal")
-        ax.set_xlabel("x [m]")
-        ax.set_ylabel("y [m]")
+        ax.set_xlabel("x (east) [m]")
+        ax.set_ylabel("y (north) [m]")
         ax.plot([], [], "o", color="#1f77b4", mec="k", label="seen by its own noise")
         ax.plot([], [], "s", color="#d62728", mec="k", label="seen by its echo")
         ax.plot([], [], "D", color="#9467bd", mec="k", label="seen both ways")
         ax.plot([], [], ".", color="0.45", label="tentative track")
+        ax.plot([], [], "-", color="#555555", lw=1.8, label="DAS cable")
+        if self.layout.n_hydrophones:
+            ax.plot([], [], "^", color="#555555", ms=6, ls="none", label="hydrophones")
         if self.truth is not None:
             ax.plot([], [], "--", color="0.4", label="true positions (for comparison)")
-        ax.legend(fontsize=7, loc="lower left")
-        ax.set_title(f"{self.title}  t = {t:.2f} s, latency {rec['latency_s']:.2f} s\nellipses: half maximum width of the map peak; "
-                     f"arrows: {self.lead_s:g} s ahead", fontsize=9)
+        ax.legend(fontsize=11, loc="lower left")
+        ax.set_title(f"{self.title}: operator picture at t = {t:.2f} s, latency {rec['latency_s']:.2f} s\nellipses: half maximum "
+                     f"width of the map peak; arrows: {self.lead_s:g} s ahead", fontsize=13)
+        ax.tick_params(labelsize=11)
+        ax.xaxis.label.set_size(12)
+        ax.yaxis.label.set_size(12)
+        declutter_labels(ax, anns)
 
     def save(self, path, frame_png=None, fps: float = 8.0, frame_at: float = 0.75) -> None:
         """Write every record as a video frame to *path* (``.mp4``, ffmpeg) and the record at *frame_at* of the run as
@@ -292,6 +371,6 @@ class HarborPictureView:
                 writer.grab_frame()
         if frame_png is not None:
             self.draw(self.records[min(int(frame_at * len(self.records)), len(self.records) - 1)])
-            self.fig.savefig(frame_png, dpi=110, bbox_inches="tight")
+            save_figure(self.fig, frame_png, recording=self.title or None, close=False)
         plt.close(self.fig)
         self.fig = None

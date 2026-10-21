@@ -13,12 +13,19 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from acoustic_sim.model import VelocityModel
+from acoustic_sim.plotting import recording_from_path, save_figure
 
 matplotlib.use("Agg")
 
 
 # Reference pressure for dB SPL (threshold of hearing in air).
 _P_REF = 20e-6  # 20 µPa
+
+
+def _titled(title: str, out_path: str) -> str:
+    """*title*, prefixed with the scenario its output folder names when it does not already name it."""
+    scenario = recording_from_path(out_path)
+    return f"{scenario}: {title}" if scenario and scenario not in title else title
 
 
 def _to_db_spl(p: np.ndarray, floor_db: float = -60.0) -> np.ndarray:
@@ -56,7 +63,7 @@ def save_snapshot(
     db_min = db_max - db_range
 
     ext = model.extent
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(12, 9))
     im = ax.imshow(
         db,
         origin="lower",
@@ -71,23 +78,23 @@ def save_snapshot(
     if receivers is not None:
         ax.scatter(
             receivers[:, 0], receivers[:, 1],
-            s=12, c="cyan", edgecolors="black", linewidths=0.3, zorder=5,
+            s=12, c="cyan", edgecolors="black", linewidths=0.3, zorder=5, label="receivers",
         )
     if source_xy is not None:
         ax.scatter(
             source_xy[0], source_xy[1],
-            s=60, c="yellow", marker="*", edgecolors="black", zorder=6,
+            s=60, c="yellow", marker="*", edgecolors="black", zorder=6, label="source",
         )
+    if receivers is not None or source_xy is not None:
+        ax.legend(loc="upper right")
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
-    ax.set_title(title or f"Step {step}")
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=120)
-    plt.close(fig)
+    ax.set_title(_titled(title or f"wavefield at step {step}", out_path))
+    save_figure(fig, out_path)
 
 
 # ---------------------------------------------------------------------------
-# 3-D wavefield snapshot (two-panel: X-Y slab + X-Z cross-section)
+# 3-D wavefield snapshot (two panels read together: X-Y slab above the X-Z cross-section, same x axis)
 # ---------------------------------------------------------------------------
 
 def save_snapshot_3d(
@@ -104,10 +111,10 @@ def save_snapshot_3d(
     db_range: float = 60.0,
     title: str | None = None,
 ) -> None:
-    """Save a two-panel wavefield snapshot as a numbered PNG.
+    """Save a two-panel wavefield snapshot as a numbered PNG (the two panels share the x axis and are read together).
 
-    Left panel: X-Y slice at the given *z_index* (default: middle).
-    Right panel: X-Z slice at the given *y_index* (default: middle).
+    Upper panel: X-Y slice at the given *z_index* (default: middle).
+    Lower panel: X-Z slice at the given *y_index* (default: middle).
 
     Parameters
     ----------
@@ -147,7 +154,7 @@ def save_snapshot_3d(
     vmax = max(float(np.max(db_xy)), float(np.max(db_xz)))
     vmin = vmax - db_range
 
-    fig, (ax_xy, ax_xz) = plt.subplots(1, 2, figsize=(16, 6))
+    fig, (ax_xy, ax_xz) = plt.subplots(2, 1, figsize=(12, 14))
 
     # ── X-Y plan view ──────────────────────────────────────────────────
     im1 = ax_xy.imshow(
@@ -159,10 +166,12 @@ def save_snapshot_3d(
     fig.colorbar(im1, ax=ax_xy, label="SPL [dB re 20 µPa]")
     if receivers is not None:
         ax_xy.scatter(receivers[:, 0], receivers[:, 1],
-                      s=12, c="cyan", edgecolors="black", linewidths=0.3, zorder=5)
+                      s=12, c="cyan", edgecolors="black", linewidths=0.3, zorder=5, label="receivers")
     if source_xyz is not None:
         ax_xy.scatter(source_xyz[0], source_xyz[1],
-                      s=60, c="yellow", marker="*", edgecolors="black", zorder=6)
+                      s=60, c="yellow", marker="*", edgecolors="black", zorder=6, label="source")
+    if receivers is not None or source_xyz is not None:
+        ax_xy.legend(loc="upper right")
     ax_xy.set_xlabel("x [m]")
     ax_xy.set_ylabel("y [m]")
     ax_xy.set_title(f"X-Y slice at z-index {z_index}")
@@ -181,10 +190,8 @@ def save_snapshot_3d(
     ax_xz.set_xlabel("x [m]")
     ax_xz.set_ylabel("z [m]")
     ax_xz.set_title(f"X-Z slice at y-index {y_index}")
-
-    fig.suptitle(title or f"Step {step}", fontsize=13, fontweight="bold")
-    fig.tight_layout()
+    ax_xz.set_xlim(ax_xy.get_xlim())
 
     out_path = str(Path(output_dir) / f"snapshot3d_{step:06d}.png")
-    fig.savefig(out_path, dpi=120)
-    plt.close(fig)
+    fig.suptitle(_titled(title or f"wavefield at step {step}", out_path), fontsize=13, fontweight="bold")
+    save_figure(fig, out_path, allow_two_panels=True)

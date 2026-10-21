@@ -65,7 +65,7 @@ FIELD_PLANE_Z=5.5       # altitude of horizontal slice to save [m]
 FIELD_PLANE_SUB=4       # spatial subsampling (4 → 1.0 m with dx=0.25)
 
 # Output ----------------------------------------------------------------
-OUTPUT_DIR=output/valley_3d_test
+OUTPUT_DIR=output/air/valley_3d_test
 
 # -----------------------------------------------------------------------
 CUDA_FLAG=""                # the FDTD runs on the GPU by default

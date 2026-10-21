@@ -12,7 +12,7 @@ Both sweeps use the fine bistatic scenario grid (0.5 m, 6 kHz) with the ferry as
 
 Usage::
 
-    python scripts/bench_fdtd_sweeps.py --cuda --bodies --batch [--time 2] [--out output/performance]
+    python scripts/bench_fdtd_sweeps.py --cuda --bodies --batch [--time 2] [--out output/studies/performance]
 """
 
 from __future__ import annotations
@@ -124,7 +124,7 @@ def main() -> None:
     ap.add_argument("--batch", action="store_true")
     ap.add_argument("--time", type=float, default=2.0)
     ap.add_argument("--max-batch", type=int, default=32)
-    ap.add_argument("--out", default=str(ROOT / "output" / "performance"))
+    ap.add_argument("--out", default=str(ROOT / "output" / "studies" / "performance"))
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

@@ -22,7 +22,7 @@ and diagonal) with a wall reflection error no worse than the current scheme's.
 
 Usage::
 
-    python scripts/bench_timestep.py --cuda [--out output/performance]
+    python scripts/bench_timestep.py --cuda [--out output/studies/performance]
 """
 
 from __future__ import annotations
@@ -234,7 +234,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cuda", action="store_true")
     ap.add_argument("--kernel", default="auto")
-    ap.add_argument("--out", default=str(ROOT / "output" / "performance"))
+    ap.add_argument("--out", default=str(ROOT / "output" / "studies" / "performance"))
     ap.add_argument("--schemes", default=",".join(SCHEMES))
     args = ap.parse_args()
     out = Path(args.out)

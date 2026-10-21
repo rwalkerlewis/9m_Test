@@ -6,17 +6,17 @@ static source.  A stationary UUV (a soft, pressure-release body of ``--uuv-size`
 scatterer.  The FDTD is run twice, with and without the body; the difference is the field scattered by the UUV,
 which is what identifies its reflection in the gather.
 
-Outputs (``--out``):
+Outputs (``--out``, default ``output/studies/history/harbor_m1_uuv/``), one panel each:
 
 * ``m1uuv_map.png``            the scene: land, cable, source, UUV;
 * ``m1uuv_gather.png``         the DAS gather recorded with the UUV present;
 * ``m1uuv_gather_identified.png``  the same gather with the UUV reflection marked (predicted bistatic arrival
-                               source -> UUV -> channel), next to the scattered field alone (run with UUV minus
-                               run without).
+                               source -> UUV -> channel);
+* ``m1uuv_scattered.png``      the scattered field alone (run with UUV minus run without).
 
 Usage::
 
-    python examples/harbor/02_forward_model/harbor_m1_uuv.py [--out output/harbor_m1_uuv] [--time 5] [--source 900 900]
+    python examples/harbor/02_forward_model/harbor_m1_uuv.py [--out output/studies/history/harbor_m1_uuv] [--time 5] [--source 900 900]
         [--uuv 1560 980] [--uuv-size 12 6] [--shore-loss 0.15]
 """
 
@@ -30,7 +30,6 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import hilbert
 
@@ -42,6 +41,7 @@ from acoustic_sim.water import (  # noqa: E402
     build_environment,
     build_layout,
 )
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.water.scatterer import Scatterer  # noqa: E402
 from acoustic_sim.water.vessels import Track  # noqa: E402
@@ -66,7 +66,7 @@ def run(env, cfg, src, receivers, scatterers=()):
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default="output/harbor_m1_uuv")
+    ap.add_argument("--out", default="output/studies/history/harbor_m1_uuv")
     ap.add_argument("--time", type=float, default=5.0, help="simulated seconds")
     ap.add_argument("--shore-loss", type=float, default=0.15, help="shore_loss_max (0 = perfectly reflecting quays)")
     ap.add_argument("--source", type=float, nargs=2, default=[900.0, 900.0], metavar=("X", "Y"))
@@ -100,53 +100,58 @@ def main() -> None:
     print(f"UUV echo: predicted {t_echo.min():.2f}-{t_echo.max():.2f} s, measured peak {k_pk.min():.2f}-{k_pk.max():.2f} s, "
           f"peak amplitude {np.abs(scattered).max() / np.abs(with_uuv).max():.3f} of the direct arrival")
 
-    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10, "axes.spines.top": False, "axes.spines.right": False})
     ext = (0, t[-1], s_along[0], s_along[-1])
+    name = "default 5 m harbor scenario"
+    setup = (f"dx {env.dx:.0f} m, fs {fs:.0f} Hz, shore_loss_max {args.shore_loss}; soft rectangular UUV "
+             f"{args.uuv_size[0]:.0f} x {args.uuv_size[1]:.0f} m; prediction: straight paths at c = {c:.0f} m/s")
 
     # 1. Map
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig, ax = new_figure((13.0, 10.0))
     plot_harbor(env, layout, ax=ax, sponge_cells=cfg.fdtd.damping_width)
     ax.plot(*args.source, "*", color=SRC_C, ms=16, mec="k", label="source (one pulse)")
     ax.plot(*args.uuv, "o", color=UUV_C, ms=10, mec="k", label=f"UUV, stationary ({args.uuv_size[0]:.0f} x {args.uuv_size[1]:.0f} m soft body)")
-    ax.plot([S[0], U[0]], [S[1], U[1]], "--", color=UUV_C, lw=1, alpha=0.7)
-    for i in (0, len(rx) // 2, len(rx) - 1): ax.plot([U[0], rx[i, 0]], [U[1], rx[i, 1]], ":", color=UUV_C, lw=0.8, alpha=0.7)
-    ax.legend(loc="upper left", fontsize=8)
-    ax.set_title("", loc="center"); ax.set_title("One source, one pulse, one stationary UUV", loc="left", fontweight="bold")
-    fig.savefig(out / "m1uuv_map.png", dpi=110, bbox_inches="tight"); plt.close(fig)
+    ax.plot([S[0], U[0]], [S[1], U[1]], "--", color=UUV_C, lw=1, alpha=0.7, label="source to UUV")
+    for k, i in enumerate((0, len(rx) // 2, len(rx) - 1)):
+        ax.plot([U[0], rx[i, 0]], [U[1], rx[i, 1]], ":", color=UUV_C, lw=0.8, alpha=0.7, label="UUV to channels" if k == 0 else None)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.09), ncol=2, fontsize=11)
+    ax.set_title(f"{name}: one source, one pulse, one stationary UUV")
+    save_figure(fig, out / "m1uuv_map.png")
 
     # 2. The gather
     v = np.abs(with_uuv).max() * 0.3
-    fig, ax = plt.subplots(figsize=(12, 6.5))
-    ax.imshow(with_uuv, aspect="auto", origin="lower", cmap="seismic", vmin=-v, vmax=v, extent=ext, interpolation="nearest")
+    fig, ax = new_figure((12.0, 8.0))
+    im = ax.imshow(with_uuv, aspect="auto", origin="lower", cmap="seismic", vmin=-v, vmax=v, extent=ext, interpolation="nearest")
+    fig.colorbar(im, ax=ax, label="pressure [Pa]")
     ax.set_xlabel("time [s]"); ax.set_ylabel("distance along cable [m]")
-    ax.set_title(f"DAS gather: one {F0:.0f} Hz pulse from ({S[0]:.0f}, {S[1]:.0f}) m, UUV present at ({U[0]:.0f}, {U[1]:.0f}) m",
-                 loc="left", fontweight="bold")
-    fig.savefig(out / "m1uuv_gather.png", dpi=120, bbox_inches="tight"); plt.close(fig)
+    ax.set_title(f"{name}: DAS gather,\none {F0:.0f} Hz pulse from ({S[0]:.0f}, {S[1]:.0f}) m, UUV at ({U[0]:.0f}, {U[1]:.0f}) m")
+    save_figure(fig, out / "m1uuv_gather.png")
 
-    # 3. The gather with the UUV reflection identified
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(17, 6.5), sharey=True, gridspec_kw={"width_ratios": [1.15, 1]})
+    # 3. The gather with the UUV reflection identified, and the scattered field alone
+    fig, ax = new_figure((12.0, 8.0))
     x0 = np.abs(with_uuv).max() * 0.02                                     # asinh compression: linear below x0, log above
     comp = np.arcsinh(with_uuv / x0); vc = np.abs(comp).max()
-    a1.imshow(comp, aspect="auto", origin="lower", cmap="seismic", vmin=-vc, vmax=vc, extent=ext, interpolation="nearest")
-    a1.plot(t_direct, s_along, "--", color="k", lw=1.2, alpha=0.6, label="direct arrival (predicted)")
-    a1.plot(t_echo, s_along, "--", color=UUV_C, lw=2.2, label="reflection off the UUV (predicted source -> UUV -> channel)")
+    im = ax.imshow(comp, aspect="auto", origin="lower", cmap="seismic", vmin=-vc, vmax=vc, extent=ext, interpolation="nearest")
+    fig.colorbar(im, ax=ax, label=f"asinh(pressure / {x0:.2g} Pa)")
+    ax.plot(t_direct, s_along, "--", color="k", lw=1.2, alpha=0.6, label="direct arrival (predicted)")
+    ax.plot(t_echo, s_along, "--", color=UUV_C, lw=2.2, label="reflection off the UUV (predicted source -> UUV -> channel)")
     j = len(rx) // 3
-    a1.annotate("reflection off the UUV", (t_echo[j], s_along[j]), (t_echo[j] + 0.45, s_along[j] + 300), color=UUV_C, fontsize=12,
+    ax.annotate("reflection off the UUV", (t_echo[j], s_along[j]), (t_echo[j] + 0.45, s_along[j] + 300), color=UUV_C, fontsize=12,
                 fontweight="bold", arrowprops=dict(arrowstyle="->", color=UUV_C, lw=2),
                 bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=UUV_C, alpha=0.95))
-    a1.set_xlabel("time [s]"); a1.set_ylabel("distance along cable [m]")
-    a1.set_title("DAS gather with the UUV (asinh-compressed amplitude)", loc="left", fontweight="bold")
-    a1.legend(loc="lower right", fontsize=8, framealpha=0.9)
+    ax.set_xlabel("time [s]"); ax.set_ylabel("distance along cable [m]"); ax.set_xlim(0, min(2.5, t[-1]))
+    ax.legend(loc="lower right", fontsize=11, framealpha=0.9)
+    ax.set_title(f"{name}: DAS gather with the UUV, its reflection marked\n{setup}")
+    save_figure(fig, out / "m1uuv_gather_identified.png")
     vs = np.abs(scattered).max() * 0.8
-    a2.imshow(scattered, aspect="auto", origin="lower", cmap="seismic", vmin=-vs, vmax=vs, extent=ext, interpolation="nearest")
-    a2.plot(t_echo, s_along, "--", color=UUV_C, lw=1.5, alpha=0.8)
-    a2.set_xlabel("time [s]"); a1.set_xlim(0, min(2.5, t[-1])); a2.set_xlim(0, min(2.5, t[-1]))
-    a2.set_title(f"Scattered field alone: run with UUV minus run without ({np.abs(with_uuv).max() / vs:.0f}x)",
-                 loc="left", fontweight="bold")
-    fig.text(0.995, 0.005, f"FDTD, dx = {env.dx:.0f} m, fs = {fs:.0f} Hz, shore_loss_max = {args.shore_loss}; soft rectangular UUV body "
-             f"{args.uuv_size[0]:.0f} x {args.uuv_size[1]:.0f} m; prediction uses straight paths at c = {c:.0f} m/s",
-             ha="right", va="bottom", fontsize=8, color="#6b7280")
-    fig.savefig(out / "m1uuv_gather_identified.png", dpi=120, bbox_inches="tight"); plt.close(fig)
+    fig, ax = new_figure((12.0, 8.0))
+    im = ax.imshow(scattered, aspect="auto", origin="lower", cmap="seismic", vmin=-vs, vmax=vs, extent=ext, interpolation="nearest")
+    fig.colorbar(im, ax=ax, label="pressure [Pa]")
+    ax.plot(t_echo, s_along, "--", color=UUV_C, lw=1.5, alpha=0.8, label="reflection off the UUV (predicted)")
+    ax.set_xlabel("time [s]"); ax.set_ylabel("distance along cable [m]"); ax.set_xlim(0, min(2.5, t[-1]))
+    ax.legend(loc="lower right", fontsize=11)
+    ax.set_title(f"{name}: scattered field alone, run with the UUV minus run without\n"
+                 f"(colour scale {np.abs(with_uuv).max() / vs:.0f} times finer than the gather)")
+    save_figure(fig, out / "m1uuv_scattered.png")
     print("wrote", out)
 
 

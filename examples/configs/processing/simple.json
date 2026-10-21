@@ -1,6 +1,6 @@
 {
   "recording": "simple",
-  "observation": "output/harbor_simple/fine/dataset.observation.npz",
+  "observation": "output/recordings/simple/dataset.observation.npz",
   "band_hz": [
     100.0,
     380.0

@@ -12,7 +12,7 @@ the current sponge (60 cells, damping_max 0.15) across the band and at all teste
 
 Usage::
 
-    python scripts/bench_cpml.py --cuda [--out output/performance] [--widths 10,15,20,30]
+    python scripts/bench_cpml.py --cuda [--out output/studies/performance] [--widths 10,15,20,30]
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ def band_ratio_db(diff: np.ndarray, ref: np.ndarray) -> list[float]:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cuda", action="store_true")
-    ap.add_argument("--out", default=str(ROOT / "output" / "performance"))
+    ap.add_argument("--out", default=str(ROOT / "output" / "studies" / "performance"))
     ap.add_argument("--widths", default="10,15,20,30")
     ap.add_argument("--kernel", default="auto")
     args = ap.parse_args()
@@ -156,23 +156,34 @@ def plot(results: dict, path: Path) -> None:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    from acoustic_sim.plotting import save_figure
+
     angles = results["angles_deg"]
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-    for name, r in results["configs"].items():
-        style = "k-o" if name == "sponge60" else ("-s" if "_m3" in name else ("--^" if "_a314" in name else "-o"))
-        axes[0].plot(angles, r["peak_db"], style, label=name, lw=2 if name == "sponge60" else 1)
-        bands = np.array(r["band_db"])             # (angles, bands)
-        centres = [0.5 * (lo + hi) for lo, hi in results["bands_hz"]]
-        axes[1].plot(centres, bands.max(axis=0), style, label=name, lw=2 if name == "sponge60" else 1)
-    axes[0].set_xlabel("incidence angle [deg]"); axes[0].set_ylabel("peak reflection [dB re incident]")
-    axes[0].set_title("Broadband peak of the reflected field")
-    axes[1].set_xlabel("band centre [Hz]"); axes[1].set_ylabel("worst angle reflected energy [dB re incident]")
-    axes[1].set_title("Reflected energy per band (worst angle)")
-    for ax in axes:
+    head = (f"boundary reflection, {results['dx']} m grid, {results['fs']:.0f} Hz, order 4, source and receivers "
+            f"{results['standoff_m']:g} m from the edge")
+    centres = [0.5 * (lo + hi) for lo, hi in results["bands_hz"]]
+    # One figure per quantity: the broadband peak against angle, the worst angle energy per band.
+    for panel in ("peak", "bands"):
+        fig, ax = plt.subplots(figsize=(13, 8))
+        for name, r in results["configs"].items():
+            style = "k-o" if name == "sponge60" else ("-s" if "_m3" in name else ("--^" if "_a314" in name else "-o"))
+            lw = 2 if name == "sponge60" else 1
+            if panel == "peak":
+                ax.plot(angles, r["peak_db"], style, label=name, lw=lw)
+            else:
+                ax.plot(centres, np.array(r["band_db"]).max(axis=0), style, label=name, lw=lw)
+        if panel == "peak":
+            ax.set_xlabel("incidence angle [deg]")
+            ax.set_ylabel("peak reflection [dB re incident]")
+            title = f"{head}\nbroadband peak of the reflected field"
+        else:
+            ax.set_xlabel("band centre [Hz]")
+            ax.set_ylabel("worst angle reflected energy [dB re incident]")
+            title = f"{head}\nreflected energy per band (worst angle)"
         ax.grid(alpha=0.3)
-    axes[1].legend(fontsize=7, ncol=2)
-    fig.suptitle(f"Boundary reflection, {results['dx']} m grid, {results['fs']:.0f} Hz, order 4, source and receivers {results['standoff_m']:g} m from the edge")
-    fig.savefig(path, dpi=110, bbox_inches="tight")
+        ax.legend(ncol=2)
+        ax.set_title(title)
+        save_figure(fig, path.with_name(f"{path.stem}_{panel}{path.suffix}"))
 
 
 if __name__ == "__main__":

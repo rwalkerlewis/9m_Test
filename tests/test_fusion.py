@@ -227,7 +227,7 @@ def test_fusion_classifier(tmp_path):
             print(f" {cm[i, j]:>8d}", end="")
         print()
 
-    # Save and reload the weights (to a temporary directory: output/models holds the
+    # Save and reload the weights (to a temporary directory: output/air/models holds the
     # committed, trained weights and must not be overwritten by tests).
     for name, model in (("fusion", model_fusion), ("acoustic", model_acoustic), ("kinematic", model_kin)):
         checkpoint = tmp_path / f"{name}_classifier.pt"

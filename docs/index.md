@@ -161,7 +161,7 @@ Dependencies are declared in `pyproject.toml`; `requirements.txt` is a compatibi
 Nine classifier/anomaly files plus four FNO files under
 `src/acoustic_sim/ml/`.  Requires `torch` (the optional `[ml]` extra).
 Pre-trained weights for the acoustic, maneuver, and fusion classifiers
-are shipped in `output/models/`; the CVAE anomaly detector is trained
+are shipped in `output/air/models/`; the CVAE anomaly detector is trained
 locally with `python src/acoustic_sim/ml/anomaly_training.py`.
 
 ### Classifiers
@@ -194,6 +194,6 @@ ML classifiers are integrated into the production SRP-PHAT pipeline
 (`run_pipeline.py`) as optional components enabled via CLI flags
 (`--enable-classification`, `--enable-maneuver`, `--enable-fusion`,
 `--enable-anomaly`).  Pre-trained weights are shipped in
-`output/models/`.  The MFP/EKF library path (`air/detection_main.py`) also
+`output/air/models/`.  The MFP/EKF library path (`air/detection_main.py`) also
 contains ML integration scaffolding via `_classify_detections()` and
 `_detect_maneuvers()`.

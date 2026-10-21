@@ -10,22 +10,25 @@ scattered component of each illuminator includes the multiple scattering between
 The dataset keeps the direct, scattered and noise components separately and writes the truth
 of every object per frame.
 
-Outputs in ``--out/<fine|coarse>/``: ``dataset.npz``, ``truth.json`` (per object: kind, radiates,
-reports AIS, body size, and per frame position and velocity), ``map.png``, ``components.png``,
-``levels.json``, ``scenario_used.json`` and ``run.log``.  ``ferry_only_map.png`` is the bistatic
-chain given everything from the truth (direct path removed exactly, true ferry waveform, exact
-ferry track) on the ferry's scattered component alone, with the truth of every body marked, to
-confirm that the echoes of the bodies appear; it is a check of the dataset, not a result.
+Outputs in ``--out`` (``--out/coarse/`` with ``--coarse``): ``dataset.npz``, ``truth.json`` (per object: kind,
+radiates, reports AIS, body size, and per frame position and velocity), ``map.png``, ``components_<component>.png``
+(one figure per component on the cable), ``levels.json``, ``scenario_used.json``, ``run.log``; the FDTD cache in
+``--out/cache`` and ``build.json``.  ``ferry_only_map.png`` is the bistatic chain given everything from the truth
+(direct path removed exactly, true ferry waveform, exact ferry track) on the ferry's scattered component alone, summed
+over the record, with the truth of every body marked, to confirm that the echoes of the bodies appear; it is a check of
+the dataset, not a result.  ``--figures-only`` redraws the figures from the FDTD cache (no FDTD run; the scenario is
+``--out/scenario_used.json``) and writes nothing else.
 
 Usage::
 
     python examples/harbor/01_datasets/harbor_multistatic_dataset.py [--config examples/configs/harbor_multistatic.scenario.json]
-        [--out output/harbor_multistatic] [--coarse] [--time 20] [--workers 2] [--cuda]
+        [--out output/recordings/multistatic] [--coarse] [--figures-only] [--time 20] [--workers 2] [--cuda]
 """
 
 from __future__ import annotations
 
 import argparse
+import textwrap
 import json
 import sys
 import time
@@ -34,11 +37,15 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _figures import component_figures, gathers_from_cache  # noqa: E402
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 
 from acoustic_sim.water.dataset import count_cached_gathers, write_build_info  # noqa: E402
 from acoustic_sim.water import (  # noqa: E402
@@ -49,7 +56,7 @@ from acoustic_sim.water import (  # noqa: E402
     build_track,
     render_vessel_gathers,
 )
-from acoustic_sim.contract import Provenance, annotate_figure  # noqa: E402
+from acoustic_sim.contract import Provenance  # noqa: E402
 from acoustic_sim.water.bistatic import BistaticConfig, Diagnostics, run_bistatic, stft  # noqa: E402
 from acoustic_sim.water.dataset import COMBINED, scattered_key, vessel_injection  # noqa: E402
 from acoustic_sim.water.diagnostics import SimulatorAwarePropagator  # noqa: E402
@@ -57,8 +64,8 @@ from acoustic_sim.water.plotting import plot_harbor  # noqa: E402
 from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
 
 TYPE_STYLE = {
-    "illuminator (AIS)": dict(color="deepskyblue", ls="-"),
-    "illuminator (no AIS)": dict(color="orange", ls="-"),
+    "illuminator (AIS)": dict(color="#e41a1c", ls="-"),
+    "illuminator (no AIS)": dict(color="#a65628", ls="-"),
     "silent moving body": dict(color="lime", ls="--"),
     "static body": dict(color="magenta", ls=""),
 }
@@ -95,11 +102,112 @@ def body_outline(v, xy: np.ndarray, heading: np.ndarray) -> np.ndarray:
     return np.array([xy + a * heading + b * n, xy - a * heading + b * n, xy - a * heading - b * n, xy + a * heading - b * n, xy + a * heading + b * n])
 
 
+def plot_map(cfg, env, layout, tracks, out: Path, rec: str) -> None:
+    """The layout, every track and static body labelled by type (one panel)."""
+    fig, ax = new_figure((13.0, 10.0))
+    plot_harbor(env, layout, ax=ax, sponge_cells=cfg.fdtd.damping_width)
+    seen = set()
+    for v in cfg.vessels:
+        tr = tracks[v.id]
+        typ = object_type(v)
+        st = TYPE_STYLE[typ]
+        label = typ if typ not in seen else None
+        seen.add(typ)
+        if typ == "static body":
+            xy, hd = tr.xy[0], np.array([1.0, 0.0])
+            poly = body_outline(v, xy, hd)
+            ax.fill(poly[:, 0], poly[:, 1], color=st["color"], alpha=0.8, label=label, zorder=5)
+        else:
+            xy = tr.xy[tr.active]
+            ax.plot(*xy.T, ls=st["ls"], color=st["color"], lw=2, label=label, zorder=5)
+            ax.plot(*xy[0], "o", ms=5, color="k", zorder=6, label="track start" if "start" not in seen else None)
+            seen.add("start")
+            if v.is_body:
+                hd = xy[-1] - xy[0]
+                hd = hd / max(np.hypot(*hd), 1e-9)
+                poly = body_outline(v, xy[-1], hd)
+                ax.plot(poly[:, 0], poly[:, 1], color=st["color"], lw=1, zorder=6)
+        if v.id.startswith("piling") and v.id != "piling1":
+            continue
+        ax.annotate("pilings 1-6" if v.id == "piling1" else v.id, tr.xy[0], textcoords="offset points", xytext=(5, 5),
+                    fontsize=11, zorder=7, bbox=dict(boxstyle="round,pad=0.15", fc="w", ec="none", alpha=0.7))
+    ax.plot([], [], ".", color="red", ms=6, label="every 10th cable channel")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.09), ncol=3, fontsize=11)
+    ax.set_title(f"{rec}: scenario map, {sum(v.level_pa > 0 for v in cfg.vessels)} illuminators, "
+                 f"{sum(v.is_body and v.level_pa == 0 and len(v.waypoints) > 1 for v in cfg.vessels)} silent moving bodies, "
+                 f"{sum(v.is_body and len(v.waypoints) == 1 for v in cfg.vessels)} static bodies")
+    save_figure(fig, out / "map.png", recording=rec)
+
+
+def plot_components(cfg, layout, ds, sos, f_max: float, out: Path, rec: str) -> list[str]:
+    """One figure per component on the cable: direct and scattered of every illuminator, the noise."""
+    keys = []
+    for v in cfg.vessels:
+        if v.level_pa > 0:
+            keys += [("direct:" + v.id, f"direct_{v.id}"), ("scattered:" + scattered_key(v.id, COMBINED), f"scattered_{v.id}")]
+    return component_figures(layout, ds, sos, f_max, keys + [("noise", "noise")], out, rec)
+
+
+def ferry_only_check(cfg, env, layout, tracks, ds, f_max: float, propagator: str, out: Path, rec: str, say) -> dict:
+    """The bistatic chain given the truth on the ferry's scattered component alone, summed over the record (one
+    panel); returns the map value within 4 m of each body over the map median [dB]."""
+    comps = ds.components
+    fs = ds.fs
+    gain = ds.gain[:, None]
+    traces = gain * comps["scattered:" + scattered_key("ferry", COMBINED)].astype(float) + comps["noise"].astype(float)
+    ferry = next(v for v in cfg.vessels if v.id == "ferry")
+    given = ferry.level_pa * vessel_injection(ferry, tracks["ferry"], env, cfg)
+    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, f_hi=0.95 * f_max, bin_stride=2, grid_dx=2.0, reference="true_waveform", removal="none",
+                        method="coherent", coherent_norm="snr", exclusion_radius=25.0,
+                        propagator=SimulatorAwarePropagator.from_scenario(env, cfg.fdtd) if propagator == "simulator" else None)
+    sp = stft(traces, layout, fs, bc)
+    ship_xy = tracks["ferry"].position_at(sp.times)
+    t0 = time.time()
+    run = run_bistatic(traces, layout, fs, env, ds.ais, bc, true_waveform=given, diagnostics=Diagnostics(exact_track=ship_xy),
+                       provenance=Provenance(truth_inputs=["direct_removal", "components"], simulator_knowledge=["band"]))
+    say(f"[{rec}] ferry only chain (given the truth): {time.time() - t0:.0f} s, {len(run.grid)} cells, {len(sp.times)} frames")
+    B, grid, times = run.scan.B, run.grid, run.sp.times
+    xs, ys = np.unique(grid[:, 0]), np.unique(grid[:, 1])
+    ix = np.rint((grid[:, 0] - xs[0]) / bc.grid_dx).astype(int)
+    iy = np.rint((grid[:, 1] - ys[0]) / bc.grid_dx).astype(int)
+    bodies = [v for v in cfg.vessels if v.is_body]
+    b = B.sum(axis=1)
+    b /= b.max()
+    kk = len(times) // 2
+    img = np.full((len(ys), len(xs)), np.nan)
+    img[iy, ix] = 10 * np.log10(np.maximum(b, 1e-12))
+    fig, ax = new_figure((13.0, 10.0))
+    plot_harbor(env, layout, ax=ax, show_depth=False)
+    im = ax.imshow(img, origin="lower", extent=(xs[0], xs[-1], ys[0], ys[-1]), cmap="magma", vmin=-20, vmax=0, alpha=0.9, zorder=2)
+    for c in layout.cables:                                     # the sensors above the map
+        ax.plot(c.positions[:, 0], c.positions[:, 1], "-", color="orange", lw=2, zorder=4)
+    if layout.n_hydrophones:
+        ax.plot(layout.hydrophones[:, 0], layout.hydrophones[:, 1], "v", color="k", mfc="yellow", ms=9, zorder=4)
+    ax.plot(*ship_xy[kk], "s", color="deepskyblue", ms=10, mec="k", zorder=5, label="ferry at mid record (exact)")
+    check = {}
+    for v in bodies:
+        p = tracks[v.id].position_at(times[kk])[0]
+        d = np.hypot(*(grid - p).T)
+        check[v.id] = float(10 * np.log10(max(b[d <= 4.0].max() if np.any(d <= 4.0) else 0.0, 1e-12) / np.median(b)))
+        moving = v.level_pa == 0 and len(v.waypoints) > 1
+        ax.plot(*p, "o", mfc="none", mec="lime" if moving else "magenta", mew=1.8, ms=11, zorder=5)
+    ax.plot([], [], "o", mfc="none", mec="lime", mew=1.8, ms=11, label="silent moving body at mid record (true)")
+    ax.plot([], [], "o", mfc="none", mec="magenta", mew=1.8, ms=11, label="static body (true)")
+    ax.set_xlim(xs[0], xs[-1])
+    ax.set_ylim(ys[0], ys[-1])
+    fig.colorbar(im, ax=ax, shrink=0.8, label="coherent echo map summed over the record [dB re peak]")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.09), ncol=2, fontsize=11)
+    ax.set_title(f"{rec}: ferry only echo map over all {len(times)} frames, given the truth\n"
+                 "(direct path removed exactly, true waveform, exact track)\n" + textwrap.fill(run.provenance.label(), 110))
+    save_figure(fig, out / "ferry_only_map.png", recording=rec)
+    return check, run.provenance
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=str(Path(__file__).resolve().parents[2] / "configs" / "harbor_multistatic.scenario.json"))
-    ap.add_argument("--out", default="output/harbor_multistatic")
-    ap.add_argument("--coarse", action="store_true", help="1 m grid instead of 0.5 m")
+    ap.add_argument("--out", default="output/recordings/multistatic")
+    ap.add_argument("--coarse", action="store_true", help="1 m grid instead of 0.5 m (written to --out/coarse)")
     ap.add_argument("--time", type=float, default=None, help="override simulated duration [s]")
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--seed", type=int, default=None)
@@ -107,44 +215,61 @@ def main() -> None:
     ap.add_argument("--cpu", action="store_true", help="run the FDTD on the CPU (the cache key ignores this)")
     ap.add_argument("--hop", type=float, default=0.25, help="frame hop of the truth file [s]")
     ap.add_argument("--no-check", action="store_true", help="skip the ferry only bistatic check map")
+    ap.add_argument("--figures-only", action="store_true",
+                    help="redraw the figures from the FDTD cache and --out/scenario_used.json (no FDTD; writes only figures)")
     ap.add_argument("--propagator", choices=("free_field", "simulator"), default="free_field",
                     help="replicas of the check map: free field (default) or FDTD dispersion corrected (simulator knowledge, as run)")
     args = ap.parse_args()
 
-    cfg = HarborScenarioConfig.load(args.config)
-    if args.coarse:
-        coarsen(cfg, 1.0)
-    if args.time is not None:
-        cfg.fdtd.total_time = args.time
-    cfg.fdtd.use_cuda = not args.cpu
-    tag = "coarse" if args.coarse else "fine"
-    out = Path(args.out) / tag
+    root = Path(args.out)
+    out = root / "coarse" if args.coarse else root
+    rec = root.name + ("_coarse" if args.coarse else "")
     out.mkdir(parents=True, exist_ok=True)
-    cfg.save(out / "scenario_used.json")
-    log = open(out / "run.log", "w")
+    if args.figures_only:
+        cfg = HarborScenarioConfig.load(out / "scenario_used.json")
+        log = None
+    else:
+        cfg = HarborScenarioConfig.load(args.config)
+        if args.coarse:
+            coarsen(cfg, 1.0)
+        if args.time is not None:
+            cfg.fdtd.total_time = args.time
+        cfg.fdtd.use_cuda = not args.cpu
+        cfg.save(out / "scenario_used.json")
+        log = open(out / "run.log", "w")
 
     def say(msg: str) -> None:
         print(msg, flush=True)
-        log.write(msg + "\n")
-        log.flush()
+        if log is not None:
+            log.write(msg + "\n")
+            log.flush()
 
     env = build_environment(cfg)
     layout = build_layout(cfg, env)
     f_max = f_max_for_grid(env.dx)
-    say(f"[{tag}] grid {env.nx} x {env.ny} at {env.dx} m, fs {cfg.fdtd.fs:.0f} Hz, band to {f_max:.0f} Hz, "
+    say(f"[{rec}] grid {env.nx} x {env.ny} at {env.dx} m, fs {cfg.fdtd.fs:.0f} Hz, band to {f_max:.0f} Hz, "
         f"{layout.n_receivers} channels ({layout.n_samples} sample points), {cfg.fdtd.n_steps} steps, "
         f"{sum(v.level_pa > 0 for v in cfg.vessels)} illuminators, {sum(v.is_body for v in cfg.vessels)} bodies")
 
     t0 = time.time()
     tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in cfg.vessels}
-    n_cached = count_cached_gathers(Path(args.out) / "cache")
+    cache = root / "cache"
+    if args.figures_only:
+        gathers = gathers_from_cache(cfg, env, layout, tracks, cache, combined_bodies=True)
+        ds = assemble_dataset(cfg, layout, tracks, gathers, seed=args.seed, keep_components=True)
+        sos = butter(4, [0.25 * f_max, 0.95 * f_max], btype="bandpass", fs=ds.fs, output="sos")
+        plot_map(cfg, env, layout, tracks, out, rec)
+        plot_components(cfg, layout, ds, sos, f_max, out, rec)
+        if not args.no_check:
+            ferry_only_check(cfg, env, layout, tracks, ds, f_max, args.propagator, out, rec, say)
+        say(f"wrote the figures of {out}")
+        return
+    n_cached = count_cached_gathers(cache)
     t_fdtd = time.time()
-    gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=Path(args.out) / "cache", workers=args.workers,
-                                    combined_bodies=True)
-    write_build_info(Path(args.out) / "build.json", cfg, env, len(gathers), time.time() - t_fdtd,
-                     count_cached_gathers(Path(args.out) / "cache") - n_cached)
+    gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=cache, workers=args.workers, combined_bodies=True)
+    write_build_info(root / "build.json", cfg, env, len(gathers), time.time() - t_fdtd, count_cached_gathers(cache) - n_cached)
     ds = assemble_dataset(cfg, layout, tracks, gathers, seed=args.seed, keep_components=True)
-    say(f"[{tag}] {len(gathers)} gathers ({', '.join(gathers)}) in {time.time() - t0:.0f} s")
+    say(f"[{rec}] {len(gathers)} gathers ({', '.join(gathers)}) in {time.time() - t0:.0f} s")
     ds.save(out / "dataset.npz")
 
     # Truth per object and frame.
@@ -169,7 +294,7 @@ def main() -> None:
     idx_all = np.arange(layout.n_receivers)
     groups = {name: idx_all[(idx_all >= sl.start) & (idx_all < sl.stop) & live] for name, sl in layout.slices.items()}
     table = {}
-    say(f"\n[{tag}] band limited ({0.25 * f_max:.0f} to {0.95 * f_max:.0f} Hz) rms at the sensors, whole run, live channels")
+    say(f"\n[{rec}] band limited ({0.25 * f_max:.0f} to {0.95 * f_max:.0f} Hz) rms at the sensors, whole run, live channels")
     say(f"  {'component':28s} " + " ".join(f"{n:>12s}" for n in groups) + f" {'best DAS':>12s}")
     for key, comp in ds.components.items():
         gain = ds.gain if key != "noise" else np.ones_like(ds.gain)
@@ -192,116 +317,17 @@ def main() -> None:
     (out / "levels.json").write_text(json.dumps({"table": table, "summary": summary, "f_max": f_max,
                                                  "bodies": [v.id for v in cfg.vessels if v.is_body]}, indent=2))
 
-    # Map: layout, every track and static body labelled by type.
-    fig, ax = plt.subplots(figsize=(10, 7.5))
-    plot_harbor(env, layout, ax=ax, sponge_cells=cfg.fdtd.damping_width)
-    seen = set()
-    for v in cfg.vessels:
-        tr = tracks[v.id]
-        typ = object_type(v)
-        st = TYPE_STYLE[typ]
-        label = typ if typ not in seen else None
-        seen.add(typ)
-        if typ == "static body":
-            xy, hd = tr.xy[0], np.array([1.0, 0.0])
-            poly = body_outline(v, xy, hd)
-            ax.fill(poly[:, 0], poly[:, 1], color=st["color"], alpha=0.8, label=label, zorder=5)
-        else:
-            xy = tr.xy[tr.active]
-            ax.plot(*xy.T, ls=st["ls"], color=st["color"], lw=2, label=label, zorder=5)
-            ax.plot(*xy[0], "o", ms=5, color="k", zorder=6)
-            if v.is_body:
-                hd = xy[-1] - xy[0]
-                hd = hd / max(np.hypot(*hd), 1e-9)
-                poly = body_outline(v, xy[-1], hd)
-                ax.plot(poly[:, 0], poly[:, 1], color=st["color"], lw=1, zorder=6)
-        if v.id.startswith("piling") and v.id != "piling1":
-            continue
-        ax.annotate("pilings 1-6" if v.id == "piling1" else v.id, tr.xy[0], textcoords="offset points", xytext=(4, 4), fontsize=8, zorder=7)
-    ax.legend(loc="lower left", fontsize=8)
-    ax.set_title(f"Multistatic scenario ({tag}): {sum(v.level_pa > 0 for v in cfg.vessels)} illuminators, "
-                 f"{sum(v.is_body and v.level_pa == 0 and len(v.waypoints) > 1 for v in cfg.vessels)} silent moving bodies, "
-                 f"{sum(v.is_body and len(v.waypoints) == 1 for v in cfg.vessels)} static bodies")
-    fig.savefig(out / "map.png", dpi=110, bbox_inches="tight")
-
-    # Components on the cable per illuminator.
-    cable = layout.cables[0]
-    sl = layout.slices[cable.name]
-    illum = [v for v in cfg.vessels if v.level_pa > 0]
-    fig, axes = plt.subplots(2, len(illum) + 1, figsize=(5 * (len(illum) + 1), 8), sharey=True, squeeze=False)
-    v_noise = np.percentile(np.abs(sosfiltfilt(sos, ds.components["noise"][sl].astype(float), axis=-1)), 99.5)
-    for j, v in enumerate(illum):
-        for i, key in enumerate(("direct:" + v.id, "scattered:" + scattered_key(v.id, COMBINED))):
-            x = sosfiltfilt(sos, ds.components[key][sl].astype(float), axis=-1)
-            vv = np.percentile(np.abs(x), 99.5)
-            axes[i, j].imshow(x[:, ::10], aspect="auto", origin="lower", cmap="seismic", vmin=-vv, vmax=vv, extent=(0, ds.t[-1], 0, cable.length))
-            axes[i, j].set_title(f"{key} (rms {np.sqrt(np.mean(x ** 2)):.3g})", fontsize=9)
-            axes[i, j].set_xlabel("time [s]")
-    x = sosfiltfilt(sos, ds.components["noise"][sl].astype(float), axis=-1)
-    axes[0, -1].imshow(x[:, ::10], aspect="auto", origin="lower", cmap="seismic", vmin=-v_noise, vmax=v_noise, extent=(0, ds.t[-1], 0, cable.length))
-    axes[0, -1].set_title(f"noise (rms {np.sqrt(np.mean(x ** 2)):.3g})", fontsize=9)
-    axes[1, -1].axis("off")
-    axes[0, 0].set_ylabel("distance along cable [m]"); axes[1, 0].set_ylabel("distance along cable [m]")
-    fig.suptitle(f"Cable components per illuminator, {0.25 * f_max:.0f} to {0.95 * f_max:.0f} Hz (each panel at its own scale)", fontsize=11)
-    fig.savefig(out / "components.png", dpi=100, bbox_inches="tight")
+    plot_map(cfg, env, layout, tracks, out, rec)
+    plot_components(cfg, layout, ds, sos, f_max, out, rec)
     say(f"wrote {out}")
     if args.no_check:
         return
-
-    # Ferry only check given everything from the truth: do the bodies' echoes appear?
-    comps = ds.components
-    gain = ds.gain[:, None]
-    traces = gain * comps["scattered:" + scattered_key("ferry", COMBINED)].astype(float) + comps["noise"].astype(float)
-    ferry = next(v for v in cfg.vessels if v.id == "ferry")
-    given = ferry.level_pa * vessel_injection(ferry, tracks["ferry"], env, cfg)
-    bc = BistaticConfig(win_s=0.5, hop_s=0.25, f_lo=100.0, f_hi=0.95 * f_max, bin_stride=2, grid_dx=2.0, reference="true_waveform", removal="none",
-                        method="coherent", coherent_norm="snr", exclusion_radius=25.0, propagator=SimulatorAwarePropagator.from_scenario(env, cfg.fdtd) if args.propagator == "simulator" else None)
-    sp = stft(traces, layout, fs, bc)
-    ship_xy = tracks["ferry"].position_at(sp.times)
-    t0 = time.time()
-    run = run_bistatic(traces, layout, fs, env, ds.ais, bc, true_waveform=given, diagnostics=Diagnostics(exact_track=ship_xy),
-                       provenance=Provenance(truth_inputs=["direct_removal", "components"], simulator_knowledge=["band"]))
-    say(f"[{tag}] ferry only chain (given the truth): {time.time() - t0:.0f} s, {len(run.grid)} cells, {len(sp.times)} frames")
-    B, grid, times = run.scan.B, run.grid, run.sp.times
-    xs, ys = np.unique(grid[:, 0]), np.unique(grid[:, 1])
-    ix = np.rint((grid[:, 0] - xs[0]) / bc.grid_dx).astype(int)
-    iy = np.rint((grid[:, 1] - ys[0]) / bc.grid_dx).astype(int)
-    bodies = [v for v in cfg.vessels if v.is_body]
-    integrated = B.sum(axis=1)
-    integrated /= integrated.max()
-    picks = np.linspace(2, len(times) - 3, 5).astype(int)
-    fig, axes = plt.subplots(2, 3, figsize=(17, 9))
-    panels = [(k, B[:, k], f"t = {times[k]:.2f} s") for k in picks] + [(None, integrated, f"sum over all {len(times)} frames")]
-    check = {}
-    for ax, (k, b, title) in zip(axes.ravel(), panels):
-        img = np.full((len(ys), len(xs)), np.nan)
-        img[iy, ix] = 10 * np.log10(np.maximum(b / b.max(), 1e-12))
-        plot_harbor(env, layout, ax=ax, show_depth=False)
-        im = ax.imshow(img, origin="lower", extent=(xs[0], xs[-1], ys[0], ys[-1]), cmap="magma", vmin=-20, vmax=0, alpha=0.9, zorder=2)
-        kk = k if k is not None else len(times) // 2
-        ax.plot(*ship_xy[kk], "s", color="deepskyblue", ms=9, mec="k", zorder=5, label="ferry (exact)")
-        for v in bodies:
-            p = tracks[v.id].position_at(times[kk])[0]
-            ax.plot(*p, "o", mfc="none", mec="lime" if v.level_pa == 0 and len(v.waypoints) > 1 else "magenta", mew=1.5, ms=10, zorder=5)
-            if k is None:
-                # Local map value at every body against the map median: is the echo visible?
-                d = np.hypot(*(grid - p).T)
-                check[v.id] = float(10 * np.log10(max(b[d <= 4.0].max() if np.any(d <= 4.0) else 0.0, 1e-12) / np.median(b)))
-        ax.set_title(title, fontsize=10)
-        ax.set_xlim(xs[0], xs[-1]); ax.set_ylim(ys[0], ys[-1])
-        if ax.get_legend():
-            ax.get_legend().remove()
-    axes[0, 0].legend(loc="lower left", fontsize=7)
-    fig.colorbar(im, ax=axes, shrink=0.6, label="coherent map [dB re peak]")
-    fig.suptitle("Ferry only, given the truth (direct path removed exactly, true waveform, exact track): circles are the bodies "
-                 "(green moving, magenta static)", fontsize=11)
-    annotate_figure(fig, run.provenance)
-    fig.savefig(out / "ferry_only_map.png", dpi=100, bbox_inches="tight")
+    check, prov = ferry_only_check(cfg, env, layout, tracks, ds, f_max, args.propagator, out, rec, say)
     say("[ferry only] map value within 4 m of each body over the map median, summed map: " + ", ".join(f"{k} {v:+.1f} dB" for k, v in check.items()))
     lv = json.loads((out / "levels.json").read_text())
     lv["ferry_only_truth_check_db"] = check
     lv["ferry_only_truth_inputs"] = ["direct path removed with the truth component", "true ferry waveform", "exact ferry track"]
-    lv["ferry_only_provenance"] = run.provenance.to_dict()
+    lv["ferry_only_provenance"] = prov.to_dict()
     (out / "levels.json").write_text(json.dumps(lv, indent=2))
 
 

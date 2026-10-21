@@ -2,7 +2,7 @@
 # Pipeline run — isotropic_2D (2-D wind domain)
 set -euo pipefail
 
-SIM_DIR=output/isotropic_2D
+SIM_DIR=output/air/isotropic_2D
 SOURCE_SPEED=50.0
 CONFIG=examples/configs/pipeline.config.json
 

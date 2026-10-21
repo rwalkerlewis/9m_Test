@@ -576,7 +576,7 @@ unassociated detections, and track deletion after $N$ missed updates.
 ## 6  ML Classifiers (Optional)
 
 All classifiers require PyTorch.  Pre-trained weights are shipped in
-`output/models/` (acoustic_classifier.pt, maneuver_classifier.pt,
+`output/air/models/` (acoustic_classifier.pt, maneuver_classifier.pt,
 fusion_classifier.pt).  Retraining requires running the data generation
 and training loops in `examples/air/03_ml/train_all_ml.py`.
 

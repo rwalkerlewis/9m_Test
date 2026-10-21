@@ -8,7 +8,7 @@ echo chain only at the end of the passive pass (the strong tracks of the whole r
 every step; the batch chains of before stage 2 (``run_ais_aware``, ``run_bistatic`` with an AIS illuminator) are history
 (``docs/harbor_history.md``).
 
-Outputs in ``--out/<dataset>/`` as ``harbor_stream.py``'s.
+Outputs as ``harbor_stream.py``'s, in ``--out`` (default ``output/reproduce/runs/<dataset>/batch``).
 
 Usage::
 
@@ -37,11 +37,12 @@ def main() -> None:
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="override a processing parameter (recorded)")
     ap.add_argument("--cpu", action="store_true", help="process on the CPU (default: the GPU, falling back to the CPU)")
     ap.add_argument("--cuda", action="store_true", help="kept for old command lines: the GPU is the default")
-    ap.add_argument("--out", default="output/harbor_detect")
+    ap.add_argument("--out", default=None, help="output folder (default output/reproduce/runs/<dataset>/batch)")
     a = ap.parse_args()
     processing = hs.CONFIGS / f"{a.dataset}.json"
     observation = ROOT / json.loads(processing.read_text())["observation"]
-    s = hs.run_recording(a.dataset, processing, observation, contract_paths(observation)[1], ROOT / a.out / a.dataset, False,
+    s = hs.run_recording(a.dataset, processing, observation, contract_paths(observation)[1],
+                         ROOT / (a.out or f"output/reproduce/runs/{a.dataset}/batch"), False,
                          use_cuda=not a.cpu, overrides=a.set, chunk=1e9, video=False)
     hs.report(s)
 

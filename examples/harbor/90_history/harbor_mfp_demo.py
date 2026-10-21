@@ -13,12 +13,12 @@ Two ways to find the UUV, each in the chain AIS -> refine ferry -> project ferry
 * bistatic, motor OFF: coherent matched filter of the ferry's echo off the UUV, with the ferry's own
   spectrum estimated by beamforming at the refined ferry position.
 
-Figures, a 20 s track, an occupancy filter and Pd against target level go to ``output/harbor_demo``
+Figures, a 20 s track, an occupancy filter and Pd against target level go to ``output/studies/history/harbor_mfp_demo``
 (``results.json`` holds the numbers).
 
 Usage::
 
-    python examples/harbor/90_history/harbor_mfp_demo.py [--out output/harbor_demo] [--trials 20] [--windows 40]
+    python examples/harbor/90_history/harbor_mfp_demo.py [--out output/studies/history/harbor_mfp_demo] [--trials 20] [--windows 40]
 """
 
 from __future__ import annotations
@@ -38,6 +38,8 @@ from matplotlib.patches import Rectangle
 from scipy.ndimage import gaussian_filter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+
+from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -283,10 +285,12 @@ def process(d, ais, mode, ncand=8):
     return {"ref": ref, "P": P, "est": pts[np.argmax(v)], "contrast": float(todb(max(best, v.max()) / bg))}
 
 # ---------------- plotting helpers ----------------
-plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10, "axes.spines.top": False,
-                     "axes.spines.right": False, "figure.dpi": 150})
+plt.rcParams.update({"axes.spines.top": False, "axes.spines.right": False})
 INK, MUTED = "#1f2937", "#6b7280"
 FERRY_C, UUV_C = "#1d4ed8", "#ff7f0e"
+
+REC = "analytic channel"          # every title names the scene
+
 
 def harbor_axes(ax, title):
     ax.set_facecolor("#dbe4ee")
@@ -295,32 +299,37 @@ def harbor_axes(ax, title):
     for cx, cy, _ in clutter:
         ax.plot(cx, cy, "s", ms=7, mfc="#9ca3af", mec=INK, label="fixed scatterer (pier)")
     ax.set_xlim(-20, LX + 20); ax.set_ylim(-30, LY + 30); ax.set_aspect("equal")
-    ax.set_xlabel("x (m)"); ax.set_ylabel("y (m)"); ax.set_title(title, loc="left", color=INK, fontweight="bold", pad=22)
+    ax.set_xlabel("x (east) [m]"); ax.set_ylabel("y (north) [m]"); ax.set_title(f"{REC}: {title}")
     ax.tick_params(colors=MUTED)
 
 def show_map(ax, P, title, ferry, uuv, refined=None, ais=None, est=None, vmin=-30, cmap="viridis"):
     shape = GY.shape if len(P) == NC else (int(round(LY / 2.5)), int(round(LX / 2.5)))   # 10 m or 2.5 m grid
     Z = todb(P).reshape(shape); Z -= Z.max()
     im = ax.imshow(Z, origin="lower", extent=[0, LX, 0, LY], cmap=cmap, vmin=vmin, vmax=0, aspect="equal")
-    ax.plot(c1[:, 0], c1[:, 1], color="white", lw=1.5); ax.plot(c2[:, 0], c2[:, 1], color="white", lw=1.5)
-    for cx, cy, _ in clutter: ax.plot(cx, cy, "s", ms=6, mfc="none", mec="white")
+    ax.plot(c1[:, 0], c1[:, 1], color="white", lw=1.5, label="DAS fiber"); ax.plot(c2[:, 0], c2[:, 1], color="white", lw=1.5)
+    for cx, cy, _ in clutter: ax.plot(cx, cy, "s", ms=6, mfc="none", mec="white", label="pier")
     ax.plot(*ferry, "^", ms=10, mfc="none", mec="white", mew=1.5, label="ferry (true)")
     ax.plot(*uuv, "o", ms=12, mfc="none", mec=UUV_C, mew=1.8, label="UUV (true)")
     if ais is not None: ax.plot(*ais, "x", ms=8, color="white", mew=1.5, label="ferry AIS")
     if refined is not None: ax.plot(*refined, "+", ms=12, color="#ffd60a", mew=2, label="ferry refined")
     if est is not None: ax.plot(*est, "x", ms=9, color="#ff2d55", mew=2, label="UUV estimate")
     ax.set_xlim(0, LX); ax.set_ylim(0, LY)
-    ax.set_title(title, loc="left", color=INK, fontweight="bold", fontsize=10); ax.set_xlabel("x (m)"); ax.set_ylabel("y (m)")
+    ax.set_title(f"{REC}: {title}"); ax.set_xlabel("x (east) [m]"); ax.set_ylabel("y (north) [m]")
     ax.tick_params(colors=MUTED)
     return im
 
 def dedup_legend(ax, **kw):
     h, l = ax.get_legend_handles_labels(); seen = {}
     for hh, ll in zip(h, l): seen.setdefault(ll, hh)
-    ax.legend(seen.values(), seen.keys(), frameon=False, fontsize=8, **kw)
+    kw.setdefault("frameon", False)
+    ax.legend(seen.values(), seen.keys(), fontsize=11, **kw)
 
 def save(fig, out, name):
-    fig.savefig(Path(out) / name, bbox_inches="tight"); plt.close(fig); print("wrote", name)
+    save_figure(fig, Path(out) / name, recording=REC); print("wrote", name)
+
+def map_figure():
+    """A figure for a map of the 1500 m x 300 m channel (wide and short)."""
+    return new_figure((15, 6))
 
 # ---------------- scene ----------------
 ferry0 = np.array([600.0, 150.0]); ferry_v = np.array([4.0, 0.0])      # 8 kn down channel
@@ -334,22 +343,23 @@ ASSUMPTIONS = ["analytic forward model: the replica is exact (constant c, no mul
 
 
 def fig_scene(out, T):
-    fig, ax = plt.subplots(figsize=(10, 3.6))
-    harbor_axes(ax, "Scene: 1500 m x 300 m channel, constant c = 1500 m/s, 16 m deep, two DAS fiber runs")
+    fig, ax = map_figure()
+    harbor_axes(ax, "1500 m x 300 m channel, constant c = 1500 m/s, 16 m deep, two DAS fiber runs")
     t = np.linspace(0, T, 50)
     ax.plot(ferry0[0] + ferry_v[0] * t, ferry0[1] + ferry_v[1] * t, "-", color=FERRY_C, lw=2, label=f"ferry track, 8 kn, AIS ({T:.0f} s)")
-    ax.plot(*ferry0, "^", ms=9, color=FERRY_C)
+    ax.plot(*ferry0, "^", ms=9, color=FERRY_C, label="ferry start")
     ax.plot(uuv0[0] + uuv_v[0] * t, uuv0[1] + uuv_v[1] * t, "-", color=UUV_C, lw=2, label="UUV track, 2 kn, hidden")
-    ax.plot(*uuv0, "o", ms=8, color=UUV_C)
+    ax.plot(*uuv0, "o", ms=8, color=UUV_C, label="UUV start")
     ax.text(10, LY - 22, f"fiber 1: {n1} channels, {np.linalg.norm(f1-f0):.0f} m crossing\n"
             f"fiber 2: {nch-n1} channels, {np.linalg.norm(s1-s0):.0f} m along the seawall\n2 m channel spacing, cos$^2$ axial directivity",
-            fontsize=8, color=INK, va="top")
-    dedup_legend(ax, loc="lower center", ncol=4, bbox_to_anchor=(0.5, 1.0))
+            fontsize=11, color=INK, va="top")
+    dedup_legend(ax, loc="lower right", ncol=2)
     save(fig, out, "map.png")
 
 
 def fig_gather(out):
-    """2 s of DAS data at full resolution: the total, the UUV echo alone and echo + noise, and per-channel levels."""
+    """2 s of DAS data at full resolution (the total, the UUV echo alone and echo + noise: one figure each), and the
+    levels per channel."""
     T = 2.0; fr = np.arange(40.0, 800.0, 1 / T); nfft = int(FS * T)
     p = synth(ferry0, uuv0, True, 3, fr=fr, nsnap=1, parts=True)
     def ts(x):
@@ -358,33 +368,35 @@ def fig_gather(out):
     tot = sum(p[k] for k in ("ferry", "clutter", "echo", "noise"))
     lev = {k: 10 * np.log10(np.mean(np.abs(v[0]) ** 2, axis=0) + 1e-30) for k, v in p.items()}
     v = np.percentile(np.abs(ts(tot)), 99); ve = np.percentile(np.abs(ts(p["echo"] + p["noise"])), 99)
-    fig = plt.figure(figsize=(15, 7)); gs = fig.add_gridspec(2, 3, height_ratios=[1.5, 1], hspace=0.45, wspace=0.08)
-    for j, (x, s, name) in enumerate(((tot, v, "Motor OFF: everything on the fiber"),
-                                      (p["echo"], ve, f"UUV echo alone (scale x{v / ve:.0f})"),
-                                      (p["echo"] + p["noise"], ve, "UUV echo + noise, ferry and piers\nperfectly removed (same scale)"))):
-        ax = fig.add_subplot(gs[0, j])
-        ax.imshow(ts(x).T, aspect="auto", cmap="RdBu_r", vmin=-s, vmax=s, extent=[0, T, 0, nch], origin="lower", interpolation="nearest")
-        ax.axhline(n1, color="k", lw=0.8, ls="--"); ax.set_xlabel("time (s)"); ax.tick_params(colors=MUTED); ax.set_xticks([0, 0.5, 1, 1.5])
-        ax.set_title(name, loc="left", color=INK, fontweight="bold", fontsize=10)
-        if j == 0: ax.set_ylabel("DAS channel (fiber 1 | fiber 2)")
-        else: ax.set_yticklabels([])
-    ax = fig.add_subplot(gs[1, :])
+    for x, s, name, tag in ((tot, v, "motor OFF, everything on the fiber", "total"),
+                            (p["echo"], ve, f"UUV echo alone (scale x{v / ve:.0f})", "echo"),
+                            (p["echo"] + p["noise"], ve, "UUV echo + noise, ferry and piers perfectly removed (echo scale)", "echo_noise")):
+        fig, ax = new_figure((12, 8))
+        im = ax.imshow(ts(x).T, aspect="auto", cmap="RdBu_r", vmin=-s, vmax=s, extent=[0, T, 0, nch], origin="lower", interpolation="nearest")
+        ax.axhline(n1, color="k", lw=0.8, ls="--", label="fiber 1 | fiber 2")
+        ax.set_xlabel("time [s]"); ax.set_ylabel("DAS channel (fiber 1 | fiber 2)"); ax.tick_params(colors=MUTED)
+        ax.set_title(f"{REC}: 2 s of DAS data, {name}")
+        ax.legend(loc="upper right")
+        fig.colorbar(im, ax=ax, label="strain rate [model units]")
+        save(fig, out, f"gather_{tag}.png")
+    fig, ax = new_figure((13, 8))
     for k, col, lab in (("ferry", FERRY_C, "ferry direct"), ("clutter", "#6b7280", "pier echoes"), ("echo", UUV_C, "UUV echo (TS -20 dB)"),
                         ("motor", "#c2410c", "UUV thruster (motor ON)"), ("noise", "k", "ambient noise")):
         ax.plot(lev[k], color=col, lw=1.3 if k != "noise" else 0.8, ls="--" if k == "motor" else "-", label=lab)
     ax.axvline(n1, color="k", lw=0.8, ls="--")
     gap = np.median(lev["noise"] - lev["echo"])
-    ax.set_xlim(0, nch); ax.set_xlabel("DAS channel"); ax.set_ylabel("mean level per Hz (dB)"); ax.tick_params(colors=MUTED)
-    ax.set_title(f"Levels per channel, 40 to 800 Hz: the UUV echo is {gap:.0f} dB below the noise on the median channel and "
-                 f"{np.median(lev['ferry'] - lev['echo']):.0f} dB below the ferry (dips: cos$^2$ broadside nulls)", loc="left", color=INK, fontweight="bold", fontsize=10)
-    ax.legend(frameon=False, fontsize=8, ncol=5, loc="upper center", bbox_to_anchor=(0.5, -0.25))
-    save(fig, out, "gather.png")
+    ax.set_xlim(0, nch); ax.set_xlabel("DAS channel"); ax.set_ylabel("mean level per Hz [dB]"); ax.tick_params(colors=MUTED)
+    ax.set_title(f"{REC}: levels per channel, 40 to 800 Hz: the UUV echo is {gap:.0f} dB below the noise on the median channel\n"
+                 f"and {np.median(lev['ferry'] - lev['echo']):.0f} dB below the ferry (dips: cos$^2$ broadside nulls)")
+    ax.legend(frameon=False, ncol=3, loc="lower center")
+    save(fig, out, "gather_levels.png")
     return {"echo_below_noise_db_median_channel": float(gap), "echo_below_ferry_db_median_channel": float(np.median(lev["ferry"] - lev["echo"])),
             "thruster_vs_noise_db_median_channel": float(np.median(lev["motor"] - lev["noise"]))}
 
 
 def fig_snapshots(out):
-    """Impulse response of the scene: envelope of a ferry pulse and of the echoes it raises, at three instants."""
+    """Impulse response of the scene: envelope of a ferry pulse and of the echoes it raises, at three instants
+    (one figure per instant and content, same dB scale)."""
     fr = np.arange(40.0, 800.0, 0.5); S = np.hanning(len(fr) + 2)[1:-1]; S /= S.sum()
     tp = np.arange(-0.05, 0.05, 1e-4); a = np.exp(2j * np.pi * tp[:, None] * fr[None, :]) @ S   # analytic pulse
     def pulse(t):                                       # a(t), zero outside the tabulated support
@@ -402,27 +414,24 @@ def fig_snapshots(out):
         dfield = spread(rf) * pulse(t - rf / C)
         rows[0].append(np.abs(dfield + e).reshape(XX.shape)); rows[1].append(np.abs(e).reshape(XX.shape))
     ref = max(r.max() for r in rows[0])
-    fig, axs = plt.subplots(2, 3, figsize=(15, 4.4)); fig.subplots_adjust(hspace=0.4, wspace=0.05)
-    for i, lab in enumerate(("everything", "echoes only")):
+    for i, (lab, tag) in enumerate((("everything", "all"), ("echoes only", "echoes"))):
         for j, t in enumerate(times):
-            ax = axs[i, j]
+            fig, ax = map_figure()
             im = ax.imshow(20 * np.log10(rows[i][j] / ref + 1e-12), origin="lower", extent=[0, LX, 0, LY], cmap="magma", vmin=-80, vmax=0)
-            ax.plot(c1[:, 0], c1[:, 1], color="w", lw=0.8); ax.plot(c2[:, 0], c2[:, 1], color="w", lw=0.8)
-            ax.plot(*ferry0, "^", ms=7, mfc="none", mec="#60a5fa", mew=1.5); ax.plot(*uuv0, "o", ms=9, mfc="none", mec=UUV_C, mew=1.5)
-            for cx, cy, _ in clutter: ax.plot(cx, cy, "s", ms=5, mfc="none", mec="w")
+            ax.plot(c1[:, 0], c1[:, 1], color="w", lw=0.8, label="DAS fiber"); ax.plot(c2[:, 0], c2[:, 1], color="w", lw=0.8)
+            ax.plot(*ferry0, "^", ms=7, mfc="none", mec="#60a5fa", mew=1.5, label="ferry")
+            ax.plot(*uuv0, "o", ms=9, mfc="none", mec=UUV_C, mew=1.5, label="UUV (TS -20 dB)")
+            for cx, cy, _ in clutter: ax.plot(cx, cy, "s", ms=5, mfc="none", mec="w", label="pier (TS 0 dB)")
             ax.set_xlim(0, LX); ax.set_ylim(0, LY)
-            ax.set_title(f"t = {t:.2f} s", loc="left", color=INK, fontsize=9, fontweight="bold"); ax.tick_params(colors=MUTED, labelsize=7)
-            if j: ax.set_yticklabels([])
-            else: ax.set_ylabel(lab, fontsize=8)
-    fig.colorbar(im, ax=axs, fraction=0.015, pad=0.01, label="envelope, dB re direct peak")
-    fig.suptitle("Impulse response of the scene: a 40 to 800 Hz pulse from the ferry and the echoes it raises off the piers (TS 0 dB) and\n"
-                 "the UUV (TS -20 dB, orange circle); same dB scale in both rows",
-                 color=INK, fontsize=10, y=1.0)
-    save(fig, out, "snapshots.png")
+            ax.set_xlabel("x (east) [m]"); ax.set_ylabel("y (north) [m]")
+            ax.set_title(f"{REC}: impulse response at t = {t:.2f} s, {lab}\n(a 40 to 800 Hz pulse from the ferry; same dB scale in every figure)")
+            dedup_legend(ax, loc="upper right", labelcolor="white")
+            fig.colorbar(im, ax=ax, label="envelope [dB re direct peak]", shrink=0.45)
+            save(fig, out, f"snapshots_{tag}_{t:.2f}s.png")
 
 
 def fig_single_window(out, rng):
-    """One window: passive maps (ferry, then the UUV line) and bistatic maps (with and without the piers)."""
+    """One window: passive maps (ferry, then the UUV line) and bistatic maps (with and without the piers), one figure each."""
     ferry, uuv = ferry0.copy(), uuv0.copy()
     ais = ferry + rng.normal(0, AIS_SIGMA, 2)
     d_on = synth(ferry, uuv, True, 1); d_off = synth(ferry, uuv, False, 1)
@@ -433,19 +442,21 @@ def fig_single_window(out, rng):
         P[m] = np.median(P[~m]); return P
     res = {"ais_error_m": float(np.linalg.norm(ais - ferry)), "refined_error_m": float(np.linalg.norm(ref - ferry))}
 
-    fig, axs = plt.subplots(2, 1, figsize=(10, 6.8))
-    im = show_map(axs[0], bartlett(d_on, D_cell, G_cell),
-                  f"a. Passive Bartlett, 40 to 800 Hz: the ferry dominates. AIS error {res['ais_error_m']:.1f} m, refined {res['refined_error_m']:.2f} m",
-                  ferry, uuv, refined=ref, ais=ais)
-    dedup_legend(axs[0], loc="upper right", labelcolor="white")
+    def one(P, title, name, label, **kw):
+        fig, ax = map_figure()
+        im = show_map(ax, P, title, ferry, uuv, **kw)
+        dedup_legend(ax, loc="upper right", labelcolor="white")
+        fig.colorbar(im, ax=ax, label=label, shrink=0.45)
+        save(fig, out, name)
+
+    one(bartlett(d_on, D_cell, G_cell),
+        f"passive Bartlett, 40 to 800 Hz: the ferry dominates\nAIS error {res['ais_error_m']:.1f} m, refined {res['refined_error_m']:.2f} m",
+        "passive_maps_broadband.png", "map [dB re peak]", refined=ref, ais=ais)
     pas = process(d_on, ais, "passive")
     dres = project_out(d_on, np.vstack([pas["ref"], clutter[:, :2]]))
-    show_map(axs[1], fine(lambda x, D, G: bartlett(dres, D, G, FI_TONE), pas["ref"]),
-             f"b. Passive Bartlett at 400 Hz, ferry and piers projected out (motor ON): UUV error {np.linalg.norm(pas['est'] - uuv):.1f} m",
-             ferry, uuv, est=pas["est"])
-    dedup_legend(axs[1], loc="upper right", labelcolor="white")
-    fig.colorbar(im, ax=axs, fraction=0.02, pad=0.01, label="dB rel. peak")
-    save(fig, out, "passive_maps.png")
+    one(fine(lambda x, D, G: bartlett(dres, D, G, FI_TONE), pas["ref"]),
+        f"passive Bartlett at 400 Hz, ferry and piers projected out (motor ON)\nUUV error {np.linalg.norm(pas['est'] - uuv):.1f} m",
+        "passive_maps_400hz.png", "map [dB re peak]", est=pas["est"])
     res["passive"] = {"error_m": float(np.linalg.norm(pas["est"] - uuv)), "contrast_db": pas["contrast"]}
 
     ref_off = refine(d_off, ais)
@@ -456,30 +467,25 @@ def fig_single_window(out, rng):
     bis = process(d_off, ais, "bistatic")
     dres = project_out(d_off, np.vstack([bis["ref"], clutter[:, :2]]))
     P_b = fine(lambda x, D, G: bistatic(d_off, dres, D, G, bis["ref"], x), bis["ref"])
-    fig, axs = plt.subplots(2, 1, figsize=(10, 6.8))
-    show_map(axs[0], P_raw, f"a. Bistatic (coherent, 40 to 800 Hz), motor OFF, ferry removed: strongest echo is a pier at "
-             f"({pf[k][0]:.0f}, {pf[k][1]:.0f}) m", ferry, uuv, refined=ref_off)
-    dedup_legend(axs[0], loc="upper right", labelcolor="white")
-    im = show_map(axs[1], P_b, f"b. Pier clutter also removed: UUV error {np.linalg.norm(bis['est'] - uuv):.1f} m, "
-                  f"peak {bis['contrast']:.0f} dB over the map median", ferry, uuv, refined=bis["ref"], est=bis["est"])
-    dedup_legend(axs[1], loc="upper right", labelcolor="white")
-    fig.colorbar(im, ax=axs, fraction=0.02, pad=0.01, label="dB rel. peak (SNR map)")
-    save(fig, out, "bistatic_maps.png")
+    one(P_raw, f"bistatic (coherent, 40 to 800 Hz), motor OFF, ferry removed\nstrongest echo is a pier at "
+        f"({pf[k][0]:.0f}, {pf[k][1]:.0f}) m", "bistatic_maps_ferry_removed.png", "SNR map [dB re peak]", refined=ref_off)
+    one(P_b, f"bistatic, pier clutter also removed: UUV error {np.linalg.norm(bis['est'] - uuv):.1f} m,\n"
+        f"peak {bis['contrast']:.0f} dB over the map median", "bistatic_maps_piers_removed.png", "SNR map [dB re peak]",
+        refined=bis["ref"], est=bis["est"])
     res["bistatic"] = {"error_m": float(np.linalg.norm(bis["est"] - uuv)), "contrast_db": bis["contrast"],
                        "peak_before_pier_removal_xy": pf[k].tolist()}
     return res
 
 
 def fig_bartlett_vs_mvdr(out):
-    """Bartlett and MVDR on the ferry, with the exact replica and with a 0.7 % sound speed error in the replica.
-    MVDR needs more snapshots than channels: a 44 channel sub-array (every 10th channel) and 60 snapshots
-    (0.05 s each in the same 3 s window)."""
+    """Bartlett and MVDR on the ferry, with the exact replica and with a 0.7 % sound speed error in the replica (one
+    figure per processor and replica).  MVDR needs more snapshots than channels: a 44 channel sub-array (every 10th
+    channel) and 60 snapshots (0.05 s each in the same 3 s window)."""
     ch = np.arange(0, nch, 10); fsub = range(0, NF, 4)
     d = synth(ferry0, uuv0, False, 5, nsnap=60, ch=ch)
     pts = patch(ferry0, 40.0, 0.5); D, G = replica_tables(pts, ch); n = int(round(np.sqrt(len(pts))))
     ext = [pts[:, 0].min(), pts[:, 0].max(), pts[:, 1].min(), pts[:, 1].max()]
     c_mis = 1490.0
-    fig, axs = plt.subplots(2, 2, figsize=(11, 8.4)); fig.subplots_adjust(hspace=0.32, wspace=0.3, right=0.88)
     res = {"mismatch_c_m_s": c_mis}
     for i, (Dr, tag) in enumerate(((D, "exact replica"), (D * C / c_mis, f"c = {c_mis:.0f} m/s replica"))):
         for j, (fn, name) in enumerate(((bartlett, "Bartlett"), (mvdr, "MVDR, 5 % loading"))):
@@ -487,23 +493,23 @@ def fig_bartlett_vs_mvdr(out):
             if i == 0: res.setdefault("_peak", {})[name] = P.max()
             loss = todb(P.max() / res["_peak"][name])
             Z = todb(P).reshape(n, n); Z -= Z.max()
-            ax = axs[i, j]
+            fig, ax = new_figure((11, 9.5))
             im = ax.imshow(Z, origin="lower", extent=ext, cmap="viridis", vmin=-20, vmax=0)
             ax.contour(Z, levels=[-3], colors="w", linewidths=1, extent=ext)
-            ax.plot(*ferry0, "^", ms=10, mfc="none", mec="white", mew=1.5)
-            pk = pts[np.argmax(P)]; ax.plot(*pk, "x", ms=8, color="#ff2d55", mew=2)
+            ax.plot([], [], "-", color="w", lw=1, label="-3 dB contour")
+            ax.plot(*ferry0, "^", ms=10, mfc="none", mec="white", mew=1.5, label="ferry (true)")
+            pk = pts[np.argmax(P)]; ax.plot(*pk, "x", ms=8, color="#ff2d55", mew=2, label="peak")
             area = float(np.sum(Z > -3)) * 0.25; err = float(np.linalg.norm(pk - ferry0))
             key = ("bartlett" if j == 0 else "mvdr") + ("" if i == 0 else "_mismatch")
             res[key] = {"area_3db_m2": area, "peak_error_m": err, "peak_loss_db": float(loss)}
             a_txt = f"{area:.0f} m$^2$" if area >= 1 else "< 1 m$^2$"
-            ax.set_title(f"{name}, {tag}\n-3 dB area {a_txt}, peak error {err:.1f} m, peak {loss:+.1f} dB",
-                         loc="left", color=INK, fontweight="bold", fontsize=9)
-            ax.set_xlabel("x (m)"); ax.set_ylabel("y (m)"); ax.tick_params(colors=MUTED)
+            ax.set_title(f"{REC}: ferry focal spot, {name}, {tag}\n-3 dB area {a_txt}, peak error {err:.1f} m, peak {loss:+.1f} dB "
+                         "(44 channels, 60 snapshots)")
+            ax.set_xlabel("x (east) [m]"); ax.set_ylabel("y (north) [m]"); ax.tick_params(colors=MUTED)
+            ax.legend(loc="upper right", facecolor="0.3", labelcolor="white")
+            fig.colorbar(im, ax=ax, label="map [dB re own peak]")
+            save(fig, out, f"bartlett_vs_mvdr_{key}.png")
     del res["_peak"]
-    fig.colorbar(im, cax=fig.add_axes([0.91, 0.3, 0.015, 0.4]), label="dB rel. own peak")
-    fig.suptitle("Ferry focal spot: MVDR resolves far better, but loses its peak when the replica is 0.7 % slow\n"
-                 "(44 channel sub-array, 60 snapshots, 10 bins 40 to 760 Hz; white: -3 dB contour; x: peak)", color=INK, fontsize=10)
-    save(fig, out, "bartlett_vs_mvdr.png")
     return res
 
 
@@ -533,22 +539,23 @@ def run_track(out, nw, dt, rng):
     err = {k: np.linalg.norm(A(k) - uuv, axis=1) for k in ("pas", "bis", "occ")}
     ferr = np.linalg.norm(A("ref") - ferry, axis=1)
 
-    fig, axs = plt.subplots(2, 2, figsize=(12, 4.2)); fig.subplots_adjust(hspace=0.6, wspace=0.12)
-    for ax, (k, (Ok, fk, uk)) in zip(axs.ravel(), snaps.items()):
+    for k, (Ok, fk, uk) in snaps.items():
+        fig, ax = map_figure()
         Z = Ok.reshape(GY.shape); Z = Z / Z.max()
         im = ax.imshow(Z, origin="lower", extent=[0, LX, 0, LY], cmap="magma", vmin=0, vmax=1)
-        ax.plot(c1[:, 0], c1[:, 1], color="white", lw=1); ax.plot(c2[:, 0], c2[:, 1], color="white", lw=1)
-        ax.plot(uuv[:k + 1, 0], uuv[:k + 1, 1], "-", color=UUV_C, lw=1.2)
-        ax.plot(*uk, "o", ms=9, mfc="none", mec=UUV_C, mew=1.8)
-        ax.plot(*fk, "^", ms=8, mfc="none", mec="white", mew=1.2)
-        ax.set_title(f"after window {k+1} (t = {k * dt:.1f} s): MAP error {err['occ'][k]:.1f} m",
-                     loc="left", color=INK, fontweight="bold", fontsize=9)
-        ax.set_xlim(0, LX); ax.set_ylim(0, LY); ax.tick_params(colors=MUTED, labelsize=8)
-    fig.colorbar(im, ax=axs, fraction=0.02, pad=0.01, label="occupancy, rel. peak")
-    fig.suptitle("Occupancy filter over the bistatic maps, motor OFF (10 m cells, 1 m/s diffusion)", color=INK, fontsize=10)
-    save(fig, out, "occupancy.png")
+        ax.plot(c1[:, 0], c1[:, 1], color="white", lw=1, label="DAS fiber"); ax.plot(c2[:, 0], c2[:, 1], color="white", lw=1)
+        ax.plot(uuv[:k + 1, 0], uuv[:k + 1, 1], "-", color=UUV_C, lw=1.2, label="UUV track so far")
+        ax.plot(*uk, "o", ms=9, mfc="none", mec=UUV_C, mew=1.8, label="UUV (true)")
+        ax.plot(*fk, "^", ms=8, mfc="none", mec="white", mew=1.2, label="ferry (true)")
+        ax.set_title(f"{REC}: occupancy over the bistatic maps after window {k+1} (t = {k * dt:.1f} s), motor OFF\n"
+                     f"MAP error {err['occ'][k]:.1f} m (10 m cells, 1 m/s diffusion)")
+        ax.set_xlim(0, LX); ax.set_ylim(0, LY); ax.tick_params(colors=MUTED)
+        ax.set_xlabel("x (east) [m]"); ax.set_ylabel("y (north) [m]")
+        dedup_legend(ax, loc="upper right", labelcolor="white")
+        fig.colorbar(im, ax=ax, label="occupancy [re peak]", shrink=0.45)
+        save(fig, out, f"occupancy_window{k + 1}.png")
 
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(14, 4.4), gridspec_kw={"width_ratios": [1.15, 1]})
+    fig, a1 = new_figure((13, 9))
     pad = 60
     lo = np.minimum(uuv.min(0), np.vstack([A("pas"), A("bis")]).min(0)) - pad; hi = np.maximum(uuv.max(0), np.vstack([A("pas"), A("bis")]).max(0)) + pad
     a1.set_facecolor("#dbe4ee"); a1.plot(c1[:, 0], c1[:, 1], color="#111111", lw=2, label="DAS fiber")
@@ -557,17 +564,19 @@ def run_track(out, nw, dt, rng):
     a1.plot(*A("bis").T, "x", ms=5, color="#047857", label="bistatic (motor OFF)")
     a1.plot(*A("occ").T, "-", color="k", lw=1, label="occupancy MAP (bistatic)")
     a1.set_xlim(lo[0], hi[0]); a1.set_ylim(max(lo[1], 0), min(hi[1], LY)); a1.set_aspect("equal")
-    a1.set_xlabel("x (m)"); a1.set_ylabel("y (m)"); a1.tick_params(colors=MUTED); a1.legend(frameon=False, fontsize=8, loc="upper right")
-    a1.set_title(f"Estimates per window ({dt:.1f} s hop, 3 s windows)", loc="left", color=INK, fontweight="bold", fontsize=10)
+    a1.set_xlabel("x (east) [m]"); a1.set_ylabel("y (north) [m]"); a1.tick_params(colors=MUTED); a1.legend(frameon=False, loc="upper right")
+    a1.set_title(f"{REC}: UUV estimates per window ({dt:.1f} s hop, 3 s windows)")
+    save(fig, out, "tracks_map.png")
+    fig, a2 = new_figure((13, 8))
     for k, col, lab in (("pas", "#7c3aed", "passive"), ("bis", "#047857", "bistatic"), ("occ", "k", "occupancy MAP")):
         a2.plot(t, np.minimum(err[k], 29.5), "o-", ms=3, lw=1, color=col, label=f"{lab}: median {np.median(err[k]):.1f} m, "
                 f"{100 * np.mean(err[k] <= 10):.0f} % within 10 m")
     a2.plot(t, np.minimum(ferr, 29.5), ":", color=FERRY_C, lw=1, label=f"ferry refined vs truth: median {np.median(ferr):.2f} m")
-    a2.axhline(10, color="r", ls="--", lw=0.8)
-    a2.set_ylim(0, 30); a2.set_xlabel("time (s)"); a2.set_ylabel("position error (m), clipped at 30"); a2.tick_params(colors=MUTED)
-    a2.legend(frameon=False, fontsize=8, loc="upper right")
-    a2.set_title("Position error per window (occupancy: 10 m cells)", loc="left", color=INK, fontweight="bold", fontsize=10)
-    save(fig, out, "tracks.png")
+    a2.axhline(10, color="r", ls="--", lw=0.8, label="10 m")
+    a2.set_ylim(0, 30); a2.set_xlabel("time [s]"); a2.set_ylabel("position error [m], clipped at 30"); a2.tick_params(colors=MUTED)
+    a2.legend(frameon=False, loc="upper right")
+    a2.set_title(f"{REC}: position error per window (occupancy: 10 m cells)")
+    save(fig, out, "tracks_error.png")
     summ = lambda e: {"median_m": float(np.median(e)), "p90_m": float(np.percentile(e, 90)), "within_10m": float(np.mean(e <= 10)),
                       "rmse_m": float(np.sqrt(np.mean(e ** 2)))}
     return {"windows": nw, "hop_s": dt, "passive": summ(err["pas"]), "bistatic": summ(err["bis"]), "occupancy_map": summ(err["occ"]),
@@ -578,7 +587,8 @@ def run_track(out, nw, dt, rng):
 def run_pd(out, ntrial, rng, pfa=0.05, gate=15.0):
     """Pd against UUV level from random scenes.  The threshold on the peak contrast is set from scenes with no UUV
     (Pfa per window); a detection also needs the peak within `gate` m of the UUV.  The passive sweep leaves the UUV's
-    echo of the ferry out (thruster only), so it measures the passive mechanism alone."""
+    echo of the ferry out (thruster only), so it measures the passive mechanism alone.  Per mode: the Pd curve
+    (``pd_vs_level_<mode>.png``) and where the scenes were (``pd_vs_level_<mode>_scenes.png``)."""
     scenes = []
     for i in range(2 * ntrial):
         ferry = ferry0 + ferry_v * rng.uniform(0, 20)
@@ -586,11 +596,10 @@ def run_pd(out, ntrial, rng, pfa=0.05, gate=15.0):
             uuv = np.array([rng.uniform(100, LX - 100), rng.uniform(10, LY - 10)])
             if np.linalg.norm(uuv - ferry) > 100: break
         scenes.append((ferry, uuv, ferry + rng.normal(0, AIS_SIGMA, 2), 5000 + i))
-    sweeps = {"bistatic": {"levels": np.arange(-60.0, -9.0, 5.0), "label": "UUV target strength (dB)", "default": UUV_TS},
-              "passive": {"levels": np.arange(85.0, 141.0, 5.0), "label": "UUV 400 Hz line level (dB re 1 uPa at 1 m, per Hz)", "default": UUV_LINE_DB}}
+    sweeps = {"bistatic": {"levels": np.arange(-60.0, -9.0, 5.0), "label": "UUV target strength [dB]", "default": UUV_TS},
+              "passive": {"levels": np.arange(85.0, 141.0, 5.0), "label": "UUV 400 Hz line level [dB re 1 uPa at 1 m, per Hz]", "default": UUV_LINE_DB}}
     res = {"pfa": pfa, "gate_m": gate, "trials_per_level": ntrial, "noise_trials": len(scenes)}
-    fig, axs = plt.subplots(2, 2, figsize=(13, 6.6), gridspec_kw={"height_ratios": [1.4, 1]}); fig.subplots_adjust(hspace=0.45, wspace=0.18)
-    for ax, axm, (mode, sw) in zip(axs[0], axs[1], sweeps.items()):
+    for mode, sw in sweeps.items():
         t0 = time.time()
         def one(sc, level):
             ferry, uuv, ais, seed = sc
@@ -609,33 +618,38 @@ def run_pd(out, ntrial, rng, pfa=0.05, gate=15.0):
         print(f"  {mode}: threshold {thr:.1f} dB, Pd {np.round(pd, 2).tolist()} ({time.time() - t0:.0f} s)")
         res[mode] = {"threshold_contrast_db": thr, "noise_contrast_db_median": float(np.median(h0)),
                      "levels": sw["levels"].tolist(), "pd": pd, "median_error_detected_m": med, "default_level": sw["default"]}
-        ax.plot(sw["levels"], pd, "o-", color=INK)
+        what = "motor OFF, ferry echo" if mode == "bistatic" else "motor ON, 400 Hz line, no echo"
+        fig, ax = new_figure((12, 8))
+        ax.plot(sw["levels"], pd, "o-", color=INK, label="Pd")
         ax.axvline(sw["default"], color=UUV_C, ls="--", lw=1, label=f"scene default ({sw['default']:.0f})")
         ax.axhline(pfa, color=MUTED, ls=":", lw=1, label=f"Pfa {pfa:.2f} (threshold {thr:.1f} dB over median)")
-        ax.set_ylim(-0.03, 1.03); ax.set_xlabel(sw["label"]); ax.set_ylabel("Pd"); ax.tick_params(colors=MUTED)
-        ax.set_title(f"{mode.capitalize()} ({'motor OFF, ferry echo' if mode == 'bistatic' else 'motor ON, 400 Hz line, no echo'}), "
-                     f"{ntrial} random scenes per level", loc="left", color=INK, fontweight="bold", fontsize=10)
-        ax.legend(frameon=False, fontsize=8, loc="center right")
+        ax.set_ylim(-0.03, 1.03); ax.set_xlabel(sw["label"]); ax.set_ylabel("Pd (fraction of scenes)"); ax.tick_params(colors=MUTED)
+        ax.set_title(f"{REC}, {mode} ({what}): Pd against UUV level, {ntrial} random scenes per level\n"
+                     f"(peak contrast above the no UUV threshold and within {gate:.0f} m)")
+        ax.legend(frameon=False, loc="center right")
+        save(fig, out, f"pd_vs_level_{mode}.png")
         # where the scenes were, detected or missed at the default level
-        axm.set_facecolor("#dbe4ee"); axm.plot(c1[:, 0], c1[:, 1], color="#111111", lw=2); axm.plot(c2[:, 0], c2[:, 1], color="#111111", lw=2)
-        for cx, cy, _ in clutter: axm.plot(cx, cy, "s", ms=6, mfc="#9ca3af", mec=INK)
+        fig, axm = map_figure()
+        axm.set_facecolor("#dbe4ee"); axm.plot(c1[:, 0], c1[:, 1], color="#111111", lw=2, label="DAS fiber")
+        axm.plot(c2[:, 0], c2[:, 1], color="#111111", lw=2)
+        for cx, cy, _ in clutter: axm.plot(cx, cy, "s", ms=6, mfc="#9ca3af", mec=INK, label="pier")
         for (ferry, uuv, _, _), ok in zip(scenes, det_default):
             axm.plot([ferry[0], uuv[0]], [ferry[1], uuv[1]], "-", color=MUTED, lw=0.5)
-            axm.plot(*ferry, "^", ms=5, color=FERRY_C)
-            axm.plot(*uuv, "o" if ok else "X", ms=7, color="#047857" if ok else "#dc2626", mec="k", mew=0.4)
-        axm.set_xlim(0, LX); axm.set_ylim(0, LY); axm.set_aspect("equal"); axm.tick_params(colors=MUTED, labelsize=8)
-        axm.set_title(f"Scenes at the default level: {det_default.sum()} detected (o), {(~det_default).sum()} missed (X); ferry ^",
-                      loc="left", color=INK, fontweight="bold", fontsize=9)
+            axm.plot(*ferry, "^", ms=5, color=FERRY_C, label="ferry")
+            axm.plot(*uuv, "o" if ok else "X", ms=7, color="#047857" if ok else "#dc2626", mec="k", mew=0.4,
+                     label="UUV detected" if ok else "UUV missed")
+        axm.set_xlim(0, LX); axm.set_ylim(0, LY); axm.set_aspect("equal"); axm.tick_params(colors=MUTED)
+        axm.set_xlabel("x (east) [m]"); axm.set_ylabel("y (north) [m]")
+        axm.set_title(f"{REC}, {mode}: scenes at the default level, {det_default.sum()} detected, {(~det_default).sum()} missed")
+        dedup_legend(axm, loc="upper right", frameon=True)
+        save(fig, out, f"pd_vs_level_{mode}_scenes.png")
         res[mode]["missed_at_default_uuv_xy"] = [sc[1].tolist() for sc, ok in zip(scenes, det_default) if not ok]
-    fig.suptitle(f"Detection probability against UUV level: peak contrast above the no-UUV threshold and within {gate:.0f} m",
-                 color=INK, fontsize=10)
-    save(fig, out, "pd_vs_level.png")
     return res
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default=str(ROOT / "output" / "harbor_demo"))
+    ap.add_argument("--out", default=str(ROOT / "output/studies/history" / "harbor_mfp_demo"))
     ap.add_argument("--windows", type=int, default=40, help="windows in the track run (0.5 s hop)")
     ap.add_argument("--trials", type=int, default=20, help="random scenes per level in the Pd sweep (0 skips it)")
     ap.add_argument("--seed", type=int, default=7)

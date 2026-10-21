@@ -8,7 +8,7 @@ source would at sea: the constant is the geometric mean over the two of the true
 radiator track matched to it.  It is copied into ``characteristics.level_calibration`` of every processing config and
 not changed afterwards; on every other recording the estimate is reported with its error against the truth.
 
-Writes ``output/harbor_level_calibration/calibration.json`` (with the ``run`` block).
+Writes ``output/studies/level_calibration/calibration.json`` (with the ``run`` block).
 
     python examples/harbor/05_detection/harbor_level_calibration.py [--cpu]
 """
@@ -33,7 +33,7 @@ from acoustic_sim.water.stream import load_processing, run  # noqa: E402
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cpu", action="store_true")
-    ap.add_argument("--out", default="output/harbor_level_calibration")
+    ap.add_argument("--out", default="output/studies/level_calibration")
     a = ap.parse_args()
     processing = ROOT / "examples" / "configs" / "processing" / "simple.json"
     cfg = load_processing(processing, ["characteristics.level_calibration=1.0"])
