@@ -19,7 +19,8 @@
     "background_absorption": 0.0001,
     "shore_loss_width": 40.0,
     "shore_loss_max": 0.15,
-    "use_cuda": true
+    "use_cuda": true,
+    "time_scheme": "kspace"
   },
   "cables": [
     {

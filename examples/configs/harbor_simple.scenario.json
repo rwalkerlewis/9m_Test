@@ -1,7 +1,7 @@
 {
   "environment": {"kind": "simple", "width": 500.0, "height": 400.0, "quay_width": 20.0, "dx": 1.0, "c0": 1500.0},
   "fdtd": {"fs": 3000.0, "total_time": 20.0, "fd_order": 4, "damping_width": 40, "damping_max": 0.15,
-           "background_absorption": 0.0001, "shore_loss_width": 20.0, "shore_loss_max": 0.15, "use_cuda": false},
+           "background_absorption": 0.0001, "shore_loss_width": 20.0, "shore_loss_max": 0.15, "use_cuda": false, "time_scheme": "kspace"},
   "cables": [
     {"name": "cable1", "waypoints": [[80.0, 80.0], [420.0, 80.0], [420.0, 330.0], [80.0, 330.0], [80.0, 84.0]],
      "channel_spacing": 4.0, "das_mode": "pressure", "gauge_length": 4.0}
