@@ -188,3 +188,110 @@ def draw_frame_geometry(ax, grid: np.ndarray, B: np.ndarray, layout: SensorLayou
         ax.plot(*peaks[0], "x", color="#d62728", ms=12, mew=2.5, label="strongest peak")
     ax.plot(*centre, "+", color="k", ms=10, mew=2, label="array centre")
     return im
+
+
+class HarborPictureView:
+    """The operator view: one figure updated per picture record (``water/stream.py``), the chart and sensors with every
+    object as a marker (circle: seen by its own noise, square: by its echo, diamond: both), its half maximum
+    ellipse, a velocity vector (5 s ahead) and its label (AIS identity, else "radiator" or "body"; size indicator;
+    source level); tentative tracks as small dots, lost tracks faded.  The truth (``Truth``) is drawn, dashed, only
+    when given.  :meth:`update` takes a record (live with ``show``), :meth:`save` writes the video and one frame."""
+
+    def __init__(self, env: ChartEnvironment, layout: SensorLayout, title: str = "", truth=None, show: bool = False,
+                 lead_s: float = 5.0) -> None:
+        self.env, self.layout, self.title, self.truth, self.show, self.lead_s = env, layout, title, truth, show, lead_s
+        self.records: list[dict] = []
+        self.fig = self.ax = None
+        if show:
+            plt.ion()
+            self._setup()
+
+    def _setup(self) -> None:
+        self.fig, self.ax = plt.subplots(figsize=(12, 10))
+
+    def update(self, rec: dict) -> None:
+        self.records.append(rec)
+        if self.show:
+            self.draw(rec)
+            plt.pause(0.001)
+
+    def draw(self, rec: dict) -> None:
+        from matplotlib.patches import Ellipse
+
+        if self.fig is None:
+            self._setup()
+        ax = self.ax
+        ax.clear()
+        env = self.env
+        x0, x1, y0, y1 = env.extent
+        ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.8, vmax=1.0)
+        das = self.layout.das_positions
+        ax.plot(das[:, 0], das[:, 1], "-", color="#555555", lw=1.8)
+        if self.layout.n_hydrophones:
+            ax.plot(self.layout.hydrophones[:, 0], self.layout.hydrophones[:, 1], "^", color="#555555", ms=6)
+        t = rec["t"]
+        if self.truth is not None:
+            for oid, tr in self.truth.tracks.items():
+                col = "#1f77b4" if tr.level_pa > 0 else "#ff7f0e"
+                ax.plot(tr.xy[:, 0], tr.xy[:, 1], "--", color=col, lw=0.8, alpha=0.6)
+                ax.plot(*tr.position_at(t)[0], "o", ms=12, mfc="none", mec=col, ls="--", alpha=0.7)
+        for o in rec["objects"]:
+            xy = np.asarray(o["position"]["xy"], float)
+            if o["status"] == "tentative":
+                ax.plot(*xy, ".", color="0.45", ms=3)
+                continue
+            alpha = 0.3 if o["status"] == "lost" else 1.0
+            col = {"own noise": "#1f77b4", "echo": "#d62728", "both": "#9467bd"}[o["seen"]]
+            mk = {"own noise": "o", "echo": "s", "both": "D"}[o["seen"]]
+            ax.plot(*xy, mk, color=col, ms=7, mec="k", alpha=alpha)
+            w = o["position"].get("halfmax_width_m")
+            if w:
+                ax.add_patch(Ellipse(xy, w[0], w[1], angle=90.0 - o["position"]["halfmax_major_deg"], fill=False, ec=col,
+                                     lw=1.0, alpha=alpha))
+            v = o["velocity"]["vxy"]
+            if v is not None:
+                ax.annotate("", xy + self.lead_s * np.asarray(v), xy, arrowprops=dict(arrowstyle="->", color=col, lw=1.2, alpha=alpha))
+            name = o["ais"]["id"] or ("radiator" if o["seen"] != "echo" else "body")
+            lines = [f"{name} ({o['id']})" + (", static" if o["status"] == "static" else "") + (", lost" if o["status"] == "lost" else "")]
+            if "echo" in o:
+                lines.append(f"{o['echo']['size']} ({o['echo']['size_ratio_db']:+.1f} dB)")
+            if "radiator" in o and o["radiator"]["source_level_100m_pa"] is not None:
+                lines.append(f"source level {o['radiator']['source_level_100m_pa']:.2f} Pa at 100 m")
+            ax.annotate("\n".join(lines), xy, xytext=(7, 5), textcoords="offset points", fontsize=7, color=col, alpha=alpha,
+                        bbox=dict(boxstyle="round,pad=0.2", fc="w", ec="none", alpha=0.6 * alpha))
+        r = self.layout.positions()                             # the area the sensors cover, with a margin
+        m = 0.08 * max(np.ptp(r[:, 0]), np.ptp(r[:, 1]))
+        ax.set_xlim(max(x0, r[:, 0].min() - m), min(x1, r[:, 0].max() + m))
+        ax.set_ylim(max(y0, r[:, 1].min() - m), min(y1, r[:, 1].max() + m))
+        ax.set_aspect("equal")
+        ax.set_xlabel("x [m]")
+        ax.set_ylabel("y [m]")
+        ax.plot([], [], "o", color="#1f77b4", mec="k", label="seen by its own noise")
+        ax.plot([], [], "s", color="#d62728", mec="k", label="seen by its echo")
+        ax.plot([], [], "D", color="#9467bd", mec="k", label="seen both ways")
+        ax.plot([], [], ".", color="0.45", label="tentative track")
+        if self.truth is not None:
+            ax.plot([], [], "--", color="0.4", label="true positions (for comparison)")
+        ax.legend(fontsize=7, loc="lower left")
+        ax.set_title(f"{self.title}  t = {t:.2f} s, latency {rec['latency_s']:.2f} s\nellipses: half maximum width of the map peak; "
+                     f"arrows: {self.lead_s:g} s ahead", fontsize=9)
+
+    def save(self, path, frame_png=None, fps: float = 8.0, frame_at: float = 0.75) -> None:
+        """Write every record as a video frame to *path* (``.mp4``, ffmpeg) and the record at *frame_at* of the run as
+        a PNG to *frame_png*."""
+        from matplotlib.animation import FFMpegWriter
+
+        if not self.records:
+            return
+        if self.fig is None:
+            self._setup()
+        writer = FFMpegWriter(fps=fps, bitrate=1800)
+        with writer.saving(self.fig, str(path), dpi=100):
+            for rec in self.records:
+                self.draw(rec)
+                writer.grab_frame()
+        if frame_png is not None:
+            self.draw(self.records[min(int(frame_at * len(self.records)), len(self.records) - 1)])
+            self.fig.savefig(frame_png, dpi=110, bbox_inches="tight")
+        plt.close(self.fig)
+        self.fig = None

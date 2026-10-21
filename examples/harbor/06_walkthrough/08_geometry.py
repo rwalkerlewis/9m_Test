@@ -19,22 +19,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import _common as c
-from harbor_stream import ASSOC, ASSOC_RADIUS, match_tracks
-
 from acoustic_sim.water.plotting import draw_frame_geometry, draw_projection, projected_positions
+from acoustic_sim.water.scoreboard import match_tracks
 
 a = c.args(__doc__)
 obs, tru = c.observation(a.dataset), c.truth(a.dataset)
 run = c.products(a)
 lay = obs.geometry
 T = run["record_s"]
-matches = {m["track"]: m for m in match_tracks(run["tracks"], tru, ASSOC.get(a.dataset, ASSOC_RADIUS))}
+matches = {m["track"]: m for m in match_tracks(run["tracks"], tru, run["scoring"]["assoc_radius_m"])}
 colors = plt.cm.tab10(np.arange(10))
-fig, axes = plt.subplots(1, 3, figsize=(20, 6.4), gridspec_kw={"width_ratios": [1.0, 1.0, 0.75]})
+F = c.Figures(a, "08_geometry", f"Step 8 - projected positions and ray paths ({a.dataset})",
+              "Processing: traces, sensor positions and the chart only. True positions and bodies are drawn for comparison.")
 
-# Left: projected positions at three moments.
-ax = axes[0]
+# Projected positions at three moments.
+fig, ax = F.new("projection")
 c.chart(ax, obs)
+c.zoom(ax, run["passive"]["grid"])
 c.truth_overlay(ax, tru, labels=True, alpha=0.5)
 horizons = (0.5, 1.0, 2.0)
 for q, t_now in enumerate(T * np.array([0.3, 0.55, 0.8])):
@@ -48,12 +49,13 @@ for q, t_now in enumerate(T * np.array([0.3, 0.55, 0.8])):
             true_xy = tru.tracks[obj].position_at(t_now + np.asarray(horizons))
             ax.plot(true_xy[:, 0], true_xy[:, 1], "o", color=col, ms=4, alpha=0.9,
                     label=f"{k}: true position of {obj} at those times" if q == 0 else None)
-ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=2, fontsize=7)
+ax.legend(loc="lower left", fontsize=7)
 ax.set_title("Projected positions at 30, 55 and 80 % of the record\n(open: projected from the track; filled: true)", fontsize=10)
 
-# Middle: ray paths over one frame's map.
-ax = axes[1]
+# Ray paths over one frame's map.
+fig, ax = F.new("ray_paths")
 c.chart(ax, obs)
+c.zoom(ax, run["passive"]["grid"])
 if run["echo"] and run["echo"]["frames"]:
     frames = run["echo"]["frames"]
     t, xy, score, B, ships = frames[len(frames) // 2]
@@ -65,12 +67,13 @@ else:
     grid, what, echo = run["passive"]["grid"], "passive map", False
 im = draw_frame_geometry(ax, grid, B, lay, ships, xy, echo=echo)
 c.truth_overlay(ax, tru, t=t, labels=True, alpha=0.7)
+c.zoom(ax, grid)
 fig.colorbar(im, ax=ax, shrink=0.7, label="dB re frame peak")
-ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=2, fontsize=7)
+ax.legend(loc="lower left", fontsize=7)
 ax.set_title(f"Ray paths at t = {t:.2f} s over the {what}\n(circles: true positions, for comparison)", fontsize=10)
 
-# Right: projection error against look-ahead.
-ax = axes[2]
+# Projection error against look-ahead.
+fig, ax = F.new("lookahead", size=(10, 7))
 look = np.arange(0.25, 3.01, 0.25)
 for j, (k, fx) in enumerate(run["tracks"].items()):
     obj = matches[k]["true_object"]
@@ -88,7 +91,4 @@ ax.set_ylabel("median distance projected - true [m]")
 ax.set_title("How far ahead the projection holds", fontsize=10)
 ax.legend(fontsize=8)
 ax.grid(alpha=0.3)
-fig.suptitle(f"Step 8 - projected positions and ray paths ({a.dataset})", fontsize=12)
-fig.tight_layout()
-c.save(fig, c.out_dir(a) / "08_geometry.png",
-       "Processing: traces, sensor positions and the chart only. True positions and bodies are drawn for comparison.")
+F.save_all()
