@@ -339,12 +339,18 @@ class HarborFDTDBatch(HarborFDTDSolver):
 def batch_size(n_jobs: int, env: HarborEnvironment, hcfg: HarborFDTDConfig, n_receivers: int, max_batch: int = 64,
                device_fraction: float = 0.6, host_bytes: int | None = None) -> int:
     """How many jobs to run in one :class:`HarborFDTDBatch`: as many as fit in *device_fraction* of the
-    free device memory (two fields per run plus the trace buffer) and in *host_bytes* of host memory
+    free device memory (two fields per run, more for the lw4 and k space steps, plus the trace buffer) and in *host_bytes* of host memory
     for the float64 traces (default: a quarter of the available host memory), at most *max_batch*."""
     if n_jobs <= 1:
         return max(n_jobs, 1)
     itemsize = np.dtype(hcfg.precision).itemsize
-    per_run_device = 2 * env.ny * env.nx * itemsize + n_receivers * 4096 * itemsize + 64 * 2 ** 20 // max(n_jobs, 1)
+    fields = 2
+    if hcfg.time_scheme == "lw4":
+        fields = 3                                                 # the scratch field q
+    elif hcfg.time_scheme == "kspace":
+        # q, the spectrum and its product with the kernel (complex, half the columns each) and cuFFT's work area.
+        fields = 3 + 2 * 2 * (env.nx // 2 + 1) / env.nx + 2
+    per_run_device = int(fields * env.ny * env.nx * itemsize) + n_receivers * 4096 * itemsize + 64 * 2 ** 20 // max(n_jobs, 1)
     per_run_host = n_receivers * hcfg.n_steps * 8
     try:
         import cupy as cp

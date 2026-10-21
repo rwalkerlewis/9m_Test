@@ -427,3 +427,38 @@ def test_kspace_is_exact_for_a_plane_wave_mode():
     # through the Gibbs ringing of those edges; check far from them.
     core = (slice(12, ny - 12), slice(12, nx - 12))
     assert np.abs(got[core] - expect[core]).max() < 0.05 and err < 1.0
+
+
+@gpu
+def test_kspace_batched_runs_match_single_runs_with_moving_bodies(scene, tmp_path):
+    """The harbor recordings' path with the k space step: sponge, land mask, moving bodies imposed on the device,
+    batched runs through ``simulate_sources``; each batch member equals its single fused run (to the FFT rounding) and
+    has its own cache key."""
+    from acoustic_sim.water import simulate_source, simulate_sources
+    from acoustic_sim.water.fdtd_runner import HarborFDTDBatch, batch_size
+
+    env, moving, body, layout = scene
+    cfg = _cfg(kernel="fused", time_scheme="kspace")
+    n = cfg.n_steps
+    other = Scatterer("e", _track("e", [40.0, 30.0], [40.5, 30.5]), 2.0, 2.0, "soft", shape="ellipse")
+    jobs = [(moving, []), (moving, [body, other]), (StaticSource(50.0, 30.0, _ricker(n, 300.0, 0.02)), [body])]
+    batch = HarborFDTDBatch(env, cfg, jobs, layout.sample_points)
+    assert batch.body_masks == "device" and batch.time_scheme == "kspace"
+    out = batch.run(verbose=False)["traces"]
+    for b, (src, sc) in enumerate(jobs):
+        single, s = _run(env, cfg, src, layout, sc)
+        assert s.kernel == "fused" and s.body_masks == "device"
+        assert _rel_l2(out[b], single).max() < 1e-10, b          # a batched cuFFT plan rounds differently (measured 1e-11)
+    assert np.linalg.norm(out[1] - out[0]) > 1e-3 * np.linalg.norm(out[0])     # the moving bodies scatter
+    # Cache: a k space gather has its own key (never confused with a leapfrog gather of the same job).
+    sig = moving.signal
+    traj = (moving.times, moving.positions)
+    assert _cache_key(env, layout, cfg, sig, None, traj) != _cache_key(env, layout, _cfg(kernel="fused"), sig, None, traj)
+    g = simulate_sources(env, layout, cfg, [dict(signal=sig, trajectory=traj, scatterers=[body, other]),
+                                            dict(signal=sig, trajectory=traj)], cache_dir=tmp_path)
+    assert len(list(tmp_path.glob("gather_*.npz"))) == 2
+    single = simulate_source(env, layout, cfg, sig, trajectory=traj, scatterers=[body, other], cache_dir=tmp_path)
+    assert np.array_equal(single.traces, g[0].traces)
+    # The k space step holds a third field and the FFT spectra: fewer runs fit in the same memory.
+    assert batch_size(10 ** 6, env, cfg, layout.n_samples, max_batch=10 ** 6) < batch_size(10 ** 6, env, _cfg(kernel="fused"),
+                                                                                               layout.n_samples, max_batch=10 ** 6)
