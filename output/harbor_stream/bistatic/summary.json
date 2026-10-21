@@ -3,13 +3,13 @@
   "record_s": 20.0,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.45379154850070336,
-    "echo": 0.3266390202999901,
-    "total": 0.7804305688006934
+    "passive": 0.4636332209498505,
+    "echo": 0.3342985283998132,
+    "total": 0.7979317493496637
   },
   "passive_latency_s": {
-    "median": 1.8996549295006844,
-    "max": 3.140136929003347
+    "median": 1.9088165060002211,
+    "max": 3.2044514449989947
   },
   "passive": {
     "frames": 72,

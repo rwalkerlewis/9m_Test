@@ -1,12 +1,17 @@
-"""Real-time passive detection: the AIS-aware matched field chain, causal and frame by frame.
+"""Real-time passive detection: the AIS-aware matched field chain, causal per block of frames.
 
 :class:`StreamingPassive` receives the traces in blocks as they are recorded (:meth:`push`) and
 returns, for every new frame, the strongest map peaks.  It is the chain of ``suppression.run_ais_aware``
-with every step that looked at the whole record made causal:
+with every step that looked at the whole record made causal at the granularity of a block of
+``StreamConfig.block_frames`` frames (8 frames, 2 s, on the 0.5 m recordings of ``examples/harbor_stream.py``;
+1 frame on the 5 m harbor): a frame's result uses no sample recorded after the end of its block, but the
+steps below use the whole block, so an early frame of a block sees the later frames of the same block:
 
-* channel QC on the last ``history_s`` seconds of samples;
-* the noise floor (median over time) over the last ``history_s`` seconds of frames, before and
-  after the ships are projected out;
+* channel QC on the last ``history_s`` seconds of samples up to the end of the block, and the per cable
+  common mode (median over the live channels) with those weights;
+* the noise floor (median over time) over the last ``history_s`` seconds of frames up to the end of the
+  block, before and after the ships are projected out (the past spectra are kept without channel weights;
+  the current weights are applied when they are used);
 * AIS positions dead reckoned from the latest report at or before the frame (``causal``), refined
   per frame as before;
 * the adaptive ship projection over the ``2 * adaptive_window + 1`` frames **ending** at the frame;
@@ -104,7 +109,7 @@ class StreamingPassive:
         self.t_samples = 0                                        # samples received
         self.next_start = 0                                       # sample index of the next frame start
         self.X = []                                               # spectra of past frames, (N, F) device arrays
-        self.Xc = []                                              # same after the ship projection
+        self.Xc = []                                              # same after the ship projection (no channel weights)
         self.times: list[float] = []
         self.U: dict[int, object] = {}
         self.frames_done = 0
@@ -177,10 +182,14 @@ class StreamingPassive:
         else:
             est = None
             Zb = Zh[:, :, -b:]
+        # Store the cleaned spectra without the channel weights: the cleaned values of the live channels and the
+        # raw spectra of the channels this block's QC zeroed (a later block may keep them), so the weights of the
+        # current block apply to every stored frame alike.
+        live = (wd > 0)[:, None]
         for k in range(b):
-            self.Xc.append((Zb[:, :, k] * sigma).astype(dev.cdtype))
+            self.Xc.append(xp.where(live, Zb[:, :, k] * sigma, self.X[-b + k]).astype(dev.cdtype))
         self.Xc = self.Xc[-self.H:]
-        Xch = xp.stack(self.Xc, axis=2)
+        Xch = xp.stack(self.Xc, axis=2) * wd[:, None, None]
         sigma2 = noise_floor(xp.abs(Xch) ** 2, pc, dev)                             # re-whitening on the cleaned past
         Zc = (Xch / sigma2[:, :, None]).astype(dev.cdtype)                          # (N, F, H)
         wc = Whitened(self.freqs, np.array(self.times), Zc, sigma2, w, self.scan_bins, dev)
@@ -682,8 +691,8 @@ class StreamingEcho:
     def push(self, samples: np.ndarray, radiators: dict[str, list[tuple[float, np.ndarray]]] | None = None,
              illuminator: str | None = None) -> list[FrameResult]:
         """Append *samples* (N, n).  *radiators*: new position fixes ``(t, xy)`` of the radiating objects (the
-        passive chain's tracks, by id); *illuminator*: the id of the one whose echoes are mapped (``None``:
-        keep the previous one)."""
+        passive chain's tracks, by id); their direct paths are removed in the order the radiators first appeared;
+        *illuminator*: the id of the one whose echoes are mapped (``None``: keep the previous one)."""
         self.raw = np.concatenate([self.raw, np.asarray(samples, dtype=np.float64)], axis=1)
         self.n_in += samples.shape[1]
         for rid, fixes in (radiators or {}).items():
@@ -782,9 +791,10 @@ class StreamingEcho:
         mid = np.minimum(np.arange(nblk) * self.nb + self.nb // 2, z - a - 1)
         rel = set(range(b0 - a // self.nb, b1 - a // self.nb))
         chans = np.flatnonzero(weights > 0)
-        # The direct path of every live radiator, one after the other (strongest track first): each reference is
-        # the beam on the traces already cleaned of the previous ones, and each is kept to map that radiator's
-        # echoes.
+        # The direct path of every live radiator, one after the other in the order the radiators first appeared in a
+        # push (with an illuminator, it first): each reference is the beam on the traces already cleaned of the
+        # previous ones, and each is kept to map that radiator's echoes.  Strongest first (by track score) was
+        # measured worse on the multistatic recording (uuv2 18 -> 13 % of frames).
         x = buf                                            # as run_bistatic: reference and ECA on the traces,
         refs = {}                                          # the common mode removed in the STFT
         for name in live:

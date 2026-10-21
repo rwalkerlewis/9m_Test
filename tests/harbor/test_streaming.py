@@ -161,3 +161,25 @@ def test_fast_replicas_match_green2d_on_the_gpu():
     for k, A in zip(det.ks, det._channel_greens(w)):
         ref = rec["layout"].collapse(green2d(k * det.r_samples, cp), cp) * w[None, :]
         assert float(cp.max(cp.abs(A - ref)) / cp.max(cp.abs(ref))) < 2e-5
+
+
+def test_a_channel_zeroed_by_qc_contributes_nothing_from_the_first_block():
+    """A channel 100 times too loud is zeroed by the channel QC: from the first output block on, the frames (and the
+    re-whitening floor of that channel) are those of the same recording with the channel silent.  The warmup frames
+    are stored without channel weights and the current weights are applied when they are used."""
+    rec, chart, pc, stc, none = _setup()
+    j = 3
+    loud, dead = rec["traces"].copy(), rec["traces"].copy()
+    loud[j] *= 100.0
+    dead[j] = 0.0
+    out = []
+    for tr in (loud, dead):
+        det = StreamingPassive(rec["layout"], rec["fs"], chart, pc, stc=stc)
+        frames = []
+        for s0 in range(0, tr.shape[1], 500):
+            frames += det.push(tr[:, s0:s0 + 500], none)
+        out.append(frames)
+    assert len(out[0]) == len(out[1]) >= 5
+    for fa, fb in zip(*out):
+        np.testing.assert_allclose(fa.xy, fb.xy)
+        np.testing.assert_allclose(fa.score, fb.score, rtol=1e-5)
