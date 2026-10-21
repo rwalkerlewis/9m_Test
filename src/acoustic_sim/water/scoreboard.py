@@ -34,7 +34,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy.ndimage import maximum_filter
+from scipy.ndimage import label, maximum_filter
 
 from acoustic_sim.contract import Provenance, Truth
 
@@ -86,7 +86,9 @@ class ChainMaps:
 
 def local_maxima(values: np.ndarray, grid: np.ndarray) -> np.ndarray:
     """Boolean mask of the local maxima of *values* (G, ...) on the regular, possibly land masked grid
-    of cell centres *grid* (G, 2): a cell is a maximum when no cell of its 3 x 3 neighbourhood is larger."""
+    of cell centres *grid* (G, 2): a cell is a maximum when no cell of its 3 x 3 neighbourhood is larger.
+    A flat maximum (connected cells of equal value, none with a larger neighbour) is one maximum: only its
+    first cell is kept, so one flat false peak counts as one false alarm."""
     grid = np.asarray(grid, dtype=float)
     steps = np.diff(np.unique(grid[:, 0]))
     dx = float(steps.min()) if len(steps) else 1.0
@@ -96,10 +98,22 @@ def local_maxima(values: np.ndarray, grid: np.ndarray) -> np.ndarray:
     flat = v.reshape(len(grid), -1)
     out = np.zeros(flat.shape, dtype=bool)
     img = np.full((iy.max() + 1, ix.max() + 1), -np.inf)
+    marked = np.zeros(img.shape, dtype=bool)
+    eight = np.ones((3, 3), dtype=bool)
     for j in range(flat.shape[1]):
         img[iy, ix] = flat[:, j]
         mx = maximum_filter(img, size=3, mode="constant", cval=-np.inf)
-        out[:, j] = (flat[:, j] >= mx[iy, ix]) & np.isfinite(flat[:, j])
+        m = (flat[:, j] >= mx[iy, ix]) & np.isfinite(flat[:, j])
+        # Adjacent maxima have equal values (each is >= the other): one per connected component.
+        marked[:] = False
+        marked[iy[m], ix[m]] = True
+        lab, n = label(marked, structure=eight)
+        if n < m.sum():
+            cells = np.flatnonzero(m)
+            _, first = np.unique(lab[iy[cells], ix[cells]], return_index=True)
+            m[:] = False
+            m[cells[first]] = True
+        out[:, j] = m
     return out.reshape(v.shape)
 
 
@@ -170,6 +184,9 @@ def set_threshold(free_runs: list[ChainMaps], truth: Truth, pfa: float = PFA, fa
     if not free_runs:
         raise ValueError("set_threshold needs at least one object free run")
     m = np.concatenate([free_frame_maxima(r, truth, fa_radius) for r in free_runs])
+    if not np.any(np.isfinite(m) & (m > 0)):
+        raise ValueError("set_threshold: no object free frame has a positive local maximum outside the exclusion zones; "
+                         "there is no noise statistic to set the threshold on")
     s = np.sort(m)
     n_above = int(np.floor(pfa * len(s)))
     T = float(s[len(s) - n_above - 1])

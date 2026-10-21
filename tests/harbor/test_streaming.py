@@ -183,3 +183,39 @@ def test_a_channel_zeroed_by_qc_contributes_nothing_from_the_first_block():
     for fa, fb in zip(*out):
         np.testing.assert_allclose(fa.xy, fb.xy)
         np.testing.assert_allclose(fa.score, fb.score, rtol=1e-5)
+
+
+def test_one_sound_speed_a_free_field_propagator_must_agree_with_the_config():
+    """The bistatic replicas take their wavenumber from the config's ``c``: a free field propagator with another
+    speed is refused (``propagation.resolve``) by the batch chain, its replica model and the streaming echo chain."""
+    import pytest
+
+    from acoustic_sim.water.bistatic import BistaticConfig, ReplicaModel, run_bistatic
+    from acoustic_sim.water.propagation import FreeFieldPropagator
+    from acoustic_sim.water.streaming import StreamingEcho
+
+    rec, chart, *_ = _setup()
+    other = FreeFieldPropagator(rec["c"] + 20.0)
+    bc = BistaticConfig(c=rec["c"], propagator=other, f_lo=80.0, f_hi=450.0, grid_dx=5.0, edge=20.0, coherent_norm="snr",
+                        map_scale="none", eca_doppler=True, eca_images=False)
+    with pytest.raises(ValueError, match="disagrees"):
+        ReplicaModel(rec["layout"], bc.c, propagator=other)
+    with pytest.raises(ValueError, match="disagrees"):
+        run_bistatic(rec["traces"], rec["layout"], rec["fs"], chart, rec["reports"], bc)
+    with pytest.raises(ValueError, match="disagrees"):
+        StreamingEcho(rec["layout"], rec["fs"], chart, bc)
+
+
+def test_streaming_passive_uses_only_the_ais_reports_already_received():
+    """Given every report of the record at every push (the future ones too), a ship is refined, projected out and
+    excluded only in frames at or after its first report (the batch ``bistatic.ship_positions`` looks 60 s ahead)."""
+    rec, chart, pc, stc, _ = _setup()
+    rep = rec["reports"]
+    m = rep.t >= 2.0                                           # first report at 2.0 s
+    reports = AISReports(rep.vessel[m], rep.t[m], rep.xy[m], rep.sog[m], rep.cog[m])
+    frames = _stream(rec["traces"], rec, chart, pc, stc, reports, chunk=500)
+    before = [f for f in frames if f.t < 2.0]
+    after = [f for f in frames if f.t >= 2.0]
+    assert before and after
+    assert all("ship" not in f.ships for f in before)
+    assert all("ship" in f.ships for f in after)

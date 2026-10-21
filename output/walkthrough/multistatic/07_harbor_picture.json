@@ -50,8 +50,8 @@
     },
     "piling4": {
       "by": "echo",
-      "frames_found": 0.014084507042253521,
-      "median_error_m": 5.0
+      "frames_found": 0.0,
+      "median_error_m": null
     },
     "piling5": {
       "by": "echo",
@@ -60,8 +60,8 @@
     },
     "piling6": {
       "by": "echo",
-      "frames_found": 0.014084507042253521,
-      "median_error_m": 5.0
+      "frames_found": 0.0,
+      "median_error_m": null
     },
     "moored": {
       "by": "echo",

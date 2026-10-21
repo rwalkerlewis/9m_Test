@@ -106,7 +106,9 @@ def test_one_peak_cannot_detect_two_pilings():
     B = np.zeros((len(GRID), K))
     B[_cell(42, 50), :] = 10.0                                 # 2 m from p0, 3 m from p1
     run = ChainMaps(GRID, TIMES, B)
-    free = ChainMaps(GRID, TIMES, np.zeros_like(B), removed=("p0", "p1"))
+    noise = np.zeros_like(B)
+    noise[_cell(90, 90), :] = 1.0                              # the object free background: T = 1
+    free = ChainMaps(GRID, TIMES, noise, removed=("p0", "p1"))
     sb = score({"p0": run, "p1": run}, truth, set_threshold([free], truth), pilings=["p0", "p1"])
     assert sb.get("p0").pd == 1.0 and sb.get("p1").pd == 0.0
     assert sb.separation == {"pilings": 2, "resolved_per_run": [1], "resolved_median": 1.0}
@@ -179,3 +181,28 @@ def test_a_map_normalised_every_frame_does_not_hold_its_false_alarm_rate():
     sb = score({"a": full, "b": full}, truth, thr)
     assert sb.false_alarm_frame_rate < 0.02, sb.false_alarm_frame_rate
     assert sb.to_dict()["false_alarm_frame_rate"] == sb.false_alarm_frame_rate
+
+
+def test_a_flat_maximum_is_one_peak_and_one_false_alarm(truth):
+    """A plateau of 3 x 3 equal cells is one local maximum, so one flat false peak is one false alarm."""
+    B = np.zeros((len(GRID), K))
+    plateau = (np.abs(GRID[:, 0] - 80) <= 1) & (np.abs(GRID[:, 1] - 80) <= 1)
+    B[plateau, :] = 5.0
+    m = local_maxima(B[:, 0], GRID)
+    assert m[plateau].sum() == 1
+    free = np.zeros((len(GRID), K))
+    free[_cell(70, 70), :] = np.arange(1, K + 1)
+    thr = set_threshold([ChainMaps(GRID, TIMES, free, _exclusion(), removed=("static", "mover"))], truth)
+    assert thr.T == 19.0
+    B[_cell(70, 70), :] = 1.0                                 # a peak below T keeps the zero background from being a maximum there
+    sb = score({"static": ChainMaps(GRID, TIMES, B * 5.0, _exclusion())}, truth, thr)
+    assert sb.false_alarms == K and sb.false_alarm_frame_rate == 1.0
+
+
+def test_threshold_refuses_object_free_runs_without_a_positive_peak(truth):
+    empty = ChainMaps(GRID, TIMES, np.zeros((len(GRID), K)), _exclusion(), removed=("static", "mover"))
+    with pytest.raises(ValueError, match="no noise statistic"):
+        set_threshold([empty], truth)
+    land = ChainMaps(GRID, TIMES, np.full((len(GRID), K), -np.inf), _exclusion(), removed=("static", "mover"))
+    with pytest.raises(ValueError, match="no noise statistic"):
+        set_threshold([land], truth)

@@ -3,7 +3,8 @@
 
 All outputs together: the radiator tracks (with their AIS label from step 4) and every echo detection
 (the 3 strongest peaks of every frame), over the true positions.  The table scores each object: the fraction of
-frames with a detection within 5 m of it, and the median error.  Every track is scored too: matched to the object
+frames with a detection within 5 m of it
+(each detection assigned to its nearest object first), and the median error.  Every track is scored too: matched to the object
 nearest over its fixes when within 10 m (20 m on the 5 m harbor; ``harbor_stream.match_tracks``), otherwise a false track, drawn dashed
 and listed in the table with its median position.  Also the compute time per second of data (below 1: real time).
 The scores are also written to ``07_harbor_picture.json``.
@@ -41,23 +42,28 @@ for k, fx in run["tracks"].items():
                     fontweight="bold")
 
 
-def score(frames, cols):
-    rows = {}
-    for oid, tr in tru.tracks.items():
-        hits = []
-        for f in frames:
-            p = tr.position_at(f[0])[0]
-            if len(f[1]):
-                d = np.hypot(*(f[1] - p).T)
-                others = [np.min(np.hypot(*(f[1] - tru.tracks[o].position_at(f[0])[0]).T)) for o in tru.tracks if o != oid]
-                if d.min() <= 5.0:
-                    hits.append(d.min())
-        rows[oid] = (len(hits) / max(len(frames), 1), float(np.median(hits)) if hits else None)
-    return rows
+def score(frames):
+    """Per object: the fraction of frames with a detection within 5 m of it and the median error.  Every detection
+    is first assigned to its nearest active object, so a detection of a neighbour (pilings 2 to 5 m apart) does
+    not count for this one."""
+    ids = list(tru.tracks)
+    hits = {oid: [] for oid in ids}
+    for f in frames:
+        if not len(f[1]):
+            continue
+        pos = np.stack([tru.tracks[o].position_at(f[0])[0] for o in ids])
+        act = np.array([bool(tru.tracks[o].active_at(np.atleast_1d(f[0]))[0]) for o in ids])
+        d = np.hypot(f[1][:, None, 0] - pos[None, :, 0], f[1][:, None, 1] - pos[None, :, 1])
+        d[:, ~act] = np.inf
+        j = d.argmin(axis=1)
+        dj = d[np.arange(len(j)), j]
+        for o in set(j[dj <= 5.0]):
+            hits[ids[o]].append(float(dj[(j == o) & (dj <= 5.0)].min()))
+    return {oid: (len(h) / max(len(frames), 1), float(np.median(h)) if h else None) for oid, h in hits.items()}
 
 
-p_rows = score(run["passive"]["frames"], None)
-e_rows = score(run["echo"]["frames"], None) if run["echo"] else {}
+p_rows = score(run["passive"]["frames"])
+e_rows = score(run["echo"]["frames"]) if run["echo"] else {}
 if run["echo"]:
     pts = np.array([p for f in run["echo"]["frames"] for p in f[1]]).reshape(-1, 2)
     near = np.array([min(np.hypot(*(tru.tracks[o].position_at(f[0])[0] - p)) for o in tru.tracks if tru.tracks[o].level_pa == 0)

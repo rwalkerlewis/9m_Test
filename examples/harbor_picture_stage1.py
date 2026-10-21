@@ -259,7 +259,8 @@ def _propagator(kind: str, env, truth):
 
 
 def _other_ship_exclusion(grid, times, reports: AISReports, skip: str, radius: float) -> np.ndarray:
-    """Cells within *radius* of the AIS predicted position of every reporting ship other than *skip*."""
+    """Cells within *radius* of the AIS predicted position of every reporting ship other than *skip* (batch scoring:
+    like ``bistatic.ship_positions`` it marks a ship from 60 s before its first report)."""
     mask = np.zeros((len(grid), len(times)), bool)
     for vid in reports.vessels:
         if vid == skip:

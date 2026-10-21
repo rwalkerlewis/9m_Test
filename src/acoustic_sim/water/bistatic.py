@@ -419,6 +419,11 @@ def ship_positions(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: Bistat
                    truth: np.ndarray | None = None) -> ShipTrack:
     """AIS prediction per frame, refined by a PHAT Bartlett search in a window around it.
 
+    Batch only, and it looks ahead: a ship is marked present from 60 s **before** its first AIS report (and the
+    prediction interpolates between reports), which a real-time chain cannot do.  The streaming chain does not
+    use this function: ``StreamingPassive`` dead reckons from the reports received by each frame
+    (``suppression.predict_ships`` with ``causal=True``) and ``StreamingEcho`` reads no AIS.
+
     *truth* (K, 2) replaces the AIS prediction (for ablations: exact position, no refinement); the
     track is then marked ``exact_track`` and every run built on it says so in its provenance.
     """
@@ -431,6 +436,7 @@ def ship_positions(sp: Spectra, ais: AISReports, model: ReplicaModel, bc: Bistat
 
 
 def _ship_track_prelude(sp: Spectra, ais: AISReports, bc: BistaticConfig, vessel: str | None, truth: np.ndarray | None):
+    # Batch look-ahead: present from 60 s before the first report (see ship_positions).
     vid = vessel or ais.vessels[0]
     tr = ais.for_vessel(vid)
     pred = tr.predict(sp.times) if truth is None else np.asarray(truth, dtype=float)
