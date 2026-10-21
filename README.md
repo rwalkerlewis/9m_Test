@@ -88,11 +88,11 @@ Two processing paths are available:
 1. **Passive target-emission detection:** whitened STFT, matched-field scan, stationary
    interference suppression, CFAR thresholding, optional AIS-aware ship cancellation, and an
    occupancy-grid tracker. See [docs/harbor.md](docs/harbor.md) and the
-   [passive detection example](examples/harbor/03_passive/harbor_m4_dlc.py).
+   [passive detection example](examples/harbor/90_history/harbor_m4_dlc.py).
 2. **Bistatic echo localization:** an AIS ship illuminates a silent body; its scattered field is
    processed with Bartlett, PHAT-Bartlett, coherent matched filtering, MVDR, or MUSIC maps.
-   See [bistatic echo localization](docs/harbor.md#bistatic-echo-localization) and the
-   [bistatic demo](examples/harbor/04_bistatic/harbor_bistatic_demo.py).
+   See [bistatic echo localization](docs/harbor_history.md#the-batch-bistatic-chain-bistatic-echo-localisation) and the
+   [bistatic demo](examples/harbor/90_history/harbor_bistatic_demo.py).
 
 Quick examples (every example script, by folder and in workflow order, is listed in [examples/README.md](examples/README.md)):
 
@@ -100,16 +100,16 @@ Quick examples (every example script, by folder and in workflow order, is listed
 # Build the default multi-vessel dataset; FDTD source gathers are cached.
 python examples/harbor/01_datasets/harbor_m2_dataset.py
 
-# Run the detect–locate–classify experiment.
-python examples/harbor/03_passive/harbor_m4_dlc.py
+# The harbor system on a recording: tracks, what each object is, picture.jsonl and the operator view.
+python -m acoustic_sim.water.stream --observation output/harbor_simple/fine/dataset.observation.npz \
+    --processing examples/configs/processing/simple.json --out output/picture_simple
 
-# Build a cropped, finer-grid bistatic dataset, then make localization figures.
-python examples/harbor/01_datasets/harbor_bistatic_dataset.py --coarse
-python examples/harbor/04_bistatic/harbor_bistatic_demo.py
+# Every number of docs/harbor.md, on every tuning and test recording.
+python scripts/reproduce.py
 ```
 
 The bistatic commands are compute-intensive and use their own dataset/output paths. See
-[Harbor usage and examples](docs/harbor.md#examples-and-workflows) for assumptions, outputs,
+[Harbor](docs/harbor.md) (the system, how to run it) for assumptions, outputs,
 complete workflows, and other demos.
 
 ## What Worked

@@ -5,7 +5,7 @@ configuration parameters to evaluate detection pipeline robustness.
 All operate on the MFP/EKF library pipeline (`air/detection_main.py`).
 These nine studies do not include the separate harbor sensing experiments; for harbor passive
 detection sweeps, AIS suppression, bistatic echo localization, and classifier workflows, see
-[Harbor](harbor.md#examples-and-workflows).
+[Harbor](harbor.md).
 
 Every study starts from the `DetectionConfig` defaults (0.5 m radius
 array, dx = 0.05 m, 30 × 30 m domain) or a `base_config` you pass, with

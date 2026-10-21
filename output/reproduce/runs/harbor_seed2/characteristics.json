@@ -1,0 +1,56 @@
+{
+  "recording": "harbor_seed2",
+  "run": {
+    "git_commit": "5608006f774ab74064bf3842b512177c9ae83d35",
+    "git_dirty": true,
+    "processing_config": "/workspace/examples/configs/processing/harbor.json",
+    "processing_config_sha256": "d2d0696fd9f132fc0910e92f15e556070ac4fee7e06abdd0249e3e880e7fb087",
+    "processing_overrides": [],
+    "observation": "/workspace/output/seed2/dataset.observation.npz",
+    "observation_sha256": "ebf1d284c2891924f7908833752167a84bef89b36cfe16e6e4aec1d8bac13a97",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 2,
+    "wall_s": 62.5112686890061,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "chunk_s": 0.25
+  },
+  "objects": [
+    {
+      "object": "ferry",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 1.0,
+      "true_size_m": null,
+      "true_speed": 5.999999999999886,
+      "detected_frames": 29,
+      "seen": {
+        "own noise": 53
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 4.876,
+        "width_major": 42.89,
+        "width_minor": 23.07,
+        "speed": 6.25,
+        "residual": 1.67
+      },
+      "size_ratio_per_frame": {}
+    }
+  ],
+  "size_order": {
+    "frames_all_three": 0,
+    "hull_below_piling": 0,
+    "fraction": null
+  }
+}

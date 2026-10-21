@@ -1,0 +1,62 @@
+{
+  "source_xy": [
+    228.695048315003,
+    214.34752415750148
+  ],
+  "source": "ferry",
+  "band_hz": [
+    100.0,
+    760.0
+  ],
+  "c_chart": 1493.682028872403,
+  "hydrophones": [
+    {
+      "hydrophone": 0,
+      "xy": [
+        30.0,
+        30.0
+      ],
+      "range_m": 271.04193750765205,
+      "direction_deg": 227.14511000743468,
+      "error_ms": -3.5520833333333335,
+      "phase_error_ms": -3.7083333333333335
+    },
+    {
+      "hydrophone": 1,
+      "xy": [
+        330.0,
+        20.0
+      ],
+      "range_m": 219.16581253026257,
+      "direction_deg": 152.46891903002935,
+      "error_ms": -2.3229166666666665,
+      "phase_error_ms": -3.03125
+    },
+    {
+      "hydrophone": 2,
+      "xy": [
+        30.0,
+        250.0
+      ],
+      "range_m": 201.86832653638686,
+      "direction_deg": 280.17251105260397,
+      "error_ms": -1.1458333333333333,
+      "phase_error_ms": -0.19791666666666666
+    },
+    {
+      "hydrophone": 3,
+      "xy": [
+        200.0,
+        20.0
+      ],
+      "range_m": 196.45448822552,
+      "direction_deg": 188.39893328414982,
+      "error_ms": -1.2083333333333335,
+      "phase_error_ms": -0.3125
+    }
+  ],
+  "median_ms": -1.765625,
+  "min_ms": -3.5520833333333335,
+  "max_ms": -1.1458333333333333,
+  "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed"
+}

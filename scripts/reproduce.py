@@ -344,15 +344,17 @@ def tables(numbers: dict) -> str:
         if c["id"] == "false_tracks":
             vals = {k: round(v, 1) for k, v in vals.items()}
         elif c["id"] == "size_order":
-            vals = f"{c.get('fraction') if c.get('fraction') is None else round(c['fraction'], 2)} of {c.get('frames')} frames"
+            vals = (f"{round(c['fraction'], 2)} of {c['frames']} frames" if c.get("frames") else c["note"])
         else:
             vals = {k: None if v is None else round(v, 2) for k, v in vals.items()}
-        lines.append(f"| {c['text']} | {vals} | {'pass' if c['passed'] else '**fail**'} |")
-    lines += ["", "### Characteristics against the truth (multistatic recordings, objects detected in at least 10 frames)", "",
+        result = "pass" if c["passed"] else ("**not met: not testable**" if c.get("note") else "**fail**")
+        lines.append(f"| {c['text']} | {vals} | {result} |")
+    lines += ["", "### Characteristics against the truth (objects detected in at least 10 frames; the multistatic recordings, and "
+              "the tuning and first test recording of the simple and bistatic harbors, where bodies are tracked by their echo)", "",
               "| Recording | Object | True type, size | Seen | Detected frames | Size ratio [dB] | Size indicator | Echo extent along / across [m] | "
               "Source level [Pa] (true) | Half max width [m] | Speed [m/s] (true) |", "|---|---|---|---|---|---|---|---|---|---|---|"]
     thr = numbers.get("size_threshold_db", 0.0)
-    for name in ("multistatic", "multistatic_b"):
+    for name in ("multistatic", "multistatic_b", "simple", "simple_seed1", "bistatic", "bistatic_seed1"):
         for r in numbers["characteristics"].get(name, []):
             m = r["median"]
             size = f"{r['true_size_m'][0]:g} x {r['true_size_m'][1]:g} m" if r["true_size_m"] else "-"
@@ -434,7 +436,7 @@ def main() -> int:
             if a.only is not None and fam not in a.only:
                 continue
             cache = ROOT / "output" / "walkthrough" / fam / "cache" / "run.pkl"
-            if cache.exists() and a.rerun:
+            if cache.exists():                                      # the cache ignores code changes: always run again
                 cache.unlink()
             say(f"walkthrough figures of {fam}")
             subprocess.run(["bash", "run_all.sh", fam] + (["--cpu"] if a.cpu else []), cwd=ROOT / "examples" / "harbor" / "06_walkthrough",
@@ -445,7 +447,7 @@ def main() -> int:
         p = OUT / "runs" / r.name / "summary.json"
         if p.exists():
             numbers["recordings"][r.name] = collect(r, json.loads(p.read_text()))
-    for name in ("multistatic", "multistatic_b"):
+    for name in ("multistatic", "multistatic_b", "simple", "simple_seed1", "bistatic", "bistatic_seed1"):
         numbers["characteristics"][name] = characteristics_rows(name)
     cal = json.loads((ROOT / "output" / "harbor_level_calibration" / "calibration.json").read_text())
     numbers["level_calibration"] = cal["level_calibration"]
