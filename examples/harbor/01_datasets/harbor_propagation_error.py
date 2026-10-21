@@ -64,24 +64,37 @@ def arrival_lag(measured: np.ndarray, predicted: np.ndarray, fs: float, t0: floa
     return float(lags[j]), float(lags[i])
 
 
-def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | None = None) -> dict:
+def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | None = None, scheme: str | None = None,
+            uniform_speed: bool = False, save: bool = True) -> dict:
+    """The propagation error of *dataset*'s forward model.  *scheme* overrides the scenario's ``time_scheme`` and
+    *uniform_speed* sets ``shallow_c_drop = 0`` (the water everywhere at ``c0``, the chart's speed too); with either the
+    result describes a variant of the scenario, not the recording, and is not written into the truth file
+    (*save* False)."""
     obs_p, truth_p = contract_paths(dataset.with_suffix(".npz"))
     truth = Truth.load(truth_p)
     cfg = HarborScenarioConfig.from_dict(truth.scenario)
+    total = cfg.fdtd.total_time
     cfg.fdtd.use_cuda = use_cuda
+    if scheme is not None:
+        cfg.fdtd.time_scheme = scheme
+    if uniform_speed:
+        cfg.environment.shallow_c_drop = 0.0
     env = build_environment(cfg)
     layout = build_layout(cfg, env)
-    fs, n = cfg.fdtd.fs, cfg.fdtd.n_steps
     f_hi = band[1] if band else f_max_for_grid(cfg.environment.dx)
     f_lo = band[0] if band else f_hi / 7.6
     src = next(v for v in cfg.vessels if v.level_pa > 0)
-    tr = build_track(src, cfg.fdtd.total_time, env)
-    pos = tr.position_at(0.5 * cfg.fdtd.total_time)[0]
+    tr = build_track(src, total, env)
+    pos = tr.position_at(0.5 * total)[0]
+    # The pulse run only needs to outlast the direct arrival at the farthest hydrophone (and its gate).
+    hyd = np.asarray(cfg.hydrophones, float)
+    c_min = float(np.min(env.model.values[env.water]))
+    cfg.fdtd.total_time = min(total, 1.5 / (0.5 * (f_lo + f_hi)) + float(np.max(np.hypot(*(hyd - pos).T))) / c_min + 10.0 / f_lo)
+    fs, n = cfg.fdtd.fs, cfg.fdtd.n_steps
     sig = make_wavelet_ricker(n, 1.0 / fs, 0.5 * (f_lo + f_hi))
     g = simulate_source(env, layout, cfg.fdtd, sig, position=(float(pos[0]), float(pos[1])),
                         cache_dir=dataset.parent.parent / "cache" if (dataset.parent.parent / "cache").exists() else None)
     c = env.public().c_nominal
-    hyd = np.asarray(cfg.hydrophones, float)
     rows = layout.slices["hydrophones"]
     sos = butter(4, (f_lo, f_hi), btype="bandpass", fs=fs, output="sos")
     S = np.fft.rfft(sig)
@@ -100,11 +113,13 @@ def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | No
                     "direction_deg": float(np.degrees(np.arctan2(h[0] - pos[0], h[1] - pos[1])) % 360.0),
                     "error_ms": 1e3 * lag_env, "phase_error_ms": 1e3 * lag})
     e = [o["error_ms"] for o in out]
-    res = {"source_xy": pos.tolist(), "source": src.id, "band_hz": [f_lo, f_hi], "c_chart": c, "hydrophones": out,
+    res = {"source_xy": pos.tolist(), "source": src.id, "band_hz": [f_lo, f_hi], "c_chart": c, "time_scheme": cfg.fdtd.time_scheme,
+           "uniform_speed": uniform_speed, "hydrophones": out,
            "median_ms": float(np.median(e)), "min_ms": float(np.min(e)), "max_ms": float(np.max(e)),
            "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed"}
-    truth.meta["propagation_error_ms"] = res
-    truth.save(truth_p)
+    if save and scheme is None and not uniform_speed:
+        truth.meta["propagation_error_ms"] = res
+        truth.save(truth_p)
     return res
 
 
@@ -136,14 +151,19 @@ def main() -> None:
     ap.add_argument("--dataset", required=True, help="<dir>/dataset (the .observation.npz / .truth.npz pair)")
     ap.add_argument("--out", default=None, help="folder of propagation_error.png and .json (default: the dataset's recording folder)")
     ap.add_argument("--band", type=float, nargs=2, default=None, help="band [Hz] (default: the grid's, f_max / 7.6 to f_max)")
+    ap.add_argument("--scheme", default=None, choices=("leapfrog", "lw4", "kspace"),
+                    help="time scheme instead of the scenario's (a variant: written as propagation_error_<scheme>.json, not into the truth)")
+    ap.add_argument("--uniform-speed", action="store_true",
+                    help="water everywhere at the scenario's c0 (a variant: propagation_error_uniform.json, not into the truth)")
     ap.add_argument("--cpu", action="store_true")
     a = ap.parse_args()
     ds = Path(a.dataset)
     out = Path(a.out) if a.out else (ds.parent.parent if ds.parent.name == "fine" else ds.parent)
-    res = measure(ds, use_cuda=not a.cpu, band=tuple(a.band) if a.band else None)
+    res = measure(ds, use_cuda=not a.cpu, band=tuple(a.band) if a.band else None, scheme=a.scheme, uniform_speed=a.uniform_speed)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "propagation_error.json").write_text(json.dumps(res, indent=2))
-    figure(res, out / "propagation_error.png", out.name)
+    stem = "propagation_error" + (f"_{a.scheme}" if a.scheme else "") + ("_uniform" if a.uniform_speed else "")
+    (out / f"{stem}.json").write_text(json.dumps(res, indent=2))
+    figure(res, out / f"{stem}.png", out.name + (f", {a.scheme}" if a.scheme else "") + (", uniform speed" if a.uniform_speed else ""))
     print(f"{out.name}: " + ", ".join(f"hydrophone {o['hydrophone'] + 1} {o['error_ms']:+.2f} ms ({o['direction_deg']:.0f} deg, "
                                       f"{o['range_m']:.0f} m)" for o in res["hydrophones"]))
 
