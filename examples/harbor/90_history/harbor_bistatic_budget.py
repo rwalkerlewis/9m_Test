@@ -55,7 +55,7 @@ Figures:
 
 Usage::
 
-    python examples/harbor/04_bistatic/harbor_bistatic_budget.py [--out output/harbor_bistatic] [--dx 0.5 1.0]
+    python examples/harbor/90_history/harbor_bistatic_budget.py [--out output/harbor_bistatic] [--dx 0.5 1.0]
         [--ship-level 1.0] [--radii 0.5 1.0] [--margin-db 10] [--t-ref 2.0] [--n-fig 41]
 """
 

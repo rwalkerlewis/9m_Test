@@ -55,7 +55,7 @@ by side), ``..._frame.png`` (one test frame with its threshold contour, exclusio
 
 Usage::
 
-    python examples/harbor/05_detection/harbor_picture_stage1.py [--dataset all|bistatic|multistatic|harbor]
+    python examples/harbor/90_history/harbor_picture_stage1.py [--dataset all|bistatic|multistatic|harbor]
         [--chain all|passive|echo] [--propagator free_field|simulator] [--cuda] [--workers 1]
         [--split both|tuning|test] [--out output/harbor_picture/stage1]
 """

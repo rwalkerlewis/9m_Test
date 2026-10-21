@@ -24,7 +24,7 @@ harbor).
 
 Usage::
 
-    python examples/harbor/04_bistatic/harbor_cancellation_depth.py [--time 10] [--workers 2] [--out output/harbor_cancel]
+    python examples/harbor/90_history/harbor_cancellation_depth.py [--time 10] [--workers 2] [--out output/harbor_cancel]
         [--cuda] [--gate 50] [--doppler]
 
 ``--gate`` excludes channels closer than that to the source from the statistics; ``--doppler``

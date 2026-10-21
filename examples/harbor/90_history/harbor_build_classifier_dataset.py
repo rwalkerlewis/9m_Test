@@ -7,7 +7,7 @@ Minority classes are oversampled to match the ship class count.
 
 Usage::
 
-    python examples/harbor/01_datasets/harbor_build_classifier_dataset.py \
+    python examples/harbor/90_history/harbor_build_classifier_dataset.py \
         [--config examples/configs/harbor.scenario.json] \
         [--out output/harbor] \
         [--n-seeds 8] \

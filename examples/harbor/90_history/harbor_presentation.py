@@ -18,7 +18,7 @@ wavefield.mp4, das_gather.mp4 and every 10th frame of both videos in frames_wave
 
 Usage::
 
-    python examples/harbor/04_bistatic/harbor_presentation.py [--out output/harbor_presentation] [--fps 30]
+    python examples/harbor/90_history/harbor_presentation.py [--out output/harbor_presentation] [--fps 30]
 """
 import argparse, json, shutil, subprocess, sys, time
 from pathlib import Path

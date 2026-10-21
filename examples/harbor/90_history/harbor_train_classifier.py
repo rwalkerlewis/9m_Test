@@ -7,7 +7,7 @@ with cross-entropy loss, evaluates per-class accuracy, and saves a checkpoint.
 
 Usage::
 
-    python examples/harbor/03_passive/harbor_train_classifier.py \
+    python examples/harbor/90_history/harbor_train_classifier.py \
         [--dataset output/harbor/classifier_dataset.npz] \
         [--out output/harbor] \
         [--epochs 30] \

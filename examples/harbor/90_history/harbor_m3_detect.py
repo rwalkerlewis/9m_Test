@@ -13,8 +13,8 @@ show how much the known ships hide the UUV.  Everything reads the FDTD cache wri
 
 Usage::
 
-    python examples/harbor/03_passive/harbor_m3_detect.py [--out output/harbor] [--cal-seeds 4] [--pfa 0.01]
-    python examples/harbor/03_passive/harbor_m3_detect.py --no-suppress   # bare matched-field scan for comparison
+    python examples/harbor/90_history/harbor_m3_detect.py [--out output/harbor] [--cal-seeds 4] [--pfa 0.01]
+    python examples/harbor/90_history/harbor_m3_detect.py --no-suppress   # bare matched-field scan for comparison
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def main() -> None:
         from acoustic_sim.water.localiser import EmpiricalLocaliser  # noqa: E402
         if args.empirical_refine == "grid_survey":
             if not (out / "survey_cache").exists():
-                sys.exit("Run examples/harbor/01_datasets/harbor_survey_grid.py first to build the survey cache.")
+                sys.exit("Run examples/harbor/90_history/harbor_survey_grid.py first to build the survey cache.")
             empirical_loc = EmpiricalLocaliser(
                 cache_dir=out, layout=None, fs=0.0, pc=ProcessingConfig(),
                 mode="grid_survey",

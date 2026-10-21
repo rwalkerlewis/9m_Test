@@ -12,7 +12,7 @@ the coherent bistatic matched filter of ``water/bistatic.py``.
 
 Usage::
 
-    python examples/harbor/04_bistatic/harbor_bistatic_demo.py [--dataset output/harbor_bistatic/coarse/dataset.npz]
+    python examples/harbor/90_history/harbor_bistatic_demo.py [--dataset output/harbor_bistatic/coarse/dataset.npz]
         [--out output/harbor_bistatic/demo] [--noise 1.0]
 """
 

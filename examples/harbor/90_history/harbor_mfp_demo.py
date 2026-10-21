@@ -18,7 +18,7 @@ Figures, a 20 s track, an occupancy filter and Pd against target level go to ``o
 
 Usage::
 
-    python examples/harbor/03_passive/harbor_mfp_demo.py [--out output/harbor_demo] [--trials 20] [--windows 40]
+    python examples/harbor/90_history/harbor_mfp_demo.py [--out output/harbor_demo] [--trials 20] [--windows 40]
 """
 
 from __future__ import annotations

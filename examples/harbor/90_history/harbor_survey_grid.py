@@ -12,7 +12,7 @@ Run once and reuse; existing cells are skipped (resume-safe).
 
 Usage::
 
-    python examples/harbor/01_datasets/harbor_survey_grid.py [--grid-dx 20] [--out output/harbor] \\
+    python examples/harbor/90_history/harbor_survey_grid.py [--grid-dx 20] [--out output/harbor] \\
                                           [--time 6] [--workers 4]
 """
 

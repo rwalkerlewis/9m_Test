@@ -14,7 +14,7 @@ in that case classification is skipped and all detections are labelled "unclassi
 
 Usage::
 
-    python examples/harbor/03_passive/harbor_m4_dlc.py \\
+    python examples/harbor/90_history/harbor_m4_dlc.py \\
         [--config examples/configs/harbor.scenario.json] \\
         [--out output/harbor] \\
         [--cnn output/harbor/cnn_classifier.pt] \\

@@ -431,10 +431,10 @@ and optional direct/scattered/noise components.
 
 ```bash
 # Baseline detection/localization sweeps and comparison with AIS suppression.
-python examples/harbor/03_passive/harbor_m3_detect.py --out output/harbor --pfa 0.01
+python examples/harbor/90_history/harbor_m3_detect.py --out output/harbor --pfa 0.01
 
 # Detection, localization, optional classifier/anomaly inference and scoring.
-python examples/harbor/03_passive/harbor_m4_dlc.py \
+python examples/harbor/90_history/harbor_m4_dlc.py \
     --config examples/configs/harbor.scenario.json --out output/harbor
 ```
 
@@ -443,9 +443,9 @@ in that case it continues with detections marked unclassified. Install the `[ml]
 models or run classification:
 
 ```bash
-python examples/harbor/01_datasets/harbor_build_classifier_dataset.py
-python examples/harbor/03_passive/harbor_train_classifier.py --epochs 30
-python examples/harbor/03_passive/harbor_train_anomaly.py --epochs 50
+python examples/harbor/90_history/harbor_build_classifier_dataset.py
+python examples/harbor/90_history/harbor_train_classifier.py --epochs 30
+python examples/harbor/90_history/harbor_train_anomaly.py --epochs 50
 ```
 
 ### Simulate a body echo and localize it bistatically
@@ -454,11 +454,11 @@ The link-budget script is analytic and quick; the FDTD dataset is the expensive 
 separate fine-grid scenario file and writes under `output/harbor_bistatic/`.
 
 ```bash
-python examples/harbor/04_bistatic/harbor_bistatic_budget.py --out output/harbor_bistatic
+python examples/harbor/90_history/harbor_bistatic_budget.py --out output/harbor_bistatic
 
 # --coarse uses dx=1 m instead of 0.5 m to reduce runtime.
 python examples/harbor/01_datasets/harbor_bistatic_dataset.py --coarse --workers 2
-python examples/harbor/04_bistatic/harbor_bistatic_demo.py \
+python examples/harbor/90_history/harbor_bistatic_demo.py \
     --dataset output/harbor_bistatic/coarse/dataset.npz \
     --out output/harbor_bistatic/demo
 ```
@@ -467,8 +467,8 @@ The demo is intentionally given the true ferry waveform and exact track and remo
 exactly with the truth component, so read it as an idealized echo-localization experiment, not
 detection with everything estimated from the traces (`demo_summary.json` lists these under `provenance`). New datasets are written as
 `dataset.observation.npz` and `dataset.truth.npz`; `--dataset` may name the old single file or the
-pair. For analytical free-field references, run `examples/harbor/03_passive/harbor_mfp_demo.py`; to apply
-that style of model to a saved harbor dataset, see `examples/harbor/03_passive/harbor_mfp_domain.py`. Other visual
+pair. For analytical free-field references, run `examples/harbor/90_history/harbor_mfp_demo.py`; to apply
+that style of model to a saved harbor dataset, see `examples/harbor/90_history/harbor_mfp_domain.py`. Other visual
 examples include `harbor_m1_uuv_video.py`, `harbor_domain_video.py`,
 `harbor_stack_movie.py`, and `harbor_presentation.py`.
 

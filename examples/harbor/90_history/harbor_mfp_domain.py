@@ -2,7 +2,7 @@
 """
 Analytic matched field test in the harbor domain of a saved FDTD dataset.
 
-The chain of ``examples/harbor/03_passive/harbor_mfp_demo.py`` (AIS -> refine ships -> project ships and stored clutter out ->
+The chain of ``examples/harbor/90_history/harbor_mfp_demo.py`` (AIS -> refine ships -> project ships and stored clutter out ->
 passive / bistatic scan -> candidates -> refine) run in the scenario of ``output/harbor/dataset.npz``:
 
 * from the dataset: the domain and land mask, the 125 channel cable and 4 hydrophones, the 120 s truth tracks of
@@ -19,7 +19,7 @@ scatters all three ships; target strength re 1 m with 2-D spreading from the bod
 
 Usage::
 
-    python examples/harbor/03_passive/harbor_mfp_domain.py [--dataset output/harbor/dataset.npz] [--out output/harbor_domain]
+    python examples/harbor/90_history/harbor_mfp_domain.py [--dataset output/harbor/dataset.npz] [--out output/harbor_domain]
         [--pd-windows 10]
 """
 import argparse, json, os, sys, time

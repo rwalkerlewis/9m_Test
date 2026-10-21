@@ -2,7 +2,7 @@
 """
 Ten second movie: the echoes of a silent UUV are stacked pulse by pulse until it stands out unambiguously.
 
-Scene, data and detector are those of ``examples/harbor/04_bistatic/harbor_presentation.py`` (one ship radiating a train of broadband
+Scene, data and detector are those of ``examples/harbor/90_history/harbor_presentation.py`` (one ship radiating a train of broadband
 pulses, one silent stopped UUV, the DAS cable of ``output/harbor/dataset.npz``; analytic propagation, exact removal
 of the ship's direct arrival, generous target strength) with the noise raised so that one pulse alone shows nothing
 and the stack is what reveals the UUV.  Each pulse's echo, back-projected over the harbor, is one noisy image; the
@@ -13,7 +13,7 @@ readouts give pulses stacked and peak-to-background contrast, and the detection 
 
 Usage::
 
-    python examples/harbor/04_bistatic/harbor_stack_movie.py [--out output/harbor_domain] [--seconds 10] [--fps 30] [--noise 3]
+    python examples/harbor/90_history/harbor_stack_movie.py [--out output/harbor_domain] [--seconds 10] [--fps 30] [--noise 3]
 """
 import argparse, shutil, subprocess, sys, time
 from pathlib import Path
@@ -26,7 +26,7 @@ from matplotlib.patches import FancyBboxPatch
 from scipy.signal import hilbert
 
 ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT / "examples" / "harbor" / "04_bistatic"))
+sys.path.insert(0, str(ROOT / "examples" / "harbor" / "90_history"))
 import harbor_presentation as hp  # noqa: E402
 from harbor_presentation import Scene, ricker, encode, C, FS, T, UUV, CROP  # noqa: E402
 

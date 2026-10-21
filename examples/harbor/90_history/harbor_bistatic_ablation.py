@@ -41,7 +41,7 @@ variants and are not part of the criterion.
 
 Usage::
 
-    python examples/harbor/04_bistatic/harbor_bistatic_ablation.py [--fine output/harbor_bistatic/fine/dataset.npz]
+    python examples/harbor/90_history/harbor_bistatic_ablation.py [--fine output/harbor_bistatic/fine/dataset.npz]
         [--coarse output/harbor_bistatic/coarse/dataset.npz] [--out output/harbor_bistatic/ablation_freefield]
         [--propagator {free_field,simulator}]
         [--doppler] [--configs direct_removed_exactly,true_waveform_exact_track,estimated_waveform_exact_track,all_estimated]

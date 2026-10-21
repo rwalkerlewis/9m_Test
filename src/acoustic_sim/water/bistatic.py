@@ -1,6 +1,6 @@
 """Passive bistatic detection of a silent body using an AIS ship as the illuminator.
 
-The analytic prototype is ``examples/harbor/03_passive/harbor_mfp_demo.py``; this module is its port to the
+The analytic prototype is ``examples/harbor/90_history/harbor_mfp_demo.py``; this module is its port to the
 FDTD harbor data (strain mode DAS, a real scattering body, quay reflections).
 
 Chain for one dataset

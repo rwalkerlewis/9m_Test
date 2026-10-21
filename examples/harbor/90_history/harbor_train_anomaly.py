@@ -10,7 +10,7 @@ prints mean scores per class so the ship/non-ship separation can be assessed.
 
 Usage::
 
-    python examples/harbor/03_passive/harbor_train_anomaly.py \\
+    python examples/harbor/90_history/harbor_train_anomaly.py \\
         [--dataset output/harbor/classifier_dataset.npz] \\
         [--out output/harbor] \\
         [--epochs 50] \\

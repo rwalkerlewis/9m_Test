@@ -11,7 +11,7 @@ Two replica modes
     in ``water/diagnostics.py`` (:class:`~acoustic_sim.water.diagnostics.VesselPathLocaliser`).
 
 ``grid_survey``
-    Loads per-cell RFFT snapshots produced by ``examples/harbor/01_datasets/harbor_survey_grid.py``, stored
+    Loads per-cell RFFT snapshots produced by ``examples/harbor/90_history/harbor_survey_grid.py``, stored
     as ``{cache_dir}/survey_cache/{ix}_{iy}.npz`` (fields: ``traces`` (N, T),
     ``source_xy`` (2,)).  Covers the full scan grid regardless of vessel paths.
 
@@ -172,7 +172,7 @@ class EmpiricalLocaliser:
         if not survey_dir.exists():
             raise FileNotFoundError(
                 f"grid_survey mode requires {survey_dir}. "
-                "Run examples/harbor/01_datasets/harbor_survey_grid.py first."
+                "Run examples/harbor/90_history/harbor_survey_grid.py first."
             )
 
         npz_files = sorted(survey_dir.glob("*.npz"))
