@@ -128,3 +128,54 @@ def test_runs_of_several_seeds_are_pooled(truth):
     assert (st.frames, st.detected, st.pd) == (2 * K, K, 0.5)
     assert st.full_record_hits == [True, False] and st.full_record_detected == 0.5
     assert sb.false_alarms == 2 and sb.n_frames == 2 * K
+
+
+# ----------------------------- calibration -----------------------------
+
+N_CAL = 2000                                                  # frames per run
+G_CAL = np.column_stack([a.ravel() for a in np.meshgrid(np.arange(40.0), np.arange(40.0))])
+OBJ_CAL = {"a": (10.0, 10.0), "b": (30.0, 28.0)}
+
+
+def _cal_truth():
+    t = np.linspace(0.0, N_CAL * 0.25, 50)
+    return Truth(tracks={k: Track(k, "static", False, t, np.tile(xy, (50, 1)), np.zeros(50), np.ones(50, bool))
+                         for k, xy in OBJ_CAL.items()})
+
+
+def _cal_run(seed, present, normalise=False):
+    """Exp(1) noise on every cell and frame plus a bump of 20 at each object in *present*.  ``normalise``: the map
+    is ``exp(B / 2)`` renormalised to sum 1 every frame and times the number of cells, as the occupancy posterior."""
+    rng = np.random.default_rng(seed)
+    B = rng.exponential(1.0, (len(G_CAL), N_CAL))
+    for k in present:
+        B[np.hypot(*(G_CAL - OBJ_CAL[k]).T) <= 1.0] += 20.0
+    if normalise:
+        E = np.exp(0.5 * B)
+        B = E / E.sum(axis=0) * len(G_CAL)
+    removed = tuple(k for k in OBJ_CAL if k not in present)
+    return ChainMaps(G_CAL, np.arange(N_CAL) * 0.25, B, removed=removed, label=f"seed{seed}:{'+'.join(present)}")
+
+
+def test_threshold_holds_its_false_alarm_rate_on_an_independent_noise_run_of_the_scene():
+    """T set on the one object removed runs of a scene (noise seeds 1, 2); on the full scene with an independent
+    noise realisation (seed 3) the fraction of frames with a false alarm is the 5 % target within 0.02 (the binomial
+    standard error over 2000 frames is 0.005, that of the threshold quantile over 4000 frames about 0.004)."""
+    truth = _cal_truth()
+    thr = set_threshold([_cal_run(1, ("b",)), _cal_run(2, ("a",))], truth)
+    full = _cal_run(3, ("a", "b"))
+    sb = score({"a": full, "b": full}, truth, thr)
+    assert abs(sb.false_alarm_frame_rate - 0.05) <= 0.02, sb.false_alarm_frame_rate
+    assert sb.get("a").pd == 1.0 and sb.get("b").pd == 1.0
+
+
+def test_a_map_normalised_every_frame_does_not_hold_its_false_alarm_rate():
+    """The same scene through a per frame normalisation (the occupancy posterior): the second object takes mass
+    from the background, so on the full scene far fewer frames than the 5 % set on the object free runs have a
+    false alarm.  The scoreboard reports the rate it measures, not the target."""
+    truth = _cal_truth()
+    thr = set_threshold([_cal_run(1, ("b",), True), _cal_run(2, ("a",), True)], truth)
+    full = _cal_run(3, ("a", "b"), True)
+    sb = score({"a": full, "b": full}, truth, thr)
+    assert sb.false_alarm_frame_rate < 0.02, sb.false_alarm_frame_rate
+    assert sb.to_dict()["false_alarm_frame_rate"] == sb.false_alarm_frame_rate

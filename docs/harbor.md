@@ -478,13 +478,26 @@ runs it (tuning set seed 0, test set seeds 1 to 5). The run was stopped after th
 and the multistatic passive chain (`output/harbor_picture/stage1/results.json`); with the threshold
 at 5 % of object free frames:
 
-| Dataset / chain | Configuration | Pd tuning | Pd test |
-|---|---|---|---|
-| bistatic / echo | `all_estimated` | uuv1 0.27 | uuv1 0.30 |
-| bistatic / echo | `true_waveform_exact_track` (given the truth) | uuv1 0.03 | uuv1 0.02 |
-| bistatic / echo | `direct_removed_exactly` (given the truth) | uuv1 0.37 | uuv1 0.51 |
-| multistatic / passive (scan map) | `all_estimated` | ferry 0.01, tug 0.00, boat 0.16 | ferry 0.01, tug 0.00, boat 0.08 |
-| multistatic / passive (occupancy map) | `all_estimated` | 0.00, 0.00, 0.00 | 0.00, 0.00, 0.00 |
+| Dataset / chain | Configuration | Pd tuning | Pd test | Frames with a false alarm, tuning / test (target 5 %) |
+|---|---|---|---|---|
+| bistatic / echo | `all_estimated` | uuv1 0.27 | uuv1 0.30 | 4 % / 6 % |
+| bistatic / echo | `true_waveform_exact_track` (given the truth) | uuv1 0.03 | uuv1 0.02 | 5 % / 3 % |
+| bistatic / echo | `direct_removed_exactly` (given the truth) | uuv1 0.37 | uuv1 0.51 | 15 % / 18 % |
+| multistatic / passive (scan map) | `all_estimated` | ferry 0.01, tug 0.00, boat 0.16 | ferry 0.01, tug 0.00, boat 0.08 | 16 % / 7 % |
+| multistatic / passive (occupancy map) | `all_estimated` | 0.00, 0.00, 0.00 | 0.00, 0.00, 0.00 | 1 % / 3 % |
+
+**Which scoreboards are calibrated.** The threshold is set on runs with one object removed from the mix, at
+5 % of their frames; the last column is the rate it actually gives on the full scene (`false_alarm_frame_rate`
+in the JSON: frames with at least one false alarm). Only the two bistatic rows with the ECA hold the 5 %
+(`all_estimated`, `true_waveform_exact_track`): the UUV is the only object and adds nothing beyond the false
+alarm radius. The passive scan map does not: each object free run lacks that ship's sidelobes, which appear
+beyond the 10 m radius in the full scene (16 % on the tuning mix). The occupancy map does not either, in the
+other direction (1 to 3 %): it is renormalised to sum 1 every frame, so in the full scene the objects take
+mass from the background, and a weak object's Pd depends on how loud the others are. Criterion 1 is scored on
+the occupancy map, so its Pd is at a false alarm rate below 5 %, not at 5 %. `direct_removed_exactly` (18 %)
+is not comparable with the other echo rows. On a map whose background does not depend on the scene the
+threshold does hold (`tests/harbor/test_scoreboard.py`: 4.4 % on an independent noise run, against 1.2 % for
+the same map normalised every frame).
 
 Criteria fixed before the run: 1 (passive, ferry, tug and boat Pd >= 0.9) **fails**; 2 (echo,
 bistatic UUV Pd >= 0.5) **fails** (0.30); 3 (multistatic static bodies) was not run. The UUV is the

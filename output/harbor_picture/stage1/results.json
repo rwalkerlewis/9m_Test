@@ -145,6 +145,7 @@
           ]
         },
         "false_alarm_rate": 0.5316455696202531,
+        "false_alarm_frame_rate": 0.0379746835443038,
         "false_alarms": 42,
         "n_frames": 79,
         "separation": null,
@@ -192,6 +193,7 @@
           ]
         },
         "false_alarm_rate": 0.5443037974683544,
+        "false_alarm_frame_rate": 0.060759493670886074,
         "false_alarms": 215,
         "n_frames": 395,
         "separation": null,
@@ -399,6 +401,7 @@
           ]
         },
         "false_alarm_rate": 0.11392405063291139,
+        "false_alarm_frame_rate": 0.05063291139240506,
         "false_alarms": 9,
         "n_frames": 79,
         "separation": null,
@@ -449,6 +452,7 @@
           ]
         },
         "false_alarm_rate": 0.053164556962025315,
+        "false_alarm_frame_rate": 0.03291139240506329,
         "false_alarms": 21,
         "n_frames": 395,
         "separation": null,
@@ -671,6 +675,7 @@
           ]
         },
         "false_alarm_rate": 0.22784810126582278,
+        "false_alarm_frame_rate": 0.1518987341772152,
         "false_alarms": 18,
         "n_frames": 79,
         "separation": null,
@@ -723,6 +728,7 @@
           ]
         },
         "false_alarm_rate": 0.39746835443037976,
+        "false_alarm_frame_rate": 0.18227848101265823,
         "false_alarms": 157,
         "n_frames": 395,
         "separation": null,
@@ -855,6 +861,7 @@
           ]
         },
         "false_alarm_rate": 0.012658227848101266,
+        "false_alarm_frame_rate": 0.012658227848101266,
         "false_alarms": 1,
         "n_frames": 79,
         "separation": null,
@@ -940,6 +947,7 @@
           ]
         },
         "false_alarm_rate": 0.035443037974683546,
+        "false_alarm_frame_rate": 0.02531645569620253,
         "false_alarms": 14,
         "n_frames": 395,
         "separation": null,
@@ -1113,6 +1121,7 @@
           ]
         },
         "false_alarm_rate": 0.8354430379746836,
+        "false_alarm_frame_rate": 0.16455696202531644,
         "false_alarms": 66,
         "n_frames": 79,
         "separation": null,
@@ -1198,6 +1207,7 @@
           ]
         },
         "false_alarm_rate": 0.3139240506329114,
+        "false_alarm_frame_rate": 0.06835443037974684,
         "false_alarms": 124,
         "n_frames": 395,
         "separation": null,

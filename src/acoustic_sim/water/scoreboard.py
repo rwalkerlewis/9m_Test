@@ -16,7 +16,12 @@ with ``evaluate.py`` on the scoring side; processing modules never import it).  
   peak cannot detect two pilings 5 m apart).
 * **Pd** per object: detected frames over frames in which the object is active.
 * **False alarms**: local maxima above ``T`` more than ``fa_radius`` (10 m) from every true object
-  and outside the ship exclusion zones, per frame.
+  and outside the ship exclusion zones, per frame (``false_alarm_rate``), and the fraction of frames with at
+  least one (``false_alarm_frame_rate``), the measured counterpart of ``pfa`` on the scene scored.  The two
+  agree with ``pfa`` only for a map whose background far from the objects does not depend on which objects
+  are in the scene (a calibrated map, e.g. the whitened matched field statistic); a map normalised over the
+  scene every frame (the occupancy posterior) moves mass between objects and background, so its false alarm
+  rate on the full scene is not the rate its threshold was set for and has to be read from these fields.
 * **Localisation error**: median and 90th percentile distance from the detecting peak to the true
   position, over detected frames.
 * **Full record map**: the sum of the frame maps; its threshold is the largest local maximum of the
@@ -209,13 +214,14 @@ class Scoreboard:
     separation: dict | None = None
     label: str = ""
     meta: dict = field(default_factory=dict)
+    false_alarm_frame_rate: float = float("nan")
 
     def get(self, oid: str) -> ObjectScore:
         return next(o for o in self.per_object if o.id == oid)
 
     def to_dict(self) -> dict:
         return {"label": self.label, "threshold": self.threshold.to_dict(), "false_alarm_rate": self.false_alarm_rate,
-                "false_alarms": self.false_alarms, "n_frames": self.n_frames, "separation": self.separation,
+                "false_alarm_frame_rate": self.false_alarm_frame_rate, "false_alarms": self.false_alarms, "n_frames": self.n_frames, "separation": self.separation,
                 "per_object": [o.to_dict() for o in self.per_object], "provenance": self.provenance.to_dict(), **self.meta}
 
 
@@ -322,12 +328,14 @@ def score(
         rows.append(row)
 
     # False alarms on the primary runs.
-    n_fa, K = 0, 0
+    n_fa, k_fa, K = 0, 0, 0
     for run, tru in zip(primary, truths):
         ids = run.objects(tru)
         xy, _ = _positions(tru, ids, run.times)
         for k, (_, _, _, p) in enumerate(frame_assignments(run, tru)):
-            n_fa += int(np.sum(_far_from(run.grid[p], xy[:, k], fa_radius)))
+            n = int(np.sum(_far_from(run.grid[p], xy[:, k], fa_radius)))
+            n_fa += n
+            k_fa += n > 0
         K += len(run.times)
     sep = None
     if pilings:
@@ -336,7 +344,8 @@ def score(
             per_run.append(sum(1 for p in pilings if p in maps and _full_hit(maps[p][i], tru, p, threshold, detect_radius)))
         sep = {"pilings": len([p for p in pilings if p in maps]), "resolved_per_run": per_run,
                "resolved_median": float(np.median(per_run))}
-    return Scoreboard(rows, n_fa / max(K, 1), threshold, primary[0].provenance, n_fa, K, sep, label)
+    return Scoreboard(rows, n_fa / max(K, 1), threshold, primary[0].provenance, n_fa, K, sep, label,
+                      false_alarm_frame_rate=k_fa / max(K, 1))
 
 
 def _full_hit(run: ChainMaps, tru: Truth, oid: str, threshold: Threshold, detect_radius: float) -> bool:
@@ -380,7 +389,8 @@ def plot_table(sb: Scoreboard, path, title: str = "") -> None:
                 cell.set_facecolor(plt.cm.RdYlGn(0.15 + 0.7 * pd))
     sep = (f", pilings resolved {sb.separation['resolved_per_run']} of {sb.separation['pilings']}" if sb.separation else "")
     ax.set_title(f"{title or sb.label}\nthreshold T = {sb.threshold.T:.4g} (at most {100 * sb.threshold.pfa:.0f} % of "
-                 f"{sb.threshold.n_frames} object free frames above), false alarms {sb.false_alarm_rate:.2f} per frame{sep}",
+                 f"{sb.threshold.n_frames} object free frames above), false alarms {sb.false_alarm_rate:.2f} per frame, "
+                 f"frames with a false alarm {100 * sb.false_alarm_frame_rate:.0f} %{sep}",
                  fontsize=10)
     annotate_figure(fig, sb.provenance)
     fig.savefig(path, dpi=110, bbox_inches="tight")

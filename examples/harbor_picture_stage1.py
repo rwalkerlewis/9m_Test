@@ -12,8 +12,14 @@ Chains and configurations
 withheld, so the locator has to find them): ``run_ais_aware`` (AIS ships refined, projected out and
 excluded), the matched field scan, then the occupancy filter.  Two maps are scored: ``occupancy`` (the
 filter's posterior per frame times the number of cells, the chain's output) and ``scan`` (the matched
-field statistic it consumes).  Configuration ``all_estimated`` (free field replicas at the chart's
-sound speed); ``--propagator simulator`` gives the same chain with the FDTD dispersion corrected
+field statistic it consumes).  Neither threshold is guaranteed to give 5 % on the full scene: it is set on
+runs with one object removed, so whatever that object adds beyond the false alarm radius (the sidelobes of a
+ship in the scan map) appears only in the full scene, and the occupancy posterior is renormalised to sum 1
+every frame, so the mass the objects hold in the full scene is taken from the background (and a weak
+object's Pd depends on how loud the others are).  Every scoreboard therefore reports the rate its threshold
+gives on the full scene (``false_alarm_frame_rate``, frames with at least one false alarm) beside Pd.
+Configuration ``all_estimated`` (free field replicas at the chart's sound speed); ``--propagator simulator``
+gives the same chain with the FDTD dispersion corrected
 replicas (simulator knowledge, labelled ``simulator_propagator``).
 
 ``echo`` (the silent bodies; each AIS ship of the dataset as the illuminator in turn, its reports
@@ -514,7 +520,8 @@ def plot_scoreboard_pair(sbs: dict, path: Path, title: str) -> None:
                 cell.set_facecolor(plt.cm.RdYlGn(0.15 + 0.7 * sb.per_object[r - 1].pd))
         sep = (f"\npilings resolved on the full record map: {sb.separation['resolved_per_run']}" if sb.separation else "")
         ax.set_title(f"{split} set (seeds {sb.meta['seeds']}): T = {sb.threshold.T:.4g}, full record T = {sb.threshold.T_full:.4g}\n"
-                     f"false alarms {sb.false_alarm_rate:.2f} per frame ({sb.false_alarms} in {sb.n_frames} frames){sep}", fontsize=9)
+                     f"false alarms {sb.false_alarm_rate:.2f} per frame ({sb.false_alarms} in {sb.n_frames} frames), frames with a "
+                     f"false alarm {100 * sb.false_alarm_frame_rate:.0f} % (threshold set for {100 * sb.threshold.pfa:.0f} %){sep}", fontsize=9)
         ax.text(0.5, -0.02, sb.provenance.label(), transform=ax.transAxes, ha="center", va="top", fontsize=7.5,
                 color="0.25" if sb.provenance.all_estimated else "firebrick")
     h = fig.get_size_inches()[1]
@@ -734,7 +741,8 @@ def main() -> None:
                     for split in ("tuning", "test"):
                         if split in sbs:
                             sb = sbs[split]
-                            say(f"[{key}] {split}: T {sb.threshold.T:.4g}, FA {sb.false_alarm_rate:.2f}/frame, Pd " +
+                            say(f"[{key}] {split}: T {sb.threshold.T:.4g}, FA {sb.false_alarm_rate:.2f}/frame, frames with a false alarm "
+                                f"{100 * sb.false_alarm_frame_rate:.0f} % (threshold set for {100 * sb.threshold.pfa:.0f} %), Pd " +
                                 ", ".join(f"{o.id} {o.pd:.2f}" for o in sb.per_object) +
                                 (f", pilings resolved {sb.separation['resolved_per_run']}" if sb.separation else ""))
                     res_path.write_text(json.dumps(results_json, indent=2))
