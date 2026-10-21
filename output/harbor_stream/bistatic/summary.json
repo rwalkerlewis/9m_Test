@@ -3,13 +3,13 @@
   "record_s": 20.0,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.44882230350067404,
-    "echo": 0.3316022512017298,
-    "total": 0.7804245547024038
+    "passive": 0.45379154850070336,
+    "echo": 0.3266390202999901,
+    "total": 0.7804305688006934
   },
   "passive_latency_s": {
-    "median": 1.89299903149913,
-    "max": 3.1356337489996804
+    "median": 1.8996549295006844,
+    "max": 3.140136929003347
   },
   "passive": {
     "frames": 72,
@@ -37,9 +37,23 @@
       "first_t": 0.25,
       "last_t": 18.0,
       "score": 7091.829345703125,
-      "ais_label": "ferry",
       "true_object": "ferry",
-      "median_error_m": 1.0000000000000142
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 1.0000000000000142,
+      "first_xy": [
+        140.0,
+        200.0
+      ],
+      "last_xy": [
+        208.0,
+        202.0
+      ],
+      "median_xy": [
+        176.0,
+        200.0
+      ],
+      "ais_label": "ferry"
     },
     {
       "track": "r18",
@@ -47,11 +61,55 @@
       "first_t": 11.5,
       "last_t": 16.0,
       "score": 991.9359436035156,
-      "ais_label": null,
       "true_object": null,
-      "median_error_m": 41.231056256176615
+      "false_track": true,
+      "nearest_object": "ferry",
+      "median_error_m": 41.231056256176615,
+      "first_xy": [
+        156.0,
+        228.0
+      ],
+      "last_xy": [
+        174.0,
+        228.0
+      ],
+      "median_xy": [
+        163.0,
+        228.0
+      ],
+      "ais_label": null
     }
   ],
+  "track_association_radius_m": 10.0,
+  "false_tracks": {
+    "count": 1,
+    "tracks": [
+      {
+        "track": "r18",
+        "fixes": 14,
+        "first_t": 11.5,
+        "last_t": 16.0,
+        "score": 991.9359436035156,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "ferry",
+        "median_error_m": 41.231056256176615,
+        "first_xy": [
+          156.0,
+          228.0
+        ],
+        "last_xy": [
+          174.0,
+          228.0
+        ],
+        "median_xy": [
+          163.0,
+          228.0
+        ],
+        "ais_label": null
+      }
+    ]
+  },
   "echo": {
     "frames": 71,
     "illuminators": "every confirmed track",

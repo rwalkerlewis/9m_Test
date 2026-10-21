@@ -1,0 +1,95 @@
+{
+  "dataset": "harbor",
+  "detect_radius_m": 5.0,
+  "track_association_radius_m": 20.0,
+  "objects": {
+    "ferry": {
+      "by": "passive",
+      "frames_found": 0.5,
+      "median_error_m": 2.0512483795331047
+    },
+    "tug": {
+      "by": "passive",
+      "frames_found": 0.017857142857142856,
+      "median_error_m": 4.823836612368713
+    },
+    "moored": {
+      "by": "passive",
+      "frames_found": 0.0,
+      "median_error_m": null
+    },
+    "uuv1": {
+      "by": "passive",
+      "frames_found": 0.0,
+      "median_error_m": null
+    },
+    "uuv2": {
+      "by": "passive",
+      "frames_found": 0.0,
+      "median_error_m": null
+    },
+    "diver": {
+      "by": "passive",
+      "frames_found": 0.0,
+      "median_error_m": null
+    },
+    "static_scatter": {
+      "by": "echo",
+      "frames_found": null,
+      "median_error_m": null
+    }
+  },
+  "tracks": [
+    {
+      "track": "r22",
+      "fixes": 15,
+      "first_t": 90.0,
+      "last_t": 118.0,
+      "score": 7912.757080078125,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 13.24532825604753,
+      "first_xy": [
+        1490.0,
+        750.0
+      ],
+      "last_xy": [
+        1590.0,
+        880.0
+      ],
+      "median_xy": [
+        1530.0,
+        825.0
+      ]
+    },
+    {
+      "track": "r26",
+      "fixes": 3,
+      "first_t": 110.0,
+      "last_t": 116.0,
+      "score": 2939.083251953125,
+      "true_object": "tug",
+      "false_track": false,
+      "nearest_object": "tug",
+      "median_error_m": 8.378755170948104,
+      "first_xy": [
+        1015.0,
+        880.0
+      ],
+      "last_xy": [
+        1035.0,
+        865.0
+      ],
+      "median_xy": [
+        1025.0,
+        875.0
+      ]
+    }
+  ],
+  "false_tracks": {
+    "count": 0,
+    "tracks": []
+  },
+  "note": "scored against the truth after the run; the processing reads no truth"
+}

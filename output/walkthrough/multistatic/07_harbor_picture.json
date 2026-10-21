@@ -1,0 +1,148 @@
+{
+  "dataset": "multistatic",
+  "detect_radius_m": 5.0,
+  "track_association_radius_m": 10.0,
+  "objects": {
+    "ferry": {
+      "by": "passive",
+      "frames_found": 0.9722222222222222,
+      "median_error_m": 2.2360679774997645
+    },
+    "tug": {
+      "by": "passive",
+      "frames_found": 0.6944444444444444,
+      "median_error_m": 2.362354666754843
+    },
+    "boat": {
+      "by": "passive",
+      "frames_found": 0.7777777777777778,
+      "median_error_m": 1.390208742665894
+    },
+    "uuv1": {
+      "by": "echo",
+      "frames_found": 0.028169014084507043,
+      "median_error_m": 2.8652679214399113
+    },
+    "uuv2": {
+      "by": "echo",
+      "frames_found": 0.18309859154929578,
+      "median_error_m": 2.6371303205421652
+    },
+    "diver": {
+      "by": "echo",
+      "frames_found": 0.0,
+      "median_error_m": null
+    },
+    "piling1": {
+      "by": "echo",
+      "frames_found": 0.0,
+      "median_error_m": null
+    },
+    "piling2": {
+      "by": "echo",
+      "frames_found": 0.0,
+      "median_error_m": null
+    },
+    "piling3": {
+      "by": "echo",
+      "frames_found": 0.0,
+      "median_error_m": null
+    },
+    "piling4": {
+      "by": "echo",
+      "frames_found": 0.014084507042253521,
+      "median_error_m": 5.0
+    },
+    "piling5": {
+      "by": "echo",
+      "frames_found": 0.014084507042253521,
+      "median_error_m": 0.0
+    },
+    "piling6": {
+      "by": "echo",
+      "frames_found": 0.014084507042253521,
+      "median_error_m": 5.0
+    },
+    "moored": {
+      "by": "echo",
+      "frames_found": 0.0,
+      "median_error_m": null
+    }
+  },
+  "tracks": [
+    {
+      "track": "r1",
+      "fixes": 71,
+      "first_t": 0.25,
+      "last_t": 18.0,
+      "score": 2485.2767333984375,
+      "true_object": "boat",
+      "false_track": false,
+      "nearest_object": "boat",
+      "median_error_m": 2.6165155925684487,
+      "first_xy": [
+        60.0,
+        112.0
+      ],
+      "last_xy": [
+        98.0,
+        192.0
+      ],
+      "median_xy": [
+        80.0,
+        150.0
+      ]
+    },
+    {
+      "track": "r2",
+      "fixes": 72,
+      "first_t": 0.25,
+      "last_t": 18.0,
+      "score": 3506.182373046875,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 2.2360679774997645,
+      "first_xy": [
+        140.0,
+        202.0
+      ],
+      "last_xy": [
+        212.0,
+        204.0
+      ],
+      "median_xy": [
+        175.0,
+        202.0
+      ]
+    },
+    {
+      "track": "r9",
+      "fixes": 49,
+      "first_t": 4.0,
+      "last_t": 18.0,
+      "score": 2621.3333740234375,
+      "true_object": "tug",
+      "false_track": false,
+      "nearest_object": "tug",
+      "median_error_m": 2.3488972478788512,
+      "first_xy": [
+        300.0,
+        238.0
+      ],
+      "last_xy": [
+        270.0,
+        208.0
+      ],
+      "median_xy": [
+        284.0,
+        222.0
+      ]
+    }
+  ],
+  "false_tracks": {
+    "count": 0,
+    "tracks": []
+  },
+  "note": "scored against the truth after the run; the processing reads no truth"
+}

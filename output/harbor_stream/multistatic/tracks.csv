@@ -1,4 +1,4 @@
-track,fixes,first_t,last_t,score,ais_label,true_object,median_error_m
-r1,71,0.25,18.0,2485.2767333984375,,boat,2.6165155925684487
-r2,72,0.25,18.0,3506.182373046875,ferry,ferry,2.2360679774997645
-r9,49,4.0,18.0,2621.3333740234375,tug,tug,2.3488972478788512
+track,fixes,first_t,last_t,score,true_object,false_track,nearest_object,median_error_m,first_xy,last_xy,median_xy,ais_label
+r1,71,0.25,18.0,2485.2767333984375,boat,False,boat,2.6165155925684487,"[60.0, 112.0]","[98.0, 192.0]","[80.0, 150.0]",
+r2,72,0.25,18.0,3506.182373046875,ferry,False,ferry,2.2360679774997645,"[140.0, 202.0]","[212.0, 204.0]","[175.0, 202.0]",ferry
+r9,49,4.0,18.0,2621.3333740234375,tug,False,tug,2.3488972478788512,"[300.0, 238.0]","[270.0, 208.0]","[284.0, 222.0]",tug

@@ -63,7 +63,9 @@ the record (each frame over its median, so the scale is dB over the noise level)
 ![step 6](../output/walkthrough/simple/06_echo_map.png)
 
 **7. The harbor picture** (`07_harbor_picture.py`). Tracks and echo detections over the true positions,
-and each object's score (frames with a detection within 5 m, median error). On the multistatic recording
+and each object's score (frames with a detection within 5 m, median error). Every track is scored as well: one
+that matches no object within 10 m is a false track, drawn red dashed and listed in the table with its median
+position (`07_harbor_picture.json`); the simple harbor has one, the bistatic recording one. On the multistatic recording
 the ships are found in 69 to 97 % of the frames; the silent bodies there are mostly not (3 % and 18 % for
 the UUVs) because the other ships' direct sound is removed only by 3 to 7 dB.
 
@@ -112,7 +114,11 @@ Build it with `python examples/harbor_multistatic_dataset.py --config examples/h
 On the median DAS channel the ferry's echo is 15.7 dB below its direct sound and 1.2 dB above the noise
 (`levels.json`). The real-time system (`harbor_stream.py --dataset simple --echo`), everything estimated:
 the ferry within 5 m in 100 % of frames (track 1.4 m), the boat in 78 % (0.9 m), the wreck by its echo in
-100 % and the UUV in 18 %, at 0.62 s of compute per second of data.
+100 % and the UUV in 18 %, at 0.62 s of compute per second of data. One confirmed track, r19, matches no object
+(18.4 m median from the nearest, the wreck) and is a false track. It is not a radiator without AIS: for its first
+2 s (5.75 to 8 s) it sits 4 to 8 m from the wreck, the ferry's echo off the wreck located by the passive chain;
+from 11.5 s on it stays about 43 m south of the ferry and moves east with it (24 m while the ferry moves 26 m),
+a sidelobe of the ferry beyond the tracker's 30 m sidelobe exclusion. Its score is 4 % of the ferry's.
 
 ## Physical and Interpretation Limits
 
@@ -442,11 +448,17 @@ The traces arrive in 0.25 s chunks:
 
 On the Quadro RTX 4000, checked against the true positions (a detection within 5 m of an object):
 
-| Recording | Compute per s of data (passive + echo) | Passive (no AIS) | Tracks (AIS label afterwards) | Echo |
-|---|---|---|---|---|
-| bistatic (0.5 m, 20 s) | 0.78 s | ferry 100 %, the UUV's echo 24 % | ferry 1.0 m (AIS: ferry) | silent UUV 73 % |
-| multistatic (0.5 m, 20 s) | 0.95 s | ferry 97 %, tug 69 %, boat 78 % | boat 2.6 m (no AIS), ferry 2.2 m (AIS: ferry), tug 2.3 m (AIS: tug) | uuv2 18 %, uuv1 3 %, the other bodies under 2 % |
-| harbor (5 m, 120 s) | 0.50 s (passive only) | ferry 50 %, tug 2 % | ferry 13 m (AIS: ferry), tug 8 m (AIS: tug) | — |
+| Recording | Compute per s of data (passive + echo) | Passive (no AIS) | Tracks (AIS label afterwards) | False tracks | Echo |
+|---|---|---|---|---|---|
+| simple (1 m, 20 s) | 0.62 s | ferry 100 %, boat 78 % | ferry 1.4 m (AIS: ferry), boat 0.9 m (no AIS) | 1: r19 at (205, 227), 18 m from the wreck | wreck 100 %, UUV 18 % |
+| bistatic (0.5 m, 20 s) | 0.78 s | ferry 100 %, the UUV's echo 24 % | ferry 1.0 m (AIS: ferry) | 1: r18 at (163, 228), 41 m from the ferry | silent UUV 73 % |
+| multistatic (0.5 m, 20 s) | 0.95 s | ferry 97 %, tug 69 %, boat 78 % | boat 2.6 m (no AIS), ferry 2.2 m (AIS: ferry), tug 2.3 m (AIS: tug) | 0 | uuv2 18 %, uuv1 3 %, the other bodies under 2 % |
+| harbor (5 m, 120 s) | 0.50 s (passive only) | ferry 50 %, tug 2 % | ferry 13 m (AIS: ferry), tug 8 m (AIS: tug) | 0 | — |
+
+Every confirmed track is scored: matched to the object nearest over its fixes (median distance) when within
+10 m (20 m on the 5 m harbor), otherwise a false track (`summary.json`, `false_tracks`; drawn dashed and listed
+in step 7 of the walkthrough). Both false tracks are sidelobes of the ferry that move with it (r18 stays 41 m
+from it; r19 is described with the simple harbor above). Compute times vary by a few hundredths between runs.
 
 Latency: about 1.7 s on the simple harbor and 1.9 s on the strain recordings (2 s steps), 1 s on the 5 m one.
 What made it fit: free field replicas from fused GPU kernels (phase recurrence, `green2d_bins`, within 1e-14;
