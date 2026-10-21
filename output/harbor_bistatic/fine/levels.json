@@ -1,26 +1,26 @@
 {
   "table": {
     "direct:ferry": {
-      "cable1": 0.15366659967350255,
-      "hydrophones": 0.13588043396529315,
-      "best_das": 0.297994610245641
+      "cable1": 0.15919900435113685,
+      "hydrophones": 0.1375146708699199,
+      "best_das": 0.3035451949962645
     },
     "scattered:ferry>uuv1": {
-      "cable1": 0.02012527415598874,
-      "hydrophones": 0.014011653422662815,
-      "best_das": 0.04822957323025661
+      "cable1": 0.02084722728426188,
+      "hydrophones": 0.014229572357284948,
+      "best_das": 0.04932788647373199
     },
     "noise": {
-      "cable1": 0.03130909780675452,
-      "hydrophones": 0.02325548573272345,
-      "best_das": 0.036852786939917836
+      "cable1": 0.03130909780743888,
+      "hydrophones": 0.023255485755335276,
+      "best_das": 0.03685278690242346
     }
   },
   "summary": {
-    "echo_to_direct_db_median_das": -17.656753521767403,
-    "echo_to_direct_db_best_das": -15.817899803604794,
-    "echo_to_noise_db_median_das": -3.838574961149637,
-    "echo_to_noise_db_best_das": 3.7528573137723518
+    "echo_to_direct_db_median_das": -17.657840920338188,
+    "echo_to_direct_db_best_das": -15.78261709354934,
+    "echo_to_noise_db_median_das": -3.532445040921137,
+    "echo_to_noise_db_best_das": 3.9484390911905303
   },
   "f_max": 800.0
 }

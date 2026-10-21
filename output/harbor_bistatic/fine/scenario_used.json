@@ -8,7 +8,11 @@
       1550.0,
       1200.0,
       1500.0
-    ]
+    ],
+    "kind": "synthetic",
+    "width": 500.0,
+    "height": 400.0,
+    "quay_width": 20.0
   },
   "fdtd": {
     "fs": 6000.0,
@@ -19,7 +23,16 @@
     "background_absorption": 0.0001,
     "shore_loss_width": 40.0,
     "shore_loss_max": 0.15,
-    "use_cuda": true
+    "use_cuda": true,
+    "precision": "float64",
+    "kernel": "auto",
+    "body_masks": "auto",
+    "boundary": "sponge",
+    "cpml_width": 15,
+    "cpml_order": 2,
+    "cpml_r0": 1e-06,
+    "cpml_alpha_max": 0.0,
+    "time_scheme": "kspace"
   },
   "cables": [
     {

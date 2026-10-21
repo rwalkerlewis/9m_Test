@@ -1,18 +1,18 @@
-[fine] grid 801 x 601 at 0.5 m, fs 6000 Hz, band to 800 Hz, 200 channels (592 sample points), 120000 steps, 3 illuminators, 10 bodies
-[fine] 6 gathers (ferry, ferry>bodies, tug, tug>bodies, boat, boat>bodies) in 153 s
+[fine] grid 801 x 601 at 0.5 m, fs 6000 Hz, band to 800 Hz, 200 channels (592 sample points), 360000 steps, 3 illuminators, 10 bodies
+[fine] 6 gathers (ferry, ferry>bodies, tug, tug>bodies, boat, boat>bodies) in 6091 s
 
 [fine] band limited (200 to 760 Hz) rms at the sensors, whole run, live channels
   component                          cable1  hydrophones     best DAS
-  direct:ferry                       0.1831       0.1086       0.3649
-  scattered:ferry>bodies            0.03234      0.04119      0.05918
-  direct:tug                        0.06823      0.07806       0.1396
-  scattered:tug>bodies               0.0201      0.03953      0.03048
-  direct:boat                          0.16      0.03739       0.4892
-  scattered:boat>bodies            0.008064      0.01292      0.01752
-  noise                             0.03131      0.02326      0.03685
-  ferry: echo_to_direct_db_median_das -15.1, echo_to_noise_db_median_das +0.3, echo_to_noise_db_best_das +5.5
-  tug: echo_to_direct_db_median_das -10.6, echo_to_noise_db_median_das -3.8, echo_to_noise_db_best_das -0.2
-  boat: echo_to_direct_db_median_das -26.0, echo_to_noise_db_median_das -11.8, echo_to_noise_db_best_das -5.0
+  direct:ferry                       0.1503       0.1092       0.2508
+  scattered:ferry>bodies             0.0321      0.04504      0.05023
+  direct:tug                        0.09652      0.07681       0.1808
+  scattered:tug>bodies              0.02728      0.03687      0.05826
+  direct:boat                        0.1065      0.02873       0.3125
+  scattered:boat>bodies            0.008168      0.01028      0.01776
+  noise                             0.03162      0.02313      0.03796
+  ferry: echo_to_direct_db_median_das -13.4, echo_to_noise_db_median_das +0.1, echo_to_noise_db_best_das +4.0
+  tug: echo_to_direct_db_median_das -11.0, echo_to_noise_db_median_das -1.3, echo_to_noise_db_best_das +5.3
+  boat: echo_to_direct_db_median_das -22.3, echo_to_noise_db_median_das -11.8, echo_to_noise_db_best_das -5.0
 wrote output/harbor_multistatic_b/fine
-[fine] ferry only chain (given the truth): 145 s, 16983 cells, 79 frames
-[ferry only] map value within 4 m of each body over the map median, summed map: uuv1 +6.0 dB, uuv2 +8.9 dB, diver +2.2 dB, piling1 +8.5 dB, piling2 +9.7 dB, piling3 +11.0 dB, piling4 +11.4 dB, piling5 +11.5 dB, piling6 +11.4 dB, moored +9.6 dB
+[fine] ferry only chain (given the truth): 189 s, 16983 cells, 239 frames
+[ferry only] map value within 4 m of each body over the map median, summed map: uuv1 +6.3 dB, uuv2 +8.0 dB, diver +3.8 dB, piling1 +12.3 dB, piling2 +12.4 dB, piling3 +13.3 dB, piling4 +13.3 dB, piling5 +13.1 dB, piling6 +12.7 dB, moored +6.6 dB

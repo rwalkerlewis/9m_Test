@@ -1,56 +1,56 @@
 {
   "table": {
     "direct:ferry": {
-      "cable1": 0.1830613036271692,
-      "hydrophones": 0.10861055316213875,
-      "best_das": 0.3649250588070204
+      "cable1": 0.1502907370601834,
+      "hydrophones": 0.10915591859919742,
+      "best_das": 0.25078554075981013
     },
     "scattered:ferry>bodies": {
-      "cable1": 0.03234465128279736,
-      "hydrophones": 0.04118970890610823,
-      "best_das": 0.05918072789646874
+      "cable1": 0.0321025729191121,
+      "hydrophones": 0.045042813116771684,
+      "best_das": 0.05022847222110598
     },
     "direct:tug": {
-      "cable1": 0.06822936709040034,
-      "hydrophones": 0.07806190250793364,
-      "best_das": 0.1395566068537117
+      "cable1": 0.09652296535620546,
+      "hydrophones": 0.07680726035048349,
+      "best_das": 0.18078133329456045
     },
     "scattered:tug>bodies": {
-      "cable1": 0.02010330219779775,
-      "hydrophones": 0.03953367499178347,
-      "best_das": 0.030478624857044993
+      "cable1": 0.027280617840750296,
+      "hydrophones": 0.036870571437719005,
+      "best_das": 0.058260557742028686
     },
     "direct:boat": {
-      "cable1": 0.16003358669329953,
-      "hydrophones": 0.03738789436423069,
-      "best_das": 0.4892439379432159
+      "cable1": 0.10653288931988161,
+      "hydrophones": 0.028731971109730012,
+      "best_das": 0.3125182394756354
     },
     "scattered:boat>bodies": {
-      "cable1": 0.008063897782931534,
-      "hydrophones": 0.012921593922838797,
-      "best_das": 0.017518522492897492
+      "cable1": 0.008167629921964438,
+      "hydrophones": 0.010279674237182176,
+      "best_das": 0.0177572757515223
     },
     "noise": {
-      "cable1": 0.031309097808244035,
-      "hydrophones": 0.023255485745981075,
-      "best_das": 0.03685278690229982
+      "cable1": 0.03162177145241939,
+      "hydrophones": 0.023134801830554778,
+      "best_das": 0.03796183584081913
     }
   },
   "summary": {
     "ferry": {
-      "echo_to_direct_db_median_das": -15.055881550318126,
-      "echo_to_noise_db_median_das": 0.28263839844550676,
-      "echo_to_noise_db_best_das": 5.530194983247255
+      "echo_to_direct_db_median_das": -13.407847464282447,
+      "echo_to_noise_db_median_das": 0.13107291311749664,
+      "echo_to_noise_db_best_das": 4.0192754627506035
     },
     "tug": {
-      "echo_to_direct_db_median_das": -10.614078831349875,
-      "echo_to_noise_db_median_das": -3.8480630439288843,
-      "echo_to_noise_db_best_das": -0.2335036966165291
+      "echo_to_direct_db_median_das": -10.975529078181797,
+      "echo_to_noise_db_median_das": -1.282639872762312,
+      "echo_to_noise_db_best_das": 5.307768848990364
     },
     "boat": {
-      "echo_to_direct_db_median_das": -25.953322494859748,
-      "echo_to_noise_db_median_das": -11.782510785098497,
-      "echo_to_noise_db_best_das": -5.043461564336916
+      "echo_to_direct_db_median_das": -22.307753087070836,
+      "echo_to_noise_db_median_das": -11.75780287936917,
+      "echo_to_noise_db_best_das": -5.0121971318414715
     }
   },
   "f_max": 800.0,
@@ -67,16 +67,16 @@
     "moored"
   ],
   "ferry_only_truth_check_db": {
-    "uuv1": 5.992820513069592,
-    "uuv2": 8.902798417610372,
-    "diver": 2.197879653014157,
-    "piling1": 8.467229764471528,
-    "piling2": 9.689236045765636,
-    "piling3": 10.95031210723992,
-    "piling4": 11.38315936965397,
-    "piling5": 11.490982882186483,
-    "piling6": 11.374720399411691,
-    "moored": 9.606729270910307
+    "uuv1": 6.328023348853233,
+    "uuv2": 7.974317384144193,
+    "diver": 3.7812720476319,
+    "piling1": 12.262075202784708,
+    "piling2": 12.373664458819963,
+    "piling3": 13.295261357547766,
+    "piling4": 13.295261357547766,
+    "piling5": 13.094949045526292,
+    "piling6": 12.729801876776254,
+    "moored": 6.569782485329135
   },
   "ferry_only_truth_inputs": [
     "direct path removed with the truth component",

@@ -1,41 +1,41 @@
 {
   "table": {
     "direct:ferry": {
-      "cable1": 0.22226547021708545,
-      "hydrophones": 0.17706698828993106,
-      "best_das": 0.38256222623133646
+      "cable1": 0.22509458100131163,
+      "hydrophones": 0.17895393510150986,
+      "best_das": 0.3883396922382976
     },
     "scattered:ferry>bodies": {
-      "cable1": 0.036638162077358254,
-      "hydrophones": 0.029629172221393368,
-      "best_das": 0.07671358498447635
+      "cable1": 0.037021369311041795,
+      "hydrophones": 0.029876264359759038,
+      "best_das": 0.07765227553768354
     },
     "direct:boat": {
-      "cable1": 0.050091758664155564,
-      "hydrophones": 0.03955117025624087,
-      "best_das": 0.09638843786663541
+      "cable1": 0.05068628488243321,
+      "hydrophones": 0.03994918238560413,
+      "best_das": 0.09771028412407472
     },
     "scattered:boat>bodies": {
-      "cable1": 0.008296163705434277,
-      "hydrophones": 0.005953316328266502,
-      "best_das": 0.013646178342580865
+      "cable1": 0.008412574759345998,
+      "hydrophones": 0.006007379159016205,
+      "best_das": 0.013935013655629283
     },
     "noise": {
-      "cable1": 0.031938927340899814,
-      "hydrophones": 0.023308330697010146,
-      "best_das": 0.03746262216267747
+      "cable1": 0.0319389273456568,
+      "hydrophones": 0.023308330678099256,
+      "best_das": 0.03746262214863597
     }
   },
   "summary": {
     "ferry": {
-      "echo_to_direct_db_median_das": -15.658766382437769,
-      "echo_to_noise_db_median_das": 1.192267062480596,
-      "echo_to_noise_db_best_das": 7.611039045988229
+      "echo_to_direct_db_median_das": -15.678251235984238,
+      "echo_to_noise_db_median_das": 1.2826430303714165,
+      "echo_to_noise_db_best_das": 7.716677208757612
     },
     "boat": {
-      "echo_to_direct_db_median_das": -15.6177793256829,
-      "echo_to_noise_db_median_das": -11.708860262925427,
-      "echo_to_noise_db_best_das": -7.38618567206089
+      "echo_to_direct_db_median_das": -15.599230470978537,
+      "echo_to_noise_db_median_das": -11.587827796121314,
+      "echo_to_noise_db_best_das": -7.204258556560054
     }
   },
   "f_max": 400.0,
@@ -44,8 +44,8 @@
     "wreck"
   ],
   "ferry_only_truth_check_db": {
-    "uuv1": 10.060185388051686,
-    "wreck": 24.090345676946683
+    "uuv1": 14.733961467966877,
+    "wreck": 28.79323825139568
   },
   "ferry_only_truth_inputs": [
     "direct path removed with the truth component",
