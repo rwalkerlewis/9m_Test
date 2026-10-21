@@ -29,6 +29,9 @@ BODY_MASKS = ("auto", "host", "device")
 # Fields that do not change the result (excluded from the cache key) and fields added after the
 # caches of the existing datasets were built (excluded while at their default, so those keys stay valid).
 _KEY_EXCLUDE = ("use_cuda", "kernel", "body_masks")
+# Gathers whose column m is the field at m dt (HarborFDTDSolver._finish_traces); every gather cached before this
+# convention (one step early) has a different key.
+TRACE_CONVENTION = b"column m is the field at m dt"
 _KEY_DEFAULTS = {"precision": "float64", "boundary": "sponge", "cpml_width": 15, "cpml_order": 2, "cpml_r0": 1e-6, "cpml_alpha_max": 0.0,
                  "time_scheme": "leapfrog"}
 
@@ -259,9 +262,19 @@ class HarborFDTDSolver(FDTDSolver):
         )
 
     def _finish_traces(self) -> None:
+        """Complete the traces once, and put each column on its time: the solver records after step ``n`` the field
+        that already holds the source sample ``n`` injected at ``t = n dt``, i.e. the field at ``(n + 1) dt``, in
+        column ``n``.  The traces move one column later (column ``m`` is the field at ``m dt``, column 0 the zero
+        initial field), so a direct arrival is at the injection time plus range over speed and not one step early."""
+        if getattr(self, "_traces_final", False):
+            return
         super()._finish_traces()
         if getattr(self, "_trace_buf", None) is not None:
             self.traces[:] = self.xp.asnumpy(self._trace_buf)
+        if self.traces is not None:
+            self.traces[..., 1:] = self.traces[..., :-1].copy()
+            self.traces[..., 0] = 0.0
+        self._traces_final = True
 
     def run(self, *args, **kwargs):
         out = super().run(*args, **kwargs)
@@ -401,6 +414,7 @@ def _cache_key(
     scatterers: list[Scatterer] | tuple[Scatterer, ...] = (),
 ) -> str:
     h = hashlib.sha1()
+    h.update(TRACE_CONVENTION)
     h.update(env.fingerprint().encode())
     h.update(layout_fingerprint(layout).encode())
     for sc in scatterers:
