@@ -76,8 +76,8 @@ from acoustic_sim.water.signatures import f_max_for_grid  # noqa: E402
 from acoustic_sim.water.vessels import VesselConfig  # noqa: E402
 from acoustic_sim.sources import CustomTrajectorySource  # noqa: E402
 
-BISTATIC_SCENARIO = ROOT / "examples" / "harbor_bistatic.scenario.json"
-MULTISTATIC_SCENARIO = ROOT / "examples" / "harbor_multistatic.scenario.json"
+BISTATIC_SCENARIO = ROOT / "examples" / "configs" / "harbor_bistatic.scenario.json"
+MULTISTATIC_SCENARIO = ROOT / "examples" / "configs" / "harbor_multistatic.scenario.json"
 DATA_ROOT = Path(__import__("os").environ.get("BENCH_DATA_ROOT", ROOT))      # where output/harbor_bistatic and output/harbor_cancel live
 FINE_DATASET = DATA_ROOT / "output" / "harbor_bistatic" / "fine" / "dataset.npz"
 CANCEL_CACHE = DATA_ROOT / "output" / "harbor_cancel" / "cache"
@@ -108,7 +108,7 @@ ECA_CASES = {
     "eca_193_moving_doppler_smooth4": (True, 4.0),
 }
 ABLATION_CONFIGS = {
-    # name: (direct path in the traces, reference, exact track)   (examples/harbor_bistatic_ablation.py)
+    # name: (direct path in the traces, reference, exact track)   (examples/harbor/04_bistatic/harbor_bistatic_ablation.py)
     "direct_removed_exactly": (False, "true_waveform", True),
     "true_waveform_exact_track": (True, "true_waveform", True),
     "estimated_waveform_exact_track": (True, "data", True),
@@ -135,8 +135,8 @@ CRITERIA = {
 # ----------------------------------------------------------------------
 
 def load_example(name: str):
-    """Import ``examples/<name>.py`` as a module (its ``main`` is not run)."""
-    spec = importlib.util.spec_from_file_location(name, ROOT / "examples" / f"{name}.py")
+    """Import the example script ``<name>.py`` (found anywhere under ``examples/``) as a module (its ``main`` is not run)."""
+    spec = importlib.util.spec_from_file_location(name, next((ROOT / "examples").rglob(f"{name}.py")))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -247,7 +247,7 @@ def run_fdtd_case(name: str, args) -> tuple[dict, dict]:
 
 def rerender_fine_dataset(args, cache_dir: Path) -> tuple[HarborDataset, float]:
     """The fine bistatic dataset rebuilt with the current solver options (same scenario, tracks and
-    noise seed as ``examples/harbor_bistatic_dataset.py``), so the processing criteria can be
+    noise seed as ``examples/harbor/01_datasets/harbor_bistatic_dataset.py``), so the processing criteria can be
     evaluated on float32 or CPML or batched forward modelling."""
     cfg = HarborScenarioConfig.load(BISTATIC_SCENARIO)
     cfg.fdtd.use_cuda = args.cuda

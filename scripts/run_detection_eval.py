@@ -18,7 +18,7 @@ from pathlib import Path
 
 # Add src and examples to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-sys.path.insert(0, str(Path(__file__).parent.parent / "examples"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "examples" / "air" / "02_pipeline"))
 
 from run_pipeline import run_pipeline, load_config
 
@@ -49,7 +49,7 @@ def main():
     args = parser.parse_args()
     
     # Just use the main pipeline
-    cfg = load_config(Path(__file__).parent.parent / "examples" / "pipeline.config.json")
+    cfg = load_config(Path(__file__).parent.parent / "examples" / "configs" / "pipeline.config.json")
     cfg["source"]["speed_mps"] = args.source_speed
     run_pipeline(
         args.output_dir,

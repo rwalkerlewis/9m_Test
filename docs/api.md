@@ -44,7 +44,7 @@ Entry point of `acoustic-sim` and `python -m acoustic_sim`.  Builds or loads a 2
 model (`--model-file`, `--model-npz` or `--model-preset`), checks spatial sampling, places
 receivers, solves the Helmholtz equation at `--frequency` and writes the velocity-model and
 wavefield plots.  FDTD runs and the detection pipeline have their own entry points
-(`examples/run_fdtd.py`, `examples/run_pipeline.py`, `python -m acoustic_sim.air.detection_main`).
+(`examples/air/01_simulation/run_fdtd.py`, `examples/air/02_pipeline/run_pipeline.py`, `python -m acoustic_sim.air.detection_main`).
 
 ---
 
@@ -87,7 +87,7 @@ dataclass.
 
 *End-to-end passive acoustic drone detection, tracking, and fire
 control.*  This is the **legacy MFP/EKF pipeline**; the current
-production pipeline is `examples/run_pipeline.py` (SRP-PHAT).
+production pipeline is `examples/air/02_pipeline/run_pipeline.py` (SRP-PHAT).
 
 ### `simulate_scenario(config=None)`
 
@@ -778,7 +778,7 @@ of `air/pipeline_plots.py`.
 
 ## air/pipeline_plots.py
 
-*Figures of the SRP-PHAT engagement pipeline (`examples/run_pipeline.py`); also importable from
+*Figures of the SRP-PHAT engagement pipeline (`examples/air/02_pipeline/run_pipeline.py`); also importable from
 `acoustic_sim.air.plotting`.*
 
 | Function | Description |

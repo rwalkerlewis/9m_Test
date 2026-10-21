@@ -6,19 +6,19 @@ library pipeline (`DetectionConfig` dataclass).
 
 The separate harbor application uses a third configuration model,
 `HarborScenarioConfig`, typically loaded from
-`examples/harbor.scenario.json`. Its FDTD/data-processing settings are
+`examples/configs/harbor.scenario.json`. Its FDTD/data-processing settings are
 described below and in [Harbor](harbor.md).
 
 ---
 
 ## Pipeline Configuration (`pipeline.config.json`)
 
-Used by `examples/run_pipeline.py`, which merges the JSON file over built-in defaults
+Used by `examples/air/02_pipeline/run_pipeline.py`, which merges the JSON file over built-in defaults
 (`_DEFAULTS` in `run_pipeline.py`) and then applies CLI overrides.  Sections: `detection`,
 `beamformer`, `ranging`, `tracking`, `fire_control`, `source`, and optional `ml`.
 
 The **Default** columns below give the effective value with the shipped
-`examples/pipeline.config.json` (loaded unless `--config` points elsewhere).  Where the shipped
+`examples/configs/pipeline.config.json` (loaded unless `--config` points elsewhere).  Where the shipped
 file and the built-in default differ, both are given.  Keys absent from the shipped file
 (`beamformer.method`, `beamformer.max_sources`, all of `ranging`, the `anomaly_*` keys) come from
 the built-in defaults.
@@ -104,7 +104,7 @@ produces identical results to a signal-processing-only baseline.
 | `enable_maneuver_detection` | bool | false | Enable maneuver-adaptive tracking |
 | `enable_fusion_classification` | bool | false | Enable fusion (acoustic + kinematic) classifier |
 | `enable_fno_surrogate` | bool | false | Enable FNO data augmentation path |
-| `fno_checkpoint` | str | `"checkpoints/fno_demo/fno_final.pt"` | Path to FNO weights (written by `examples/run_fno.py`; not shipped) |
+| `fno_checkpoint` | str | `"checkpoints/fno_demo/fno_final.pt"` | Path to FNO weights (written by `examples/air/03_ml/run_fno.py`; not shipped) |
 | `enable_anomaly_detection` | bool | false | Enable CVAE anomaly detection |
 | `classification_checkpoint` | str | `"output/models/acoustic_classifier.pt"` | Path to acoustic classifier weights |
 | `maneuver_checkpoint` | str | `"output/models/maneuver_classifier.pt"` | Path to maneuver classifier weights |
@@ -120,7 +120,7 @@ produces identical results to a signal-processing-only baseline.
 ### CLI overrides
 
 ```
-python examples/run_pipeline.py SIM_DIR \
+python examples/air/02_pipeline/run_pipeline.py SIM_DIR \
     [--config PATH]          # JSON config file
     [--output-dir DIR]       # output directory (default: SIM_DIR)
     [--source-speed FLOAT]   # override source.speed_mps
@@ -297,7 +297,7 @@ trajectory parameters.
 
 ## FDTD Runner Configuration
 
-`examples/run_fdtd.py` and `run_fdtd_3d.py` accept all parameters via
+`examples/air/01_simulation/run_fdtd.py` and `run_fdtd_3d.py` accept all parameters via
 CLI flags.  Key arguments:
 
 | Flag | Description |

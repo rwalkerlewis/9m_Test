@@ -33,7 +33,7 @@ from acoustic_sim.water.dataset import make_scatterer, vessel_injection  # noqa:
 from acoustic_sim.water.fdtd_runner import HarborFDTDBatch, HarborFDTDSolver, batch_size  # noqa: E402
 from acoustic_sim.sources import CustomTrajectorySource  # noqa: E402
 
-MULTISTATIC = ROOT / "examples" / "harbor_multistatic.scenario.json"
+MULTISTATIC = ROOT / "examples" / "configs" / "harbor_multistatic.scenario.json"
 
 
 def sync() -> None:

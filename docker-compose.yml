@@ -29,7 +29,7 @@ services:
     command: sleep infinity
 
   # One-shot Helmholtz CLI:
-  #   docker compose run --rm simulate --model-file examples/domain.example.json --frequency 40
+  #   docker compose run --rm simulate --model-file examples/configs/domain.example.json --frequency 40
   simulate:
     <<: *dev
     entrypoint: ["acoustic-sim"]

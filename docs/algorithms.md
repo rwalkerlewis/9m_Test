@@ -406,9 +406,9 @@ $$
 
 where $s$ is the spread rate.  The function `pattern_diameter(range_m,
 spread_rate)` returns this value.  The default `spread_rate` in the
-function signature is 0.025; `examples/run_pipeline.py` uses
+function signature is 0.025; `examples/air/02_pipeline/run_pipeline.py` uses
 `pattern_spread_rate` = 0.2 from its built-in defaults, and
-`examples/pipeline.config.json` sets 0.3.
+`examples/configs/pipeline.config.json` sets 0.3.
 
 ### 4.2  Lead Computation (`compute_lead_3d`)
 
@@ -578,7 +578,7 @@ unassociated detections, and track deletion after $N$ missed updates.
 All classifiers require PyTorch.  Pre-trained weights are shipped in
 `output/models/` (acoustic_classifier.pt, maneuver_classifier.pt,
 fusion_classifier.pt).  Retraining requires running the data generation
-and training loops in `examples/train_all_ml.py`.
+and training loops in `examples/air/03_ml/train_all_ml.py`.
 
 ### 6.1  Acoustic Classifier
 

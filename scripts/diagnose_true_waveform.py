@@ -25,7 +25,7 @@ from scipy.signal import resample
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "examples"))
+sys.path.insert(0, str(ROOT / "examples" / "harbor" / "05_detection"))
 import harbor_picture_stage1 as s1  # noqa: E402
 from acoustic_sim.water.bistatic import (BistaticConfig, Diagnostics, ReplicaModel, _xp, bistatic_map, build_grid,  # noqa: E402
                                          eca_stage, exclusion, reference_spectrum, run_bistatic, ship_positions, stft,

@@ -1,6 +1,6 @@
 """Passive bistatic detection of a silent body using an AIS ship as the illuminator.
 
-The analytic prototype is ``examples/harbor_mfp_demo.py``; this module is its port to the
+The analytic prototype is ``examples/harbor/03_passive/harbor_mfp_demo.py``; this module is its port to the
 FDTD harbor data (strain mode DAS, a real scattering body, quay reflections).
 
 Chain for one dataset
@@ -981,7 +981,7 @@ def reference_spectrum(sp: Spectra, ship: ShipTrack, model: ReplicaModel, bc: Bi
 def remove_direct(sp: Spectra, ship: ShipTrack, model: ReplicaModel, bc: BistaticConfig) -> Spectra:
     """Project the ship out of every frame and bin (``"patch"`` and/or ``"adaptive"``).
 
-    Measured on the coarse dataset (``examples/harbor_bistatic_detect.py --experiment removal``):
+    Measured on the coarse dataset (the removal experiment of ``harbor_bistatic_detect.py``, a script no longer in the repository):
     the free field replica patch explains only about half of the direct field energy on the
     strain cable (the broadside leg mostly records quay reflections because of the cos^2
     directivity), so it cancels 5 to 9 dB; the data adaptive projection removes the echo as

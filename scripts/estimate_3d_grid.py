@@ -6,9 +6,9 @@ resolution, memory footprint, and step count for a given domain and FD order.
 
 Usage::
 
-    python examples/estimate_3d_grid.py
-    python examples/estimate_3d_grid.py --dx 0.25 0.3 0.4 0.5
-    python examples/estimate_3d_grid.py --z-max 80 --order 4
+    python scripts/estimate_3d_grid.py
+    python scripts/estimate_3d_grid.py --dx 0.25 0.3 0.4 0.5
+    python scripts/estimate_3d_grid.py --z-max 80 --order 4
 
 Expected output: a table of grid configurations to guide the choice of dx
 for the 3-D valley FDTD run.

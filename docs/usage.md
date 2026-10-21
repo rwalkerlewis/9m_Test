@@ -39,7 +39,7 @@ CuPy with its CUDA toolkit from pip, pytest).
 ```bash
 ./dev.sh shell          # build if needed, then open a shell (Linux, macOS, WSL)
 ./dev.sh test [args]    # pytest in the container (default: tests/harbor)
-./dev.sh run CMD...     # any command, e.g. ./dev.sh run python examples/harbor_m1_demo.py
+./dev.sh run CMD...     # any command, e.g. ./dev.sh run python examples/harbor/02_forward_model/harbor_m1_demo.py
 ./dev.sh status         # shows whether GPU passthrough was detected
 ./dev.sh down
 ```
@@ -62,7 +62,7 @@ docker compose exec dev bash
 
 Generated data (datasets, caches, `.npy`/`.npz`) lives in the repository folder on the host and is
 gitignored; only selected results, figures and the classifier weights under `output/` are tracked.
-On a new machine regenerate what you need, e.g. `./dev.sh run python examples/harbor_m2_dataset.py`;
+On a new machine regenerate what you need, e.g. `./dev.sh run python examples/harbor/01_datasets/harbor_m2_dataset.py`;
 see [Generated outputs](outputs.md).
 
 ### VS Code Dev Container
@@ -159,7 +159,7 @@ Model presets: `uniform`, `layered`, `gradient`, `checkerboard`, `valley`.
 ### Single run
 
 ```bash
-python examples/run_fdtd.py \
+python examples/air/01_simulation/run_fdtd.py \
     --domain hills_vegetation \
     --source-type moving --source-signal propeller \
     --source-x -40 --source-y 0 --source-x1 40 --source-y1 0 \
@@ -172,7 +172,7 @@ python examples/run_fdtd.py \
 ### With MPI
 
 ```bash
-mpirun -np 4 python examples/run_fdtd.py \
+mpirun -np 4 python examples/air/01_simulation/run_fdtd.py \
     --domain isotropic --source-type static \
     --source-signal ricker --source-freq 25 \
     --array circular --total-time 0.3 \
@@ -182,7 +182,7 @@ mpirun -np 4 python examples/run_fdtd.py \
 ### All 18 combinations
 
 ```bash
-python examples/run_all_examples.py [--np N]
+python examples/air/01_simulation/run_all_examples.py [--np N]
 ```
 
 Runs `{static, moving}` × `{isotropic, wind, hills_vegetation}` ×
@@ -230,7 +230,7 @@ Runs `{static, moving}` × `{isotropic, wind, hills_vegetation}` ×
 Same interface as 2-D, with additional z-axis flags:
 
 ```bash
-python examples/run_fdtd_3d.py \
+python examples/air/01_simulation/run_fdtd_3d.py \
     --domain hills_vegetation \
     --dx 0.25 --z-min -5.0 --z-max 50.0 \
     --source-type moving --source-signal propeller \
@@ -251,17 +251,17 @@ python examples/run_fdtd_3d.py \
 
 ```bash
 # 2-D
-python examples/run_pipeline.py output/valley_test
+python examples/air/02_pipeline/run_pipeline.py output/valley_test
 
 # 3-D
-python examples/run_pipeline.py output/valley_3d_test
+python examples/air/02_pipeline/run_pipeline.py output/valley_3d_test
 
 # Custom config
-python examples/run_pipeline.py output/valley_test \
-    --config examples/pipeline.config.json
+python examples/air/02_pipeline/run_pipeline.py output/valley_test \
+    --config examples/configs/pipeline.config.json
 
 # CLI overrides
-python examples/run_pipeline.py output/valley_test \
+python examples/air/02_pipeline/run_pipeline.py output/valley_test \
     --source-speed 60 --hit-threshold 3.0 --max-hits 5
 ```
 
@@ -269,14 +269,14 @@ python examples/run_pipeline.py output/valley_test \
 
 ```bash
 # With source classification gate
-python examples/run_pipeline.py output/valley_test --enable-classification
+python examples/air/02_pipeline/run_pipeline.py output/valley_test --enable-classification
 
 # Full ML stack
-python examples/run_pipeline.py output/valley_test \
+python examples/air/02_pipeline/run_pipeline.py output/valley_test \
     --enable-classification --enable-maneuver --enable-anomaly
 
 # Custom classification threshold
-python examples/run_pipeline.py output/valley_test \
+python examples/air/02_pipeline/run_pipeline.py output/valley_test \
     --enable-classification --classification-threshold 0.8
 ```
 
@@ -288,7 +288,7 @@ in `metadata.json`.
 | Flag | Default | Description |
 |------|---------|-------------|
 | `sim_dir` | `output/valley_3d_test` | simulation output directory |
-| `--config` | `examples/pipeline.config.json` | JSON config file |
+| `--config` | `examples/configs/pipeline.config.json` | JSON config file |
 | `--output-dir` | same as `sim_dir` | output directory for plots |
 | `--source-speed` | from config (50.0) | override ground-truth source speed |
 | `--hit-threshold` | from config (2.0) | override hit distance threshold |
@@ -317,13 +317,13 @@ Pre-trained weights are shipped in `output/models/`.  To retrain:
 
 ```bash
 # Train the source, maneuver and fusion classifiers (generates synthetic data + trains)
-python examples/train_all_ml.py
+python examples/air/03_ml/train_all_ml.py
 
 # Train and calibrate the CVAE anomaly detector (not shipped; needed for --enable-anomaly)
 python src/acoustic_sim/ml/anomaly_training.py
 
 # Run ML demo (classification + confusion matrices)
-python examples/run_ml_demo.py
+python examples/air/03_ml/run_ml_demo.py
 ```
 
 Both training scripts write to `output/models/`, replacing the shipped weights. The ML tests
@@ -337,13 +337,13 @@ Three FDTD demo scripts (only `run_valley.sh` also runs the pipeline on its outp
 
 ```bash
 # 2-D valley: hills+vegetation, moving propeller, circular array
-bash examples/run_valley.sh
+bash examples/air/01_simulation/run_valley.sh
 
 # 3-D valley: same domain extruded to volume, source at altitude
-bash examples/run_valley_3d.sh
+bash examples/air/01_simulation/run_valley_3d.sh
 
 # 2-D wind domain with circular orbit source
-bash examples/run_wind_circular.sh
+bash examples/air/01_simulation/run_wind_circular.sh
 ```
 
 Each script sets all parameters as shell variables and runs `run_fdtd.py`
@@ -361,7 +361,7 @@ A 3-D run with `--field-plane-z Z` saves a horizontal pressure slice
 interpolated without re-running the FDTD:
 
 ```bash
-python examples/extract_array_traces.py \
+python examples/air/01_simulation/extract_array_traces.py \
     --input-dir output/valley_3d_test \
     --output-dir output/valley_3d_array2 \
     --array circular --receiver-count 16 --receiver-radius 2.0 \
@@ -414,11 +414,11 @@ compute-intensive, so source gathers are cached and reused.
 ### Generate a passive-sensing dataset
 
 ```bash
-python examples/harbor_m1_demo.py --out output/harbor_m1
+python examples/harbor/02_forward_model/harbor_m1_demo.py --out output/harbor_m1
 
 # Full default harbor: cached vessel gathers, noisy traces, AIS, overview figures.
-python examples/harbor_m2_dataset.py \
-    --config examples/harbor.scenario.json \
+python examples/harbor/01_datasets/harbor_m2_dataset.py \
+    --config examples/configs/harbor.scenario.json \
     --out output/harbor --workers 4
 ```
 
@@ -431,11 +431,11 @@ and optional direct/scattered/noise components.
 
 ```bash
 # Baseline detection/localization sweeps and comparison with AIS suppression.
-python examples/harbor_m3_detect.py --out output/harbor --pfa 0.01
+python examples/harbor/03_passive/harbor_m3_detect.py --out output/harbor --pfa 0.01
 
 # Detection, localization, optional classifier/anomaly inference and scoring.
-python examples/harbor_m4_dlc.py \
-    --config examples/harbor.scenario.json --out output/harbor
+python examples/harbor/03_passive/harbor_m4_dlc.py \
+    --config examples/configs/harbor.scenario.json --out output/harbor
 ```
 
 M3 and M4 consume the dataset/cache generated by M2. M4 can be run without CNN/CVAE checkpoints;
@@ -443,9 +443,9 @@ in that case it continues with detections marked unclassified. Install the `[ml]
 models or run classification:
 
 ```bash
-python examples/harbor_build_classifier_dataset.py
-python examples/harbor_train_classifier.py --epochs 30
-python examples/harbor_train_anomaly.py --epochs 50
+python examples/harbor/01_datasets/harbor_build_classifier_dataset.py
+python examples/harbor/03_passive/harbor_train_classifier.py --epochs 30
+python examples/harbor/03_passive/harbor_train_anomaly.py --epochs 50
 ```
 
 ### Simulate a body echo and localize it bistatically
@@ -454,11 +454,11 @@ The link-budget script is analytic and quick; the FDTD dataset is the expensive 
 separate fine-grid scenario file and writes under `output/harbor_bistatic/`.
 
 ```bash
-python examples/harbor_bistatic_budget.py --out output/harbor_bistatic
+python examples/harbor/04_bistatic/harbor_bistatic_budget.py --out output/harbor_bistatic
 
 # --coarse uses dx=1 m instead of 0.5 m to reduce runtime.
-python examples/harbor_bistatic_dataset.py --coarse --workers 2
-python examples/harbor_bistatic_demo.py \
+python examples/harbor/01_datasets/harbor_bistatic_dataset.py --coarse --workers 2
+python examples/harbor/04_bistatic/harbor_bistatic_demo.py \
     --dataset output/harbor_bistatic/coarse/dataset.npz \
     --out output/harbor_bistatic/demo
 ```
@@ -467,8 +467,8 @@ The demo is intentionally given the true ferry waveform and exact track and remo
 exactly with the truth component, so read it as an idealized echo-localization experiment, not
 detection with everything estimated from the traces (`demo_summary.json` lists these under `provenance`). New datasets are written as
 `dataset.observation.npz` and `dataset.truth.npz`; `--dataset` may name the old single file or the
-pair. For analytical free-field references, run `examples/harbor_mfp_demo.py`; to apply
-that style of model to a saved harbor dataset, see `examples/harbor_mfp_domain.py`. Other visual
+pair. For analytical free-field references, run `examples/harbor/03_passive/harbor_mfp_demo.py`; to apply
+that style of model to a saved harbor dataset, see `examples/harbor/03_passive/harbor_mfp_domain.py`. Other visual
 examples include `harbor_m1_uuv_video.py`, `harbor_domain_video.py`,
 `harbor_stack_movie.py`, and `harbor_presentation.py`.
 
@@ -508,7 +508,7 @@ From the repository root (the example scripts are importable as `examples.*`):
 from pathlib import Path
 from examples.run_pipeline import load_config, run_pipeline
 
-cfg = load_config(Path("examples/pipeline.config.json"))
+cfg = load_config(Path("examples/configs/pipeline.config.json"))
 results = run_pipeline(Path("output/valley_test"), Path("output/valley_test"), cfg)
 ```
 

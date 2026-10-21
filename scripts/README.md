@@ -4,7 +4,7 @@ Standalone tools; pytest does not collect them.
 
 ## Drone pipeline diagnostics
 
-Most expect a dataset directory written by `examples/run_fdtd.py`, e.g. `output/valley_test`.
+Most expect a dataset directory written by `examples/air/01_simulation/run_fdtd.py`, e.g. `output/valley_test`.
 
 | Script | Purpose |
 |---|---|

@@ -4,7 +4,7 @@ Results from a 2-D FDTD acoustic simulation over a flat wind domain.
 
 ## How this was generated
 
-1. **FDTD simulation** via `examples/run_wind_circular.sh` → `examples/run_fdtd.py`
+1. **FDTD simulation** via `examples/air/01_simulation/run_wind_circular.sh` → `examples/air/01_simulation/run_fdtd.py`
 
 No detection pipeline was run on this output.
 

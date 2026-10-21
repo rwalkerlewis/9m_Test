@@ -222,7 +222,7 @@ def test_streaming_passive_uses_only_the_ais_reports_already_received():
 
 
 def test_end_to_end_passive_tracker_echo_locates_the_silent_body_without_truth():
-    """The path ``examples/harbor_stream.py`` runs, on a synthetic 8 s scene (one ship, one silent scatterer, no AIS):
+    """The path ``examples/harbor/05_detection/harbor_stream.py`` runs, on a synthetic 8 s scene (one ship, one silent scatterer, no AIS):
     ``StreamingPassive`` -> ``RadiatorTracker`` -> ``StreamingEcho`` with the strong tracks as illuminators.  Nothing
     from the truth goes in.  The ship becomes the one strong track (within 3 m), and the top echo peak is within 8 m
     of the scatterer in at least half of the mapped frames, and the sum of the frame maps (each over its median, as

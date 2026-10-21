@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-sys.path.insert(0, str(Path(__file__).parent.parent / "examples"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "examples" / "air" / "02_pipeline"))
 
 from run_pipeline import run_pipeline, load_config
 
@@ -24,7 +24,7 @@ def main():
     parser.add_argument("--source-speed", type=float, default=50.0)
     args = parser.parse_args()
 
-    cfg = load_config(Path(__file__).parent.parent / "examples" / "pipeline.config.json")
+    cfg = load_config(Path(__file__).parent.parent / "examples" / "configs" / "pipeline.config.json")
     cfg["source"]["speed_mps"] = args.source_speed
     cfg["fire_control"]["max_hits"] = 0  # Run all windows
 

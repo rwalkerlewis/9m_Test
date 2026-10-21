@@ -5,7 +5,7 @@ Prints beam power at MFP peak vs beam power at ground-truth bearing.
 Also tests with wider bandwidth for Doppler accommodation.
 
 Usage:
-    python examples/diagnose_mfp_bpm.py output/valley_3d_test
+    python scripts/diagnose_mfp_bpm.py output/valley_3d_test
 """
 
 import argparse
