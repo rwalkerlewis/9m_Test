@@ -50,9 +50,9 @@ FD_ORDER=2              # spatial FD accuracy order (2, 4, 6, …)
 OUTPUT_DIR=output/valley_test
 
 # -----------------------------------------------------------------------
-CUDA_FLAG=""
-if [ "$USE_CUDA" = true ]; then
-    CUDA_FLAG="--use-cuda"
+CUDA_FLAG=""                # the FDTD runs on the GPU by default
+if [ "$USE_CUDA" != true ]; then
+    CUDA_FLAG="--cpu"
 fi
 
 CMD="python examples/air/01_simulation/run_fdtd.py \

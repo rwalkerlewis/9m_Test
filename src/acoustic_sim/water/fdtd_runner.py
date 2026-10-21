@@ -59,6 +59,8 @@ class HarborFDTDConfig:
         with ``mean_sigma = shore_loss_max / 3``; the defaults give R ≈ 0.5
         (measured 0.51).
         Set ``shore_loss_max = 0`` for perfectly reflecting quays.
+    use_cuda : bool
+        Run on the GPU (default; falls back to the CPU with a warning without one).  Not part of the cache key.
     precision : str
         ``"float64"`` (default) or ``"float32"`` fields (:class:`~acoustic_sim.solver.fdtd.FDTDConfig`).
         Part of the cache key.
@@ -89,7 +91,7 @@ class HarborFDTDConfig:
     background_absorption: float = 1e-4
     shore_loss_width: float = 40.0
     shore_loss_max: float = 0.15
-    use_cuda: bool = False
+    use_cuda: bool = True
     precision: str = "float64"
     kernel: str = "auto"
     body_masks: str = "auto"

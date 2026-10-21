@@ -233,7 +233,7 @@ User-tunable simulation parameters (dataclass).  Option constants: `PRECISIONS`,
 | `air_absorption` | `0.005` | Background damping everywhere |
 | `snapshot_interval` | `50` | Save a snapshot every N steps (0 = off) |
 | `source_amplitude` | `1.0` | Peak source pressure (Pa) |
-| `use_cuda` | `False` | Run on the GPU with CuPy |
+| `use_cuda` | `True` | Run on the GPU with CuPy (falls back to the CPU with a warning without one) |
 | `fd_order` | `2` | Spatial FD order (2, 4, 6, 8, …) |
 | `precision` | `"float64"` | `"float64"` or `"float32"` fields (traces are always float64) |
 | `kernel` | `"auto"` | `"reference"` array code, `"fused"` single CUDA kernel per step (`solver/fdtd_cuda.py`), or `"auto"` (fused when available) |

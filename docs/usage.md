@@ -210,7 +210,7 @@ Runs `{static, moving}` × `{isotropic, wind, hills_vegetation}` ×
 | `--receiver-radius` | array radius (m) |
 | `--receiver-cx`, `--receiver-cy` | array centre |
 | `--snapshot-interval` | field dump every N steps (0 = off) |
-| `--use-cuda` | enable GPU |
+| `--cpu` | run on the CPU (the GPU is the default; `--use-cuda` is still accepted) |
 | `--output-dir` | output directory |
 
 ### Output

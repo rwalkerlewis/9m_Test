@@ -79,8 +79,9 @@ def parse_args(argv=None):
     p.add_argument("--damping-max", type=float, default=0.15)
     p.add_argument("--source-amplitude", type=float, default=1.0)
     p.add_argument("--air-absorption", type=float, default=0.005)
-    p.add_argument("--use-cuda", action="store_true",
-                   help="Use CuPy for GPU acceleration")
+    p.add_argument("--use-cuda", action="store_true", default=True,
+                   help="GPU (CuPy); the default, kept for old command lines")
+    p.add_argument("--cpu", dest="use_cuda", action="store_false", help="run the FDTD on the CPU")
     p.add_argument("--fd-order", type=int, default=8)
 
     # Output

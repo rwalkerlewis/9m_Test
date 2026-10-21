@@ -64,7 +64,8 @@ def main() -> None:
     ap.add_argument("--time", type=float, default=None, help="override simulated duration [s]")
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--seed", type=int, default=None)
-    ap.add_argument("--cuda", action="store_true", help="run the FDTD on the GPU (the cache key ignores this)")
+    ap.add_argument("--cuda", action="store_true", help="kept for old command lines: the FDTD runs on the GPU by default")
+    ap.add_argument("--cpu", action="store_true", help="run the FDTD on the CPU (the cache key ignores this)")
     args = ap.parse_args()
 
     cfg = HarborScenarioConfig.load(args.config)
@@ -72,8 +73,7 @@ def main() -> None:
         coarsen(cfg, 1.0)
     if args.time is not None:
         cfg.fdtd.total_time = args.time
-    if args.cuda:
-        cfg.fdtd.use_cuda = True
+    cfg.fdtd.use_cuda = not args.cpu
     tag = "coarse" if args.coarse else "fine"
     out = Path(args.out) / tag
     out.mkdir(parents=True, exist_ok=True)

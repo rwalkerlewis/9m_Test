@@ -68,9 +68,9 @@ FIELD_PLANE_SUB=4       # spatial subsampling (4 → 1.0 m with dx=0.25)
 OUTPUT_DIR=output/valley_3d_test
 
 # -----------------------------------------------------------------------
-CUDA_FLAG=""
-if [ "$USE_CUDA" = true ]; then
-    CUDA_FLAG="--use-cuda"
+CUDA_FLAG=""                # the FDTD runs on the GPU by default
+if [ "$USE_CUDA" != true ]; then
+    CUDA_FLAG="--cpu"
 fi
 
 CMD="python3 examples/air/01_simulation/run_fdtd_3d.py \

@@ -169,7 +169,7 @@ class FDTDConfig:
     source_amplitude : float
         Peak source pressure [Pa].
     use_cuda : bool
-        Use CuPy for GPU acceleration.
+        Use CuPy for GPU acceleration (default; falls back to NumPy with a warning without a GPU).
     fd_order : int
         Spatial finite-difference order (2, 4, 6, 8, …).  Higher orders
         have wider stencils and tighter CFL limits but less numerical
@@ -217,7 +217,7 @@ class FDTDConfig:
     air_absorption: float = 0.005
     snapshot_interval: int = 50
     source_amplitude: float = 1.0
-    use_cuda: bool = False
+    use_cuda: bool = True
     fd_order: int = 2
     precision: str = "float64"
     kernel: str = "auto"

@@ -102,8 +102,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     g.add_argument("--damping-max", type=float, default=0.15)
     g.add_argument("--source-amplitude", type=float, default=1.0)
     g.add_argument("--air-absorption", type=float, default=0.005)
-    g.add_argument("--use-cuda", action="store_true",
-                   help="Use CuPy for GPU acceleration")
+    g.add_argument("--use-cuda", action="store_true", default=True,
+                   help="GPU (CuPy); the default, kept for old command lines")
+    g.add_argument("--cpu", dest="use_cuda", action="store_false", help="run the FDTD on the CPU")
     g.add_argument("--fd-order", type=int, default=2,
                    help="FD spatial order of accuracy (2, 4, 6, …)")
 
