@@ -1,0 +1,33 @@
+---
+mode: agent
+description: Branch ci_noise from origin/main. You own .github/workflows/, docs/ci.md, src/acoustic_sim/water/noise.py, tests/harbor/
+---
+Branch `ci_noise` from `origin/main`. You own `.github/workflows/`, `docs/ci.md`, `src/acoustic_sim/water/noise.py`, `tests/harbor/test_noise.py`, `docs/noise.md`, and new output directories `output/<recording>_noise2/`. You do not edit the processing modules, the processing configs, `scripts/reproduce.py`, `output/reproduce/`, the existing scenario files or the existing recordings. Part 2 needs one FDTD run; do not start it while another session is building datasets.
+
+Read `.github/workflows/tests.yml`, `tests/harbor/_gpu.py`, `tests/harbor/test_ci_end_to_end.py`, `src/acoustic_sim/water/noise.py`, `src/acoustic_sim/water/dataset.py` (`assemble_dataset`), `src/acoustic_sim/water/sensors.py`, the `noise` block of `examples/configs/harbor_multistatic.scenario.json`, `examples/configs/harbor_simple.scenario.json`, `docs/physics.md` and `docs/harbor.md` (Running it, Numbers) before changing anything.
+
+## Part 1: CI that tests the code
+
+The workflow runs a selection: the layout test, the contract test, dispersion, characteristics, the tiny end to end run and two 3D checks. It does not run `tests/harbor` (the FDTD runner, the bistatic chain, streaming, the scoreboard, suppression, the dataset mixer), so most of the code that produces the numbers has no CI coverage.
+
+1. `pytest tests` runs in full on the CPU on both Python versions (about three minutes on two cores for the harbor tests). If the suite exceeds fifteen minutes, split by directory into jobs; drop nothing. The job prints the number of skipped tests.
+2. `gpu-tests.yml` on `workflow_dispatch` and a weekly schedule, `runs-on: [self-hosted, gpu]`, running the GPU marked tests and the CPU against GPU parity tests (add a `gpu` marker in `_gpu.py` if none exists), with a 10 minute job timeout so it fails rather than hangs when no runner is registered. `docs/ci.md`: what each workflow runs, and the GitHub documented steps to register a Linux machine with an NVIDIA card as a self hosted runner with the labels the workflow expects.
+3. Fix any test that fails on the CPU in CI for a reason other than a missing GPU; report each with its cause.
+
+## Part 2: a harbor noise model with sources behind it
+
+The ambient model is coloured Gaussian noise plus three plane waves from distant shipping, flat DAS channel noise at 0.05 against an ambient of 0.02, common mode noise, gain scatter and dead channels. Every Pd and false track number in `docs/harbor.md` sits on that floor, and the false track rate is the number an operator judges first. Add the missing components to `water/noise.py` as separately switchable parts of a new model `noise.model = "harbor_v2"`, each with a documented spectral shape and level, each marked in `docs/noise.md` as measured (with the reference), derived (from a stated physical argument) or assumed (chosen with no source). Do not present an assumed number as measured, and do not fill a gap with a commonly quoted value; if no measured spectrum exists, say so and mark it assumed.
+
+1. **Snapping shrimp.** Impulsive broadband clicks from populations along quays and structures: a Poisson process per source region with a stated rate, each click one or two samples at these rates with a stated peak level distribution; the aggregate is heavy tailed. Source regions on the land edges, propagated by the free field sum (state that). Cite measured click rates and source levels for temperate and warm shallow harbors; if the scenario's water would be too cold for shrimp, say so and default the component off for that scenario with the reason recorded.
+2. **Surface agitation.** Wind driven noise whose level varies over minutes, with the measured spectral slope above a few hundred hertz and a stated dependence on sea state; cite the curves the shape comes from.
+3. **Quay machinery.** Stationary sources on the quay edge (a pump or generator: tonal lines plus broadband) at fixed positions, propagated through the forward model: one FDTD run on the simple harbor, cached, reused at several levels.
+4. **Fibre strain noise.** Slow drift (a steep low frequency rise) and traffic on the quay the cable runs along, which couples into the fibre as a disturbance travelling along the cable at a ground speed, correlated between neighbouring channels with a delay rather than independent per channel; along cable correlation length and speed as parameters.
+5. **Interrogator noise.** Phase noise rising toward low frequency, per channel, and fading channels (a small fraction with a much higher floor for seconds at a time), replacing the flat 0.05 where a measured shape exists. Cite published noise floor spectra of at least two interrogators; if the manufacturers publish none, say so.
+
+`docs/noise.md`: the table of components, shapes, levels, status and references, and a figure of the per channel noise spectrum of the cable and of a hydrophone, old model beside new.
+
+Then measure, without touching the chain: re mix the `simple`, `bistatic`, `multistatic` and `multistatic_b` recordings with `harbor_v2` from the cached gathers (`assemble_dataset`, seeds 0 to 2, `output/<recording>_noise2/`) and run `python -m acoustic_sim.water.stream` and `harbor_stream.py` on them with the processing configs exactly as on `main`. Report old noise beside new: Pd per object, median error, false tracks per minute, compute per second of data. No pass or fail criterion: the finding is how much the current numbers depend on the noise model, and which component moves them (switch the components on one at a time on the simple harbor and report each).
+
+## Rules
+
+The repository rules in `AGENTS.md` apply. Tests for every component (spectral shape within tolerance of its stated form, click statistics, along cable correlation and delay, the fading fraction). The old model stays the default of the existing scenario files. Stop after the measurement. Report the CI change, which components are backed by measurements and which are assumed, and how far each number moved.
