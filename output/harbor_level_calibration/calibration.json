@@ -1,0 +1,43 @@
+{
+  "level_calibration": 5.115168480917183,
+  "objects": {
+    "ferry": {
+      "true_pa": 1.0,
+      "estimate_uncalibrated_median": 0.21669290231221033,
+      "frames": 67,
+      "estimate_calibrated": 1.1084207039458844,
+      "error_db": 0.8940925855361554
+    },
+    "boat": {
+      "true_pa": 0.3,
+      "estimate_uncalibrated_median": 0.05291230519725915,
+      "frames": 51,
+      "estimate_calibrated": 0.27065535579769046,
+      "error_db": -0.8940925855361586
+    }
+  },
+  "run": {
+    "git_commit": "0bc017b8b777fb673f05e4c7ce08af98c465cacf",
+    "git_dirty": true,
+    "processing_config": "/workspace/examples/configs/processing/simple.json",
+    "processing_config_sha256": "de91f72037109ab9eaae0665a5e8d2f62a041ca74fe872214904d00175ee09a2",
+    "processing_overrides": [
+      "characteristics.level_calibration=1.0"
+    ],
+    "observation": "/workspace/output/harbor_simple/fine/dataset.observation.npz",
+    "observation_sha256": "1f22f30530da19be787d082d2167a700eb410b43f1185f075be3cd6c3781acd8",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": null,
+    "wall_s": 12.923332918995584,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "chunk_s": 0.25
+  }
+}

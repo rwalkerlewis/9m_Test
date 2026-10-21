@@ -46,9 +46,26 @@
     "confirm": 3,
     "confirm_window_s": 8.0,
     "drop_s": 8.0,
-    "fit_s": 20.0
+    "fit_s": 20.0,
+    "static_speed": 0.2,
+    "static_s": 10.0,
+    "lost_s": 4.0
   },
   "echo": null,
+  "characteristics": {
+    "level_calibration": 5.1152,
+    "report_frames": 8,
+    "n_lines": 3,
+    "line_min_db": 6.0,
+    "line_floor_bins": 10,
+    "line_tolerance_bins": 1,
+    "size_threshold_db": 0.0,
+    "peak_radius_m": 20.0,
+    "fit_s": 4.0,
+    "merge_radius_m": 5.0,
+    "merge_s": 2.0,
+    "ais_gate_m": 25.0
+  },
   "scoring": {
     "hit_radius_m": 5.0,
     "assoc_radius_m": 20.0
