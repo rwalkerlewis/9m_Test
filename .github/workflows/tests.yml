@@ -34,5 +34,7 @@ jobs:
           tests/test_package_layout.py
           tests/test_contract.py
           tests/harbor/test_dispersion.py
+          tests/harbor/test_characteristics.py
+          tests/harbor/test_ci_end_to_end.py
           tests/test_fdtd_3d.py::test_cfl
           tests/test_fdtd_3d.py::test_propagation
