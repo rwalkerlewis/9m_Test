@@ -1,19 +1,19 @@
 {
   "recording": "multistatic",
   "run": {
-    "git_commit": "5608006f774ab74064bf3842b512177c9ae83d35",
+    "git_commit": "270945d67307a81834182b19c281382c3446f58f",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/multistatic.json",
     "processing_config_sha256": "31d4fbcff76a7036d73471b80fc76be4fc38291f2c4bc1fe2a817889d4815d76",
     "processing_overrides": [],
     "observation": "/workspace/output/harbor_multistatic/fine/dataset.observation.npz",
-    "observation_sha256": "582024fcb420e0a88b44f02150541f44054095ff8c6c4f23a771eebb0efb8141",
+    "observation_sha256": "155d1549a955c96bd19583164646e828c1ef91b50430d5c82323f397f039d5ba",
     "python": "3.12.3",
     "numpy": "2.5.4",
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 0,
-    "wall_s": 27.70767054300086,
+    "wall_s": 27.89925848999701,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
@@ -39,11 +39,11 @@
         "strength_db": null,
         "along": null,
         "across": null,
-        "source_level": 1.1511,
-        "width_major": 13.86,
-        "width_minor": 3.77,
-        "speed": 4.01,
-        "residual": 1.38
+        "source_level": 1.2644,
+        "width_major": 9.24,
+        "width_minor": 2.31,
+        "speed": 4.0,
+        "residual": 0.67
       },
       "size_ratio_per_frame": {}
     },
@@ -54,20 +54,20 @@
       "true_level_pa": 0.7,
       "true_size_m": null,
       "true_speed": 2.999999999999984,
-      "detected_frames": 42,
+      "detected_frames": 66,
       "seen": {
-        "own noise": 67
+        "own noise": 66
       },
       "median": {
         "size_ratio_db": null,
         "strength_db": null,
         "along": null,
         "across": null,
-        "source_level": 0.7869,
-        "width_major": 25.12,
-        "width_minor": 7.53,
-        "speed": 2.78,
-        "residual": 1.78
+        "source_level": 0.8275,
+        "width_major": 15.49,
+        "width_minor": 3.5,
+        "speed": 3.05,
+        "residual": 1.2349999999999999
       },
       "size_ratio_per_frame": {}
     },
@@ -78,7 +78,7 @@
       "true_level_pa": 0.3,
       "true_size_m": null,
       "true_speed": 4.9999999999999964,
-      "detected_frames": 57,
+      "detected_frames": 66,
       "seen": {
         "own noise": 66
       },
@@ -87,13 +87,94 @@
         "strength_db": null,
         "along": null,
         "across": null,
-        "source_level": 0.536,
-        "width_major": 47.144999999999996,
-        "width_minor": 6.855,
-        "speed": 4.905,
-        "residual": 2.4850000000000003
+        "source_level": 0.5935,
+        "width_major": 46.9,
+        "width_minor": 6.235,
+        "speed": 4.95,
+        "residual": 1.4
       },
       "size_ratio_per_frame": {}
+    },
+    {
+      "object": "uuv2",
+      "type": "uuv",
+      "radiates": false,
+      "true_level_pa": 0.0,
+      "true_size_m": [
+        3.0,
+        1.0
+      ],
+      "true_speed": 1.5000000000000024,
+      "detected_frames": 53,
+      "seen": {
+        "echo": 53
+      },
+      "median": {
+        "size_ratio_db": -8.1,
+        "strength_db": -3.6,
+        "along": 4.6,
+        "across": 4.1,
+        "source_level": null,
+        "width_major": 6.93,
+        "width_minor": 2.31,
+        "speed": 1.49,
+        "residual": 0.78
+      },
+      "size_ratio_per_frame": {
+        "4.75": -17.4,
+        "5.0": -17.4,
+        "5.25": -12.8,
+        "5.5": -12.8,
+        "5.75": -12.8,
+        "6.0": -12.8,
+        "6.25": -12.8,
+        "6.5": -12.8,
+        "6.75": -12.8,
+        "7.0": -9.0,
+        "7.25": -9.3,
+        "7.5": -9.6,
+        "7.75": -9.6,
+        "8.0": -9.6,
+        "8.25": -9.3,
+        "8.5": -9.3,
+        "8.75": -9.3,
+        "9.0": -9.3,
+        "9.25": -9.3,
+        "9.5": -9.3,
+        "9.75": -9.0,
+        "10.0": -9.0,
+        "10.25": -8.6,
+        "10.5": -8.6,
+        "10.75": -8.6,
+        "11.0": -8.6,
+        "11.25": -7.7,
+        "11.5": -7.7,
+        "11.75": -8.1,
+        "12.0": -8.1,
+        "12.25": -8.1,
+        "12.5": -8.1,
+        "12.75": -8.1,
+        "13.0": -8.1,
+        "13.25": -8.1,
+        "13.5": -7.7,
+        "13.75": -7.7,
+        "14.0": -6.5,
+        "14.25": -6.5,
+        "14.5": -6.5,
+        "14.75": -6.5,
+        "15.0": -6.5,
+        "15.25": -6.5,
+        "15.5": -6.5,
+        "15.75": -6.5,
+        "16.0": -6.5,
+        "16.25": -6.5,
+        "16.5": -6.5,
+        "16.75": -6.5,
+        "17.0": -6.5,
+        "17.25": -6.5,
+        "17.5": -6.5,
+        "17.75": -6.5
+      }
     }
   ],
   "size_order": {

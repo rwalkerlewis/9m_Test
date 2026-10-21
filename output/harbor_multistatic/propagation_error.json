@@ -1,0 +1,72 @@
+{
+  "source_xy": [
+    180.0,
+    200.00000000000003
+  ],
+  "source": "ferry",
+  "band_hz": [
+    100.0,
+    760.0
+  ],
+  "c_chart": 1493.682028872403,
+  "time_scheme": "kspace",
+  "uniform_speed": false,
+  "dx": 0.5,
+  "fs": 6000.0,
+  "hydrophones": [
+    {
+      "hydrophone": 0,
+      "xy": [
+        30.0,
+        30.0
+      ],
+      "range_m": 226.7156809750927,
+      "direction_deg": 221.42366562500263,
+      "error_ms": -0.20833333333333334,
+      "phase_error_ms": 0.34375,
+      "straight_path_ms": -0.22975006233338924
+    },
+    {
+      "hydrophone": 1,
+      "xy": [
+        330.0,
+        20.0
+      ],
+      "range_m": 234.30749027719966,
+      "direction_deg": 140.19442890773482,
+      "error_ms": -0.03125,
+      "phase_error_ms": 0.5104166666666666,
+      "straight_path_ms": 0.0037466633322214005
+    },
+    {
+      "hydrophone": 2,
+      "xy": [
+        30.0,
+        250.0
+      ],
+      "range_m": 158.11388300841895,
+      "direction_deg": 288.434948822922,
+      "error_ms": 0.052083333333333336,
+      "phase_error_ms": 0.6041666666666667,
+      "straight_path_ms": 0.03139839655490195
+    },
+    {
+      "hydrophone": 3,
+      "xy": [
+        200.0,
+        20.0
+      ],
+      "range_m": 181.10770276274837,
+      "direction_deg": 173.6598082540901,
+      "error_ms": -0.10416666666666667,
+      "phase_error_ms": 0.4479166666666667,
+      "straight_path_ms": -0.11766546258684674
+    }
+  ],
+  "median_ms": -0.06770833333333334,
+  "min_ms": -0.20833333333333334,
+  "max_ms": 0.052083333333333336,
+  "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed; straight_path_ms: the travel time along the straight line through the scenario's sound speed map minus range / chart speed (what the water itself contributes, refraction aside)",
+  "criterion_ms": 0.2,
+  "passed": false
+}
