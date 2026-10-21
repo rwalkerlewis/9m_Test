@@ -3,13 +3,13 @@
   "record_s": 20.0,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.3463165383991509,
-    "echo": 0.5255777269989267,
-    "total": 0.8718942653980776
+    "passive": 0.44894687710020664,
+    "echo": 0.5015270850497473,
+    "total": 0.9504739621499538
   },
   "passive_latency_s": {
-    "median": 1.6580081234988029,
-    "max": 2.979517357998702
+    "median": 1.891713451999749,
+    "max": 3.127844123999239
   },
   "passive": {
     "frames": 72,
@@ -18,22 +18,22 @@
         "kind": "ship",
         "radiates": true,
         "frames": 72,
-        "hit": 0.9583333333333334,
+        "hit": 0.9722222222222222,
         "median_error_m": 2.2360679774997645
       },
       "tug": {
         "kind": "ship",
         "radiates": true,
         "frames": 72,
-        "hit": 0.8472222222222222,
-        "median_error_m": 2.5154077152343297
+        "hit": 0.6944444444444444,
+        "median_error_m": 2.362354666754843
       },
       "boat": {
         "kind": "ship",
         "radiates": true,
         "frames": 72,
-        "hit": 0.8611111111111112,
-        "median_error_m": 1.2528192171612704
+        "hit": 0.7777777777777778,
+        "median_error_m": 1.390208742665894
       },
       "uuv1": {
         "kind": "uuv",
@@ -110,33 +110,33 @@
   "tracks": [
     {
       "track": "r1",
-      "fixes": 65,
-      "first_t": 0.25,
-      "last_t": 17.75,
-      "score": 1413.3025512695312,
-      "ais_label": null,
-      "true_object": "boat",
-      "median_error_m": 1.2879245181674766
-    },
-    {
-      "track": "r2",
       "fixes": 71,
       "first_t": 0.25,
       "last_t": 18.0,
-      "score": 1281.9179077148438,
+      "score": 2485.2767333984375,
+      "ais_label": null,
+      "true_object": "boat",
+      "median_error_m": 2.6165155925684487
+    },
+    {
+      "track": "r2",
+      "fixes": 72,
+      "first_t": 0.25,
+      "last_t": 18.0,
+      "score": 3506.182373046875,
       "ais_label": "ferry",
       "true_object": "ferry",
       "median_error_m": 2.2360679774997645
     },
     {
-      "track": "r6",
-      "fixes": 67,
-      "first_t": 0.5,
+      "track": "r9",
+      "fixes": 49,
+      "first_t": 4.0,
       "last_t": 18.0,
-      "score": 862.0008850097656,
+      "score": 2621.3333740234375,
       "ais_label": "tug",
       "true_object": "tug",
-      "median_error_m": 2.611621445541527
+      "median_error_m": 2.3488972478788512
     }
   ],
   "echo": {
@@ -168,15 +168,15 @@
         "kind": "uuv",
         "radiates": false,
         "frames": 71,
-        "hit": 0.056338028169014086,
-        "median_error_m": 2.3875349635582195
+        "hit": 0.028169014084507043,
+        "median_error_m": 2.8652679214399113
       },
       "uuv2": {
         "kind": "uuv",
         "radiates": false,
         "frames": 71,
-        "hit": 0.14084507042253522,
-        "median_error_m": 2.514388651586279
+        "hit": 0.18309859154929578,
+        "median_error_m": 2.6371303205421652
       },
       "diver": {
         "kind": "diver",

@@ -3,13 +3,13 @@
   "record_s": 20.0,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.3404110314006175,
-    "echo": 0.3337132021508296,
-    "total": 0.6741242335514471
+    "passive": 0.44882230350067404,
+    "echo": 0.3316022512017298,
+    "total": 0.7804245547024038
   },
   "passive_latency_s": {
-    "median": 1.6400354135003,
-    "max": 2.878484638000373
+    "median": 1.89299903149913,
+    "max": 3.1356337489996804
   },
   "passive": {
     "frames": 72,
@@ -19,14 +19,14 @@
         "radiates": true,
         "frames": 72,
         "hit": 1.0,
-        "median_error_m": 1.0
+        "median_error_m": 1.0000000000000142
       },
       "uuv1": {
         "kind": "uuv",
         "radiates": false,
         "frames": 72,
-        "hit": 0.5833333333333334,
-        "median_error_m": 2.908131961159106
+        "hit": 0.2361111111111111,
+        "median_error_m": 2.7846454462148995
       }
     }
   },
@@ -36,20 +36,20 @@
       "fixes": 72,
       "first_t": 0.25,
       "last_t": 18.0,
-      "score": 2250.87841796875,
+      "score": 7091.829345703125,
       "ais_label": "ferry",
       "true_object": "ferry",
-      "median_error_m": 1.0
+      "median_error_m": 1.0000000000000142
     },
     {
-      "track": "r27",
-      "fixes": 7,
-      "first_t": 16.5,
-      "last_t": 18.0,
-      "score": 165.1254119873047,
+      "track": "r18",
+      "fixes": 14,
+      "first_t": 11.5,
+      "last_t": 16.0,
+      "score": 991.9359436035156,
       "ais_label": null,
       "true_object": null,
-      "median_error_m": 39.29376540877697
+      "median_error_m": 41.231056256176615
     }
   ],
   "echo": {
@@ -67,8 +67,8 @@
         "kind": "uuv",
         "radiates": false,
         "frames": 71,
-        "hit": 0.7464788732394366,
-        "median_error_m": 2.8726187549428723
+        "hit": 0.7323943661971831,
+        "median_error_m": 2.5972114359879734
       }
     }
   }

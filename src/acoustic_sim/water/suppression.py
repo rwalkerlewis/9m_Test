@@ -123,10 +123,11 @@ class ShipEstimates:
         return mask
 
 
-def _replicas(rec, pts: np.ndarray, wh: Whitened, bins, pc: ProcessingConfig):
+def _replicas(rec, pts: np.ndarray, wh: Whitened, bins, pc: ProcessingConfig, layout: SensorLayout):
     """Whitened replicas ``(B, P, N)`` (device) of points *pts* (P, 2) for the bins *bins*.
 
-    *rec* are the receiver positions on the device of *wh*.
+    *rec* are the layout's sample points on the device of *wh*; the Green's function there is collapsed to
+    channels (:meth:`SensorLayout.collapse`, the second difference of a strain cable).
     """
     dev = wh.dev
     xp = dev.xp
@@ -140,6 +141,7 @@ def _replicas(rec, pts: np.ndarray, wh: Whitened, bins, pc: ProcessingConfig):
         a = green2d(k * r[None], xp)
     else:
         a = prop.greens(pts, dev.asnumpy(rec), wh.freqs[bins], xp, dev.fdtype)
+    a = layout.collapse(a, xp)
     sig = wh.sigma[:, _bin_index(bins, xp)].T                                # (B, N)
     return (a / sig[:, None, :] * wh.weights_d[None, None, :]).astype(dev.cdtype)
 
@@ -177,7 +179,7 @@ def refine_ships(
     """Fine Bartlett search around each predicted position; also scores each ship's significance."""
     dev = wh.dev
     xp = dev.xp
-    rec = xp.asarray(layout.receivers, dtype=dev.fdtype)
+    rec = xp.asarray(layout.sample_points, dtype=dev.fdtype)
     bins = wh.scan_bins[:: sc.refine_bin_stride]
     sel = _bin_index(bins, xp)
     off = _grid_offsets(sc.refine_half, sc.refine_step)
@@ -189,7 +191,7 @@ def refine_ships(
         z = wh.Z[:, sel, k].T.astype(dev.cdtype)                            # (B, N)
         for v in np.flatnonzero(est.present[k]):
             pts = est.predicted[k, v] + off
-            A = _replicas(rec, pts, wh, bins, pc)                           # (B, M, N)
+            A = _replicas(rec, pts, wh, bins, pc, layout)                         # (B, M, N)
             y = xp.einsum("bmn,bn->bm", A.conj(), z)
             norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=2), 1e-12)
             power = dev.asnumpy(xp.sum(xp.abs(y) ** 2 / norm, axis=0)).astype(np.float64)
@@ -211,7 +213,7 @@ def project_out_ships(
     """
     dev = wh.dev
     xp = dev.xp
-    rec = xp.asarray(layout.receivers, dtype=dev.fdtype)
+    rec = xp.asarray(layout.sample_points, dtype=dev.fdtype)
     bins = wh.scan_bins
     sel = _bin_index(bins, xp)
     patch = _grid_offsets(sc.patch_half, sc.patch_half)                     # 3 x 3 points
@@ -221,7 +223,7 @@ def project_out_ships(
         if len(vs) == 0:
             continue
         pts = (est.refined[k, vs][:, None, :] + patch[None]).reshape(-1, 2)
-        A = _replicas(rec, pts, wh, bins, pc)                               # (B, P, N)
+        A = _replicas(rec, pts, wh, bins, pc, layout)                             # (B, P, N)
         u, s, _ = xp.linalg.svd(xp.swapaxes(A, 1, 2), full_matrices=False)  # u: (B, N, P)
         uk = u * (s > sc.svd_rtol * s[:, :1])[:, None, :]
         z = Z[:, sel, k].T.astype(dev.cdtype)                               # (B, N)

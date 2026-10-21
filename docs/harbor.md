@@ -9,10 +9,10 @@ the echo of an AIS ship. The forward model reuses this package's FDTD
 solver; water-specific code lives in `src/acoustic_sim/water/`.
 
 **Status: the simulation, sensing and processing chain work and are tested.  The real-time system
-(`water/streaming.py`, `examples/harbor_stream.py`, 0.67 to 0.87 s of compute per second of data)
+(`water/streaming.py`, `examples/harbor_stream.py`, 0.78 to 0.95 s of compute per second of data)
 locates every ship from the traces alone, AIS only labelling the tracks afterwards, and finds a silent
-UUV lit by one ship in 75 % of frames.  Not yet detected reliably: the silent bodies of the multi ship
-scene (6 to 14 %) and the quiet UUVs of the 5 m harbor.**  See
+UUV lit by one ship in 73 % of frames.  Not yet detected reliably: the silent bodies of the multi ship
+scene (3 to 18 %) and the quiet UUVs of the 5 m harbor.**  See
 [What the chains find today](#what-the-chains-find-today).
 
 ## Walkthrough: from the traces to the harbor picture
@@ -64,7 +64,7 @@ the record (each frame over its median, so the scale is dB over the noise level)
 
 **7. The harbor picture** (`07_harbor_picture.py`). Tracks and echo detections over the true positions,
 and each object's score (frames with a detection within 5 m, median error). On the multistatic recording
-the ships are found in 85 to 96 % of the frames; the silent bodies there are mostly not (6 % and 14 % for
+the ships are found in 69 to 97 % of the frames; the silent bodies there are mostly not (3 % and 18 % for
 the UUVs) because the other ships' direct sound is removed only by 3 to 7 dB.
 
 ![step 7](../output/walkthrough/multistatic/07_harbor_picture.png)
@@ -413,7 +413,7 @@ each dataset.
 | Dataset | Chain | Found (frames with a detection within 5 m, median error) | Not found | Detections > 10 m from every object | Time |
 |---|---|---|---|---|---|
 | bistatic (0.5 m, 20 s) | echo, ferry illuminates | silent UUV 75 %, 2.5 m | — | 1.7 per frame | 27 s |
-| multistatic (0.5 m, 20 s) | passive | boat (no AIS) 77 %, 1.6 m; ferry 18 %, 1.1 m | tug | 1.8 per frame | 11 s |
+| multistatic (0.5 m, 20 s) | passive | boat (no AIS) 57 %, 1.7 m; ferry 16 %, 4.1 m | tug | 1.8 per frame | 13 s |
 | multistatic | echo, ferry illuminates | — (tug 23 %: its direct path dominates the map) | both UUVs, diver, six pilings, moored hull | 2.0 per frame | 27 s |
 | harbor (5 m, 120 s) | passive | ferry 2 %, tug 3 % | moored ship, both UUVs, diver | 2.9 per frame | 9 s |
 
@@ -444,16 +444,28 @@ On the Quadro RTX 4000, checked against the true positions (a detection within 5
 
 | Recording | Compute per s of data (passive + echo) | Passive (no AIS) | Tracks (AIS label afterwards) | Echo |
 |---|---|---|---|---|
-| bistatic (0.5 m, 20 s) | 0.67 s | ferry 100 %, the UUV's echo 58 % | ferry 1.0 m (AIS: ferry) | silent UUV 75 % |
-| multistatic (0.5 m, 20 s) | 0.87 s | ferry 96 %, tug 85 %, boat 86 % | boat 1.3 m (no AIS), ferry 2.2 m (AIS: ferry), tug 2.6 m (AIS: tug) | uuv2 14 %, uuv1 6 %, the other bodies under 2 % |
+| bistatic (0.5 m, 20 s) | 0.78 s | ferry 100 %, the UUV's echo 24 % | ferry 1.0 m (AIS: ferry) | silent UUV 73 % |
+| multistatic (0.5 m, 20 s) | 0.95 s | ferry 97 %, tug 69 %, boat 78 % | boat 2.6 m (no AIS), ferry 2.2 m (AIS: ferry), tug 2.3 m (AIS: tug) | uuv2 18 %, uuv1 3 %, the other bodies under 2 % |
 | harbor (5 m, 120 s) | 0.50 s (passive only) | ferry 50 %, tug 2 % | ferry 13 m (AIS: ferry), tug 8 m (AIS: tug) | — |
 
-Latency: about 1.7 s on the 0.5 m recordings (2 s steps), 1 s on the 5 m one. What made it fit: free field
-replicas from fused GPU kernels (phase recurrence, `green2d_bins`, within 1e-14; the strain channel
-replicas from the range table, within 7e-6), the interference eigendecompositions batched and spread over
+Latency: about 1.7 s on the simple harbor and 1.9 s on the strain recordings (2 s steps), 1 s on the 5 m one.
+What made it fit: free field replicas from fused GPU kernels (phase recurrence, `green2d_bins`, within 1e-14;
+the passive strain replicas from the same recurrence at the three sample points of each channel, combined in
+the kernel; the echo chain's strain channel replicas from the range table, within 7e-6), the interference eigendecompositions batched and spread over
 blocks, the ECA on the newest blocks only (`eca_remove(blocks=...)`), its normal equations from prefix sums
 (`eca_gram="prefix"`, equal to 1e-15) for all channels at once (`eca_chunk=200`), every illuminator's map in
 one pass. The batch coherent map uses the same replicas: 4.9 s instead of 9.2 s on the fine bistatic dataset.
+
+The passive replicas (scan, streaming chain, AIS ship refinement and projection) are the Green's function at
+the layout's sample points collapsed to channels, as the echo chain's: on a strain cable the data are the
+second difference over the gauge length. Until this review they were the Green's function at the channel
+centres, a mismatch on the bistatic and multistatic recordings. With the matched replica the map at every
+radiator doubles (multistatic seed 0, median over frames within 3 m of the truth: ferry 1472 to 3286, tug 91
+to 230, boat 1574 to 3090), and so do the frame maxima. The strongest ship's sidelobes then take more of the
+peaks of a frame, so the weaker objects are found less often: tug 85 to 69 %, boat 86 to 78 %, the UUV's echo
+on the bistatic recording 58 to 24 % (passive), and in the batch passive chain (`harbor_detect.py`, where the
+AIS ship refinement uses the same replicas) the boat 77 to 57 %. The passive compute went from
+0.34 to 0.45 s per second of data.
 
 Removing the other ships' direct paths is what lets the echoes through in the multi ship scene: with the
 tug's and the boat's direct paths removed exactly (from the truth, a diagnostic) the ferry lit map finds
@@ -471,8 +483,8 @@ at 5 % of object free frames:
 | bistatic / echo | `all_estimated` | uuv1 0.27 | uuv1 0.30 |
 | bistatic / echo | `true_waveform_exact_track` (given the truth) | uuv1 0.03 | uuv1 0.02 |
 | bistatic / echo | `direct_removed_exactly` (given the truth) | uuv1 0.37 | uuv1 0.51 |
-| multistatic / passive (scan map) | `all_estimated` | ferry 0.00, tug 0.00, boat 0.16 | ferry 0.00, tug 0.00, boat 0.08 |
-| multistatic / passive (occupancy map) | `all_estimated` | 0.00, 0.00, 0.00 | 0.01, 0.00, 0.01 |
+| multistatic / passive (scan map) | `all_estimated` | ferry 0.01, tug 0.00, boat 0.16 | ferry 0.01, tug 0.00, boat 0.08 |
+| multistatic / passive (occupancy map) | `all_estimated` | 0.00, 0.00, 0.00 | 0.00, 0.00, 0.00 |
 
 Criteria fixed before the run: 1 (passive, ferry, tug and boat Pd >= 0.9) **fails**; 2 (echo,
 bistatic UUV Pd >= 0.5) **fails** (0.30); 3 (multistatic static bodies) was not run. The UUV is the

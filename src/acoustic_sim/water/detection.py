@@ -281,16 +281,22 @@ class ScanResult:
 
 
 class MatchedFieldScanner:
-    """Free-field matched-field scanner over a fixed grid for a given sensor layout."""
+    """Free-field matched-field scanner over a fixed grid for a given sensor layout.
+
+    Replicas are the Green's function at the layout's sample points collapsed to channels
+    (:meth:`SensorLayout.collapse`): the second difference over the gauge length for a strain cable,
+    the Green's function itself for pressure channels and hydrophones (as ``bistatic.ReplicaModel``).
+    """
 
     def __init__(self, layout: SensorLayout, grid: np.ndarray, cfg: ProcessingConfig) -> None:
         self.layout, self.grid, self.cfg = layout, np.asarray(grid), cfg
         self.dev = get_device(cfg.use_cuda)
-        self.rec = self.dev.xp.asarray(layout.receivers, dtype=self.dev.fdtype)
+        self.rec = self.dev.xp.asarray(layout.sample_points, dtype=self.dev.fdtype)
         self.propagator = resolve(cfg.propagator, cfg.c)
 
     def _geometry(self, xy):
-        """``(r, theta)`` of source points *xy* (host or device) to all receivers, both ``(P, N)`` on the device.
+        """``(r, theta)`` of source points *xy* (host or device) to all sample points, both ``(P, S)`` on the device
+        (``S = N`` without strain cables).
 
         ``theta = atan2(|dy|, |dx|)`` is the propagation angle from the grid axes (for the dispersion model).
         """
@@ -302,14 +308,15 @@ class MatchedFieldScanner:
         return r, xp.arctan2(xp.abs(dy), xp.abs(dx)), xy
 
     def _replicas(self, geom, wh: Whitened, i: int):
-        """Whitened replicas ``(G, N)`` for bin *i*."""
+        """Whitened replicas ``(G, N)`` for bin *i* (sample points collapsed to channels)."""
         r, theta, xy = geom
         prop = self.propagator
         if prop.analytic:
             k = prop.wavenumbers([wh.freqs[i]], theta, self.dev.xp, self.dev.fdtype)[0]
             g = green2d(k * r, self.dev.xp)
         else:
-            g = prop.greens(self.dev.asnumpy(xy), self.layout.receivers, [wh.freqs[i]], self.dev.xp, self.dev.fdtype)[0]
+            g = prop.greens(self.dev.asnumpy(xy), self.layout.sample_points, [wh.freqs[i]], self.dev.xp, self.dev.fdtype)[0]
+        g = self.layout.collapse(g, self.dev.xp)
         a = g / wh.sigma[None, :, i] * wh.weights_d[None, :]
         return a.astype(self.dev.cdtype)
 
