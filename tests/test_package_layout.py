@@ -60,7 +60,7 @@ def test_root_legacy_module_aliases_are_canonical_modules():
     pairs = {
         **{name: f"air.{name}" for name in (
             "config", "domains", "fire_control", "forward", "noise", "processor",
-            "plotting", "setup", "tracker", "validate", "detection_main", "studies",
+            "setup", "tracker", "validate", "detection_main", "studies",
         )},
         "detection": "air.detection",
         **{f"detection.{name}": f"air.detection.{name}"
@@ -73,6 +73,13 @@ def test_root_legacy_module_aliases_are_canonical_modules():
         assert import_module(f"acoustic_sim.{legacy}") is module, legacy
         if "." not in legacy and legacy not in ("detection_main", "studies"):
             assert getattr(acoustic_sim, legacy) is module, legacy
+
+
+def test_root_plotting_is_the_figure_rule():
+    """``acoustic_sim.plotting`` is the shared figure rule, no longer an alias of the air plots."""
+    plotting = import_module("acoustic_sim.plotting")
+    assert hasattr(plotting, "save_figure")
+    assert plotting is not import_module("acoustic_sim.air.plotting")
 
 
 def test_detection_main_runs_as_module_without_runpy_warning():

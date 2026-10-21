@@ -404,7 +404,6 @@ for _module_name in (
     "forward",
     "noise",
     "processor",
-    "plotting",
     "setup",
     "tracker",
     "validate",
