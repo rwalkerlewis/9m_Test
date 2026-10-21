@@ -4,14 +4,14 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.7913858848492964,
-    "echo": 0.33528509104980914,
-    "characteristics": 0.08294744135018846,
-    "total": 1.209618417249294
+    "passive": 0.6257968127007189,
+    "echo": 0.3401008810491476,
+    "characteristics": 0.10139874034211971,
+    "total": 1.0672964340919862
   },
   "latency_s": {
-    "median": 1.989,
-    "max": 2.989
+    "median": 2.0,
+    "max": 3.0
   },
   "objects": {
     "ferry": {
@@ -34,9 +34,9 @@
         "any": 66
       },
       "median_error_m": {
-        "radiator": 0.874770743160387,
+        "radiator": 0.5300000000000011,
         "echo": null,
-        "any": 0.874770743160387
+        "any": 0.5300000000000011
       },
       "tracks": [
         "r1"
@@ -47,8 +47,8 @@
       "radiates": false,
       "ais": false,
       "pd": {
-        "radiator": 0.2878787878787879,
-        "echo": 0.546875,
+        "radiator": 0.16666666666666666,
+        "echo": 0.671875,
         "any": 0.8181818181818182
       },
       "frames": {
@@ -57,18 +57,18 @@
         "any": 66
       },
       "hits": {
-        "radiator": 19,
-        "echo": 35,
+        "radiator": 11,
+        "echo": 43,
         "any": 54
       },
       "median_error_m": {
-        "radiator": 2.5855171436412427,
-        "echo": 3.0012654050013943,
-        "any": 2.8481301248350244
+        "radiator": 3.113571467271219,
+        "echo": 2.0656117439237796,
+        "any": 2.2530944068742667
       },
       "tracks": [
-        "e33",
-        "r2"
+        "e7",
+        "r8"
       ]
     }
   },
@@ -81,14 +81,14 @@
       "true_object": "ferry",
       "false_track": false,
       "nearest_object": "ferry",
-      "median_error_m": 1.0000000000000284,
+      "median_error_m": 1.0,
       "first_xy": [
         146.0,
         200.0
       ],
       "last_xy": [
         210.0,
-        202.0
+        200.0
       ],
       "median_xy": [
         178.0,
@@ -98,191 +98,145 @@
     },
     {
       "track": "r2",
-      "fixes": 15,
-      "first_t": 1.5,
-      "last_t": 5.0,
-      "true_object": "uuv1",
-      "false_track": false,
+      "fixes": 2,
+      "first_t": 2.25,
+      "last_t": 2.5,
+      "true_object": null,
+      "false_track": true,
       "nearest_object": "uuv1",
-      "median_error_m": 3.568015794798105,
+      "median_error_m": 25.26086404522413,
       "first_xy": [
-        234.0,
-        102.0
+        256.0,
+        116.0
       ],
       "last_xy": [
-        230.0,
-        108.0
+        258.0,
+        118.0
       ],
       "median_xy": [
-        234.0,
-        106.0
+        257.0,
+        117.0
       ],
       "kind": "radiator"
     },
     {
       "track": "r8",
       "fixes": 3,
-      "first_t": 5.5,
-      "last_t": 6.0,
+      "first_t": 2.5,
+      "last_t": 3.0,
+      "true_object": "uuv1",
+      "false_track": false,
+      "nearest_object": "uuv1",
+      "median_error_m": 3.721698396259338,
+      "first_xy": [
+        238.0,
+        106.0
+      ],
+      "last_xy": [
+        238.0,
+        108.0
+      ],
+      "median_xy": [
+        238.0,
+        106.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r12",
+      "fixes": 51,
+      "first_t": 4.0,
+      "last_t": 17.75,
       "true_object": null,
       "false_track": true,
       "nearest_object": "ferry",
-      "median_error_m": 40.804411526206316,
+      "median_error_m": 41.72529209005011,
       "first_xy": [
-        130.0,
+        124.0,
         226.0
       ],
       "last_xy": [
-        132.0,
-        224.0
+        182.0,
+        232.0
       ],
       "median_xy": [
-        130.0,
-        224.0
+        154.0,
+        228.0
       ],
       "kind": "radiator"
     },
     {
-      "track": "r11",
-      "fixes": 3,
-      "first_t": 7.5,
-      "last_t": 8.0,
-      "true_object": null,
-      "false_track": true,
-      "nearest_object": "ferry",
-      "median_error_m": 40.00000000000001,
-      "first_xy": [
-        138.0,
-        222.0
-      ],
-      "last_xy": [
-        140.0,
-        224.0
-      ],
-      "median_xy": [
-        138.0,
-        224.0
-      ],
-      "kind": "radiator"
-    },
-    {
-      "track": "e33",
-      "fixes": 31,
-      "first_t": 9.25,
+      "track": "e7",
+      "fixes": 42,
+      "first_t": 7.25,
       "last_t": 17.75,
       "true_object": "uuv1",
       "false_track": false,
       "nearest_object": "uuv1",
-      "median_error_m": 3.169653508835447,
+      "median_error_m": 2.364560816154918,
       "first_xy": [
-        224.0,
-        114.0
+        226.0,
+        108.0
       ],
       "last_xy": [
-        214.0,
-        126.0
+        210.0,
+        122.0
       ],
       "median_xy": [
-        218.0,
-        118.0
+        219.0,
+        116.0
       ],
       "kind": "echo"
-    },
-    {
-      "track": "r14",
-      "fixes": 13,
-      "first_t": 12.5,
-      "last_t": 16.0,
-      "true_object": null,
-      "false_track": true,
-      "nearest_object": "ferry",
-      "median_error_m": 41.77319714841083,
-      "first_xy": [
-        158.0,
-        228.0
-      ],
-      "last_xy": [
-        172.0,
-        228.0
-      ],
-      "median_xy": [
-        164.0,
-        228.0
-      ],
-      "kind": "radiator"
     }
   ],
   "false_tracks": {
-    "count": 3,
-    "per_minute": 9.0,
-    "radiator": 3,
+    "count": 2,
+    "per_minute": 6.0,
+    "radiator": 2,
     "echo": 0,
     "tracks": [
       {
-        "track": "r8",
-        "fixes": 3,
-        "first_t": 5.5,
-        "last_t": 6.0,
+        "track": "r2",
+        "fixes": 2,
+        "first_t": 2.25,
+        "last_t": 2.5,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "uuv1",
+        "median_error_m": 25.26086404522413,
+        "first_xy": [
+          256.0,
+          116.0
+        ],
+        "last_xy": [
+          258.0,
+          118.0
+        ],
+        "median_xy": [
+          257.0,
+          117.0
+        ],
+        "kind": "radiator"
+      },
+      {
+        "track": "r12",
+        "fixes": 51,
+        "first_t": 4.0,
+        "last_t": 17.75,
         "true_object": null,
         "false_track": true,
         "nearest_object": "ferry",
-        "median_error_m": 40.804411526206316,
+        "median_error_m": 41.72529209005011,
         "first_xy": [
-          130.0,
+          124.0,
           226.0
         ],
         "last_xy": [
-          132.0,
-          224.0
+          182.0,
+          232.0
         ],
         "median_xy": [
-          130.0,
-          224.0
-        ],
-        "kind": "radiator"
-      },
-      {
-        "track": "r11",
-        "fixes": 3,
-        "first_t": 7.5,
-        "last_t": 8.0,
-        "true_object": null,
-        "false_track": true,
-        "nearest_object": "ferry",
-        "median_error_m": 40.00000000000001,
-        "first_xy": [
-          138.0,
-          222.0
-        ],
-        "last_xy": [
-          140.0,
-          224.0
-        ],
-        "median_xy": [
-          138.0,
-          224.0
-        ],
-        "kind": "radiator"
-      },
-      {
-        "track": "r14",
-        "fixes": 13,
-        "first_t": 12.5,
-        "last_t": 16.0,
-        "true_object": null,
-        "false_track": true,
-        "nearest_object": "ferry",
-        "median_error_m": 41.77319714841083,
-        "first_xy": [
-          158.0,
-          228.0
-        ],
-        "last_xy": [
-          172.0,
-          228.0
-        ],
-        "median_xy": [
-          164.0,
+          154.0,
           228.0
         ],
         "kind": "radiator"
@@ -304,12 +258,12 @@
         "ferry": {
           "frames": 72,
           "hit": 1.0,
-          "median_error_m": 1.0000000000000284
+          "median_error_m": 1.0
         },
         "uuv1": {
           "frames": 72,
-          "hit": 0.2916666666666667,
-          "median_error_m": 2.921270638491393
+          "hit": 0.19444444444444445,
+          "median_error_m": 2.2996132647124603
         }
       }
     },
@@ -323,26 +277,26 @@
         },
         "uuv1": {
           "frames": 71,
-          "hit": 0.7605633802816901,
-          "median_error_m": 2.5228284422996263
+          "hit": 0.8873239436619719,
+          "median_error_m": 2.391224477496264
         }
       }
     }
   },
   "run": {
-    "git_commit": "5608006f774ab74064bf3842b512177c9ae83d35",
+    "git_commit": "270945d67307a81834182b19c281382c3446f58f",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/bistatic.json",
     "processing_config_sha256": "5b03cc845042ff99c0c8ed23d84845366333f9f80c5e758a91b8cae56f24e47d",
     "processing_overrides": [],
     "observation": "/workspace/output/harbor_bistatic/seed3/dataset.observation.npz",
-    "observation_sha256": "63f15dbaa4dc22279a422d1591d489040aea5c6d8e95643bfff2bd322be30a7a",
+    "observation_sha256": "55f8cb709e14beab7efc5daa96365f44abd2960942d5f8704565956437e8e60d",
     "python": "3.12.3",
     "numpy": "2.5.4",
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 3,
-    "wall_s": 24.34138620599697,
+    "wall_s": 21.454419802990742,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

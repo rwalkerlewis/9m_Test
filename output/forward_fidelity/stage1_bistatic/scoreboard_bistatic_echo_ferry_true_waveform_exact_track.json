@@ -1,0 +1,116 @@
+{
+  "dataset": "bistatic",
+  "chain": "echo",
+  "config": "ferry/true_waveform_exact_track",
+  "map": "coherent",
+  "propagator": "free_field",
+  "threshold": {
+    "T": 2167.998291015625,
+    "T_full_record": 57647.98828125,
+    "pfa": 0.05,
+    "n_frames": 79,
+    "frames_above_T": 3,
+    "object_free_runs": [
+      "bistatic:echo:ferry/true_waveform_exact_track:seed0:free_of_uuv1"
+    ]
+  },
+  "tuning": {
+    "label": "bistatic / echo / ferry/true_waveform_exact_track / tuning set",
+    "threshold": {
+      "T": 2167.998291015625,
+      "T_full_record": 57647.98828125,
+      "pfa": 0.05,
+      "n_frames": 79,
+      "frames_above_T": 3,
+      "object_free_runs": [
+        "bistatic:echo:ferry/true_waveform_exact_track:seed0:free_of_uuv1"
+      ]
+    },
+    "false_alarm_rate": 0.13924050632911392,
+    "false_alarm_frame_rate": 0.05063291139240506,
+    "false_alarms": 11,
+    "n_frames": 79,
+    "separation": null,
+    "per_object": [
+      {
+        "id": "uuv1",
+        "kind": "uuv",
+        "radiates": false,
+        "ais": false,
+        "moving": true,
+        "frames": 79,
+        "detected": 12,
+        "pd": 0.1518987341772152,
+        "median_error_m": 3.255919137087057,
+        "p90_error_m": 4.206295846396706,
+        "full_record_detected": null,
+        "full_record_error_m": null,
+        "full_record_hits": null,
+        "runs": [
+          "bistatic:echo:ferry/true_waveform_exact_track:seed0"
+        ]
+      }
+    ],
+    "provenance": {
+      "truth_inputs": [
+        "waveform",
+        "track"
+      ],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "split": "tuning",
+    "seeds": [
+      0
+    ]
+  },
+  "diagnostic_frame_argmax_to_uuv": {
+    "tuning": {
+      "frames": 79,
+      "median_m": 5.197788091534797,
+      "p90_m": 240.05245196481738,
+      "within_5m": 0.4936708860759494,
+      "within_20m": 0.5316455696202531
+    }
+  },
+  "cancellation_diagnostic": {
+    "tuning": [
+      {
+        "direct_depth_db_median": 21.86413737606963,
+        "direct_depth_db_p10": 19.62864364915091,
+        "echo_loss_db_median": 0.5140581449494737,
+        "channels": "live DAS channels",
+        "provenance": {
+          "truth_inputs": [
+            "waveform",
+            "track",
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+      }
+    ],
+    "test": []
+  },
+  "illuminator_track_error_m": {
+    "tuning": [
+      0.0
+    ],
+    "test": []
+  },
+  "misses": {
+    "counts": {
+      "ship exclusion edge": 6,
+      "quay image of the ship": 0,
+      "direct path ship to cable": 0,
+      "elsewhere": 31
+    },
+    "frames_total": 79,
+    "within_25m_of_another_radiator": null,
+    "note": "frames with an illuminator whose highest cell is more than 20 m from every UUV, all seeds"
+  }
+}

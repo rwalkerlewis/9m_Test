@@ -40,6 +40,7 @@ from scipy.signal import butter, sosfiltfilt
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
+from acoustic_sim.water.dataset import count_cached_gathers, write_build_info  # noqa: E402
 from acoustic_sim.water import (  # noqa: E402
     HarborScenarioConfig,
     assemble_dataset,
@@ -136,8 +137,12 @@ def main() -> None:
 
     t0 = time.time()
     tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in cfg.vessels}
+    n_cached = count_cached_gathers(Path(args.out) / "cache")
+    t_fdtd = time.time()
     gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=Path(args.out) / "cache", workers=args.workers,
                                     combined_bodies=True)
+    write_build_info(Path(args.out) / "build.json", cfg, env, len(gathers), time.time() - t_fdtd,
+                     count_cached_gathers(Path(args.out) / "cache") - n_cached)
     ds = assemble_dataset(cfg, layout, tracks, gathers, seed=args.seed, keep_components=True)
     say(f"[{tag}] {len(gathers)} gathers ({', '.join(gathers)}) in {time.time() - t0:.0f} s")
     ds.save(out / "dataset.npz")

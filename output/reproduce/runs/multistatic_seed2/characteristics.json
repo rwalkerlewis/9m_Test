@@ -1,19 +1,19 @@
 {
   "recording": "multistatic_seed2",
   "run": {
-    "git_commit": "5608006f774ab74064bf3842b512177c9ae83d35",
+    "git_commit": "270945d67307a81834182b19c281382c3446f58f",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/multistatic.json",
     "processing_config_sha256": "31d4fbcff76a7036d73471b80fc76be4fc38291f2c4bc1fe2a817889d4815d76",
     "processing_overrides": [],
     "observation": "/workspace/output/harbor_multistatic/seed2/dataset.observation.npz",
-    "observation_sha256": "d3a5d517426660ae65fdaf89af2142aa60a35295fe260f4eafc316d9e566861d",
+    "observation_sha256": "ed127a438d7c52fc1fe46003de671b9a6608d0cca30508660709c06bb9250009",
     "python": "3.12.3",
     "numpy": "2.5.4",
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 2,
-    "wall_s": 30.39354497000022,
+    "wall_s": 28.10217480099527,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
@@ -39,11 +39,11 @@
         "strength_db": null,
         "along": null,
         "across": null,
-        "source_level": 1.1785,
-        "width_major": 13.86,
-        "width_minor": 3.55,
+        "source_level": 1.3031,
+        "width_major": 9.24,
+        "width_minor": 2.31,
         "speed": 4.0,
-        "residual": 1.36
+        "residual": 0.7050000000000001
       },
       "size_ratio_per_frame": {}
     },
@@ -54,20 +54,20 @@
       "true_level_pa": 0.7,
       "true_size_m": null,
       "true_speed": 2.999999999999984,
-      "detected_frames": 42,
+      "detected_frames": 66,
       "seen": {
-        "own noise": 44
+        "own noise": 66
       },
       "median": {
         "size_ratio_db": null,
         "strength_db": null,
         "along": null,
         "across": null,
-        "source_level": 0.7899,
-        "width_major": 20.784999999999997,
-        "width_minor": 7.45,
-        "speed": 3.07,
-        "residual": 1.89
+        "source_level": 0.8537,
+        "width_major": 16.045,
+        "width_minor": 3.705,
+        "speed": 3.05,
+        "residual": 1.23
       },
       "size_ratio_per_frame": {}
     },
@@ -78,7 +78,7 @@
       "true_level_pa": 0.3,
       "true_size_m": null,
       "true_speed": 4.9999999999999964,
-      "detected_frames": 43,
+      "detected_frames": 66,
       "seen": {
         "own noise": 66
       },
@@ -87,13 +87,145 @@
         "strength_db": null,
         "along": null,
         "across": null,
-        "source_level": 0.5509,
-        "width_major": 47.125,
-        "width_minor": 6.81,
-        "speed": 4.88,
-        "residual": 2.385
+        "source_level": 0.6126499999999999,
+        "width_major": 46.989999999999995,
+        "width_minor": 6.3,
+        "speed": 4.95,
+        "residual": 1.45
       },
       "size_ratio_per_frame": {}
+    },
+    {
+      "object": "uuv1",
+      "type": "uuv",
+      "radiates": false,
+      "true_level_pa": 0.0,
+      "true_size_m": [
+        3.0,
+        1.0
+      ],
+      "true_speed": 2.000000000000001,
+      "detected_frames": 19,
+      "seen": {
+        "echo": 19
+      },
+      "median": {
+        "size_ratio_db": -8.4,
+        "strength_db": 0.4,
+        "along": 3.4,
+        "across": 5.6,
+        "source_level": null,
+        "width_major": 6.87,
+        "width_minor": 2.85,
+        "speed": 1.98,
+        "residual": 0.76
+      },
+      "size_ratio_per_frame": {
+        "13.25": -20.3,
+        "13.5": -20.3,
+        "13.75": -20.3,
+        "14.0": -20.3,
+        "14.25": -14.3,
+        "14.5": -8.4,
+        "14.75": -8.4,
+        "15.0": -8.4,
+        "15.25": -8.4,
+        "15.5": -8.4,
+        "15.75": -8.4,
+        "16.0": -8.4,
+        "16.25": -8.4,
+        "16.5": -8.4,
+        "16.75": -8.4,
+        "17.0": -8.4,
+        "17.25": -8.4,
+        "17.5": -8.4,
+        "17.75": -8.4
+      }
+    },
+    {
+      "object": "uuv2",
+      "type": "uuv",
+      "radiates": false,
+      "true_level_pa": 0.0,
+      "true_size_m": [
+        3.0,
+        1.0
+      ],
+      "true_speed": 1.5000000000000024,
+      "detected_frames": 57,
+      "seen": {
+        "echo": 57
+      },
+      "median": {
+        "size_ratio_db": -7.4,
+        "strength_db": -2.6,
+        "along": 5.3,
+        "across": 4.0,
+        "source_level": null,
+        "width_major": 6.93,
+        "width_minor": 3.38,
+        "speed": 1.55,
+        "residual": 1.11
+      },
+      "size_ratio_per_frame": {
+        "3.75": -2.5,
+        "4.0": -10.2,
+        "4.25": -4.6,
+        "4.5": -4.6,
+        "4.75": -8.3,
+        "5.0": -10.0,
+        "5.25": -8.9,
+        "5.5": -8.9,
+        "5.75": -8.9,
+        "6.0": -8.9,
+        "6.25": -8.9,
+        "6.5": -8.9,
+        "6.75": -7.9,
+        "7.0": -8.9,
+        "7.25": -9.6,
+        "7.5": -9.6,
+        "7.75": -9.6,
+        "8.0": -8.8,
+        "8.25": -8.8,
+        "8.5": -8.8,
+        "8.75": -8.8,
+        "9.0": -8.8,
+        "9.25": -8.8,
+        "9.5": -8.8,
+        "9.75": -8.8,
+        "10.0": -8.8,
+        "10.25": -8.8,
+        "10.5": -8.8,
+        "10.75": -8.8,
+        "11.0": -8.8,
+        "11.25": -8.8,
+        "11.5": -7.4,
+        "11.75": -7.4,
+        "12.0": -7.4,
+        "12.25": -7.4,
+        "12.5": -7.4,
+        "12.75": -7.4,
+        "13.0": -7.4,
+        "13.25": -7.4,
+        "13.5": -7.4,
+        "13.75": -7.4,
+        "14.0": -6.1,
+        "14.25": -6.1,
+        "14.5": -6.1,
+        "14.75": -6.1,
+        "15.0": -5.6,
+        "15.25": -5.6,
+        "15.5": -5.6,
+        "15.75": -5.6,
+        "16.0": -5.6,
+        "16.25": -5.6,
+        "16.5": -5.6,
+        "16.75": -5.6,
+        "17.0": -5.6,
+        "17.25": -5.6,
+        "17.5": -5.6,
+        "17.75": -5.6
+      }
     }
   ],
   "size_order": {

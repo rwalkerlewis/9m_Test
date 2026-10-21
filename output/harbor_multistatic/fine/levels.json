@@ -1,56 +1,56 @@
 {
   "table": {
     "direct:ferry": {
-      "cable1": 0.1536665996709219,
-      "hydrophones": 0.13588043397899452,
-      "best_das": 0.29799461024252444
+      "cable1": 0.15919900435138404,
+      "hydrophones": 0.13751467088551045,
+      "best_das": 0.30354519493853327
     },
     "scattered:ferry>bodies": {
-      "cable1": 0.0601677792702508,
-      "hydrophones": 0.02986693766164683,
-      "best_das": 0.15207717743062754
+      "cable1": 0.06110130300581179,
+      "hydrophones": 0.03022098958407941,
+      "best_das": 0.15289399062079526
     },
     "direct:tug": {
-      "cable1": 0.1606426174074647,
-      "hydrophones": 0.061192757368794475,
-      "best_das": 0.382144359732894
+      "cable1": 0.1645212224152001,
+      "hydrophones": 0.061902985433784946,
+      "best_das": 0.39081439182138256
     },
     "scattered:tug>bodies": {
-      "cable1": 0.03010722714229349,
-      "hydrophones": 0.023027814252434137,
-      "best_das": 0.05797047555302217
+      "cable1": 0.03083428275205994,
+      "hydrophones": 0.02324811363915527,
+      "best_das": 0.05950786468712138
     },
     "direct:boat": {
-      "cable1": 0.0652686726697612,
-      "hydrophones": 0.05598249872509524,
-      "best_das": 0.11957367944093462
+      "cable1": 0.06673451419198147,
+      "hydrophones": 0.05656013262193779,
+      "best_das": 0.12138484912277916
     },
     "scattered:boat>bodies": {
-      "cable1": 0.018277369618628473,
-      "hydrophones": 0.009661458293433066,
-      "best_das": 0.03316567903396834
+      "cable1": 0.01877294326803133,
+      "hydrophones": 0.009762817195587366,
+      "best_das": 0.03406731989215353
     },
     "noise": {
-      "cable1": 0.03130909780648188,
-      "hydrophones": 0.023255485750561532,
-      "best_das": 0.03685278691956555
+      "cable1": 0.031309097810913275,
+      "hydrophones": 0.023255485798448845,
+      "best_das": 0.0368527869212044
     }
   },
   "summary": {
     "ferry": {
-      "echo_to_direct_db_median_das": -8.144309977861074,
-      "echo_to_noise_db_median_das": 5.673868582686458,
-      "echo_to_noise_db_best_das": 13.727869801594817
+      "echo_to_direct_db_median_das": -8.31779750932421,
+      "echo_to_noise_db_median_das": 5.8075983691424495,
+      "echo_to_noise_db_best_das": 13.774397255630937
     },
     "tug": {
-      "echo_to_direct_db_median_das": -14.5438002509261,
-      "echo_to_noise_db_median_das": -0.3399958841452519,
-      "echo_to_noise_db_best_das": 5.3507261952699015
+      "echo_to_direct_db_median_das": -14.543761542506573,
+      "echo_to_noise_db_median_das": -0.13273405537324354,
+      "echo_to_noise_db_best_das": 5.578076269054632
     },
     "boat": {
-      "echo_to_direct_db_median_das": -11.055821724863817,
-      "echo_to_noise_db_median_das": -4.675137174896619,
-      "echo_to_noise_db_best_das": 0.5003668034064741
+      "echo_to_direct_db_median_das": -11.016362711287842,
+      "echo_to_noise_db_median_das": -4.442763712952928,
+      "echo_to_noise_db_best_das": 0.7333483039938942
     }
   },
   "f_max": 800.0,
@@ -66,21 +66,34 @@
     "piling6",
     "moored"
   ],
-  "ferry_only_oracle_check_db": {
-    "uuv1": 6.426354190127982,
-    "uuv2": 7.970096810314904,
-    "diver": 7.013806736899943,
-    "piling1": 5.528826898421123,
-    "piling2": 7.3079015769246025,
-    "piling3": 7.3079015769246025,
-    "piling4": 7.6226857314936165,
-    "piling5": 7.6226857314936165,
-    "piling6": 6.3979675101273505,
-    "moored": 15.121788740423646
+  "ferry_only_truth_check_db": {
+    "uuv1": 6.566597568318787,
+    "uuv2": 8.728211441042525,
+    "diver": 7.157114839032886,
+    "piling1": 7.124548189506266,
+    "piling2": 6.530894435344593,
+    "piling3": 7.554380331009023,
+    "piling4": 6.839280116333359,
+    "piling5": 8.295229803621275,
+    "piling6": 6.295448893718225,
+    "moored": 14.190373233433693
   },
-  "ferry_only_oracle_inputs": [
+  "ferry_only_truth_inputs": [
     "direct path removed with the truth component",
-    "oracle ferry waveform",
+    "true ferry waveform",
     "exact ferry track"
-  ]
+  ],
+  "ferry_only_provenance": {
+    "truth_inputs": [
+      "direct_removal",
+      "components",
+      "waveform",
+      "track"
+    ],
+    "simulator_knowledge": [
+      "band"
+    ],
+    "data": "forward_model",
+    "held_out": false
+  }
 }

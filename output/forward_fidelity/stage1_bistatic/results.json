@@ -1,0 +1,486 @@
+{
+  "criteria": [
+    {
+      "id": 1,
+      "text": "passive chain, multistatic dataset: ferry, tug and boat each Pd >= 0.9 at the 5 % threshold",
+      "dataset": "multistatic",
+      "chain": "passive",
+      "config": "all_estimated/occupancy",
+      "objects": [
+        "ferry",
+        "tug",
+        "boat"
+      ],
+      "pd_min": 0.9
+    },
+    {
+      "id": 2,
+      "text": "echo chain, bistatic dataset: Pd of the UUV >= 0.5",
+      "dataset": "bistatic",
+      "chain": "echo",
+      "config": "ferry/all_estimated",
+      "objects": [
+        "uuv1"
+      ],
+      "pd_min": 0.5
+    },
+    {
+      "id": 3,
+      "text": "echo chain, multistatic dataset, ferry as illuminator: >= 3 of the 7 static bodies detected on the full record map",
+      "dataset": "multistatic",
+      "chain": "echo",
+      "config": "ferry/all_estimated",
+      "static_min": 3
+    }
+  ],
+  "expectation": "criterion 1 passes; 2 and 3 fail, because the direct path of a moving ship is removed by 8 to 19 dB when its waveform is estimated from the traces and the echo sits 16 to 18 dB below it",
+  "split": {
+    "tuning": [
+      0
+    ],
+    "test": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "parameters": {
+    "echo": {
+      "win_s": 0.5,
+      "hop_s": 0.25,
+      "bin_stride": 2,
+      "grid_dx": 2.0,
+      "grid_margin": 5.0,
+      "edge": 40.0,
+      "method": "coherent",
+      "coherent_norm": "snr",
+      "map_scale": "none",
+      "exclusion_radius": 25.0,
+      "eca_doppler": true,
+      "track_smooth_s": 4.0,
+      "refine_half": 10.0,
+      "refine_step": 1.0
+    },
+    "passive": {
+      "multistatic": {
+        "pc": {
+          "win_s": 0.5,
+          "hop_s": 0.25,
+          "bin_stride": 2,
+          "grid_dx": 2.0,
+          "grid_margin": 5.0,
+          "min_range": 1.0,
+          "edge": 40.0
+        },
+        "sc": {
+          "refine_half": 12.0,
+          "refine_step": 1.0,
+          "patch_half": 0.5,
+          "exclusion_radius": 25.0
+        },
+        "occ": {
+          "speed_mps": 5.0
+        }
+      },
+      "harbor": {
+        "pc": {
+          "grid_dx": 5.0,
+          "edge": 150.0
+        },
+        "sc": {},
+        "occ": {
+          "speed_mps": 5.0
+        }
+      }
+    },
+    "bands_hz": {
+      "bistatic": [
+        100.0,
+        760.0
+      ],
+      "multistatic": [
+        100.0,
+        760.0
+      ],
+      "harbor": [
+        12.0,
+        78.0
+      ]
+    },
+    "scoreboard": {
+      "detect_radius_m": 5.0,
+      "false_alarm_radius_m": 10.0,
+      "pfa": 0.05
+    }
+  },
+  "entries": {
+    "bistatic/echo/ferry/all_estimated": {
+      "dataset": "bistatic",
+      "chain": "echo",
+      "config": "ferry/all_estimated",
+      "map": "coherent",
+      "propagator": "free_field",
+      "threshold": {
+        "T": 2890.231201171875,
+        "T_full_record": 22904.22265625,
+        "pfa": 0.05,
+        "n_frames": 79,
+        "frames_above_T": 3,
+        "object_free_runs": [
+          "bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1"
+        ]
+      },
+      "tuning": {
+        "label": "bistatic / echo / ferry/all_estimated / tuning set",
+        "threshold": {
+          "T": 2890.231201171875,
+          "T_full_record": 22904.22265625,
+          "pfa": 0.05,
+          "n_frames": 79,
+          "frames_above_T": 3,
+          "object_free_runs": [
+            "bistatic:echo:ferry/all_estimated:seed0:free_of_uuv1"
+          ]
+        },
+        "false_alarm_rate": 0.6708860759493671,
+        "false_alarm_frame_rate": 0.0379746835443038,
+        "false_alarms": 53,
+        "n_frames": 79,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "uuv1",
+            "kind": "uuv",
+            "radiates": false,
+            "ais": false,
+            "moving": true,
+            "frames": 79,
+            "detected": 44,
+            "pd": 0.5569620253164557,
+            "median_error_m": 2.252318069943734,
+            "p90_error_m": 3.601866239924844,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "bistatic:echo:ferry/all_estimated:seed0"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "split": "tuning",
+        "seeds": [
+          0
+        ]
+      },
+      "diagnostic_frame_argmax_to_uuv": {
+        "tuning": {
+          "frames": 65,
+          "median_m": 2.438536527696625,
+          "p90_m": 4.057248969797907,
+          "within_5m": 0.9692307692307692,
+          "within_20m": 0.9692307692307692
+        }
+      },
+      "cancellation_diagnostic": {
+        "tuning": [
+          {
+            "direct_depth_db_median": 11.315540762367046,
+            "direct_depth_db_p10": 3.669975608440657,
+            "echo_loss_db_median": 0.3420772669404578,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": false
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          }
+        ],
+        "test": []
+      },
+      "illuminator_track_error_m": {
+        "tuning": [
+          0.8252986942501864
+        ],
+        "test": []
+      },
+      "misses": {
+        "counts": {
+          "ship exclusion edge": 1,
+          "quay image of the ship": 0,
+          "direct path ship to cable": 0,
+          "elsewhere": 1
+        },
+        "frames_total": 65,
+        "within_25m_of_another_radiator": null,
+        "note": "frames with an illuminator whose highest cell is more than 20 m from every UUV, all seeds"
+      }
+    },
+    "bistatic/echo/ferry/true_waveform_exact_track": {
+      "dataset": "bistatic",
+      "chain": "echo",
+      "config": "ferry/true_waveform_exact_track",
+      "map": "coherent",
+      "propagator": "free_field",
+      "threshold": {
+        "T": 2167.998291015625,
+        "T_full_record": 57647.98828125,
+        "pfa": 0.05,
+        "n_frames": 79,
+        "frames_above_T": 3,
+        "object_free_runs": [
+          "bistatic:echo:ferry/true_waveform_exact_track:seed0:free_of_uuv1"
+        ]
+      },
+      "tuning": {
+        "label": "bistatic / echo / ferry/true_waveform_exact_track / tuning set",
+        "threshold": {
+          "T": 2167.998291015625,
+          "T_full_record": 57647.98828125,
+          "pfa": 0.05,
+          "n_frames": 79,
+          "frames_above_T": 3,
+          "object_free_runs": [
+            "bistatic:echo:ferry/true_waveform_exact_track:seed0:free_of_uuv1"
+          ]
+        },
+        "false_alarm_rate": 0.13924050632911392,
+        "false_alarm_frame_rate": 0.05063291139240506,
+        "false_alarms": 11,
+        "n_frames": 79,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "uuv1",
+            "kind": "uuv",
+            "radiates": false,
+            "ais": false,
+            "moving": true,
+            "frames": 79,
+            "detected": 12,
+            "pd": 0.1518987341772152,
+            "median_error_m": 3.255919137087057,
+            "p90_error_m": 4.206295846396706,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "bistatic:echo:ferry/true_waveform_exact_track:seed0"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [
+            "waveform",
+            "track"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "split": "tuning",
+        "seeds": [
+          0
+        ]
+      },
+      "diagnostic_frame_argmax_to_uuv": {
+        "tuning": {
+          "frames": 79,
+          "median_m": 5.197788091534797,
+          "p90_m": 240.05245196481738,
+          "within_5m": 0.4936708860759494,
+          "within_20m": 0.5316455696202531
+        }
+      },
+      "cancellation_diagnostic": {
+        "tuning": [
+          {
+            "direct_depth_db_median": 21.86413737606963,
+            "direct_depth_db_p10": 19.62864364915091,
+            "echo_loss_db_median": 0.5140581449494737,
+            "channels": "live DAS channels",
+            "provenance": {
+              "truth_inputs": [
+                "waveform",
+                "track",
+                "components"
+              ],
+              "simulator_knowledge": [],
+              "data": "forward_model",
+              "held_out": false
+            },
+            "note": "diagnostic: truth components through the same projection after the run; not part of the processing"
+          }
+        ],
+        "test": []
+      },
+      "illuminator_track_error_m": {
+        "tuning": [
+          0.0
+        ],
+        "test": []
+      },
+      "misses": {
+        "counts": {
+          "ship exclusion edge": 6,
+          "quay image of the ship": 0,
+          "direct path ship to cable": 0,
+          "elsewhere": 31
+        },
+        "frames_total": 79,
+        "within_25m_of_another_radiator": null,
+        "note": "frames with an illuminator whose highest cell is more than 20 m from every UUV, all seeds"
+      }
+    },
+    "bistatic/echo/ferry/direct_removed_exactly": {
+      "dataset": "bistatic",
+      "chain": "echo",
+      "config": "ferry/direct_removed_exactly",
+      "map": "coherent",
+      "propagator": "free_field",
+      "threshold": {
+        "T": 1286.06787109375,
+        "T_full_record": 36656.93359375,
+        "pfa": 0.05,
+        "n_frames": 79,
+        "frames_above_T": 3,
+        "object_free_runs": [
+          "bistatic:echo:ferry/direct_removed_exactly:seed0:free_of_uuv1"
+        ]
+      },
+      "tuning": {
+        "label": "bistatic / echo / ferry/direct_removed_exactly / tuning set",
+        "threshold": {
+          "T": 1286.06787109375,
+          "T_full_record": 36656.93359375,
+          "pfa": 0.05,
+          "n_frames": 79,
+          "frames_above_T": 3,
+          "object_free_runs": [
+            "bistatic:echo:ferry/direct_removed_exactly:seed0:free_of_uuv1"
+          ]
+        },
+        "false_alarm_rate": 0.12658227848101267,
+        "false_alarm_frame_rate": 0.11392405063291139,
+        "false_alarms": 10,
+        "n_frames": 79,
+        "separation": null,
+        "per_object": [
+          {
+            "id": "uuv1",
+            "kind": "uuv",
+            "radiates": false,
+            "ais": false,
+            "moving": true,
+            "frames": 79,
+            "detected": 66,
+            "pd": 0.8354430379746836,
+            "median_error_m": 1.9426942310983653,
+            "p90_error_m": 3.155639970741511,
+            "full_record_detected": null,
+            "full_record_error_m": null,
+            "full_record_hits": null,
+            "runs": [
+              "bistatic:echo:ferry/direct_removed_exactly:seed0"
+            ]
+          }
+        ],
+        "provenance": {
+          "truth_inputs": [
+            "direct_removal",
+            "components",
+            "waveform",
+            "track"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "split": "tuning",
+        "seeds": [
+          0
+        ]
+      },
+      "diagnostic_frame_argmax_to_uuv": {
+        "tuning": {
+          "frames": 79,
+          "median_m": 2.040330521919029,
+          "p90_m": 3.9828409527778774,
+          "within_5m": 0.9493670886075949,
+          "within_20m": 0.9493670886075949
+        }
+      },
+      "cancellation_diagnostic": {
+        "tuning": [
+          null
+        ],
+        "test": []
+      },
+      "illuminator_track_error_m": {
+        "tuning": [
+          0.0
+        ],
+        "test": []
+      },
+      "misses": {
+        "counts": {
+          "ship exclusion edge": 0,
+          "quay image of the ship": 0,
+          "direct path ship to cable": 0,
+          "elsewhere": 4
+        },
+        "frames_total": 79,
+        "within_25m_of_another_radiator": null,
+        "note": "frames with an illuminator whose highest cell is more than 20 m from every UUV, all seeds"
+      }
+    }
+  },
+  "verdicts": [
+    {
+      "id": 1,
+      "text": "passive chain, multistatic dataset: ferry, tug and boat each Pd >= 0.9 at the 5 % threshold",
+      "dataset": "multistatic",
+      "chain": "passive",
+      "config": "all_estimated/occupancy",
+      "objects": [
+        "ferry",
+        "tug",
+        "boat"
+      ],
+      "pd_min": 0.9,
+      "result": "not run"
+    },
+    {
+      "id": 2,
+      "text": "echo chain, bistatic dataset: Pd of the UUV >= 0.5",
+      "dataset": "bistatic",
+      "chain": "echo",
+      "config": "ferry/all_estimated",
+      "objects": [
+        "uuv1"
+      ],
+      "pd_min": 0.5,
+      "result": "not run"
+    },
+    {
+      "id": 3,
+      "text": "echo chain, multistatic dataset, ferry as illuminator: >= 3 of the 7 static bodies detected on the full record map",
+      "dataset": "multistatic",
+      "chain": "echo",
+      "config": "ferry/all_estimated",
+      "static_min": 3,
+      "result": "not run"
+    }
+  ]
+}

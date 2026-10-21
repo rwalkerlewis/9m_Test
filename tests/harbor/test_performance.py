@@ -427,3 +427,71 @@ def test_kspace_is_exact_for_a_plane_wave_mode():
     # through the Gibbs ringing of those edges; check far from them.
     core = (slice(12, ny - 12), slice(12, nx - 12))
     assert np.abs(got[core] - expect[core]).max() < 0.05 and err < 1.0
+
+
+@gpu
+def test_kspace_batched_runs_match_single_runs_with_moving_bodies(scene, tmp_path):
+    """The harbor recordings' path with the k space step: sponge, land mask, moving bodies imposed on the device,
+    batched runs through ``simulate_sources``; each batch member equals its single fused run (to the FFT rounding) and
+    has its own cache key."""
+    from acoustic_sim.water import simulate_source, simulate_sources
+    from acoustic_sim.water.fdtd_runner import HarborFDTDBatch, batch_size
+
+    env, moving, body, layout = scene
+    cfg = _cfg(kernel="fused", time_scheme="kspace")
+    n = cfg.n_steps
+    other = Scatterer("e", _track("e", [40.0, 30.0], [40.5, 30.5]), 2.0, 2.0, "soft", shape="ellipse")
+    jobs = [(moving, []), (moving, [body, other]), (StaticSource(50.0, 30.0, _ricker(n, 300.0, 0.02)), [body])]
+    batch = HarborFDTDBatch(env, cfg, jobs, layout.sample_points)
+    assert batch.body_masks == "device" and batch.time_scheme == "kspace"
+    out = batch.run(verbose=False)["traces"]
+    for b, (src, sc) in enumerate(jobs):
+        single, s = _run(env, cfg, src, layout, sc)
+        assert s.kernel == "fused" and s.body_masks == "device"
+        assert _rel_l2(out[b], single).max() < 1e-10, b          # a batched cuFFT plan rounds differently (measured 1e-11)
+    assert np.linalg.norm(out[1] - out[0]) > 1e-3 * np.linalg.norm(out[0])     # the moving bodies scatter
+    # Cache: a k space gather has its own key (never confused with a leapfrog gather of the same job).
+    sig = moving.signal
+    traj = (moving.times, moving.positions)
+    assert _cache_key(env, layout, cfg, sig, None, traj) != _cache_key(env, layout, _cfg(kernel="fused"), sig, None, traj)
+    g = simulate_sources(env, layout, cfg, [dict(signal=sig, trajectory=traj, scatterers=[body, other]),
+                                            dict(signal=sig, trajectory=traj)], cache_dir=tmp_path)
+    assert len(list(tmp_path.glob("gather_*.npz"))) == 2
+    single = simulate_source(env, layout, cfg, sig, trajectory=traj, scatterers=[body, other], cache_dir=tmp_path)
+    assert np.array_equal(single.traces, g[0].traces)
+    # The k space step holds a third field and the FFT spectra: fewer runs fit in the same memory.
+    assert batch_size(10 ** 6, env, cfg, layout.n_samples, max_batch=10 ** 6) < batch_size(10 ** 6, env, _cfg(kernel="fused"),
+                                                                                               layout.n_samples, max_batch=10 ** 6)
+
+
+@pytest.mark.parametrize("use_cuda", [False, pytest.param(True, marks=gpu)])
+def test_kspace_direct_arrival_is_on_time(use_cuda):
+    """Uniform water, k space step: the direct arrival at 30 and 60 m (axis and diagonal) is at the injection time plus
+    range over speed, to a tenth of a step, against the free field prediction ``green2d`` (the processing's replica)
+    filtered the same way.  The recorded traces were one step early before ``_finish_traces`` put them on time."""
+    from scipy.signal import butter, hilbert, sosfiltfilt
+
+    from acoustic_sim.water.propagation import green2d
+
+    env = uniform_water_environment(160.0, 160.0, 1.0)
+    cfg = HarborFDTDConfig(fs=3000.0, total_time=0.12, damping_width=20, background_absorption=0.0, shore_loss_max=0.0,
+                           use_cuda=use_cuda, time_scheme="kspace")
+    n, fs = cfg.n_steps, cfg.fs
+    t = np.arange(n) / fs
+    a = (np.pi * 200.0 * (t - 0.01)) ** 2
+    sig = (1 - 2 * a) * np.exp(-a)
+    src = np.array([50.0, 50.0])
+    rec = src + np.array([[30.0, 0.0], [60.0, 0.0], [30.0 / np.sqrt(2), 30.0 / np.sqrt(2)]])
+    solver = HarborFDTDSolver(env, cfg, StaticSource(*src, sig), rec)
+    tr = solver.run(verbose=False)["traces"]
+    assert tr[:, 0].tolist() == [0.0, 0.0, 0.0]
+    sos = butter(4, (60.0, 380.0), btype="bandpass", fs=fs, output="sos")
+    f = np.fft.rfftfreq(n, 1.0 / fs)
+    up = 32
+    for i, r in enumerate(np.hypot(*(rec - src).T)):
+        pred = np.fft.irfft(np.fft.rfft(sig) * np.where(f > 0, green2d(np.maximum(2 * np.pi * f / 1500.0 * r, 1e-9)), 0.0), n)
+        x, y = sosfiltfilt(sos, tr[i]), sosfiltfilt(sos, pred)
+        m = 2 * n
+        xc = np.fft.fftshift(np.fft.irfft(np.fft.rfft(x, m) * np.conj(np.fft.rfft(y, m)), m * up))
+        lag = (np.argmax(np.abs(hilbert(xc))) - m * up // 2) / (up * fs)
+        assert abs(lag) < 0.1 / fs, (r, lag * fs)

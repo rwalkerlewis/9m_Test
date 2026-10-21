@@ -4,14 +4,14 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.5163651849574914,
+    "passive": 0.52944128501537,
     "echo": 0.0,
-    "characteristics": 0.0034446694335808084,
-    "total": 0.5198098543910722
+    "characteristics": 0.004433968941521016,
+    "total": 0.5338752539568911
   },
   "latency_s": {
-    "median": 1.1045,
-    "max": 1.23
+    "median": 1.1070000000000002,
+    "max": 2.8
   },
   "objects": {
     "ferry": {
@@ -19,24 +19,26 @@
       "radiates": true,
       "ais": true,
       "pd": {
-        "radiator": 0.5185185185185185,
-        "any": 0.5185185185185185
+        "radiator": 0.6111111111111112,
+        "any": 0.6111111111111112
       },
       "frames": {
         "radiator": 54,
         "any": 54
       },
       "hits": {
-        "radiator": 28,
-        "any": 28
+        "radiator": 33,
+        "any": 33
       },
       "median_error_m": {
-        "radiator": 2.09108492139466,
-        "any": 2.09108492139466
+        "radiator": 1.169999999999959,
+        "any": 1.169999999999959
       },
       "tracks": [
+        "r11",
+        "r12",
         "r18",
-        "r6"
+        "r8"
       ]
     },
     "tug": {
@@ -44,23 +46,23 @@
       "radiates": true,
       "ais": true,
       "pd": {
-        "radiator": 0.0,
-        "any": 0.0
+        "radiator": 0.05555555555555555,
+        "any": 0.05555555555555555
       },
       "frames": {
         "radiator": 54,
         "any": 54
       },
       "hits": {
-        "radiator": 0,
-        "any": 0
+        "radiator": 3,
+        "any": 3
       },
       "median_error_m": {
-        "radiator": null,
-        "any": null
+        "radiator": 1.9582396891748264,
+        "any": 1.9582396891748264
       },
       "tracks": [
-        "r23"
+        "r22"
       ]
     },
     "moored": {
@@ -176,163 +178,209 @@
   },
   "tracks": [
     {
-      "track": "r1",
-      "fixes": 3,
-      "first_t": 12.0,
-      "last_t": 16.0,
+      "track": "r6",
+      "fixes": 32,
+      "first_t": 14.0,
+      "last_t": 102.0,
       "true_object": null,
       "false_track": true,
-      "nearest_object": "tug",
-      "median_error_m": 37.358436790662545,
+      "nearest_object": "ferry",
+      "median_error_m": 66.06252099445314,
       "first_xy": [
-        610.0,
-        985.0
+        1395.0,
+        330.0
       ],
       "last_xy": [
-        625.0,
-        980.0
+        1490.0,
+        810.0
       ],
       "median_xy": [
-        615.0,
-        980.0
+        1425.0,
+        560.0
       ],
       "kind": "radiator"
     },
     {
-      "track": "r6",
-      "fixes": 36,
-      "first_t": 14.0,
-      "last_t": 88.0,
+      "track": "r8",
+      "fixes": 3,
+      "first_t": 18.0,
+      "last_t": 90.0,
       "true_object": "ferry",
       "false_track": false,
       "nearest_object": "ferry",
-      "median_error_m": 3.5467292638683188,
+      "median_error_m": 19.849433241279208,
       "first_xy": [
-        1380.0,
-        345.0
+        1395.0,
+        355.0
       ],
       "last_xy": [
-        1410.0,
-        795.0
+        1475.0,
+        765.0
       ],
       "median_xy": [
-        1385.0,
-        555.0
-      ],
-      "kind": "radiator"
-    },
-    {
-      "track": "r12",
-      "fixes": 3,
-      "first_t": 34.0,
-      "last_t": 48.0,
-      "true_object": null,
-      "false_track": true,
-      "nearest_object": "ferry",
-      "median_error_m": 60.21627686929843,
-      "first_xy": [
-        1415.0,
-        415.0
-      ],
-      "last_xy": [
-        1385.0,
-        530.0
-      ],
-      "median_xy": [
-        1415.0,
-        430.0
+        1425.0,
+        675.0
       ],
       "kind": "radiator"
     },
     {
       "track": "r9",
-      "fixes": 6,
-      "first_t": 44.0,
-      "last_t": 98.0,
+      "fixes": 2,
+      "first_t": 18.0,
+      "last_t": 26.0,
       "true_object": null,
       "false_track": true,
       "nearest_object": "ferry",
-      "median_error_m": 20.775791582327464,
+      "median_error_m": 83.62364197825437,
       "first_xy": [
         1410.0,
-        490.0
+        295.0
       ],
       "last_xy": [
-        1490.0,
-        815.0
+        1425.0,
+        340.0
       ],
       "median_xy": [
-        1470.0,
-        787.5
+        1417.5,
+        317.5
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r7",
+      "fixes": 6,
+      "first_t": 20.0,
+      "last_t": 42.0,
+      "true_object": null,
+      "false_track": true,
+      "nearest_object": "ferry",
+      "median_error_m": 66.89001307107803,
+      "first_xy": [
+        1405.0,
+        325.0
+      ],
+      "last_xy": [
+        1420.0,
+        435.0
+      ],
+      "median_xy": [
+        1415.0,
+        362.5
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r11",
+      "fixes": 9,
+      "first_t": 20.0,
+      "last_t": 102.0,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 5.83095189484533,
+      "first_xy": [
+        1380.0,
+        380.0
+      ],
+      "last_xy": [
+        1460.0,
+        840.0
+      ],
+      "median_xy": [
+        1385.0,
+        425.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r10",
+      "fixes": 1,
+      "first_t": 22.0,
+      "last_t": 22.0,
+      "true_object": null,
+      "false_track": true,
+      "nearest_object": "ferry",
+      "median_error_m": 116.0775602776007,
+      "first_xy": [
+        1425.0,
+        285.0
+      ],
+      "last_xy": [
+        1425.0,
+        285.0
+      ],
+      "median_xy": [
+        1425.0,
+        285.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r12",
+      "fixes": 24,
+      "first_t": 32.0,
+      "last_t": 80.0,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 1.5133279246638005,
+      "first_xy": [
+        1380.0,
+        450.0
+      ],
+      "last_xy": [
+        1390.0,
+        735.0
+      ],
+      "median_xy": [
+        1380.0,
+        590.0
       ],
       "kind": "radiator"
     },
     {
       "track": "r18",
-      "fixes": 14,
-      "first_t": 84.0,
+      "fixes": 8,
+      "first_t": 104.0,
       "last_t": 118.0,
       "true_object": "ferry",
       "false_track": false,
       "nearest_object": "ferry",
-      "median_error_m": 13.520244547168554,
+      "median_error_m": 2.142156231382694,
       "first_xy": [
-        1470.0,
-        720.0
+        1520.0,
+        820.0
       ],
       "last_xy": [
-        1590.0,
-        880.0
+        1575.0,
+        875.0
       ],
       "median_xy": [
-        1532.5,
-        827.5
+        1550.0,
+        850.0
       ],
       "kind": "radiator"
     },
     {
-      "track": "r17",
-      "fixes": 1,
-      "first_t": 102.0,
-      "last_t": 102.0,
-      "true_object": null,
-      "false_track": true,
-      "nearest_object": "ferry",
-      "median_error_m": 50.09378157454576,
-      "first_xy": [
-        1470.0,
-        840.0
-      ],
-      "last_xy": [
-        1470.0,
-        840.0
-      ],
-      "median_xy": [
-        1470.0,
-        840.0
-      ],
-      "kind": "radiator"
-    },
-    {
-      "track": "r23",
-      "fixes": 1,
-      "first_t": 116.0,
+      "track": "r22",
+      "fixes": 2,
+      "first_t": 114.0,
       "last_t": 116.0,
       "true_object": "tug",
       "false_track": false,
       "nearest_object": "tug",
-      "median_error_m": 8.443246572277737,
+      "median_error_m": 1.3277723443163871,
       "first_xy": [
         1035.0,
-        865.0
+        875.0
       ],
       "last_xy": [
-        1035.0,
-        865.0
+        1040.0,
+        870.0
       ],
       "median_xy": [
-        1035.0,
-        865.0
+        1037.5,
+        872.5
       ],
       "kind": "radiator"
     }
@@ -344,94 +392,94 @@
     "echo": 0,
     "tracks": [
       {
-        "track": "r1",
-        "fixes": 3,
-        "first_t": 12.0,
-        "last_t": 16.0,
-        "true_object": null,
-        "false_track": true,
-        "nearest_object": "tug",
-        "median_error_m": 37.358436790662545,
-        "first_xy": [
-          610.0,
-          985.0
-        ],
-        "last_xy": [
-          625.0,
-          980.0
-        ],
-        "median_xy": [
-          615.0,
-          980.0
-        ],
-        "kind": "radiator"
-      },
-      {
-        "track": "r12",
-        "fixes": 3,
-        "first_t": 34.0,
-        "last_t": 48.0,
+        "track": "r6",
+        "fixes": 32,
+        "first_t": 14.0,
+        "last_t": 102.0,
         "true_object": null,
         "false_track": true,
         "nearest_object": "ferry",
-        "median_error_m": 60.21627686929843,
+        "median_error_m": 66.06252099445314,
         "first_xy": [
-          1415.0,
-          415.0
+          1395.0,
+          330.0
         ],
         "last_xy": [
-          1385.0,
-          530.0
+          1490.0,
+          810.0
         ],
         "median_xy": [
-          1415.0,
-          430.0
+          1425.0,
+          560.0
         ],
         "kind": "radiator"
       },
       {
         "track": "r9",
-        "fixes": 6,
-        "first_t": 44.0,
-        "last_t": 98.0,
+        "fixes": 2,
+        "first_t": 18.0,
+        "last_t": 26.0,
         "true_object": null,
         "false_track": true,
         "nearest_object": "ferry",
-        "median_error_m": 20.775791582327464,
+        "median_error_m": 83.62364197825437,
         "first_xy": [
           1410.0,
-          490.0
+          295.0
         ],
         "last_xy": [
-          1490.0,
-          815.0
+          1425.0,
+          340.0
         ],
         "median_xy": [
-          1470.0,
-          787.5
+          1417.5,
+          317.5
         ],
         "kind": "radiator"
       },
       {
-        "track": "r17",
-        "fixes": 1,
-        "first_t": 102.0,
-        "last_t": 102.0,
+        "track": "r7",
+        "fixes": 6,
+        "first_t": 20.0,
+        "last_t": 42.0,
         "true_object": null,
         "false_track": true,
         "nearest_object": "ferry",
-        "median_error_m": 50.09378157454576,
+        "median_error_m": 66.89001307107803,
         "first_xy": [
-          1470.0,
-          840.0
+          1405.0,
+          325.0
         ],
         "last_xy": [
-          1470.0,
-          840.0
+          1420.0,
+          435.0
         ],
         "median_xy": [
-          1470.0,
-          840.0
+          1415.0,
+          362.5
+        ],
+        "kind": "radiator"
+      },
+      {
+        "track": "r10",
+        "fixes": 1,
+        "first_t": 22.0,
+        "last_t": 22.0,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "ferry",
+        "median_error_m": 116.0775602776007,
+        "first_xy": [
+          1425.0,
+          285.0
+        ],
+        "last_xy": [
+          1425.0,
+          285.0
+        ],
+        "median_xy": [
+          1425.0,
+          285.0
         ],
         "kind": "radiator"
       }
@@ -450,13 +498,13 @@
       "objects": {
         "ferry": {
           "frames": 56,
-          "hit": 0.5,
-          "median_error_m": 2.1039984704178574
+          "hit": 0.9285714285714286,
+          "median_error_m": 1.602820284398389
         },
         "tug": {
           "frames": 56,
-          "hit": 0.017857142857142856,
-          "median_error_m": 4.823836612368713
+          "hit": 0.125,
+          "median_error_m": 2.1465278724294086
         },
         "moored": {
           "frames": 56,
@@ -488,19 +536,19 @@
     "echo": null
   },
   "run": {
-    "git_commit": "5608006f774ab74064bf3842b512177c9ae83d35",
+    "git_commit": "270945d67307a81834182b19c281382c3446f58f",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/harbor.json",
     "processing_config_sha256": "d2d0696fd9f132fc0910e92f15e556070ac4fee7e06abdd0249e3e880e7fb087",
     "processing_overrides": [],
-    "observation": "/workspace/output/seed3/dataset.observation.npz",
-    "observation_sha256": "42ff074459ab37b88db75d06670b92ac7052dc9f51376d7fc6c7a506a4345c54",
+    "observation": "/workspace/output/harbor/seed3/dataset.observation.npz",
+    "observation_sha256": "36fcc00ec105c731372e426f3c25db4fde260787dbd976f06fbe608784a5f1e2",
     "python": "3.12.3",
     "numpy": "2.5.4",
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 3,
-    "wall_s": 62.491997625002114,
+    "wall_s": 64.20372872700682,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

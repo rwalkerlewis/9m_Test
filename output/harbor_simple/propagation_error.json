@@ -9,6 +9,10 @@
     380.0
   ],
   "c_chart": 1500.0,
+  "time_scheme": "kspace",
+  "uniform_speed": false,
+  "dx": 1.0,
+  "fs": 3000.0,
   "hydrophones": [
     {
       "hydrophone": 0,
@@ -18,8 +22,9 @@
       ],
       "range_m": 223.606797749979,
       "direction_deg": 206.565051177078,
-      "error_ms": -2.7083333333333335,
-      "phase_error_ms": -4.645833333333333
+      "error_ms": 0.0,
+      "phase_error_ms": 1.0416666666666667,
+      "straight_path_ms": 2.7755575615628914e-14
     },
     {
       "hydrophone": 1,
@@ -29,8 +34,9 @@
       ],
       "range_m": 344.0930106817051,
       "direction_deg": 125.53767779197437,
-      "error_ms": -5.229166666666667,
-      "phase_error_ms": -5.708333333333334
+      "error_ms": 0.0,
+      "phase_error_ms": 1.0208333333333333,
+      "straight_path_ms": 0.0
     },
     {
       "hydrophone": 2,
@@ -40,8 +46,9 @@
       ],
       "range_m": 134.5362404707371,
       "direction_deg": 311.98721249581666,
-      "error_ms": -2.4375,
-      "phase_error_ms": -4.333333333333333
+      "error_ms": 0.0,
+      "phase_error_ms": 1.0416666666666667,
+      "straight_path_ms": 0.0
     },
     {
       "hydrophone": 3,
@@ -51,12 +58,15 @@
       ],
       "range_m": 294.10882339705483,
       "direction_deg": 72.18111108547723,
-      "error_ms": -2.2916666666666665,
-      "phase_error_ms": -0.5416666666666666
+      "error_ms": 0.020833333333333332,
+      "phase_error_ms": 1.0208333333333333,
+      "straight_path_ms": 8.326672684688674e-14
     }
   ],
-  "median_ms": -2.572916666666667,
-  "min_ms": -5.229166666666667,
-  "max_ms": -2.2916666666666665,
-  "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed"
+  "median_ms": 0.0,
+  "min_ms": 0.0,
+  "max_ms": 0.020833333333333332,
+  "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed; straight_path_ms: the travel time along the straight line through the scenario's sound speed map minus range / chart speed (what the water itself contributes, refraction aside)",
+  "criterion_ms": 0.1,
+  "passed": true
 }

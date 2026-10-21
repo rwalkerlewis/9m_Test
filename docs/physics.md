@@ -65,7 +65,7 @@ Stencil weights are computed analytically in `fd2_coefficients(order)`.
 
 ### Time stepping
 
-The default (`FDTDConfig.time_scheme="leapfrog"`) is second-order leapfrog
+The solver default (`FDTDConfig.time_scheme="leapfrog"`) is second order leapfrog
 with a damping term:
 
 $$p^{n+1} = 2p^n - p^{n-1} + c^2 \Delta t^2 \, L[p^n] - \sigma\,(p^n - p^{n-1})$$
@@ -73,11 +73,91 @@ $$p^{n+1} = 2p^n - p^{n-1} + c^2 \Delta t^2 \, L[p^n] - \sigma\,(p^n - p^{n-1})$
 where $L$ is the spatial Laplacian operator and $\sigma$ is the per-cell
 damping (background `air_absorption` plus the sponge ramp, see below).
 
-Two prototype schemes are available for single-process runs with the sponge
-boundary: `"lw4"` (fourth order in time by the modified equation, stable up
-to $\sqrt{3}$ times the leapfrog limit) and `"kspace"` (pseudospectral
-Laplacian with the k-space temporal correction, exact for a homogeneous
-medium and unconditionally stable).
+Two other schemes run in a single process with the sponge boundary: `"lw4"`
+(fourth order in time by the modified equation, stable up to $\sqrt{3}$
+times the leapfrog limit) and `"kspace"`:
+
+$$p^{n+1} = 2p^n - p^{n-1} + (c/c_0)^2\,\mathcal{F}^{-1}\!\left[-4\sin^2\!\left(\tfrac{1}{2} c_0 |k| \Delta t\right)\mathcal{F}p^n\right] - \sigma\,(p^n - p^{n-1})$$
+
+with $c_0$ the largest speed of the grid.  The pseudospectral Laplacian and
+the $\sin^2$ temporal correction make the step exact for a homogeneous
+medium at $c_0$ (any $\Delta t$, any wavenumber the grid holds) and
+unconditionally stable; where the water is slower than $c_0$ the factor
+$(c/c_0)^2$ is exact only to second order in $\Delta t$.
+
+#### The harbor recordings step with the k space scheme
+
+Every harbor scenario (`examples/configs/harbor*.scenario.json`) sets
+`time_scheme: "kspace"`.  The leapfrog with the fourth order stencil at
+2 to 4 cells per wavelength at the top of the band made the simulated water
+carry the direct paths 1.1 to 5.2 ms early over 135 to 344 m on the 0.5 m
+and 1 m recordings and up to 12.7 ms over 1047 m on the 5 m harbor
+([history](harbor_history.md#performance)); with uniform water at the
+chart's speed, the 5 m harbor's leapfrog is still 10.6 ms early at
+1047 m, so that error was the scheme's and not the shallow water's.
+(Those numbers also include one step of a trace timing error, fixed
+together with the switch: column $m$ of a gather is now the field at
+$m\,\Delta t$.)
+
+Propagation error with the k space scheme, measured by
+`examples/harbor/01_datasets/harbor_propagation_error.py` (a stationary
+pulse at the first ship's mid record position, the arrival at each
+hydrophone minus range over the chart's speed; negative is early).
+"Straight path" is the travel time through the scenario's own sound speed
+map along the straight line minus range over the chart's speed, what the
+water contributes; the difference is the scheme's.  Criterion, fixed
+before the recordings were built: within 0.2 ms at every hydrophone on the
+0.5 m and 1 m recordings, 0.1 ms on the simple harbor.
+
+| Recording | Grid | Error per hydrophone [ms] | Straight path [ms] | Criterion |
+|---|---|---|---|---|
+| simple | 1 m, 3 kHz | +0.00, +0.00, +0.00, +0.02 | 0.00 (uniform water) | 0.1 ms: pass |
+| bistatic, multistatic | 0.5 m, 6 kHz | -0.21, -0.03, +0.05, -0.10 | -0.23, +0.00, +0.03, -0.12 | 0.2 ms: **fail** (hydrophone 1) |
+| multistatic_b | 0.5 m, 6 kHz | -0.22, -0.04, +0.03, -0.12 | -0.23, -0.02, +0.02, -0.12 | 0.2 ms: **fail** (hydrophone 1) |
+| harbor | 5 m, 600 Hz | -0.42, +0.10, -0.42, +0.21 | -0.51, +0.07, -0.48, +0.37 | none (reported) |
+
+The 0.5 m recordings fail the criterion at hydrophone 1 by 0.01 and
+0.02 ms.  The straight path through their sound speed map predicts the
+whole of it: the path runs through water faster than the chart's single
+speed (the median of the water, 1493.7 m/s).  With the water set to one
+speed (`--uniform-speed`) every hydrophone is within 0.07 ms.  The
+scheme's own error is within 0.03 ms of the straight path on every
+0.5 m and 1 m hydrophone.
+
+On the 5 m harbor (12 to 78 Hz, 4 cells per wavelength at 78 Hz) the
+k space step is still exact for the propagation: with uniform water the
+error is 0.00 ms at three hydrophones and -0.21 ms (an eighth of a step)
+at hydrophone 4, near the shore.  The rest is the water: shallow water
+slower than the chart's median speed along some paths, deeper and faster
+along others (straight path -0.51 to +0.37 ms).  Refining to 2.5 m
+(`--dx 2.5`) moves the arrivals by at most 0.05 ms at hydrophones 1 to 3
+and by 0.47 ms at hydrophone 4 (also with uniform water: the shore
+reflection inside the long gate a 12 Hz pulse needs), 0.04 of a period
+at 78 Hz; the 5 m grid is not refined.
+
+What the k space scheme does not make exact: the factor $(c/c_0)^2$ in
+water slower than $c_0$ (at most `shallow_c_drop` = 10 m/s, 0.7 %, slower in these scenarios); a point
+source and a point receiver on a grid at 2 cells per wavelength (the 1 m
+grid above 380 Hz, not used by any recording); the pressure release
+walls, placed on node lines (0.31 rad at 100 to 760 Hz on the 0.5 m grid,
+history); the sponge.
+
+Cost (`output/<recording>/build.json`, Quadro RTX 4000, float64, all
+runs of a recording batched):
+
+| Recording | Grid | Steps | FDTD runs | FDTD wall time | Per run per simulated second |
+|---|---|---|---|---|---|
+| simple | 501 x 401 | 60 000 | 4 | 356 s | 4.4 s |
+| bistatic | 801 x 601 | 120 000 | 2 | 691 s | 17.3 s |
+| multistatic | 801 x 601 | 120 000 | 6 | 2030 s | 16.9 s |
+| multistatic_b (60 s) | 801 x 601 | 360 000 | 6 | 6091 s | 16.9 s |
+| harbor (120 s) | 481 x 361 | 72 000 | 12 | 468 s | 0.33 s |
+
+The k space step is two float64 FFTs per field per step on a card with
+float64 at 1/32 of the float32 rate: 10 to 18 times the fused leapfrog
+step on the same batch (8.3 against 0.81 ms per step on the 0.5 m grid in
+the [history](harbor_history.md#performance)).  Every recording together
+takes 2.7 hours of FDTD.
 
 Fields are `float64` by default; `precision="float32"` halves memory and is
 much faster on consumer GPUs.  On a single GPU process the default

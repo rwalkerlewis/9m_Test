@@ -93,7 +93,12 @@ class Recording:
     @property
     def dataset(self) -> Path:
         base = ROOT / FAMILIES[self.family].dataset
-        return base if self.seed == 0 else base.parent.parent / f"seed{self.seed}" / "dataset"
+        if self.seed == 0:
+            return base
+        # output/harbor_<x>/seed<n>/dataset beside output/harbor_<x>/fine/dataset; output/harbor/seed<n>/dataset beside
+        # output/harbor/dataset (that one was output/seed<n>/ before, outside the recording's folder).
+        top = base.parent.parent if base.parent.name == "fine" else base.parent
+        return top / f"seed{self.seed}" / "dataset"
 
 
 def recordings() -> list[Recording]:
