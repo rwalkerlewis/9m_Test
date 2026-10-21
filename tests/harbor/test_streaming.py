@@ -219,3 +219,81 @@ def test_streaming_passive_uses_only_the_ais_reports_already_received():
     assert before and after
     assert all("ship" not in f.ships for f in before)
     assert all("ship" in f.ships for f in after)
+
+
+def test_end_to_end_passive_tracker_echo_locates_the_silent_body_without_truth():
+    """The path ``examples/harbor_stream.py`` runs, on a synthetic 8 s scene (one ship, one silent scatterer, no AIS):
+    ``StreamingPassive`` -> ``RadiatorTracker`` -> ``StreamingEcho`` with the strong tracks as illuminators.  Nothing
+    from the truth goes in.  The ship becomes the one strong track (within 3 m), and the top echo peak is within 8 m
+    of the scatterer in at least half of the mapped frames, and the sum of the frame maps (each over its median, as
+    walkthrough step 6) peaks within 5 m of it."""
+    from acoustic_sim.water.bistatic import BistaticConfig
+    from acoustic_sim.water.streaming import EchoStreamConfig, RadiatorTracker, StreamingEcho
+
+    from ..test_contract import _field_recording
+
+    rec = _field_recording(8.0)                                 # measured: 62 % of the frames within 8 m, record sum on the body
+    _, chart, pc, stc, none = _setup()
+    passive = StreamingPassive(rec["layout"], rec["fs"], chart, pc, stc=stc)
+    tracker = RadiatorTracker()
+    bc = BistaticConfig(c=rec["c"], f_lo=80.0, f_hi=450.0, grid_dx=5.0, edge=20.0, exclusion_radius=30.0, coherent_norm="snr",
+                        map_scale="none", eca_doppler=True, track_smooth_s=1.0, eca_images=False)
+    echo = StreamingEcho(rec["layout"], rec["fs"], chart, bc, EchoStreamConfig(step_blocks=1, history_s=0.5, lookahead_s=0.4),
+                         keep_maps=True)
+    sent, e_frames = {}, []
+    for s0 in range(0, rec["traces"].shape[1], 500):
+        chunk = rec["traces"][:, s0:s0 + 500]
+        for f in passive.push(chunk, none):
+            tracker.update(f)
+        fixes = {}
+        for k, tr in tracker.strong().items():
+            fixes[k] = [(f[0], f[1]) for f in tr.fixes[sent.get(k, 0):]]
+            sent[k] = len(tr.fixes)
+        e_frames += [f for f in echo.push(chunk, fixes) if f.ships]
+    strong = tracker.strong()
+    assert len(strong) == 1
+    tr = next(iter(strong.values()))
+    err = [np.hypot(*(f[1] - (np.array([150.0, 250.0]) + [4.0 * f[0], 0.0]))) for f in tr.fixes[-8:]]
+    assert np.median(err) <= 3.0, err
+    assert len(e_frames) >= 8
+    d = np.array([np.hypot(*(f.xy[0] - rec["body"])) for f in e_frames])
+    assert np.mean(d <= 8.0) >= 0.5, d
+    S = sum(f.B / np.median(f.B[f.B > 0]) for f in e_frames)
+    assert np.hypot(*(echo.grid[np.argmax(S)] - rec["body"])) <= 5.0
+
+
+def _ship_map(mode: str | None, exclusion: float):
+    """Streaming passive maps of the field recording with the ship's AIS reports (``mode``) or without (``None``)."""
+    from acoustic_sim.water.suppression import SuppressionConfig
+
+    rec, chart, pc, stc, none = _setup()
+    sc = SuppressionConfig(mode=mode or "adaptive", exclusion_radius=exclusion, refine_half=6.0, refine_step=1.0, min_significance=2.0)
+    det = StreamingPassive(rec["layout"], rec["fs"], chart, pc, sc, stc, keep_maps=True)
+    frames = []
+    for s0 in range(0, rec["traces"].shape[1], 500):
+        frames += det.push(rec["traces"][:, s0:s0 + 500], rec["reports"] if mode else none)
+    ship = np.array([150.0, 250.0])
+    at_ship = np.array([f.B[np.hypot(*(det.grid - (ship + [4.0 * f.t, 0.0])).T) <= 6.0].max() for f in frames])
+    return frames, det.grid, at_ship
+
+
+def test_streaming_ship_projection_adaptive_and_model_remove_the_reporting_ship():
+    """With its AIS reports the ship is projected out of the streaming passive maps: the adaptive projection
+    (``StreamingPassive._adaptive``) and the replica patch projection (``project_out_ships``) each take the map at
+    the ship down by more than 10 dB against the run without reports (no exclusion zone, so the map is seen)."""
+    _, _, free = _ship_map(None, 0.0)
+    for mode in ("adaptive", "model"):
+        frames, _, cleaned = _ship_map(mode, 0.0)
+        assert all("ship" in f.ships for f in frames)
+        assert np.median(cleaned) < 0.1 * np.median(free), (mode, np.median(cleaned), np.median(free))
+
+
+def test_streaming_exclusion_zone_from_the_ais_reports():
+    """The cells within ``exclusion_radius`` of the refined position of a reporting ship are zeroed and no peak is
+    reported there."""
+    frames, grid, _ = _ship_map("adaptive", 30.0)
+    for f in frames:
+        p = f.ships["ship"]
+        near = np.hypot(*(grid - p).T) < 30.0
+        assert np.all(f.B[near] == 0.0)
+        assert all(np.hypot(*(xy - p)) >= 30.0 for xy, s in zip(f.xy, f.score) if s > 0)

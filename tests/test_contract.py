@@ -308,14 +308,14 @@ def test_public_chart_matches_the_forward_environment():
 # Real data entry point: plain arrays, no scenario anywhere
 # ----------------------------------------------------------------------
 
-def _field_recording():
+def _field_recording(T: float = 3.0):
     """What a field recording is converted into (``docs/architecture.md``, Real data entry point):
     a 2 kHz strain DAS cable (10 m channels, 10 m gauge) and two hydrophones, an AIS ship moving east at
-    4 m/s with an echo from a silent body, written here as plain arrays with a free field formula."""
+    4 m/s with an echo from a silent body, written here as plain arrays with a free field formula; *T* [s] long."""
     from acoustic_sim.water.ais import AISReports
     from acoustic_sim.water.sensors import Cable, SensorLayout
 
-    fs, T, c = 2000.0, 3.0, 1495.0
+    fs, c = 2000.0, 1495.0
     ship0, body = np.array([150.0, 250.0]), np.array([260.0, 180.0])
     layout = SensorLayout(cables=[Cable("cable1", np.array([[100.0, 100.0], [210.0, 100.0]]), 10.0, "strain", 10.0)],
                           hydrophones=np.array([[60.0, 200.0], [300.0, 80.0]]))
@@ -334,11 +334,13 @@ def _field_recording():
     pts = layout.sample_points
     ship_t = ship0[None, :] + np.outer(tt, [4.0, 0.0])
     sampled = np.stack([at(p, np.hypot(*(ship_t - p).T) / c) / np.sqrt(np.hypot(*(ship0 - p))) for p in pts])
-    r_e = np.hypot(*(body - ship0)) + np.hypot(*(pts - body).T)
-    sampled += np.stack([0.3 * at(p, r / c) / np.sqrt(r) for p, r in zip(pts, r_e)])
+    d_ship_body = np.hypot(*(ship_t - body).T)                 # the echo follows the moving ship, as the direct path does
+    for i, p in enumerate(pts):
+        r_e = d_ship_body + np.hypot(*(p - body))
+        sampled[i] += 0.3 * at(p, r_e / c) / np.sqrt(r_e[0])
     traces = layout.collapse(sampled.T).T + 2e-4 * rng.standard_normal((layout.n_receivers, n))
     x, y = np.arange(0.0, 401.0, 5.0), np.arange(0.0, 401.0, 5.0)
-    k = 6
+    k = int(T / 0.5)
     t_ais = np.arange(k) * 0.5
     reports = AISReports(vessel=np.array(["ship"] * k), t=t_ais, xy=ship0[None, :] + np.outer(t_ais, [4.0, 0.0]),
                          sog=np.full(k, 4.0), cog=np.zeros(k))
