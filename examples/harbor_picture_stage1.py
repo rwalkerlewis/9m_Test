@@ -50,7 +50,8 @@ Criteria, fixed before the run (test set, everything estimated, free field repli
    full record map (median over the test seeds).
 
 Outputs in ``--out``: ``scoreboard_<dataset>_<chain>_<config>.png`` / ``.json`` (tuning and test side
-by side), ``pd_summary.png``, ``misses_<dataset>.png``, ``results.json``, ``run.log``.
+by side), ``..._frame.png`` (one test frame with its threshold contour, exclusion zones, peaks and ray paths),
+``pd_summary.png``, ``misses_<dataset>.png``, ``results.json``, ``run.log``.
 
 Usage::
 
@@ -80,7 +81,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from acoustic_sim.contract import Provenance  # noqa: E402
+from acoustic_sim.contract import Provenance, annotate_figure  # noqa: E402
 from acoustic_sim.water import HarborDataset, assemble_dataset, build_environment, build_layout, build_track  # noqa: E402
 from acoustic_sim.water import fdtd_runner  # noqa: E402
 from acoustic_sim.water.ais import AISReports  # noqa: E402
@@ -89,6 +90,7 @@ from acoustic_sim.water.dataset import render_vessel_gathers  # noqa: E402
 from acoustic_sim.water.detection import ProcessingConfig  # noqa: E402
 from acoustic_sim.water.diagnostics import SimulatorAwarePropagator, true_illuminator_waveform  # noqa: E402
 from acoustic_sim.water.occupancy import OccupancyConfig, OccupancyGrid  # noqa: E402
+from acoustic_sim.water.plotting import draw_frame_geometry  # noqa: E402
 from acoustic_sim.water.propagation import FreeFieldPropagator  # noqa: E402
 from acoustic_sim.water.scoreboard import ChainMaps, Scoreboard, plot_map, score, set_threshold  # noqa: E402
 from acoustic_sim.water.suppression import SuppressionConfig, run_ais_aware  # noqa: E402
@@ -444,6 +446,50 @@ def scoreboards(dataset: str, chain: str, cfg: str, mapname: str, results: dict,
     return out
 
 
+def plot_frame(key: str, run: ChainMaps, T: float, truth, reports: AISReports, chain: str, src: str | None, env, layout,
+               path: Path) -> None:
+    """One test frame of a scoreboard's map with its geometry: the threshold contour, the exclusion zones, the local
+    maxima above ``T`` (detections near an object, false alarms elsewhere), the AIS ships at their predicted
+    positions with their direct ray paths and, for the echo chain, the path illuminator - strongest peak - sensors
+    and the equal delay ellipse through it.  The frame is the middle one of the record."""
+    from acoustic_sim.water.scoreboard import local_maxima
+
+    K = len(run.times)
+    B = np.where(run.exclusion, 0.0, run.B)
+    k = K // 2
+    t = float(run.times[k])
+    rads = {}
+    for vid in reports.vessels:
+        tr = reports.for_vessel(vid)
+        if tr.t[0] - 60.0 <= t and tr.age(np.array([t]))[0] <= 60.0 and (chain == "passive" or vid == src):
+            rads[vid] = tr.predict(np.array([t]))[0]
+    pk = local_maxima(B[:, k], run.grid) & (B[:, k] > T)
+    order = np.argsort(B[pk, k])[::-1]
+    peaks = run.grid[pk][order]
+    below = not len(peaks)
+    if below:                                                  # nothing above T: show the strongest cell, marked as such
+        peaks = run.grid[[int(np.argmax(B[:, k]))]]
+    fig, ax = plt.subplots(figsize=(10, 8))
+    x0, x1, y0, y1 = env.extent
+    ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
+    im = draw_frame_geometry(ax, run.grid, run.B[:, k], layout, rads, peaks, echo=chain == "echo",
+                             threshold=T, exclusion=run.exclusion[:, k])
+    for oid, tr in truth.tracks.items():
+        ax.plot(*tr.position_at(t)[0], "o", ms=11, mfc="none", mec="deepskyblue" if tr.level_pa > 0 else "orange", mew=1.6)
+        ax.annotate(oid, tr.position_at(t)[0], xytext=(5, -10), textcoords="offset points", fontsize=7)
+    fig.colorbar(im, ax=ax, shrink=0.7, label="dB re frame peak")
+    ax.set_xlim(x0, x1)
+    ax.set_ylim(y0, y1)
+    ax.set_aspect("equal")
+    ax.legend(fontsize=7, loc="lower left")
+    ax.set_title(f"{key}, test seed, t = {t:.2f} s: " + ("no local maximum above T = {:.4g}; the strongest cell is marked".format(T)
+                 if below else f"{len(peaks)} local maxima above T = {T:.4g}") + "\n"
+                 f"AIS ships at their predicted positions; circles: true positions (scoring side)", fontsize=10)
+    annotate_figure(fig, run.provenance)
+    fig.savefig(path, dpi=110, bbox_inches="tight")
+    plt.close(fig)
+
+
 def _after(m: ChainMaps, t0: float) -> ChainMaps:
     keep = m.times >= t0
     return ChainMaps(m.grid, m.times[keep], m.B[:, keep], m.exclusion[:, keep], m.provenance, m.removed, m.present,
@@ -739,6 +785,10 @@ def main() -> None:
                     if "test" in sbs:
                         plot_map(sbs["test"], truth0, obs0.environment, out / f"scoreboard_{dataset}_{chain}_{name}_map.png", obs0.geometry,
                                  title=f"{key}: test set Pd")
+                        s1 = [s for s in seeds if s != TUNING_SEED][0]
+                        plot_frame(key, results[(cfg, s1, None, ())]["maps"][mapname], sbs["threshold"].T, truths[s1], reports[s1], chain,
+                                   cfg.split("/")[0] if chain == "echo" else None, obs0.environment, obs0.geometry,
+                                   out / f"scoreboard_{dataset}_{chain}_{name}_frame.png")
                     for split in ("tuning", "test"):
                         if split in sbs:
                             sb = sbs[split]

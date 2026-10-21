@@ -15,7 +15,10 @@ confirmed track is matched to the object nearest over its fixes (median distance
 5 m harbor), otherwise it is a false track (counted, with its positions, in ``summary.json`` and drawn as unmatched).
 Reported: compute time per second of data (below 1 is real time) and the latency of every output.
 
-Outputs in ``--out/<dataset>/``: ``passive.csv``, ``echo.csv``, ``tracks.csv``, ``check.png``, ``summary.json``.
+Outputs in ``--out/<dataset>/``: ``passive.csv``, ``echo.csv``, ``tracks.csv``, ``check.png`` (top: every detection and
+track over the true tracks; bottom: one frame of each chain with its map, where the chain placed the radiators, their
+direct ray paths and, for the echo map, the echo path and the equal delay ellipse through the strongest peak),
+``summary.json``.
 
 Usage::
 
@@ -43,6 +46,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from acoustic_sim.contract import Observation, Truth  # noqa: E402
 from acoustic_sim.water.bistatic import BistaticConfig  # noqa: E402
 from acoustic_sim.water.detection import ProcessingConfig  # noqa: E402
+from acoustic_sim.water.plotting import draw_frame_geometry  # noqa: E402
 from acoustic_sim.water.propagation import FreeFieldPropagator  # noqa: E402
 from acoustic_sim.water.streaming import (  # noqa: E402
     EchoStreamConfig, RadiatorTracker, StreamConfig, StreamingEcho, StreamingPassive, TrackerConfig, ais_crosscheck)
@@ -141,12 +145,14 @@ def main() -> None:
     prop = FreeFieldPropagator.from_environment(env)
     pc = ProcessingConfig(f_lo=band[0], f_hi=band[1], c=prop.c, propagator=prop, use_cuda=args.cuda,
                           grid_bounds=(x0 + edge, x1 - edge, y0 + edge, y1 - edge), **pcd)
-    passive = StreamingPassive(obs.geometry, obs.fs, env, pc, SuppressionConfig(), StreamConfig(max_peaks=args.peaks, **std))
+    passive = StreamingPassive(obs.geometry, obs.fs, env, pc, SuppressionConfig(), StreamConfig(max_peaks=args.peaks, **std),
+                               keep_maps=True)
     tracker = RadiatorTracker(TrackerConfig(**TRACKER.get(args.dataset, {})))
     echo = None
     if args.echo:
         bc = BistaticConfig(f_lo=band[0], f_hi=band[1], c=prop.c, propagator=prop, use_cuda=args.cuda, **ECHO)
-        echo = StreamingEcho(obs.geometry, obs.fs, env, bc, EchoStreamConfig(step_blocks=4, combine="max" if args.combine == "max" else "sum"))
+        echo = StreamingEcho(obs.geometry, obs.fs, env, bc, EchoStreamConfig(step_blocks=4, combine="max" if args.combine == "max" else "sum"),
+                             keep_maps=True)
 
     n = int(round(args.chunk * obs.fs))
     p_frames, e_frames, sent = [], [], {}
@@ -217,7 +223,7 @@ def main() -> None:
         print(f"echo ({len(e_frames)} frames, every track illuminates), frames with a peak within 5 m:  " + ", ".join(
             f"{k} {100 * v['hit']:.0f}%" for k, v in eper.items() if not v["radiates"]))
 
-    fig, axes = plt.subplots(1, 2 if echo else 1, figsize=(15 if echo else 8, 6.5), squeeze=False)
+    fig, axes = plt.subplots(2, 2 if echo else 1, figsize=(15 if echo else 8, 13.0), squeeze=False)
     for ax, (name, rows) in zip(axes[0], [("passive (no AIS) and tracks", prows)] + ([("echo", erows)] if echo else [])):
         ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
         r = obs.geometry.positions()
@@ -246,6 +252,28 @@ def main() -> None:
         ax.legend(fontsize=7, loc="lower left")
         ax.set_title(f"{args.dataset}: {name}\ntrue tracks: blue radiating, orange silent; black: passive tracks with their AIS label;\n"
                      f"magenta dashed: false tracks (no object within {args.assoc:g} m)", fontsize=9)
+    # Second row: the geometry of one frame of each chain (map, where the chain placed the radiators, ray paths).
+    conf = tracker.confirmed()
+    mid = p_frames[len(p_frames) // 2]
+    near = {k: [f[1] for f in tr.fixes if abs(f[0] - mid.t) < 0.3][0] for k, tr in conf.items()
+            if any(abs(f[0] - mid.t) < 0.3 for f in tr.fixes)}
+    geo = [("passive", mid, near, False)]
+    if echo and e_frames:
+        ef = e_frames[len(e_frames) // 2]
+        geo.append(("echo", ef, ef.ships, True))
+    for ax, (name, f, rads, is_echo) in zip(axes[1], geo):
+        ax.imshow(np.where(env.water, 1.0, 0.0), origin="lower", extent=(x0, x1, y0, y1), cmap="Greys_r", vmin=-0.6, vmax=1.2)
+        im = draw_frame_geometry(ax, passive.grid if name == "passive" else echo.grid, f.B, obs.geometry, rads, f.xy, echo=is_echo)
+        for oid, tr in truth.tracks.items():
+            ax.plot(*tr.position_at(f.t)[0], "o", ms=10, mfc="none", mec="deepskyblue" if tr.level_pa > 0 else "orange", mew=1.5)
+        fig.colorbar(im, ax=ax, shrink=0.7, label="dB re frame peak")
+        ax.set_xlim(x0, x1)
+        ax.set_ylim(y0, y1)
+        ax.set_aspect("equal")
+        ax.legend(fontsize=7, loc="lower left")
+        ax.set_title(f"{args.dataset}: {name} map at t = {f.t:.2f} s with its geometry\n"
+                     f"{'tracks at that time' if name == 'passive' else 'illuminator where the echo chain placed it'}; "
+                     f"circles: true positions (for comparison)", fontsize=9)
     fig.savefig(out / "check.png", dpi=110, bbox_inches="tight")
 
 
