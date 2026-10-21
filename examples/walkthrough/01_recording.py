@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Step 1, the recording: what the system gets.
 
-The chart (water and land), the sensors (a strain DAS cable and four hydrophones) and the traces: the DAS
+The chart (water and land), the sensors (a DAS cable and four hydrophones; the cable is in strain mode, the second
+difference over its gauge length, on the bistatic and multistatic recordings and in pressure mode on the simple
+and the 5 m harbor ones, as the suptitle says) and the traces: the DAS
 gather (every channel against time) and the spectrogram of one hydrophone.  Ships, boats and bodies are
 somewhere in the water; the dashed lines show where (from the simulation, for comparison only).
 
@@ -51,7 +53,9 @@ ax.plot(tt, obs.traces[h], lw=0.4, color=c.SENSOR)
 ax.set_xlabel("time [s]")
 ax.set_ylabel("pressure [Pa]")
 ax.set_title("Hydrophone 1: trace", fontsize=10)
-fig.suptitle(f"Step 1 - the recording ({a.dataset}): {lay.n_das} DAS channels + {lay.n_hydrophones} hydrophones, "
+cab = lay.cables[0]
+mode = f"strain DAS, {cab.gauge_length:g} m gauge" if cab.is_strain else "pressure DAS"
+fig.suptitle(f"Step 1 - the recording ({a.dataset}): {lay.n_das} channels of {mode} + {lay.n_hydrophones} hydrophones, "
              f"{fs:.0f} Hz, {obs.traces.shape[1] / fs:.0f} s", fontsize=12)
 fig.tight_layout()
 c.save(fig, c.out_dir(a) / "01_recording.png", c.NOTE)

@@ -18,16 +18,18 @@ scene (3 to 18 %) and the quiet UUVs of the 5 m harbor.**  See
 ## Walkthrough: from the traces to the harbor picture
 
 `examples/walkthrough/` takes one recording through the whole real-time chain, one figure per step
-(`./examples/walkthrough/run_all.sh <bistatic|multistatic|harbor> --cuda`; each script also runs on its
-own). The chain runs once (about 30 s on the GPU) and is cached in `output/walkthrough/<dataset>/cache/`;
+(`./examples/walkthrough/run_all.sh DATASET --cuda`, DATASET one of `simple`, `bistatic`, `multistatic`, `harbor`;
+each script also runs on its own). The chain runs once (about 30 s on the GPU) and is cached in `output/walkthrough/<dataset>/cache/`;
 the figures go to `output/walkthrough/<dataset>/`. Nothing in the processing reads the truth or the AIS
 reports: the truth is drawn (dashed lines, circles) only to show where the objects really are, and AIS
 enters in step 4 only, to name what was found. The figures below are the multistatic recording (three
 ships, two UUVs, a diver, six pilings and a moored hull) and, for the echo steps, the [simple
 harbor](#simple-harbor-easier-wavefields) (a ferry and a boat lighting a silent UUV and a wreck).
 
-**1. The recording** (`01_recording.py`). What the system gets: the chart, the sensor positions (a strain
-DAS cable and four hydrophones) and the traces.
+**1. The recording** (`01_recording.py`). What the system gets: the chart, the sensor positions (a DAS cable and
+four hydrophones) and the traces. The cable of the bistatic and multistatic recordings is in strain mode (the
+second difference of the field over the gauge length, as an interrogator measures it); the simple harbor and the
+5 m harbor have a pressure mode cable.
 
 ![step 1](../output/walkthrough/multistatic/01_recording.png)
 
@@ -423,9 +425,11 @@ each dataset.
 | multistatic | echo, ferry illuminates | — (tug 23 %: its direct path dominates the map) | both UUVs, diver, six pilings, moored hull | 2.0 per frame | 27 s |
 | harbor (5 m, 120 s) | passive | ferry 2 %, tug 3 % | moored ship, both UUVs, diver | 2.9 per frame | 9 s |
 
-Not detected anywhere: the second UUV, the diver, the pilings, the moored hull, the radiating UUVs of
-the 5 m dataset, and every silent body in the multi illuminator scene, where the direct paths of the
-ships that do not illuminate are left in the traces and swamp the echo map.
+Not detected by these batch runs (one illuminator, `harbor_detect.py`): the second UUV, the diver, the
+pilings, the moored hull, the radiating UUVs of the 5 m dataset, and every silent body of the multistatic
+recording, where the direct paths of the ships that do not illuminate are left in the traces and swamp the echo
+map. The real-time chain below removes every tracked ship's direct path and, on the same multistatic
+recording, finds uuv2 in 18 % and uuv1 in 3 % of the frames.
 
 **Real time, located from the traces alone** (`water/streaming.py`, `examples/harbor_stream.py`). AIS
 does not enter the processing: it is used afterwards, to label what was located (`ais_crosscheck`).
@@ -764,7 +768,7 @@ deliberately not started.
 | `examples/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator` (free field by default, `_freefield` suffix; `simulator` for the dispersion corrected replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
 | `examples/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the truth inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit, `--propagator simulator` the dispersion corrected replicas, `--cuda` the GPU chain); every result records its `provenance` | about 1.5 h of processing for both datasets |
 | `examples/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and a ferry-only check map given the truth | 6 FDTD runs (fine: about 1 h on the GPU) |
-| `examples/walkthrough/` | [Walkthrough](#walkthrough-from-the-traces-to-the-harbor-picture): seven scripts, one figure per step of the chain (recording, passive map, tracks, AIS labels, direct path removal, echo map, harbor picture); `run_all.sh <dataset> --cuda` | about 1 min per recording |
+| `examples/walkthrough/` | [Walkthrough](#walkthrough-from-the-traces-to-the-harbor-picture): seven scripts, one figure per step of the chain (recording, passive map, tracks, AIS labels, direct path removal, echo map, harbor picture); `run_all.sh DATASET --cuda` | about 1 min per recording |
 | `examples/harbor_stream.py` | The real-time system (`water/streaming.py`): passive chain without AIS, tracker, echo chain on the tracks, AIS labels afterwards; feeds a recording in 0.25 s chunks, reports compute per second of data and latency, checks every output against the true positions; `--dataset multistatic|bistatic|harbor [--echo] --cuda`; writes `output/harbor_stream/<dataset>/` | 15 to 60 s per run |
 | `examples/harbor_picture_stage1.py` | Harbor picture stage 1: the [scoreboard](architecture.md#scoreboard) on the bistatic, multistatic and 5 m harbor datasets, tuning set (noise seed 0) and test set (seeds 1 to 5, remixed from the cached gathers), passive and echo chains; `--dataset`, `--chain`, `--propagator {free_field,simulator}`, `--cuda`, `--workers`; writes `output/harbor_picture/stage1/` | about 1.2 h on the GPU (runs are cached in `cache/`) |
 | `examples/harbor_domain_video.py`, `examples/harbor_stack_movie.py`, `examples/harbor_presentation.py` | Visualize passive/bistatic scans, echo stacks, or the scenario pipeline | varies |
