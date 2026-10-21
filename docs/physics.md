@@ -65,7 +65,7 @@ Stencil weights are computed analytically in `fd2_coefficients(order)`.
 
 ### Time stepping
 
-The solver default (`FDTDConfig.time_scheme="leapfrog"`) is second-order leapfrog
+The solver default (`FDTDConfig.time_scheme="leapfrog"`) is second order leapfrog
 with a damping term:
 
 $$p^{n+1} = 2p^n - p^{n-1} + c^2 \Delta t^2 \, L[p^n] - \sigma\,(p^n - p^{n-1})$$
