@@ -127,7 +127,8 @@ def main() -> None:
     ap.add_argument("--time", type=float, default=10.0, help="simulated duration [s]")
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--gate", type=float, default=0.0, help="exclude channels closer than this [m] to the source from the statistics")
-    ap.add_argument("--cuda", action="store_true")
+    ap.add_argument("--cuda", action="store_true", help="kept for old command lines: the FDTD runs on the GPU by default")
+    ap.add_argument("--cpu", action="store_true", help="run the FDTD on the CPU")
     ap.add_argument("--doppler", action="store_true", help="eca_doppler=True (per sample delays following the ship); outputs get a _doppler suffix")
     ap.add_argument("--smooth", type=float, default=0.0, help="track_smooth_s for the refined track (with --doppler); adds a _smooth<s> suffix")
     ap.add_argument("--processing-cuda", action="store_true", help="run the refinement and ECA on the GPU (--cuda is the FDTD)")
@@ -145,8 +146,7 @@ def main() -> None:
         cfg.fdtd.fs = 3000.0
         cfg.noise.band_scale = 5.0
     cfg.fdtd.total_time = args.time
-    if args.cuda:
-        cfg.fdtd.use_cuda = True
+    cfg.fdtd.use_cuda = not args.cpu
     env = build_environment(cfg)
     layout = build_layout(cfg, env)
     fs, n = cfg.fdtd.fs, cfg.fdtd.n_steps

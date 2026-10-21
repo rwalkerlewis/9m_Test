@@ -238,9 +238,11 @@ levels along the DAS cable). `--n-fig` sets how many track positions the curves 
 
 ## GPU
 
-`ProcessingConfig(use_cuda=True)`, `OccupancyConfig(use_cuda=True)`, `BistaticConfig(use_cuda=True)`
-and `HarborFDTDConfig(use_cuda=True)` run the processing and the FDTD on the GPU (CuPy,
-`pip install cupy-cuda12x`).  The passive chain runs in single precision on the GPU; the bistatic
+The FDTD runs on the GPU by default (`HarborFDTDConfig.use_cuda` and `FDTDConfig.use_cuda` are `True`,
+the scenario files say so too, and the scripts that run it take `--cpu` to opt out; without a GPU it
+falls back to the CPU with a warning).  `ProcessingConfig(use_cuda=True)`, `OccupancyConfig(use_cuda=True)`
+and `BistaticConfig(use_cuda=True)` run the processing on the GPU (CuPy, `pip install cupy-cuda12x`; the
+scripts' `--cuda`).  The passive chain runs in single precision on the GPU; the bistatic
 chain and the FDTD run in double precision (`HarborFDTDConfig.precision = "float32"` is opt in).
 CPU and GPU agree: the passive scan maps correlate at 1.000000, the FDTD traces of the fused kernel
 are identical to the array code to the last bit, and the bistatic maps agree to 1e-12 (the ECA to

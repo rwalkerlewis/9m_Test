@@ -147,7 +147,7 @@ whose origin is `(x0, y0)`, and sensor/vessel coordinates must be expressed in t
 | Section | Main fields | Purpose |
 |---------|-------------|---------|
 | `environment` | `dx`, `c0`, `shallow_c_drop`, `crop` | Plan-view grid spacing, base sound speed, shallow-water effective-speed variation, and optional crop |
-| `fdtd` | `fs`, `total_time`, `fd_order`, `damping_width`, `damping_max`, `background_absorption`, `shore_loss_width`, `shore_loss_max`, `use_cuda` | Sampling rate/duration, stencil, outer sponge, background damping, shoreline damping, and GPU selection |
+| `fdtd` | `fs`, `total_time`, `fd_order`, `damping_width`, `damping_max`, `background_absorption`, `shore_loss_width`, `shore_loss_max`, `use_cuda` | Sampling rate/duration, stencil, outer sponge, background damping, shoreline damping, and GPU selection (`use_cuda`, default `true`) |
 | `fdtd` (performance options, defaults shown) | `precision="float64"`, `kernel="auto"`, `body_masks="auto"`, `boundary="sponge"` (or `"cpml"`, with `cpml_width`, `cpml_order`, `cpml_alpha_max`), `time_scheme="leapfrog"` | GPU precision, fused CUDA kernel selection, scatterer mask placement, absorbing boundary and time-stepping scheme; see [Harbor](harbor.md) for measured effects |
 | `cables` | `name`, `waypoints`, `channel_spacing`, `das_mode`, `gauge_length` | Polyline cable layout; `das_mode` is `pressure` or `strain` |
 | `hydrophones` | array of `[x, y]` points | Discrete sensor positions |
@@ -309,7 +309,7 @@ CLI flags.  Key arguments:
 | `--total-time` | simulation duration in seconds |
 | `--dx` | grid spacing in metres |
 | `--fd-order` | spatial FD order: 2, 4, 6, 8 |
-| `--use-cuda` | enable GPU acceleration |
+| `--cpu` | run on the CPU (the GPU is the default; `--use-cuda` is still accepted) |
 | `--output-dir` | output directory |
 
 3-D adds: `--z-min`, `--z-max`, `--source-z`, `--source-z1`, `--receiver-cz`, and `--field-plane-z` (save a horizontal slice for `extract_array_traces.py`).
