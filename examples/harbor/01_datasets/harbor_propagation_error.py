@@ -64,12 +64,26 @@ def arrival_lag(measured: np.ndarray, predicted: np.ndarray, fs: float, t0: floa
     return float(lags[j]), float(lags[i])
 
 
+def straight_path_time(env, a: np.ndarray, b: np.ndarray, step: float | None = None) -> float:
+    """Travel time [s] from *a* to *b* along the straight line through the environment's sound speed map (the slowness
+    sampled at nearest grid nodes every *step* m, default a fifth of a cell)."""
+    step = step or 0.2 * env.dx
+    r = float(np.hypot(*(np.asarray(b, float) - np.asarray(a, float))))
+    n = max(int(np.ceil(r / step)), 1)
+    s = (np.arange(n) + 0.5) / n
+    xy = np.asarray(a, float)[None, :] + s[:, None] * (np.asarray(b, float) - np.asarray(a, float))[None, :]
+    c = env.model.values
+    ix = np.clip(np.rint((xy[:, 0] - env.model.x[0]) / env.dx).astype(int), 0, c.shape[1] - 1)
+    iy = np.clip(np.rint((xy[:, 1] - env.model.y[0]) / env.dx).astype(int), 0, c.shape[0] - 1)
+    return float(np.sum(r / n / c[iy, ix]))
+
+
 def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | None = None, scheme: str | None = None,
-            uniform_speed: bool = False, save: bool = True) -> dict:
-    """The propagation error of *dataset*'s forward model.  *scheme* overrides the scenario's ``time_scheme`` and
-    *uniform_speed* sets ``shallow_c_drop = 0`` (the water everywhere at ``c0``, the chart's speed too); with either the
-    result describes a variant of the scenario, not the recording, and is not written into the truth file
-    (*save* False)."""
+            uniform_speed: bool = False, dx: float | None = None, save: bool = True) -> dict:
+    """The propagation error of *dataset*'s forward model.  *scheme* overrides the scenario's ``time_scheme``,
+    *uniform_speed* sets ``shallow_c_drop = 0`` (the water everywhere at ``c0``, the chart's speed too) and *dx* runs the
+    same scenario on another grid spacing (the sample rate scaled with it, the sponge kept in metres); with any of them the
+    result describes a variant of the scenario, not the recording, and is not written into the truth file."""
     obs_p, truth_p = contract_paths(dataset.with_suffix(".npz"))
     truth = Truth.load(truth_p)
     cfg = HarborScenarioConfig.from_dict(truth.scenario)
@@ -79,6 +93,11 @@ def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | No
         cfg.fdtd.time_scheme = scheme
     if uniform_speed:
         cfg.environment.shallow_c_drop = 0.0
+    if dx is not None:
+        r = cfg.environment.dx / dx
+        cfg.fdtd.damping_width = int(round(cfg.fdtd.damping_width * r))
+        cfg.fdtd.fs *= r
+        cfg.environment.dx = dx
     env = build_environment(cfg)
     layout = build_layout(cfg, env)
     f_hi = band[1] if band else f_max_for_grid(cfg.environment.dx)
@@ -111,13 +130,14 @@ def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | No
         lag, lag_env = arrival_lag(meas, pred, fs, t_arr - 4.0 / f_lo, t_arr + 4.0 / f_lo, 2.0 / (f_lo + f_hi))
         out.append({"hydrophone": i, "xy": h.tolist(), "range_m": r,
                     "direction_deg": float(np.degrees(np.arctan2(h[0] - pos[0], h[1] - pos[1])) % 360.0),
-                    "error_ms": 1e3 * lag_env, "phase_error_ms": 1e3 * lag})
+                    "error_ms": 1e3 * lag_env, "phase_error_ms": 1e3 * lag,
+                    "straight_path_ms": 1e3 * (straight_path_time(env, pos, h) - r / c)})
     e = [o["error_ms"] for o in out]
     res = {"source_xy": pos.tolist(), "source": src.id, "band_hz": [f_lo, f_hi], "c_chart": c, "time_scheme": cfg.fdtd.time_scheme,
-           "uniform_speed": uniform_speed, "hydrophones": out,
+           "uniform_speed": uniform_speed, "dx": cfg.environment.dx, "fs": fs, "hydrophones": out,
            "median_ms": float(np.median(e)), "min_ms": float(np.min(e)), "max_ms": float(np.max(e)),
-           "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed"}
-    if save and scheme is None and not uniform_speed:
+           "note": "arrival (peak of the cross correlation envelope) at the hydrophone minus range / chart speed; negative: faster than the chart; phase_error_ms: the correlation peak nearest to it, ambiguous by a period where the pulse is dispersed; straight_path_ms: the travel time along the straight line through the scenario's sound speed map minus range / chart speed (what the water itself contributes, refraction aside)"}
+    if save and scheme is None and not uniform_speed and dx is None:
         truth.meta["propagation_error_ms"] = res
         truth.save(truth_p)
     return res
@@ -155,15 +175,20 @@ def main() -> None:
                     help="time scheme instead of the scenario's (a variant: written as propagation_error_<scheme>.json, not into the truth)")
     ap.add_argument("--uniform-speed", action="store_true",
                     help="water everywhere at the scenario's c0 (a variant: propagation_error_uniform.json, not into the truth)")
+    ap.add_argument("--dx", type=float, default=None,
+                    help="grid spacing [m] instead of the scenario's (a variant: propagation_error_dx<dx>.json, not into the truth)")
     ap.add_argument("--cpu", action="store_true")
     a = ap.parse_args()
     ds = Path(a.dataset)
     out = Path(a.out) if a.out else (ds.parent.parent if ds.parent.name == "fine" else ds.parent)
-    res = measure(ds, use_cuda=not a.cpu, band=tuple(a.band) if a.band else None, scheme=a.scheme, uniform_speed=a.uniform_speed)
+    res = measure(ds, use_cuda=not a.cpu, band=tuple(a.band) if a.band else None, scheme=a.scheme, uniform_speed=a.uniform_speed,
+                  dx=a.dx)
     out.mkdir(parents=True, exist_ok=True)
-    stem = "propagation_error" + (f"_{a.scheme}" if a.scheme else "") + ("_uniform" if a.uniform_speed else "")
+    stem = ("propagation_error" + (f"_{a.scheme}" if a.scheme else "") + ("_uniform" if a.uniform_speed else "")
+            + (f"_dx{a.dx:g}" if a.dx else ""))
     (out / f"{stem}.json").write_text(json.dumps(res, indent=2))
-    figure(res, out / f"{stem}.png", out.name + (f", {a.scheme}" if a.scheme else "") + (", uniform speed" if a.uniform_speed else ""))
+    figure(res, out / f"{stem}.png", out.name + (f", {a.scheme}" if a.scheme else "") + (", uniform speed" if a.uniform_speed else "")
+           + (f", {a.dx:g} m grid" if a.dx else ""))
     print(f"{out.name}: " + ", ".join(f"hydrophone {o['hydrophone'] + 1} {o['error_ms']:+.2f} ms ({o['direction_deg']:.0f} deg, "
                                       f"{o['range_m']:.0f} m)" for o in res["hydrophones"]))
 
