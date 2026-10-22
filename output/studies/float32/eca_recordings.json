@@ -1,0 +1,199 @@
+{
+  "criterion": {
+    "depth_db": 0.3,
+    "echo_loss_db": 0.1,
+    "peaks_cells": 1,
+    "cell_m": 2.0
+  },
+  "device": "cpu",
+  "recordings": {
+    "simple": {
+      "double": {
+        "ferry": {
+          "cable_median_db": 16.68011269320135,
+          "cable_p10_db": 14.524694651838347,
+          "steps": 9
+        },
+        "scattered:ferry>bodies": {
+          "cable_median_db": -0.688855815116775,
+          "cable_p10_db": -1.3992905937775644,
+          "steps": 9
+        },
+        "boat": {
+          "cable_median_db": 9.408615110502597,
+          "cable_p10_db": 8.931822575412289,
+          "steps": 9
+        },
+        "scattered:boat>bodies": {
+          "cable_median_db": -0.7030601463295155,
+          "cable_p10_db": -1.211446461146312,
+          "steps": 9
+        }
+      },
+      "mixed": {
+        "ferry": {
+          "cable_median_db": 16.68011289817563,
+          "cable_p10_db": 14.52469462676679,
+          "steps": 9
+        },
+        "scattered:ferry>bodies": {
+          "cable_median_db": -0.6888557565679945,
+          "cable_p10_db": -1.3992905510310363,
+          "steps": 9
+        },
+        "boat": {
+          "cable_median_db": 9.408615009732056,
+          "cable_p10_db": 8.931822576163178,
+          "steps": 9
+        },
+        "scattered:boat>bodies": {
+          "cable_median_db": -0.703060107189662,
+          "cable_p10_db": -1.211446431735964,
+          "steps": 9
+        }
+      },
+      "max_peak_shift_m": 0.0,
+      "compute_per_second_of_data": {
+        "double": {
+          "passive": 18.114437633146007,
+          "echo": 26.82835309660586,
+          "characteristics": 0.10563652523560449,
+          "total": 45.04842725498747
+        },
+        "mixed": {
+          "passive": 17.923289714851126,
+          "echo": 27.670781732152683,
+          "characteristics": 0.10496950504311826,
+          "total": 45.69904095204693
+        }
+      }
+    },
+    "bistatic": {
+      "double": {
+        "ferry": {
+          "cable_median_db": 26.005108262352962,
+          "cable_p10_db": 21.1285105252832,
+          "steps": 9
+        },
+        "scattered:ferry>uuv1": {
+          "cable_median_db": 0.35259198765805844,
+          "cable_p10_db": 0.20294392293346264,
+          "steps": 9
+        }
+      },
+      "mixed": {
+        "ferry": {
+          "cable_median_db": 26.005108337769748,
+          "cable_p10_db": 21.12851042588832,
+          "steps": 9
+        },
+        "scattered:ferry>uuv1": {
+          "cable_median_db": 0.35259197994558084,
+          "cable_p10_db": 0.20294391427787176,
+          "steps": 9
+        }
+      },
+      "max_peak_shift_m": 0.0,
+      "compute_per_second_of_data": {
+        "double": {
+          "passive": 38.073747676251514,
+          "echo": 55.439245424803815,
+          "characteristics": 0.12914996831386816,
+          "total": 93.6421430693692
+        },
+        "mixed": {
+          "passive": 38.606715548045756,
+          "echo": 61.57526280150196,
+          "characteristics": 0.13173943604779198,
+          "total": 100.31371778559551
+        }
+      }
+    },
+    "multistatic": {
+      "double": {
+        "ferry": {
+          "cable_median_db": 19.290570167960347,
+          "cable_p10_db": 14.044619408547886,
+          "steps": 9
+        },
+        "scattered:ferry>bodies": {
+          "cable_median_db": 0.6479263481844699,
+          "cable_p10_db": 0.3152324403438643,
+          "steps": 9
+        },
+        "tug": {
+          "cable_median_db": 13.286571090296789,
+          "cable_p10_db": 12.47789962121975,
+          "steps": 9
+        },
+        "scattered:tug>bodies": {
+          "cable_median_db": 0.5278031104140056,
+          "cable_p10_db": 0.31448417659265954,
+          "steps": 9
+        },
+        "boat": {
+          "cable_median_db": 13.991538108888971,
+          "cable_p10_db": 9.664720996001167,
+          "steps": 9
+        },
+        "scattered:boat>bodies": {
+          "cable_median_db": 1.3666584760324225,
+          "cable_p10_db": 0.3419847500192585,
+          "steps": 9
+        }
+      },
+      "mixed": {
+        "ferry": {
+          "cable_median_db": 19.290570194502838,
+          "cable_p10_db": 14.044619384741214,
+          "steps": 9
+        },
+        "scattered:ferry>bodies": {
+          "cable_median_db": 0.6479263467355404,
+          "cable_p10_db": 0.3152324395108693,
+          "steps": 9
+        },
+        "tug": {
+          "cable_median_db": 13.286571098855074,
+          "cable_p10_db": 12.477899621220782,
+          "steps": 9
+        },
+        "scattered:tug>bodies": {
+          "cable_median_db": 0.5278031158276508,
+          "cable_p10_db": 0.3144841821056924,
+          "steps": 9
+        },
+        "boat": {
+          "cable_median_db": 13.991537989787828,
+          "cable_p10_db": 9.664721030558145,
+          "steps": 9
+        },
+        "scattered:boat>bodies": {
+          "cable_median_db": 1.3666584727882114,
+          "cable_p10_db": 0.3419847515228107,
+          "steps": 9
+        }
+      },
+      "max_peak_shift_m": 0.0,
+      "compute_per_second_of_data": {
+        "double": {
+          "passive": 38.53604436429305,
+          "echo": 60.86464025719615,
+          "characteristics": 0.3884815827885177,
+          "total": 99.78916620427772
+        },
+        "mixed": {
+          "passive": 39.48659893085569,
+          "echo": 73.93485470915621,
+          "characteristics": 0.39808535566407954,
+          "total": 113.81953899567597
+        }
+      }
+    }
+  },
+  "max_direct_diff_db": 2.0497427755117315e-07,
+  "max_echo_diff_db": 5.8548780490497165e-08,
+  "max_peak_shift_m": 0.0,
+  "frames_compared": 213,
+  "passed": true
+}
