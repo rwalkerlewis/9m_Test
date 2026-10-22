@@ -1,0 +1,65 @@
+04:51:24 maps of A
+04:53:33 maps of A
+04:55:08 maps of B
+04:57:38 maps of C
+05:01:23 maps of D
+05:05:16 maps of E
+05:09:17 maps of F
+05:13:16 maps of G
+05:15:19 maps of H
+05:17:03 maps of P
+05:18:48 maps of the simple layout on main
+05:20:23 maps of the bistatic layout on main
+05:22:00 maps of the multistatic layout on main
+05:23:34 maps of the multistatic_b layout on main
+05:24:09 maps of the harbor layout on main
+05:48:09 maps of A
+05:48:09 maps of B
+05:48:09 maps of C
+05:48:09 maps of D
+05:48:09 maps of E
+05:48:09 maps of F
+05:48:09 maps of G
+05:48:09 maps of H
+05:48:09 maps of P
+05:48:09 maps of the simple layout on main
+05:48:09 maps of the bistatic layout on main
+05:48:09 maps of the multistatic layout on main
+05:48:09 maps of the multistatic_b layout on main
+05:48:09 maps of the harbor layout on main
+05:48:24 A/seed0: false tracks 0.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.50
+05:48:36 A/seed1: false tracks 0.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.06
+05:48:48 A/seed2: false tracks 3.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.52
+05:49:03 B/seed0: false tracks 9.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.17
+05:49:16 B/seed1: false tracks 6.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.17
+05:49:29 B/seed2: false tracks 9.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.22
+05:49:49 C/seed0: false tracks 6.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.16
+05:50:09 C/seed1: false tracks 3.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.12
+05:50:28 C/seed2: false tracks 9.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.08
+05:51:01 D/seed0: false tracks 3.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.11
+05:51:34 D/seed1: false tracks 0.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.02
+05:52:09 D/seed2: false tracks 9.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.00
+05:52:45 E/seed0: false tracks 12.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.55
+05:53:21 E/seed1: false tracks 0.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.08
+05:53:58 E/seed2: false tracks 6.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.30
+05:54:37 F/seed0: false tracks 6.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.30
+05:55:14 F/seed1: false tracks 6.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.28
+05:55:51 F/seed2: false tracks 3.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.22
+05:56:29 G/seed0: false tracks 15.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.28
+05:57:07 G/seed1: false tracks 9.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.20
+05:57:44 G/seed2: false tracks 6.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.25
+05:58:01 H/seed0: false tracks 3.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.89
+05:58:17 H/seed1: false tracks 9.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.92
+05:58:33 H/seed2: false tracks 3.0/min, ferry 1.00, boat 0.00, uuv1 0.00, wreck 0.89
+06:00:47 P/seed0: FAILED cudaErrorUnknown: unknown error
+06:00:55 P/seed1: FAILED cudaErrorUnknown: unknown error
+06:01:03 P/seed2: FAILED cudaErrorUnknown: unknown error
+06:01:35 maps of P
+06:01:35 maps of the simple layout on main
+06:01:35 maps of the bistatic layout on main
+06:01:35 maps of the multistatic layout on main
+06:01:35 maps of the multistatic_b layout on main
+06:01:35 maps of the harbor layout on main
+06:16:38 P/seed0: false tracks 0.0/min, ferry 1.00, boat 1.00, uuv1 0.30, wreck 1.00
+06:31:35 P/seed1: false tracks 0.0/min, ferry 1.00, boat 1.00, uuv1 0.66, wreck 1.00
+06:46:28 P/seed2: false tracks 0.0/min, ferry 1.00, boat 1.00, uuv1 0.31, wreck 1.00

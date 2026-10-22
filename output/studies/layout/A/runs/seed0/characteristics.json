@@ -1,0 +1,112 @@
+{
+  "recording": "layout_A_seed0",
+  "run": {
+    "git_commit": "690acd2a73f1c92874f251403f264f852e190609",
+    "git_dirty": false,
+    "processing_config": "/workspace/examples/configs/processing/simple.json",
+    "processing_config_sha256": "299dcf7f9021c39b3d54b709423c9fc0c25f0e2d6ed1d1894917a21c29b09656",
+    "processing_overrides": [],
+    "observation": "/workspace/output/studies/layout/A/dataset.observation.npz",
+    "observation_sha256": "1b103819170f05234355ac64281e9705c9820ddbe39340b68f297f0a3f8ad236",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 0,
+    "wall_s": 8.814808447001269,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "chunk_s": 0.25
+  },
+  "objects": [
+    {
+      "object": "ferry",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 1.0,
+      "true_size_m": null,
+      "true_speed": 4.0,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 1.352,
+        "width_major": 11.58,
+        "width_minor": 3.645,
+        "speed": 4.0,
+        "residual": 1.12
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "wreck",
+      "type": "static",
+      "radiates": false,
+      "true_level_pa": 0.0,
+      "true_size_m": [
+        4.0,
+        4.0
+      ],
+      "true_speed": 0.0,
+      "detected_frames": 32,
+      "seen": {
+        "echo": 32
+      },
+      "median": {
+        "size_ratio_db": -1.9,
+        "strength_db": -7.5,
+        "along": 3.3,
+        "across": 3.6,
+        "source_level": null,
+        "width_major": 4.62,
+        "width_minor": 2.31,
+        "speed": 0.09,
+        "residual": 0.485
+      },
+      "size_ratio_per_frame": {
+        "10.0": -1.8,
+        "10.25": -1.8,
+        "10.5": -1.9,
+        "10.75": -1.9,
+        "11.0": -2.0,
+        "11.25": -1.9,
+        "11.5": -1.9,
+        "11.75": -1.8,
+        "12.0": -1.8,
+        "12.25": -1.8,
+        "12.5": -1.9,
+        "12.75": -2.0,
+        "13.0": -2.0,
+        "13.25": -2.2,
+        "13.5": -2.6,
+        "13.75": -2.2,
+        "14.0": -2.9,
+        "14.25": -2.9,
+        "14.5": -2.9,
+        "14.75": -2.9,
+        "15.0": -2.2,
+        "15.25": -2.2,
+        "15.5": -0.9,
+        "15.75": 1.3,
+        "16.0": 2.1,
+        "16.25": 1.3,
+        "16.5": 2.1,
+        "16.75": 2.1,
+        "17.0": 2.1,
+        "17.25": -0.1,
+        "17.5": 2.0,
+        "17.75": 1.5
+      }
+    }
+  ],
+  "size_order": null
+}

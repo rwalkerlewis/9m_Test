@@ -1,0 +1,122 @@
+{
+  "recording": "layout_F_seed1",
+  "run": {
+    "git_commit": "690acd2a73f1c92874f251403f264f852e190609",
+    "git_dirty": false,
+    "processing_config": "/workspace/examples/configs/processing/simple.json",
+    "processing_config_sha256": "299dcf7f9021c39b3d54b709423c9fc0c25f0e2d6ed1d1894917a21c29b09656",
+    "processing_overrides": [],
+    "observation": "/workspace/output/studies/layout/F/seed1/dataset.observation.npz",
+    "observation_sha256": "0a588850ec210ebcf15c420321f50afb1ee23175de5007f01dbf40720dfd503e",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 1,
+    "wall_s": 27.009882002006634,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "chunk_s": 0.25
+  },
+  "objects": [
+    {
+      "object": "ferry",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 1.0,
+      "true_size_m": null,
+      "true_speed": 4.0,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 1.1347,
+        "width_major": 5.16,
+        "width_minor": 3.53,
+        "speed": 4.0,
+        "residual": 1.12
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "boat",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 0.3,
+      "true_size_m": null,
+      "true_speed": 2.499999999999998,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 0.3342,
+        "width_major": 4.62,
+        "width_minor": 2.31,
+        "speed": 2.46,
+        "residual": 1.26
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "wreck",
+      "type": "static",
+      "radiates": false,
+      "true_level_pa": 0.0,
+      "true_size_m": [
+        4.0,
+        4.0
+      ],
+      "true_speed": 0.0,
+      "detected_frames": 18,
+      "seen": {
+        "echo": 18
+      },
+      "median": {
+        "size_ratio_db": -11.8,
+        "strength_db": 0.5,
+        "along": 3.9,
+        "across": 3.9,
+        "source_level": null,
+        "width_major": 2.31,
+        "width_minor": 2.31,
+        "speed": 0.27,
+        "residual": 0.0
+      },
+      "size_ratio_per_frame": {
+        "13.5": -28.9,
+        "13.75": -16.4,
+        "14.0": -11.8,
+        "14.25": -11.8,
+        "14.5": -13.7,
+        "14.75": -13.7,
+        "15.0": -12.1,
+        "15.25": -12.0,
+        "15.5": -11.8,
+        "15.75": -11.8,
+        "16.0": -10.6,
+        "16.25": -10.1,
+        "16.5": -10.1,
+        "16.75": -6.5,
+        "17.0": -6.5,
+        "17.25": -2.7,
+        "17.5": -1.1,
+        "17.75": -2.1
+      }
+    }
+  ],
+  "size_order": null
+}

@@ -1,0 +1,5 @@
+track,fixes,first_t,last_t,true_object,false_track,nearest_object,median_error_m,first_xy,last_xy,median_xy,kind
+r1,66,1.5,17.75,ferry,False,ferry,1.2071067811865475,"[125.0, 257.0]","[191.0, 261.0]","[158.0, 259.0]",radiator
+r2,1,1.5,1.5,,True,ferry,24.041630560342625,"[109.0, 243.0]","[109.0, 243.0]","[109.0, 243.0]",radiator
+e3,14,7.5,17.75,,True,ferry,138.42145691974406,"[56.0, 332.0]","[58.0, 332.0]","[56.0, 345.0]",echo
+e10,7,15.25,17.5,wreck,False,wreck,0.0,"[200.0, 212.0]","[200.0, 212.0]","[200.0, 212.0]",echo
