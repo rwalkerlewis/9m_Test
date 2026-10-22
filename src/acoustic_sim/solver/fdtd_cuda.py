@@ -396,10 +396,10 @@ class FusedFDTD:
             q = self.q
         elif self.scheme == "kspace":
             # The k space step waits for the device after every operation.  Without the waits the float32 runs on the
-            # 601 x 801 grids differed from run to run on the Quadro (CUDA 12.9, cuFFT 11.4) in about one fresh process
-            # in four, one in ten by a disturbance of up to 2e-2 of the trace's peak (once 1.4) that starts at one point
-            # of the field; waits around the FFTs alone did not remove it, a wait after every operation did, as
-            # CUDA_LAUNCH_BLOCKING=1 does (docs/physics.md, Precision).  The cause was not found.
+            # 601 x 801 grids differed between processes on the Quadro (CUDA 12.9, cuFFT 11.4) in about one fresh
+            # process in three, one in ten by a disturbance of up to 2e-2 of the trace's peak (once 1.4) that starts at
+            # one point of the field; with them, 1 in 240 (output/studies/float32/gpu_determinism.md).  The cause was
+            # not found; float64 was never affected.
             xp = self.xp
             wait = xp.cuda.Device().synchronize
             spec = xp.fft.rfft2(p, axes=(-2, -1))
