@@ -89,7 +89,8 @@ def main() -> None:
         res["recordings"][rec] = rows
         for k, r in rows.items():
             print(f"{rec} {k}: {r['rel_rms']:.2e} (worst channel {r['worst_channel_rel_rms']:.2e})", flush=True)
-    sc = [r["rel_rms"] for rows in res["recordings"].values() for k, r in rows.items() if k.startswith("scattered:")]
+    sc = [r["rel_rms"] if np.isfinite(r["rel_rms"]) else float("inf")         # a run that diverged fails
+          for rows in res["recordings"].values() for k, r in rows.items() if k.startswith("scattered:")]
     res["max_scattered_rel_rms"] = float(max(sc, default=0.0))
     res["passed"] = bool(res["max_scattered_rel_rms"] <= CRITERION["scattered_rel_rms"])
     path.write_text(json.dumps(res, indent=2))

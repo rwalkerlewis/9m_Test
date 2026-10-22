@@ -1,0 +1,68 @@
+{
+  "table": {
+    "direct:ferry": {
+      "cable1": 0.22509460918787733,
+      "hydrophones": 0.178953861501152,
+      "best_das": 0.3883399481804704
+    },
+    "scattered:ferry>bodies": {
+      "cable1": 0.03702138473952601,
+      "hydrophones": 0.029876276809773648,
+      "best_das": 0.07765219866363926
+    },
+    "direct:boat": {
+      "cable1": 0.050686323671914016,
+      "hydrophones": 0.03994922285238207,
+      "best_das": 0.09771032652150992
+    },
+    "scattered:boat>bodies": {
+      "cable1": 0.008412596491147882,
+      "hydrophones": 0.006007394403739001,
+      "best_das": 0.013935120312948945
+    },
+    "noise": {
+      "cable1": 0.0319389273422504,
+      "hydrophones": 0.02330833067359396,
+      "best_das": 0.03746262217500887
+    }
+  },
+  "summary": {
+    "ferry": {
+      "echo_to_direct_db_median_das": -15.678248703836319,
+      "echo_to_noise_db_median_das": 1.2826466511013246,
+      "echo_to_noise_db_best_das": 7.7166686108401015
+    },
+    "boat": {
+      "echo_to_direct_db_median_das": -15.599214680347567,
+      "echo_to_noise_db_median_das": -11.58780535738078,
+      "echo_to_noise_db_best_das": -7.204192074883439
+    }
+  },
+  "f_max": 400.0,
+  "bodies": [
+    "uuv1",
+    "wreck"
+  ],
+  "ferry_only_truth_check_db": {
+    "uuv1": 14.733893010940227,
+    "wreck": 28.793204815681378
+  },
+  "ferry_only_truth_inputs": [
+    "direct path removed with the truth component",
+    "true ferry waveform",
+    "exact ferry track"
+  ],
+  "ferry_only_provenance": {
+    "truth_inputs": [
+      "direct_removal",
+      "components",
+      "waveform",
+      "track"
+    ],
+    "simulator_knowledge": [
+      "band"
+    ],
+    "data": "forward_model",
+    "held_out": false
+  }
+}

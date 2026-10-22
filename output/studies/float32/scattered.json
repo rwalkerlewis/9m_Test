@@ -1,0 +1,96 @@
+{
+  "criterion": {
+    "scattered_rel_rms": 0.001
+  },
+  "measure": "rms of (float32 - float64) over the rms of float64, every channel and sample",
+  "recordings": {
+    "simple": {
+      "direct:boat": {
+        "rel_rms": 1.6212605460647828e-05,
+        "worst_channel_rel_rms": 3.101456135913481e-05
+      },
+      "direct:ferry": {
+        "rel_rms": 1.63903184761101e-05,
+        "worst_channel_rel_rms": 3.172939395704586e-05
+      },
+      "scattered:boat>bodies": {
+        "rel_rms": 3.841670697284229e-05,
+        "worst_channel_rel_rms": 5.185451633967682e-05
+      },
+      "scattered:ferry>bodies": {
+        "rel_rms": 3.8514756649386414e-05,
+        "worst_channel_rel_rms": 5.4084355245999724e-05
+      }
+    },
+    "bistatic": {
+      "direct:ferry": {
+        "rel_rms": 6.150199016022121e-05,
+        "worst_channel_rel_rms": 0.00023032727620360275
+      },
+      "scattered:ferry>uuv1": {
+        "rel_rms": 0.00032819180721596294,
+        "worst_channel_rel_rms": 0.009455702871836438
+      }
+    },
+    "multistatic": {
+      "direct:boat": {
+        "rel_rms": 5.478637705545949e-05,
+        "worst_channel_rel_rms": 0.0006856723185766535
+      },
+      "direct:ferry": {
+        "rel_rms": 6.169856295897262e-05,
+        "worst_channel_rel_rms": 0.0002328981501131533
+      },
+      "direct:tug": {
+        "rel_rms": 5.772371911607592e-05,
+        "worst_channel_rel_rms": 0.0019281471476886801
+      },
+      "scattered:boat>bodies": {
+        "rel_rms": 0.00015616330628589792,
+        "worst_channel_rel_rms": 0.0005533134345404413
+      },
+      "scattered:ferry>bodies": {
+        "rel_rms": 0.00012579131919377004,
+        "worst_channel_rel_rms": 0.0003479329656840994
+      },
+      "scattered:tug>bodies": {
+        "rel_rms": 0.00024073993170043256,
+        "worst_channel_rel_rms": 0.001019565658083737
+      }
+    },
+    "multistatic_b": {
+      "direct:boat": {
+        "rel_rms": NaN,
+        "worst_channel_rel_rms": NaN
+      },
+      "direct:ferry": {
+        "rel_rms": 5.95877355432993e-05,
+        "worst_channel_rel_rms": 0.00010439500974679217
+      },
+      "direct:tug": {
+        "rel_rms": 6.107679260442842e-05,
+        "worst_channel_rel_rms": 0.00040934296812421517
+      },
+      "scattered:boat>bodies": {
+        "rel_rms": NaN,
+        "worst_channel_rel_rms": NaN
+      },
+      "scattered:ferry>bodies": {
+        "rel_rms": 0.00015359698715812606,
+        "worst_channel_rel_rms": 0.0011381708545997057
+      },
+      "scattered:tug>bodies": {
+        "rel_rms": 0.00017006697259369966,
+        "worst_channel_rel_rms": 0.0012463345326931246
+      }
+    },
+    "harbor": {
+      "clean": {
+        "rel_rms": 4.0783913225755795e-06,
+        "worst_channel_rel_rms": 6.693543601353249e-06
+      }
+    }
+  },
+  "max_scattered_rel_rms": Infinity,
+  "passed": false
+}
