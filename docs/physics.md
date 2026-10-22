@@ -178,51 +178,91 @@ and block by a QR of its delayed copies in float64, with no normal equations and
 at 1/32 (the Quadro RTX 4000) or 1/64 (consumer cards) of the float32 rate, the double precision parts set the hardware
 the code can use.
 
-**Measured on the CPU only.** The GPU of the development machine failed (Xid 119, the GPU firmware timed out; Xid 154,
-"GPU Reset Required") before this work, so every number below is from the CPU, and the time per step and the memory per
-run on the Quadro, which the comparison is about, were not measured. The CPU and the GPU take different code paths (the
-fused kernel, the batched runner, the bodies on the device are GPU only).
+Measured on the Quadro RTX 4000 (CUDA 12.9, cuFFT 11.4, CuPy 14.2) and on the CPU. The CPU and the GPU take
+different code paths (the fused kernel, the batched runner and the bodies on the device are GPU only).
 
-The k space FDTD in float32 against float64, the propagation error pulse of each geometry
-(`examples/harbor/02_forward_model/harbor_float32.py`, `output/studies/float32/fdtd.json`). Criterion, fixed before the
-run: the direct arrival moves by at most 0.02 ms at every hydrophone, the traces agree within 1e-3 of each receiver's
-peak at the worst receiver and 1e-4 at the median: **pass** on every geometry. The scattered component's criterion
-(within 1e-3 of its rms) needs the body gathers in both precisions, that is the recordings rebuilt: **not evaluated**.
+**Section 1, the direct traces: pass.** The k space FDTD in float32 against float64, the propagation error pulse of
+each geometry (`examples/harbor/02_forward_model/harbor_float32.py`, `output/studies/float32/fdtd.json` on the CPU,
+`fdtd_gpu.json` on the GPU). Criterion, fixed before the run: the direct arrival moves by at most 0.02 ms at every
+hydrophone, the traces agree within 1e-3 of each receiver's peak at the worst receiver and 1e-4 at the median.
 
-| Recording | Arrival change, largest [ms] | Traces, worst receiver | Traces, median receiver | Per step, float64 / float32 [ms] (CPU) |
-|---|---|---|---|---|
-| simple | 0.0000 | 1.8e-05 | 6.6e-06 | 16.7 / 12.6 |
-| bistatic | 0.0000 | 2.4e-04 | 1.2e-05 | 27.6 / 22.8 |
-| multistatic_b | 0.0000 | 1.8e-04 | 1.1e-05 | 39.3 / 30.9 |
-| harbor | 0.0000 | 1.7e-06 | 8.6e-07 | 7.0 / 5.3 |
+| Recording | Arrival change, largest [ms] | Traces, worst / median receiver (CPU) | Traces, worst / median receiver (GPU) |
+|---|---|---|---|
+| simple | 0.0000 | 1.8e-05 / 6.6e-06 | 1.1e-04 / 5.7e-05 |
+| bistatic | 0.0000 | 2.4e-04 / 1.2e-05 | 4.6e-04 / 4.7e-05 |
+| multistatic_b | 0.0000 | 1.8e-04 / 1.1e-05 | 4.4e-04 / 4.4e-05 |
+| harbor | 0.0000 | 1.7e-06 / 8.6e-07 | 4.4e-06 / 1.5e-06 |
 
-The ECA in mixed precision against double on the stage 0a cases (`harbor_cancellation_depth.py --eca-precision`, the
-gathers of `output/studies/direct_path/cache/`, the processing config's `joint` reference and the beam,
-`output/studies/float32/stage0a_<precision>/`). Criterion, fixed before the run: the cancellation depth within 0.3 dB
-of the double run: **pass**, the largest difference 7e-8 dB. The time is the reference and the ECA per second of data
-on the CPU, where the QR is slower than the loaded Cholesky it replaces:
+**Time per step and memory per run on the Quadro** (`harbor_float32.py --bench`, `fdtd_gpu_bench.json`): one run of
+the first illuminator over 2 s on each recording's grid, warmed up, `solver.run()` timed alone; the memory is the peak
+of CuPy's pool (fields, FFT work area, masks, trace buffer; the desktop holds about 1.2 GB of the 8 GB card besides).
+With the waits described below in place.
 
-| Case | Reference | Depth, double [dB] | Depth, mixed [dB] | Difference [dB] | Reference and ECA, s per s of data, double | mixed |
+| Recording | Grid | float64 [ms per step] | float32 [ms per step] | float64 with the bodies | float32 with the bodies | Pool, float64 / float32 [MB] |
 |---|---|---|---|---|---|---|
-| stationary 193 m | joint | 25.17 | 25.17 | -0.000 | 1.89 | 5.98 |
-| stationary 193 m | beam | 20.14 | 20.14 | -0.000 | 0.96 | 3.07 |
-| moving 193 m | joint | 26.50 | 26.50 | -0.000 | 1.68 | 5.96 |
-| moving 193 m | beam | 24.06 | 24.06 | -0.000 | 0.86 | 3.10 |
-| stationary 99 m | joint | 23.93 | 23.93 | -0.000 | 1.75 | 6.04 |
-| stationary 99 m | beam | 22.81 | 22.81 | -0.000 | 0.89 | 3.12 |
-| moving 99 m | joint | 22.57 | 22.57 | -0.000 | 1.72 | 6.25 |
-| moving 99 m | beam | 24.30 | 24.30 | +0.000 | 0.85 | 3.09 |
-| stationary 29 m | joint | 28.07 | 28.07 | +0.000 | 1.65 | 6.33 |
-| stationary 29 m | beam | 11.33 | 11.33 | -0.000 | 0.85 | 3.15 |
-| moving 29 m | joint | 9.94 | 9.94 | +0.000 | 1.68 | 6.45 |
-| moving 29 m | beam | 7.45 | 7.45 | -0.000 | 0.87 | 3.32 |
+| simple | 401 x 501 | 1.60 | 0.32 | 1.63 | 0.35 | 44 / 22 |
+| bistatic | 601 x 801 | 2.63 | 0.60 | 2.67 | 0.63 | 108 / 54 |
+| multistatic_b | 601 x 801 | 2.64 | 0.60 | 2.70 | 0.66 | 108 / 54 (112 / 58 with the bodies) |
+| harbor | 361 x 481 | 0.85 | 0.30 | 0.88 | 0.33 | 27 / 14 |
+
+The whole build of the recordings in float32 took 51, 110, 297, 104 and 898 s of FDTD (`simple`, `bistatic`,
+`multistatic`, `harbor`, `multistatic_b`) against 356, 691, 2026, 468 and 6079 s in float64
+(`output/studies/float32/build32/`; the `multistatic_b` float32 build is the one whose boat runs diverged, below).
+
+**Runs that differ between processes.** On the 601 x 801 grids the float32 k space runs on the GPU did not always give
+the same traces: in about one fresh process in three a run differed from the same run in another process, in one in
+ten by a disturbance of up to 2e-2 of the trace's peak that starts at one point of the field (once 1.4 in a full
+length run). Float64 was never affected; nothing in the solver's set up was the cause; more contention for the GPU made
+it more frequent; making the GPU finish every operation before the next is queued (`CUDA_LAUNCH_BLOCKING=1`) removed
+most of it. The fused k space step now waits for the device after every operation (`FusedFDTD.step`), which brings
+the large differences to 1 run in 240 and costs about 40 % of the float32 step (bistatic 0.43 to 0.60 ms) and 4 % of the
+float64 step. The cause was not found (`output/studies/float32/gpu_determinism.md`, every condition tried and its
+counts).
+
+**The scattered component: fail.** Criterion, fixed before the run: the scattered component within 1e-3 of its rms
+(the rms of the float32 less float64 difference over the rms of the float64 component, every channel and sample, as
+the performance work measured it), from the recordings built in both precisions
+(`harbor_float32_scattered.py`, `scattered.md`). On `simple`, `bistatic` and `multistatic` every scattered component
+is within 3.8e-5 to 3.3e-4 and every direct component within 1.6e-5 to 6.2e-5; the 5 m `harbor` stores no components
+and its noise free sum agrees within 4.1e-6; on `multistatic_b` the ferry's and the tug's scattered components are
+within 1.5e-4 and 1.7e-4. The boat's two runs on `multistatic_b`, run together as one batch, diverged (the field grew
+without bound after 15 to 25 s), in the build, when built again, and in every further batched run, with or without
+the bodies and with `CUDA_LAUNCH_BLOCKING=1`; the same run alone did not diverge (to 30 s), and float64 never did. The
+cause was not found (`output/studies/float32/batched_divergence.md`). So the criterion fails and float64 stays the
+default in every scenario file: the recordings were put back to their float64 build, `scripts/reproduce.py` was not
+run again and no number of `docs/harbor.md` moved (`--check`: 0 fail).
+
+**Section 2, the ECA in mixed precision: pass.** The ECA in mixed precision against double on the stage 0a cases
+(`harbor_cancellation_depth.py --eca-precision`, the gathers of `output/studies/direct_path/cache/`, the processing
+config's `joint` reference and the beam, `output/studies/float32/stage0a_<precision>/`, the table by
+`harbor_eca_precision.py`). Criterion, fixed before the run: the cancellation depth within 0.3 dB of the double run:
+**pass** on the CPU, the largest difference 7e-8 dB, and on the GPU, 1.7e-7 dB (`eca_stage0a_gpu.md`). The time is the
+reference and the ECA per second of data; the QR in double is slower than the loaded Cholesky it replaces on the CPU
+and **on the GPU as well**, 3.8 to 4.9 times on the Quadro, so the mixed ECA buys no speed on this card:
+
+| Case | Reference | Depth, double [dB] | Depth, mixed [dB] | Difference [dB] | s per s of data, CPU, double / mixed | GPU, double / mixed |
+|---|---|---|---|---|---|---|
+| stationary 193 m | joint | 25.17 | 25.17 | -0.000 | 1.89 / 5.98 | 0.48 / 1.83 |
+| stationary 193 m | beam | 20.14 | 20.14 | -0.000 | 0.96 / 3.07 | 0.23 / 0.88 |
+| moving 193 m | joint | 26.50 | 26.50 | -0.000 | 1.68 / 5.96 | 0.37 / 1.75 |
+| moving 193 m | beam | 24.06 | 24.06 | -0.000 | 0.86 / 3.10 | 0.23 / 0.88 |
+| stationary 99 m | joint | 23.93 | 23.93 | -0.000 | 1.75 / 6.04 | 0.36 / 1.75 |
+| stationary 99 m | beam | 22.81 | 22.81 | -0.000 | 0.89 / 3.12 | 0.23 / 0.88 |
+| moving 99 m | joint | 22.57 | 22.57 | -0.000 | 1.72 / 6.25 | 0.36 / 1.75 |
+| moving 99 m | beam | 24.30 | 24.30 | +0.000 | 0.85 / 3.09 | 0.23 / 0.88 |
+| stationary 29 m | joint | 28.07 | 28.07 | +0.000 | 1.65 / 6.33 | 0.36 / 1.76 |
+| stationary 29 m | beam | 11.33 | 11.33 | -0.000 | 0.85 / 3.15 | 0.23 / 0.88 |
+| moving 29 m | joint | 9.94 | 9.94 | +0.000 | 1.68 / 6.45 | 0.37 / 1.76 |
+| moving 29 m | beam | 7.45 | 7.45 | -0.000 | 0.87 / 3.32 | 0.23 / 0.88 |
 
 On the recordings (the system on the `simple`, `bistatic` and `multistatic` tuning recordings with each precision, the
 truth's direct and scattered components through the same projections, `harbor_direct_path_depth.py --precision`,
 `output/studies/float32/eca_recordings.json`): the direct path removal within 2e-7 dB of the double run for every
 illuminator, the echo loss within 6e-8 dB, the echo map's peaks identical in all 213 frames compared: **pass**
-(criteria 0.3 dB, 0.1 dB, one cell). The echo chain's time on the CPU: 26.8 to 27.7 s per second of data on `simple`,
-55.4 to 61.6 on `bistatic`, 60.9 to 73.9 on `multistatic` (double to mixed).
+(criteria 0.3 dB, 0.1 dB, one cell; on the CPU; on the GPU within 2e-7 dB, the peaks identical in all 213
+frames, `eca_gpu_<precision>.json`). The echo chain's time per second of data, double to mixed: on the CPU 26.8 to 27.7
+(`simple`), 55.4 to 61.6 (`bistatic`), 60.9 to 73.9 (`multistatic`); on the GPU 0.69 to 1.83, 0.71 to 2.39 and 1.51 to
+5.43.
 
 | Recording | Component | Double [dB] | Mixed [dB] | Difference [dB] |
 |---|---|---|---|---|
@@ -239,10 +279,8 @@ illuminator, the echo loss within 6e-8 dB, the echo map's peaks identical in all
 | multistatic | direct path of boat | 13.992 | 13.992 | -0.0000 |
 | multistatic | echo loss, boat>bodies | 1.367 | 1.367 | -0.0000 |
 
-Not done: the precision stays float64 in every scenario file and `eca_precision` stays `float64` in every processing
-config, the recordings were not rebuilt in float32 and `scripts/reproduce.py` was not run again; with the GPU back, the
-time per step and memory per run on the Quadro in both precisions, the scattered component's criterion and, if it
-passes, the rebuild and `--update` are what remain.
+What stays: `precision` is float64 in every scenario file (the scattered criterion failed) and `eca_precision` is
+`float64` in every processing config (the prompt leaves processing parameters unchanged; `"mixed"` is available).
 
 ### CFL stability condition
 

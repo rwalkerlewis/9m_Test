@@ -1,0 +1,116 @@
+{
+  "criterion_db": 0.3,
+  "device": "gpu",
+  "max_abs_difference_db": 1.743598705417071e-07,
+  "passed": true,
+  "rows": [
+    {
+      "case": "stationary 193 m",
+      "reference": "joint",
+      "double_db": 25.166977509283143,
+      "mixed_db": 25.166977482649468,
+      "difference_db": -2.663367482114154e-08,
+      "double_s_per_s": 0.48263352130015846,
+      "mixed_s_per_s": 1.8280446535998636
+    },
+    {
+      "case": "stationary 193 m",
+      "reference": "beam",
+      "double_db": 20.139063872454734,
+      "mixed_db": 20.139063859942638,
+      "difference_db": -1.2512096247974114e-08,
+      "double_s_per_s": 0.23128835420029645,
+      "mixed_s_per_s": 0.8766595754001173
+    },
+    {
+      "case": "moving 193 m",
+      "reference": "joint",
+      "double_db": 26.49949198551389,
+      "mixed_db": 26.499491925862714,
+      "difference_db": -5.965117821915555e-08,
+      "double_s_per_s": 0.3653316226998868,
+      "mixed_s_per_s": 1.7518978551001054
+    },
+    {
+      "case": "moving 193 m",
+      "reference": "beam",
+      "double_db": 24.063229255871008,
+      "mixed_db": 24.063229252799477,
+      "difference_db": -3.0715305854300823e-09,
+      "double_s_per_s": 0.23189262260020768,
+      "mixed_s_per_s": 0.8777916720999202
+    },
+    {
+      "case": "stationary 99 m",
+      "reference": "joint",
+      "double_db": 23.925586100400352,
+      "mixed_db": 23.92558609931698,
+      "difference_db": -1.0833716146407824e-09,
+      "double_s_per_s": 0.36457900169989443,
+      "mixed_s_per_s": 1.7536896492998495
+    },
+    {
+      "case": "stationary 99 m",
+      "reference": "beam",
+      "double_db": 22.805429448430374,
+      "mixed_db": 22.80542943898823,
+      "difference_db": -9.442143067417419e-09,
+      "double_s_per_s": 0.2319663974998548,
+      "mixed_s_per_s": 0.8766431747997558
+    },
+    {
+      "case": "moving 99 m",
+      "reference": "joint",
+      "double_db": 22.574791608691584,
+      "mixed_db": 22.5747915811968,
+      "difference_db": -2.7494785115322884e-08,
+      "double_s_per_s": 0.36333307800014153,
+      "mixed_s_per_s": 1.7536740069001098
+    },
+    {
+      "case": "moving 99 m",
+      "reference": "beam",
+      "double_db": 24.299683662353303,
+      "mixed_db": 24.29968369378764,
+      "difference_db": 3.143433602303958e-08,
+      "double_s_per_s": 0.23173086880015034,
+      "mixed_s_per_s": 0.8770430992997718
+    },
+    {
+      "case": "stationary 29 m",
+      "reference": "joint",
+      "double_db": 28.06887414260428,
+      "mixed_db": 28.068874158160163,
+      "difference_db": 1.5555883692286443e-08,
+      "double_s_per_s": 0.3631394088999514,
+      "mixed_s_per_s": 1.7574300600001151
+    },
+    {
+      "case": "stationary 29 m",
+      "reference": "beam",
+      "double_db": 11.333756714378044,
+      "mixed_db": 11.333756715726551,
+      "difference_db": 1.348507083775985e-09,
+      "double_s_per_s": 0.23160009820021515,
+      "mixed_s_per_s": 0.8766331635997631
+    },
+    {
+      "case": "moving 29 m",
+      "reference": "joint",
+      "double_db": 9.937809426172747,
+      "mixed_db": 9.937809600532617,
+      "difference_db": 1.743598705417071e-07,
+      "double_s_per_s": 0.36579893310008627,
+      "mixed_s_per_s": 1.7556842243000574
+    },
+    {
+      "case": "moving 29 m",
+      "reference": "beam",
+      "double_db": 7.450319237982126,
+      "mixed_db": 7.450319230923083,
+      "difference_db": -7.0590431278105825e-09,
+      "double_s_per_s": 0.23171762920028413,
+      "mixed_s_per_s": 0.8767210584999703
+    }
+  ]
+}
