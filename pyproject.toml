@@ -24,3 +24,8 @@ acoustic-sim = "acoustic_sim.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+markers = [
+    "gpu: needs CuPy and a GPU (the GPU kernels and the CPU against GPU parity tests); run by .github/workflows/gpu-tests.yml",
+]

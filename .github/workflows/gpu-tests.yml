@@ -1,0 +1,35 @@
+name: GPU tests
+
+# The tests marked ``gpu`` (the CUDA kernels and the CPU against GPU parity tests) on a self hosted runner with an
+# NVIDIA card (docs/ci.md: how to register one).  Without a registered runner the job waits for one; the timeout makes
+# it fail instead of hanging.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1"          # Mondays 04:17 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  gpu-tests:
+    name: GPU tests
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install package with CUDA
+        run: |
+          python3 -m venv .venv-ci
+          . .venv-ci/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,cuda]"
+      - name: Check the GPU
+        run: |
+          nvidia-smi
+          . .venv-ci/bin/activate
+          python -c "import cupy; print(cupy.cuda.runtime.getDeviceProperties(0)['name'])"
+      - name: Run the GPU tests
+        run: |
+          . .venv-ci/bin/activate
+          python -m pytest tests -m gpu -q -rs -p no:cacheprovider

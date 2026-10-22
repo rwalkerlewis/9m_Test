@@ -1,4 +1,4 @@
-name: Basic tests
+name: Tests
 
 on:
   push:
@@ -9,9 +9,12 @@ permissions:
   contents: read
 
 jobs:
-  basic-tests:
+  tests:
+    # The whole test suite on the CPU (the GPU tests skip without CuPy; .github/workflows/gpu-tests.yml runs them).
+    # About 6 minutes on two cores, so one job per Python version.
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -28,13 +31,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
-      - name: Run basic CPU tests
-        run: >-
-          python -m pytest -q
-          tests/test_package_layout.py
-          tests/test_contract.py
-          tests/harbor/test_dispersion.py
-          tests/harbor/test_characteristics.py
-          tests/harbor/test_ci_end_to_end.py
-          tests/test_fdtd_3d.py::test_cfl
-          tests/test_fdtd_3d.py::test_propagation
+      - name: Run the tests
+        run: python -m pytest tests -q -rs -p no:cacheprovider --junitxml=report.xml
+      - name: Count the skipped tests
+        if: always()
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          r = ET.parse("report.xml").getroot()
+          s = r if r.tag == "testsuite" else r.find("testsuite")
+          print(f"tests {s.get('tests')}, skipped {s.get('skipped')}, failures {s.get('failures')}, errors {s.get('errors')}")
+          PY

@@ -1,0 +1,31 @@
+03:44:39 simple seed 0 default: false tracks 0.0/min, compute 1.09, ferry 1.00, boat 1.00, uuv1 0.30, wreck 1.00
+03:47:29 simple seed 0 harbor_v2: false tracks 0.0/min, compute 1.06, ferry 1.00, boat 0.92
+03:57:05 simple seed 0 default: false tracks 0.0/min, compute 1.09, ferry 1.00, boat 1.00, uuv1 0.30, wreck 1.00
+03:57:38 simple seed 0 harbor_v2: false tracks 3.0/min, compute 1.10, ferry 1.00, boat 1.00, wreck 0.98
+03:58:08 simple seed 1 default: false tracks 0.0/min, compute 1.09, ferry 1.00, boat 1.00, uuv1 0.66, wreck 1.00
+03:58:41 simple seed 1 harbor_v2: false tracks 3.0/min, compute 1.09, ferry 1.00, boat 1.00, wreck 0.97
+03:59:11 simple seed 2 default: false tracks 0.0/min, compute 1.09, ferry 1.00, boat 1.00, uuv1 0.31, wreck 1.00
+03:59:44 simple seed 2 harbor_v2: false tracks 6.0/min, compute 1.11, ferry 1.00, boat 1.00, uuv1 0.20, wreck 0.98
+04:00:23 bistatic seed 0 default: false tracks 9.0/min, compute 1.44, ferry 1.00, uuv1 0.70
+04:01:53 bistatic seed 0 harbor_v2: false tracks 0.0/min, compute 1.24, ferry 1.00, uuv1 0.53
+04:02:30 bistatic seed 1 default: false tracks 3.0/min, compute 1.39, ferry 1.00, uuv1 0.70
+04:03:12 bistatic seed 1 harbor_v2: false tracks 0.0/min, compute 1.40, ferry 1.00, uuv1 0.78
+04:03:49 bistatic seed 2 default: false tracks 6.0/min, compute 1.41, ferry 1.00, uuv1 0.59
+04:04:28 bistatic seed 2 harbor_v2: false tracks 0.0/min, compute 1.25, ferry 1.00, uuv1 0.80
+04:05:28 multistatic seed 0 default: false tracks 6.0/min, compute 2.27, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.83, uuv2 0.97, moored 0.83
+04:06:25 multistatic seed 0 harbor_v2: false tracks 6.0/min, compute 1.94, ferry 1.00, tug 1.00, boat 1.00, uuv2 0.88, moored 0.34
+04:07:22 multistatic seed 1 default: false tracks 6.0/min, compute 2.16, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.66, uuv2 0.95, moored 0.81
+04:08:24 multistatic seed 1 harbor_v2: false tracks 3.0/min, compute 2.16, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.06, uuv2 0.88, moored 0.58
+04:09:21 multistatic seed 2 default: false tracks 6.0/min, compute 2.17, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.62, uuv2 0.94, moored 0.80
+04:10:20 multistatic seed 2 harbor_v2: false tracks 3.0/min, compute 2.02, ferry 1.00, tug 1.00, boat 1.00, uuv2 0.91, moored 0.72
+04:13:19 multistatic_b seed 0 default: false tracks 7.0/min, compute 2.28, ferry 0.99, tug 1.00, boat 0.70, uuv1 0.60, uuv2 0.88
+04:16:19 multistatic_b seed 0 harbor_v2: false tracks 4.0/min, compute 2.09, ferry 0.99, tug 1.00, boat 0.56, uuv1 0.31, uuv2 0.81
+04:19:17 multistatic_b seed 1 default: false tracks 6.0/min, compute 2.28, ferry 0.99, tug 1.00, boat 0.69, uuv1 0.62, uuv2 0.96
+04:22:18 multistatic_b seed 1 harbor_v2: false tracks 4.0/min, compute 2.09, ferry 0.99, tug 1.00, boat 0.57, uuv1 0.49, uuv2 0.82
+04:25:15 multistatic_b seed 2 default: false tracks 7.0/min, compute 2.26, ferry 0.99, tug 1.00, boat 0.69, uuv1 0.53, uuv2 0.97
+04:28:17 multistatic_b seed 2 harbor_v2: false tracks 6.0/min, compute 2.11, ferry 0.99, tug 1.00, boat 0.57, uuv1 0.45, uuv2 0.85
+04:28:47 simple seed 0 only_shrimp: false tracks 0.0/min, compute 1.09, ferry 1.00, boat 1.00, uuv1 0.30, wreck 1.00
+04:29:22 simple seed 0 only_surface: false tracks 0.0/min, compute 1.30, ferry 1.00, boat 1.00, uuv1 0.30, wreck 1.00
+04:29:53 simple seed 0 only_machinery: false tracks 6.0/min, compute 1.11, ferry 1.00, boat 1.00, wreck 0.98
+04:30:25 simple seed 0 only_fibre: false tracks 0.0/min, compute 1.09, ferry 1.00, boat 1.00, uuv1 0.30, wreck 1.00
+04:30:56 simple seed 0 only_interrogator: false tracks 0.0/min, compute 1.09, ferry 1.00, boat 1.00, uuv1 0.30, wreck 1.00
