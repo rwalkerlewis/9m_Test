@@ -55,6 +55,9 @@ What the simulation does: one source, scattering bodies, wavefield and gather vi
 | `harbor_stream.py` | The real-time harbor picture (`acoustic_sim.water.stream`) on one recording, scored against the truth: picture.jsonl, summary, characteristics, check figures, the operator view video. |
 | `harbor_detect.py` | The same chain over the whole record at once (a batch run is the stream with one chunk). |
 | `harbor_level_calibration.py` | The one calibration of the source level estimate, on the simple harbor's tuning recording. |
+| `harbor_cancellation_depth.py` | The direct path removal depth of every reference estimator (`ref_mode`) on the stage 0a cases (a ship alone at three ranges, stationary and moving). |
+| `harbor_direct_path_depth.py` | The removal depth of every ship's direct path on the recordings, per reference estimator (a diagnostic from the truth components). |
+| `harbor_direct_path_criteria.py` | The criteria of the direct path change on the chain, from the summaries before and after. |
 
 ## Harbor 6: walkthrough (`harbor/06_walkthrough/`)
 
@@ -89,7 +92,6 @@ Scripts of earlier stages, not part of the system. They stay runnable because co
 | `harbor_survey_grid.py` | Per cell FDTD transfer functions for the empirical localiser. |
 | `harbor_bistatic_demo.py` | The bistatic demo given the truth (direct path removed exactly, true waveform, exact track). |
 | `harbor_bistatic_ablation.py` | Stage 0b: the bistatic demo with its truth inputs removed one at a time. |
-| `harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth against range, stationary and moving source. |
 | `harbor_bistatic_budget.py` | The analytic bistatic link budget with idealised cylinders. |
 | `harbor_presentation.py` | Presentation demo: one ship, one silent stopped UUV, in the 5 m harbor. |
 | `harbor_stack_movie.py` | Movie of echoes stacked pulse by pulse. |

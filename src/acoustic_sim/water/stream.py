@@ -249,7 +249,9 @@ class HarborPicture:
             for k, tr in strong.items():
                 fixes[k] = [(f[0], f[1]) for f in tr.fixes[self.sent.get(k, 0):]]
                 self.sent[k] = len(tr.fixes)
-            got = self.echo.push(samples, fixes)
+            bodies = ([tr.fixes[-1][1] for tr in self.echo_tracker.confirmed().values()]
+                      if self.echo.bc.ref_mode == "iterated" else None)
+            got = self.echo.push(samples, fixes, bodies=bodies)
             self.seconds["echo"] += time.perf_counter() - t1
             for e in got:
                 self._echo_frame(e)
@@ -499,9 +501,12 @@ def header(run: dict, cfg: ChainConfig) -> dict:
 
 def run(obs: Observation, cfg: ChainConfig, use_cuda: bool = True, chunk_s: float | None = None, out: str | Path | None = None,
         provenance: Provenance | None = None, observation_path: str | Path | None = None, seed: int | None = None,
-        keep_frames: bool = False, keep_clean: bool = False, reports: AISReports | None = None, on_record=None) -> RunResult:
+        keep_frames: bool = False, keep_clean: bool = False, reports: AISReports | None = None, on_record=None,
+        components: dict[str, np.ndarray] | None = None) -> RunResult:
     """Run the picture on *obs*, chunks of *chunk_s* (default: the config's) seconds; with *out*, ``picture.jsonl`` is
-    written there as the stream runs (header first).  AIS (*reports*, default the observation's) only labels."""
+    written there as the stream runs (header first).  AIS (*reports*, default the observation's) only labels.
+    *components* (a diagnostic from the truth, never read by the processing): arrays passed through the echo chain's
+    projections, their energy before and after in ``picture.echo.component_energy``."""
     chunk_s = cfg.chunk_s if chunk_s is None else chunk_s
     prov = provenance or Provenance(data=obs.meta.get("data", "forward_model") if isinstance(obs.meta, dict) else "forward_model")
     info = run_info(cfg.path, observation_path, seed=seed, provenance=prov, use_cuda=use_cuda, overrides=cfg.overrides,
@@ -523,6 +528,8 @@ def run(obs: Observation, cfg: ChainConfig, use_cuda: bool = True, chunk_s: floa
     pic = HarborPicture(obs.geometry, obs.fs, obs.environment, cfg, use_cuda=use_cuda,
                         reports=obs.reports if reports is None else reports, keep_frames=keep_frames, keep_clean=keep_clean,
                         on_record=emit)
+    if components and pic.echo is not None:
+        pic.echo.components = components
     n = max(int(round(chunk_s * obs.fs)), 1)
     t0 = time.perf_counter()
     for s0 in range(0, obs.traces.shape[1], n):

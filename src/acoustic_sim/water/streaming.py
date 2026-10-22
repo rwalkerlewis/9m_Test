@@ -681,6 +681,11 @@ class StreamingEcho:
         self.clean: dict[int, np.ndarray] = {}          # ECA block index -> cleaned samples (N, nb)
         self.refd: dict[int, np.ndarray] = {}           # ECA block index -> reference samples (nb,)
         self.radiators: dict[str, dict] = {}            # radiator -> fixes "t", "xy", their causal smoothing "sm", newest "line"
+        self.bodies: list[np.ndarray] = []              # echo track positions (ref_mode "iterated")
+        # Diagnostic only, set by a caller that has the truth (``stream.run(components=...)``): full record arrays
+        # (N, n) passed through the same projections; their band energy per channel before and after each step.
+        self.components: dict[str, np.ndarray] | None = None
+        self.component_energy: dict[str, list[tuple[np.ndarray, np.ndarray]]] = {}
         self.next_block = 0                             # first ECA block not cleaned
         self.next_frame = 0                             # first frame not mapped
 
@@ -731,10 +736,12 @@ class StreamingEcho:
             yield out
 
     def push(self, samples: np.ndarray, radiators: dict[str, list[tuple[float, np.ndarray]]] | None = None,
-             illuminator: str | None = None) -> list[FrameResult]:
+             illuminator: str | None = None, bodies: list[np.ndarray] | None = None) -> list[FrameResult]:
         """Append *samples* (N, n).  *radiators*: new position fixes ``(t, xy)`` of the radiating objects (the
         passive chain's tracks, by id); their direct paths are removed in the order the radiators first appeared;
-        *illuminator*: the id of the one whose echoes are mapped (``None``: keep the previous one)."""
+        *illuminator*: the id of the one whose echoes are mapped (``None``: keep the previous one); *bodies*: the
+        positions of the confirmed echo tracks (``None``: keep the previous ones), whose modelled echoes the
+        ``"iterated"`` reference subtracts."""
         self.raw = np.concatenate([self.raw, np.asarray(samples, dtype=np.float64)], axis=1)
         self.n_in += samples.shape[1]
         for rid, fixes in (radiators or {}).items():
@@ -742,6 +749,8 @@ class StreamingEcho:
                 self._add_fix(rid, float(t), np.asarray(xy, float))
         if illuminator is not None:
             self.source = illuminator
+        if bodies is not None:
+            self.bodies = [np.asarray(b, dtype=float) for b in bodies]
         out = []
         look = int(round(self.stc.lookahead_s * self.fs))
         while (self.next_block + self.stc.step_blocks) * self.nb + look <= self.n_in:
@@ -806,7 +815,7 @@ class StreamingEcho:
         return out
 
     def _step(self) -> list[FrameResult]:
-        from acoustic_sim.water.bistatic import eca_remove, make_reference
+        from acoustic_sim.water.bistatic import eca_remove, estimate_reference
 
         t0 = time.perf_counter()
         bc, stc = self.bc, self.stc
@@ -839,11 +848,18 @@ class StreamingEcho:
         # measured worse on the multistatic recording (uuv2 18 -> 13 % of frames).
         x = buf                                            # as run_bistatic: reference and ECA on the traces,
         refs = {}                                          # the common mode removed in the STFT
+        comps = {k: np.asarray(v[:, a:z], dtype=np.float64) for k, v in self.components.items()} if self.components else {}
+        before = {k: self._block_energy(v, b0 - a // self.nb, b1 - a // self.nb) for k, v in comps.items()}
         for name in live:
             ship_t = self._smoothed(t_s, name)
             ship_b = ship_t[mid]
-            refs[name] = make_reference(x, self.layout, self.fs, ship_b, bc.eca_block_s, bc, chans, ship_t=ship_t)
-            x = eca_remove([x], refs[name], self.layout, self.fs, ship_b, [], bc.eca_block_s, bc, ship_t=ship_t, blocks=rel)[0]
+            refs[name] = estimate_reference(x, self.layout, self.fs, ship_b, bc, chans, ship_t, blocks=rel, bodies=self.bodies)
+            cleaned = eca_remove([x] + list(comps.values()), refs[name], self.layout, self.fs, ship_b, [], bc.eca_block_s, bc,
+                                 ship_t=ship_t, blocks=rel)
+            x = cleaned[0]
+            comps = dict(zip(comps, cleaned[1:]))
+        for k, v in comps.items():                         # diagnostic, from the truth: energy before and after per channel
+            self.component_energy.setdefault(k, []).append((before[k], self._block_energy(v, b0 - a // self.nb, b1 - a // self.nb)))
         for b in range(b0, b1):
             lo = b * self.nb - a
             self.clean[b] = x[:, lo:lo + self.nb]
@@ -851,6 +867,13 @@ class StreamingEcho:
             if self.keep_clean:
                 self.kept_clean[b] = self.clean[b]
         return self._frames(t0, weights)
+
+    def _block_energy(self, x: np.ndarray, r0: int, r1: int) -> np.ndarray:
+        """Band energy per channel (N,) of the blocks ``r0`` to ``r1`` (relative to the buffer) of *x*."""
+        seg = x[:, r0 * self.nb:r1 * self.nb]
+        f = np.fft.rfftfreq(seg.shape[1], 1.0 / self.fs)
+        m = (f >= self.bc.f_lo) & (f <= self.bc.f_hi)
+        return np.sum(np.abs(np.fft.rfft(seg, axis=1)[:, m]) ** 2, axis=1)
 
     def _frames(self, t0: float, weights: np.ndarray) -> list[FrameResult]:
         """Map every frame whose samples are all cleaned: the coherent ``"snr"`` map of every illuminator whose

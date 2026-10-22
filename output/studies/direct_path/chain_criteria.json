@@ -1,0 +1,72 @@
+{
+  "criteria": [
+    {
+      "id": "uuv1",
+      "text": "uuv1 tracked with Pd at least 0.5 on the multistatic seeds",
+      "values": {
+        "multistatic_seed1": 0.0,
+        "multistatic_seed2": 0.0,
+        "multistatic_seed3": 0.078125
+      },
+      "passed": false
+    },
+    {
+      "id": "static_bodies",
+      "text": "at least three of the seven static bodies tracked on multistatic_b",
+      "values": {
+        "piling1": 0.0,
+        "piling2": 0.0,
+        "piling3": 0.0,
+        "piling4": 0.0,
+        "piling5": 0.0,
+        "piling6": 0.0,
+        "moored": 0.0
+      },
+      "tracked": 0,
+      "passed": false
+    },
+    {
+      "id": "no_fall",
+      "text": "no object's Pd falls by more than 3 percentage points (test recordings)",
+      "values": {
+        "simple_seed1/uuv1": {
+          "before": 0.234375,
+          "after": 0.0
+        },
+        "simple_seed2/wreck": {
+          "before": 0.859375,
+          "after": 0.65625
+        },
+        "multistatic_seed2/uuv1": {
+          "before": 0.296875,
+          "after": 0.0
+        },
+        "multistatic_seed2/uuv2": {
+          "before": 0.890625,
+          "after": 0.71875
+        },
+        "multistatic_seed3/uuv2": {
+          "before": 0.859375,
+          "after": 0.8125
+        }
+      },
+      "passed": false
+    },
+    {
+      "id": "compute",
+      "text": "compute per second of data at most 1.5 on the 0.5 m recordings",
+      "values": {
+        "bistatic": 1.4682847092066367,
+        "multistatic": 1.7869197867978073,
+        "bistatic_seed1": 1.2195457560424985,
+        "bistatic_seed2": 1.1314304798972443,
+        "bistatic_seed3": 1.1307795053107839,
+        "multistatic_seed1": 2.003772425006173,
+        "multistatic_seed2": 1.8494270815572236,
+        "multistatic_seed3": 1.8684703293503844,
+        "multistatic_b": 1.5998853496532925
+      },
+      "passed": false
+    }
+  ]
+}

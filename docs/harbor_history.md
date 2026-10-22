@@ -465,7 +465,7 @@ whether the bistatic chain works with everything estimated from the traces and b
 multi body scenario for the later stages. Every result states its truth inputs; every
 experiment had its pass/fail criterion in the script docstring and `results.json` before it ran.
 
-**Stage 0a, direct path cancellation against range** (`examples/harbor/90_history/harbor_cancellation_depth.py`,
+**Stage 0a, direct path cancellation against range** (`harbor_cancellation_depth.py`, then in `examples/harbor/90_history/`, now `05_detection/` and rewritten for the reference estimators of [Direct path removal](harbor.md#direct-path-removal),
 fine 0.5 m grid, 10 s, the ferry signature alone at nearest channel ranges of 193, 99 and 29 m,
 stationary and at 4 m/s parallel to the first cable leg; ECA depth over the live cable channels
 in 100 to 760 Hz; `output/harbor_cancel/` at commit `fd12458`). References: `data` (delay and sum beam at the AIS
@@ -642,7 +642,7 @@ deliberately not started.
 | `examples/harbor/90_history/harbor_bistatic_budget.py` | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
 | `examples/harbor/01_datasets/harbor_bistatic_dataset.py` | Fine-grid FDTD scenario; caches direct and body-scattered components separately | expensive; `--coarse` is faster but under-resolves the hull |
 | `examples/harbor/90_history/harbor_bistatic_demo.py` | Coherent bistatic localization figures given the truth (direct path removed exactly, true waveform, exact track) and error summary from a saved dataset | processing run |
-| `examples/harbor/90_history/harbor_cancellation_depth.py` | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator` (free field by default, `_freefield` suffix; `simulator` for the dispersion corrected replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
+| `examples/harbor/90_history/harbor_cancellation_depth.py` (now `05_detection/`, the reference estimators) | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator` (free field by default, `_freefield` suffix; `simulator` for the dispersion corrected replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
 | `examples/harbor/90_history/harbor_bistatic_ablation.py` | Stage 0b: `run_bistatic` on the coarse and fine datasets with the truth inputs removed one at a time (`--doppler` adds the per sample delay ECA variants, `--smooth` the track fit, `--propagator simulator` the dispersion corrected replicas, `--cuda` the GPU chain); every result records its `provenance` | about 1.5 h of processing for both datasets |
 | `examples/harbor/01_datasets/harbor_multistatic_dataset.py` | Stage 0c: three illuminators and ten bodies with combined scattering, truth per frame, levels, map, and a ferry-only check map given the truth | 6 FDTD runs (fine: about 1 h on the GPU) |
 | `examples/harbor/06_walkthrough/` | [Walkthrough](#walkthrough-from-the-traces-to-the-harbor-picture): eight scripts, one figure per step of the chain (recording, passive map, tracks, AIS labels, direct path removal, echo map, harbor picture, geometry); `run_all.sh DATASET --cuda` | about 1 min per recording |

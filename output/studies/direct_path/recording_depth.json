@@ -1,0 +1,388 @@
+{
+  "simple": {
+    "beam": {
+      "ships": {
+        "ferry": {
+          "cable_median_db": 16.1757482731918,
+          "cable_p10_db": 14.28733325812952,
+          "steps": 9
+        },
+        "boat": {
+          "cable_median_db": 0.9068433165248806,
+          "cable_p10_db": 0.8616883288711791,
+          "steps": 9
+        }
+      },
+      "compute_per_second_of_data": {
+        "passive": 0.42967421500288766,
+        "echo": 0.4202938690956216,
+        "characteristics": 0.04586312419705792,
+        "total": 0.8958312082955672
+      },
+      "run": {
+        "git_commit": "12ffdef6f064af35ad2a172aeaa31ecf293c1007",
+        "git_dirty": true,
+        "processing_config": "/workspace/examples/configs/processing/simple.json",
+        "processing_config_sha256": "ed1319d4df4b1742dc91e39183ba00ebc58de0506068ca2b737827c04f406e9c",
+        "processing_overrides": [
+          "echo.bistatic.ref_mode=beam"
+        ],
+        "observation": "/workspace/output/recordings/simple/dataset.observation.npz",
+        "observation_sha256": "3bb27580b402f6312b17c362975033e118cb26b8492cf78225476788974d2b57",
+        "python": "3.12.3",
+        "numpy": "2.5.4",
+        "cupy": "14.2.0",
+        "gpu": "Quadro RTX 4000",
+        "seed": null,
+        "wall_s": 18.02869121900585,
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "chunk_s": 0.25
+      }
+    },
+    "joint": {
+      "ships": {
+        "ferry": {
+          "cable_median_db": 16.19175525226525,
+          "cable_p10_db": 14.290275264003192,
+          "steps": 9
+        },
+        "boat": {
+          "cable_median_db": 0.8841342431464088,
+          "cable_p10_db": 0.8361337769817323,
+          "steps": 9
+        }
+      },
+      "compute_per_second_of_data": {
+        "passive": 0.4218962419989111,
+        "echo": 0.5373556684520736,
+        "characteristics": 0.04564256075173034,
+        "total": 1.004894471202715
+      },
+      "run": {
+        "git_commit": "12ffdef6f064af35ad2a172aeaa31ecf293c1007",
+        "git_dirty": true,
+        "processing_config": "/workspace/examples/configs/processing/simple.json",
+        "processing_config_sha256": "ed1319d4df4b1742dc91e39183ba00ebc58de0506068ca2b737827c04f406e9c",
+        "processing_overrides": [
+          "echo.bistatic.ref_mode=joint"
+        ],
+        "observation": "/workspace/output/recordings/simple/dataset.observation.npz",
+        "observation_sha256": "3bb27580b402f6312b17c362975033e118cb26b8492cf78225476788974d2b57",
+        "python": "3.12.3",
+        "numpy": "2.5.4",
+        "cupy": "14.2.0",
+        "gpu": "Quadro RTX 4000",
+        "seed": null,
+        "wall_s": 20.207792663000873,
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "chunk_s": 0.25
+      }
+    }
+  },
+  "bistatic": {
+    "beam": {
+      "ships": {
+        "ferry": {
+          "cable_median_db": 20.039670448083633,
+          "cable_p10_db": 16.00019142722149,
+          "steps": 9
+        }
+      },
+      "compute_per_second_of_data": {
+        "passive": 0.6234358577989042,
+        "echo": 0.5661587746995792,
+        "characteristics": 0.1050171420465631,
+        "total": 1.2946117745450465
+      },
+      "run": {
+        "git_commit": "12ffdef6f064af35ad2a172aeaa31ecf293c1007",
+        "git_dirty": true,
+        "processing_config": "/workspace/examples/configs/processing/bistatic.json",
+        "processing_config_sha256": "5b6beb64e6a745365e0eae55ae8a1e740f9d93583ce752779afaac2a8a951c6f",
+        "processing_overrides": [
+          "echo.bistatic.ref_mode=beam"
+        ],
+        "observation": "/workspace/output/recordings/bistatic/dataset.observation.npz",
+        "observation_sha256": "31f9b505e5132187d90e9b5fee2b55205a8f5c358ada9bb1fbbf3ddfbde601c1",
+        "python": "3.12.3",
+        "numpy": "2.5.4",
+        "cupy": "14.2.0",
+        "gpu": "Quadro RTX 4000",
+        "seed": null,
+        "wall_s": 25.983106076004333,
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "chunk_s": 0.25
+      }
+    },
+    "joint": {
+      "ships": {
+        "ferry": {
+          "cable_median_db": 20.325648927579216,
+          "cable_p10_db": 16.035545647508993,
+          "steps": 9
+        }
+      },
+      "compute_per_second_of_data": {
+        "passive": 0.6258930717551265,
+        "echo": 0.7096852511531324,
+        "characteristics": 0.11121338525408646,
+        "total": 1.4467917081623454
+      },
+      "run": {
+        "git_commit": "12ffdef6f064af35ad2a172aeaa31ecf293c1007",
+        "git_dirty": true,
+        "processing_config": "/workspace/examples/configs/processing/bistatic.json",
+        "processing_config_sha256": "5b6beb64e6a745365e0eae55ae8a1e740f9d93583ce752779afaac2a8a951c6f",
+        "processing_overrides": [
+          "echo.bistatic.ref_mode=joint"
+        ],
+        "observation": "/workspace/output/recordings/bistatic/dataset.observation.npz",
+        "observation_sha256": "31f9b505e5132187d90e9b5fee2b55205a8f5c358ada9bb1fbbf3ddfbde601c1",
+        "python": "3.12.3",
+        "numpy": "2.5.4",
+        "cupy": "14.2.0",
+        "gpu": "Quadro RTX 4000",
+        "seed": null,
+        "wall_s": 29.02463996100414,
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "chunk_s": 0.25
+      }
+    }
+  },
+  "multistatic": {
+    "beam": {
+      "ships": {
+        "ferry": {
+          "cable_median_db": 14.567399256522762,
+          "cable_p10_db": 7.628442633739339,
+          "steps": 9
+        },
+        "tug": {
+          "cable_median_db": 8.648572590430948,
+          "cable_p10_db": 8.038708022699124,
+          "steps": 9
+        },
+        "boat": {
+          "cable_median_db": 8.58840425184263,
+          "cable_p10_db": 6.975347482578876,
+          "steps": 9
+        }
+      },
+      "compute_per_second_of_data": {
+        "passive": 0.5435444475493568,
+        "echo": 1.277294152847753,
+        "characteristics": 0.20697346164597547,
+        "total": 2.0278120620430853
+      },
+      "run": {
+        "git_commit": "12ffdef6f064af35ad2a172aeaa31ecf293c1007",
+        "git_dirty": true,
+        "processing_config": "/workspace/examples/configs/processing/multistatic.json",
+        "processing_config_sha256": "4b3badc974bc5219e11805cd21ac2d2e011d45facf39d6afcbac72374c282326",
+        "processing_overrides": [
+          "echo.bistatic.ref_mode=beam"
+        ],
+        "observation": "/workspace/output/recordings/multistatic/dataset.observation.npz",
+        "observation_sha256": "155d1549a955c96bd19583164646e828c1ef91b50430d5c82323f397f039d5ba",
+        "python": "3.12.3",
+        "numpy": "2.5.4",
+        "cupy": "14.2.0",
+        "gpu": "Quadro RTX 4000",
+        "seed": null,
+        "wall_s": 40.72528615999909,
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "chunk_s": 0.25
+      }
+    },
+    "joint": {
+      "ships": {
+        "ferry": {
+          "cable_median_db": 14.621784521798972,
+          "cable_p10_db": 7.763846580627857,
+          "steps": 9
+        },
+        "tug": {
+          "cable_median_db": 8.678486523397762,
+          "cable_p10_db": 8.009973121798332,
+          "steps": 9
+        },
+        "boat": {
+          "cable_median_db": 9.207195849173392,
+          "cable_p10_db": 7.354518603082846,
+          "steps": 9
+        }
+      },
+      "compute_per_second_of_data": {
+        "passive": 0.6287640273454599,
+        "echo": 1.7124925317970336,
+        "characteristics": 0.23488773639837746,
+        "total": 2.576144295540871
+      },
+      "run": {
+        "git_commit": "12ffdef6f064af35ad2a172aeaa31ecf293c1007",
+        "git_dirty": true,
+        "processing_config": "/workspace/examples/configs/processing/multistatic.json",
+        "processing_config_sha256": "4b3badc974bc5219e11805cd21ac2d2e011d45facf39d6afcbac72374c282326",
+        "processing_overrides": [
+          "echo.bistatic.ref_mode=joint"
+        ],
+        "observation": "/workspace/output/recordings/multistatic/dataset.observation.npz",
+        "observation_sha256": "155d1549a955c96bd19583164646e828c1ef91b50430d5c82323f397f039d5ba",
+        "python": "3.12.3",
+        "numpy": "2.5.4",
+        "cupy": "14.2.0",
+        "gpu": "Quadro RTX 4000",
+        "seed": null,
+        "wall_s": 51.69239210199157,
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "chunk_s": 0.25
+      }
+    }
+  },
+  "multistatic_b": {
+    "beam": {
+      "ships": {
+        "ferry": {
+          "cable_median_db": 9.891718821635997,
+          "cable_p10_db": 8.736490191738254,
+          "steps": 29
+        },
+        "tug": {
+          "cable_median_db": 6.319203538073451,
+          "cable_p10_db": 5.644387517913264,
+          "steps": 29
+        },
+        "boat": {
+          "cable_median_db": 9.536149364625818,
+          "cable_p10_db": 7.963861540896139,
+          "steps": 29
+        }
+      },
+      "compute_per_second_of_data": {
+        "passive": 0.6667655449981491,
+        "echo": 1.1908612578663451,
+        "characteristics": 0.1993341710852595,
+        "total": 2.056960973949754
+      },
+      "run": {
+        "git_commit": "12ffdef6f064af35ad2a172aeaa31ecf293c1007",
+        "git_dirty": true,
+        "processing_config": "/workspace/examples/configs/processing/multistatic.json",
+        "processing_config_sha256": "4b3badc974bc5219e11805cd21ac2d2e011d45facf39d6afcbac72374c282326",
+        "processing_overrides": [
+          "echo.bistatic.ref_mode=beam"
+        ],
+        "observation": "/workspace/output/recordings/multistatic_b/dataset.observation.npz",
+        "observation_sha256": "ad853092d1b3c0d2e6caaf13ab47b7a563ba51d06c3699d0f94b49ba9b640979",
+        "python": "3.12.3",
+        "numpy": "2.5.4",
+        "cupy": "14.2.0",
+        "gpu": "Quadro RTX 4000",
+        "seed": null,
+        "wall_s": 124.07630834799784,
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "chunk_s": 0.25
+      }
+    },
+    "joint": {
+      "ships": {
+        "ferry": {
+          "cable_median_db": 10.164699674614287,
+          "cable_p10_db": 8.80163557038752,
+          "steps": 29
+        },
+        "tug": {
+          "cable_median_db": 6.276756864939236,
+          "cable_p10_db": 5.584406051057569,
+          "steps": 29
+        },
+        "boat": {
+          "cable_median_db": 10.446133607900986,
+          "cable_p10_db": 8.402723522813378,
+          "steps": 29
+        }
+      },
+      "compute_per_second_of_data": {
+        "passive": 0.6968742205986928,
+        "echo": 1.584833088900147,
+        "characteristics": 0.21975674872204157,
+        "total": 2.5014640582208814
+      },
+      "run": {
+        "git_commit": "12ffdef6f064af35ad2a172aeaa31ecf293c1007",
+        "git_dirty": true,
+        "processing_config": "/workspace/examples/configs/processing/multistatic.json",
+        "processing_config_sha256": "4b3badc974bc5219e11805cd21ac2d2e011d45facf39d6afcbac72374c282326",
+        "processing_overrides": [
+          "echo.bistatic.ref_mode=joint"
+        ],
+        "observation": "/workspace/output/recordings/multistatic_b/dataset.observation.npz",
+        "observation_sha256": "ad853092d1b3c0d2e6caaf13ab47b7a563ba51d06c3699d0f94b49ba9b640979",
+        "python": "3.12.3",
+        "numpy": "2.5.4",
+        "cupy": "14.2.0",
+        "gpu": "Quadro RTX 4000",
+        "seed": null,
+        "wall_s": 150.80164182798762,
+        "provenance": {
+          "truth_inputs": [
+            "components"
+          ],
+          "simulator_knowledge": [],
+          "data": "forward_model",
+          "held_out": false
+        },
+        "chunk_s": 0.25
+      }
+    }
+  }
+}

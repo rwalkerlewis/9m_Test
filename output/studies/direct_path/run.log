@@ -1,0 +1,53 @@
+criterion: at least one mode with no truth input reaches a median depth over the live cable channels of 20 dB on the stationary source at about 193 m and at about 99 m, and 15 dB on the moving source at about 193 m with the tracked position; the mode with no truth input of the highest mean median depth over the six cases becomes the default ref_mode of every processing config
+grid 801 x 601 at 0.5 m, fs 6000 Hz, 60000 steps, 200 channels, time scheme kspace, processing band 100 to 760 Hz
+6 FDTD runs (cached in output/studies/direct_path/cache) in 1001 s
+stationary  193.0 m  beam                       median  20.1 dB  p10  19.2 dB  coherence 0.993  compute 0.36 s/s
+stationary  193.0 m  weighted                   median  24.3 dB  p10  22.1 dB  coherence 0.995  compute 0.58 s/s
+stationary  193.0 m  weighted_cable             median  18.4 dB  p10  17.7 dB  coherence 0.986  compute 0.56 s/s
+stationary  193.0 m  hydrophones                median  14.2 dB  p10  14.0 dB  coherence 0.959  compute 0.48 s/s
+stationary  193.0 m  iterated                   median  20.1 dB  p10  19.2 dB  coherence 0.993  compute 0.67 s/s
+stationary  193.0 m  joint                      median  25.2 dB  p10  24.0 dB  coherence 0.995  compute 0.49 s/s
+stationary  193.0 m  true_waveform              median  51.9 dB  p10  30.9 dB  coherence 1.000  compute 0.87 s/s
+stationary  193.0 m  true_waveform_exact_track  median  52.1 dB  p10  31.0 dB  coherence 1.000  compute 0.88 s/s
+moving      193.0 m  beam                       median  24.1 dB  p10  20.6 dB  coherence 0.857  compute 0.35 s/s
+moving      193.0 m  weighted                   median  25.1 dB  p10  20.6 dB  coherence 0.873  compute 0.56 s/s
+moving      193.0 m  weighted_cable             median  22.4 dB  p10  19.1 dB  coherence 0.832  compute 0.56 s/s
+moving      193.0 m  hydrophones                median  11.4 dB  p10   9.4 dB  coherence 0.865  compute 0.48 s/s
+moving      193.0 m  iterated                   median  24.1 dB  p10  20.6 dB  coherence 0.857  compute 0.67 s/s
+moving      193.0 m  joint                      median  26.5 dB  p10  21.1 dB  coherence 0.865  compute 0.50 s/s
+moving      193.0 m  true_waveform              median  23.7 dB  p10  20.5 dB  coherence 1.000  compute 0.69 s/s
+moving      193.0 m  true_waveform_exact_track  median  30.2 dB  p10  24.8 dB  coherence 1.000  compute 0.71 s/s
+stationary   99.0 m  beam                       median  22.8 dB  p10  15.5 dB  coherence 0.997  compute 0.35 s/s
+stationary   99.0 m  weighted                   median  24.1 dB  p10  16.6 dB  coherence 0.998  compute 0.56 s/s
+stationary   99.0 m  weighted_cable             median  23.0 dB  p10  15.2 dB  coherence 0.997  compute 0.56 s/s
+stationary   99.0 m  hydrophones                median   9.0 dB  p10   8.8 dB  coherence 0.908  compute 0.48 s/s
+stationary   99.0 m  iterated                   median  22.8 dB  p10  15.5 dB  coherence 0.997  compute 0.67 s/s
+stationary   99.0 m  joint                      median  23.9 dB  p10  16.4 dB  coherence 0.998  compute 0.50 s/s
+stationary   99.0 m  true_waveform              median  46.3 dB  p10  18.3 dB  coherence 1.000  compute 0.97 s/s
+stationary   99.0 m  true_waveform_exact_track  median  46.4 dB  p10  18.3 dB  coherence 1.000  compute 1.01 s/s
+moving       99.0 m  beam                       median  24.3 dB  p10  20.6 dB  coherence 0.919  compute 0.35 s/s
+moving       99.0 m  weighted                   median  21.9 dB  p10  19.4 dB  coherence 0.927  compute 0.56 s/s
+moving       99.0 m  weighted_cable             median  21.8 dB  p10  19.1 dB  coherence 0.919  compute 0.56 s/s
+moving       99.0 m  hydrophones                median  13.9 dB  p10  12.8 dB  coherence 0.946  compute 0.48 s/s
+moving       99.0 m  iterated                   median  24.3 dB  p10  20.6 dB  coherence 0.919  compute 0.67 s/s
+moving       99.0 m  joint                      median  22.6 dB  p10  20.0 dB  coherence 0.895  compute 0.49 s/s
+moving       99.0 m  true_waveform              median  23.6 dB  p10  20.4 dB  coherence 1.000  compute 0.69 s/s
+moving       99.0 m  true_waveform_exact_track  median  28.1 dB  p10  21.9 dB  coherence 1.000  compute 0.69 s/s
+stationary   29.0 m  beam                       median  11.3 dB  p10   1.6 dB  coherence 0.985  compute 0.35 s/s
+stationary   29.0 m  weighted                   median  24.2 dB  p10   1.7 dB  coherence 0.989  compute 0.56 s/s
+stationary   29.0 m  weighted_cable             median  23.8 dB  p10   1.3 dB  coherence 0.988  compute 0.56 s/s
+stationary   29.0 m  hydrophones                median   8.6 dB  p10   0.8 dB  coherence 0.890  compute 0.48 s/s
+stationary   29.0 m  iterated                   median  11.3 dB  p10   1.6 dB  coherence 0.985  compute 0.67 s/s
+stationary   29.0 m  joint                      median  28.1 dB  p10   1.4 dB  coherence 0.988  compute 0.49 s/s
+stationary   29.0 m  true_waveform              median  29.3 dB  p10  27.7 dB  coherence 1.000  compute 0.74 s/s
+stationary   29.0 m  true_waveform_exact_track  median  52.5 dB  p10  33.2 dB  coherence 1.000  compute 0.87 s/s
+moving       29.0 m  beam                       median   7.5 dB  p10   6.8 dB  coherence 0.060  compute 0.35 s/s
+moving       29.0 m  weighted                   median   7.0 dB  p10   6.4 dB  coherence 0.073  compute 0.56 s/s
+moving       29.0 m  weighted_cable             median   7.0 dB  p10   6.4 dB  coherence 0.074  compute 0.56 s/s
+moving       29.0 m  hydrophones                median   7.3 dB  p10   5.9 dB  coherence 0.088  compute 0.48 s/s
+moving       29.0 m  iterated                   median   7.5 dB  p10   6.8 dB  coherence 0.060  compute 0.67 s/s
+moving       29.0 m  joint                      median   9.9 dB  p10   7.8 dB  coherence 0.058  compute 0.49 s/s
+moving       29.0 m  true_waveform              median  15.1 dB  p10  12.1 dB  coherence 1.000  compute 0.69 s/s
+moving       29.0 m  true_waveform_exact_track  median  24.8 dB  p10  22.5 dB  coherence 1.000  compute 0.72 s/s
+criterion PASS: passing modes ['beam', 'weighted', 'iterated', 'joint']; best mode by the mean over the six cases: joint (22.7 dB)
+wrote output/studies/direct_path

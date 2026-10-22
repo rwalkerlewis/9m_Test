@@ -7,20 +7,20 @@ wavelength), and writes one picture of the harbor per quarter second. AIS report
 recordings are synthetic (the package's FDTD forward model, `src/acoustic_sim/water/`); the processing cannot tell them
 from a field recording ([Sensing contract](architecture.md#sensing-contract)).
 
-**Status (stage 2, on the k space recordings): the ships are located and tracked from the traces alone and some of the
+**Status (stage 2, on the k space recordings, with the `joint` reference of the direct path removal): the ships are located and tracked from the traces alone and some of the
 silent bodies by their echo; <!-- reproduce:ntrue:criteria[*]/passed -->0<!-- /reproduce --> of the <!-- reproduce:count:criteria[*]/passed -->4<!-- /reproduce --> criteria fixed for this stage are met on the test
 recordings.** The ferry is tracked in <!-- reproduce:range:recordings/[bms][iu]*/objects/ferry/pd/radiator|pct -->100 %<!-- /reproduce -->
 of the frames of every 0.5 m and 1 m recording, the tug in <!-- reproduce:range:recordings/multistatic_seed*/objects/tug/pd/radiator|pct -->100 %<!-- /reproduce --> and the boat in
 <!-- reproduce:range:recordings/multistatic_seed*/objects/boat/pd/radiator|pct -->100 %<!-- /reproduce --> of the frames of the multistatic test seeds, and on the new geometry `multistatic_b`
 the tug in <!-- reproduce:recordings/multistatic_b/objects/tug/pd/radiator|pct -->86 %<!-- /reproduce --> and the boat in <!-- reproduce:recordings/multistatic_b/objects/boat/pd/radiator|pct -->80 %<!-- /reproduce -->. By their echo, the simple harbor's wreck is
-tracked in <!-- reproduce:range:recordings/simple_seed*/objects/wreck/pd/echo|pct -->67 to 98 %<!-- /reproduce --> of the frames of the test seeds, the bistatic UUV in
-<!-- reproduce:range:recordings/bistatic_seed*/objects/uuv1/pd/echo|pct -->59 to 69 %<!-- /reproduce -->, and of the silent bodies of the multi ship scene the second UUV in
-<!-- reproduce:range:recordings/multistatic_seed*/objects/uuv2/pd/echo|pct -->83 to 89 %<!-- /reproduce --> (<!-- reproduce:recordings/multistatic_b/objects/uuv2/pd/echo|pct -->45 %<!-- /reproduce --> on `multistatic_b`) and the first in at most
-<!-- reproduce:max:recordings/multistatic*/objects/uuv1/pd/echo|pct -->30 %<!-- /reproduce -->; the diver, the pilings and the moored hull are tracked in at most <!-- reproduce:max:recordings/multistatic*/objects/[dpm]*/pd/echo|pct -->0 %<!-- /reproduce --> of the frames of
+tracked in <!-- reproduce:range:recordings/simple_seed*/objects/wreck/pd/echo|pct -->66 to 97 %<!-- /reproduce --> of the frames of the test seeds, the bistatic UUV in
+<!-- reproduce:range:recordings/bistatic_seed*/objects/uuv1/pd/echo|pct -->59 to 73 %<!-- /reproduce -->, and of the silent bodies of the multi ship scene the second UUV in
+<!-- reproduce:range:recordings/multistatic_seed*/objects/uuv2/pd/echo|pct -->72 to 81 %<!-- /reproduce --> (<!-- reproduce:recordings/multistatic_b/objects/uuv2/pd/echo|pct -->68 %<!-- /reproduce --> on `multistatic_b`) and the first in at most
+<!-- reproduce:max:recordings/multistatic*/objects/uuv1/pd/echo|pct -->40 %<!-- /reproduce -->; the diver, the pilings and the moored hull are tracked in at most <!-- reproduce:max:recordings/multistatic*/objects/[dpm]*/pd/echo|pct -->0 %<!-- /reproduce --> of the frames of
 any multistatic recording. The criteria: the ships on `multistatic_b` (tug <!-- reproduce:criteria[0]/values/tug|frac2 -->0.86<!-- /reproduce -->, boat
-<!-- reproduce:criteria[0]/values/boat|f3 -->0.796<!-- /reproduce --> against 0.8), false tracks (<!-- reproduce:range:criteria[1]/values/*|f1 -->2.0 to 6.0<!-- /reproduce --> per minute on the test recordings against
-2), the wreck (<!-- reproduce:range:criteria[2]/values/*|frac2 -->0.67 to 0.98<!-- /reproduce --> against 0.9), the size order (not testable: no frame had the hull, a UUV and a piling
-all measured). The chain takes <!-- reproduce:range:recordings/[bm]*/compute_per_second_of_data/total|f2 -->0.97 to 1.58<!-- /reproduce --> s of compute per second of data on the 0.5 m recordings
+<!-- reproduce:criteria[0]/values/boat|f3 -->0.796<!-- /reproduce --> against 0.8), false tracks (<!-- reproduce:range:criteria[1]/values/*|f1 -->2.0 to 12.0<!-- /reproduce --> per minute on the test recordings against
+2), the wreck (<!-- reproduce:range:criteria[2]/values/*|frac2 -->0.66 to 0.97<!-- /reproduce --> against 0.9), the size order (not testable: no frame had the hull, a UUV and a piling
+all measured). The chain takes <!-- reproduce:range:recordings/[bm]*/compute_per_second_of_data/total|f2 -->1.13 to 2.00<!-- /reproduce --> s of compute per second of data on the 0.5 m recordings
 on a Quadro RTX 4000 (real time is 1 s) (for the compute before stage 2 see the
 [history](harbor_history.md#findings-before-stage-2)). Numbers, with tuning beside test recordings, in
 [Numbers on recordings the parameters never saw](#numbers-on-recordings-the-parameters-never-saw).
@@ -65,8 +65,9 @@ stream with one chunk):
 2. `RadiatorTracker` turns the peaks into tracks (a peak joins the track it is predicted to be within 6 m of; a track is
    confirmed after 6 fixes in 2 s; one within 30 m of a stronger track is a sidelobe and is not confirmed).
 3. `StreamingEcho` takes the confirmed tracks scoring at least a quarter of the strongest, removes the direct path of
-   each from the traces (ECA with per sample delays, each with its own data reference beam, the track fitted over the
-   past 4 s), and maps the echoes with every one of them as an illuminator.
+   each from the traces (ECA with per sample delays, the track fitted over the past 4 s, each with its own reference
+   waveform: the waveform and a scale per channel solved together from the channels advanced by the track's delays,
+   [Direct path removal](#direct-path-removal)), and maps the echoes with every one of them as an illuminator.
 4. A second `RadiatorTracker` tracks the echo peaks (gate 6 m, 8 fixes in 3 s, kept 8 s without a fix), the peaks within
    25 m of a confirmed radiator track left out so a residual direct path is not confirmed as a body. A confirmed track
    whose fitted speed stays below 0.2 m/s for 10 s is static.
@@ -104,30 +105,30 @@ Pd: fraction of frames, from the first frame the object could have been confirme
 <!-- reproduce-table:realtime -->
 | Recording | Split | Compute per s of data | Latency (median) | Pd per object | False tracks (per minute) |
 |---|---|---|---|---|---|
-| simple | tuning | 0.71 | 1.9 s | ferry 100 %; boat 100 %; uuv1 28 %; wreck 86 % | 2 (6.0) |
-| simple | test | 0.70 / 0.70 / 0.70 | 1.9 s / 1.9 s / 1.9 s | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 23 % / 30 % / 25 %; wreck 67 % / 86 % / 98 % | 1 (3.0) / 1 (3.0) / 2 (6.0) |
-| bistatic | tuning | 0.97 | 2.0 s | ferry 100 %; uuv1 67 % | 3 (9.0) |
-| bistatic | test | 0.98 / 0.99 / 1.07 | 2.0 s / 2.0 s / 2.0 s | ferry 100 % / 100 % / 100 %; uuv1 69 % / 59 % / 67 % | 2 (6.0) / 2 (6.0) / 2 (6.0) |
-| multistatic | tuning | 1.39 | 2.6 s | ferry 100 %; tug 100 %; boat 100 %; uuv2 83 %; not tracked: uuv1, diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 2 (6.0) |
-| multistatic | test | 1.58 / 1.40 / 1.33 | 2.6 s / 2.6 s / 2.6 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 0 % / 30 % / 0 %; uuv2 83 % / 89 % / 86 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 2 (6.0) / 1 (3.0) / 2 (6.0) |
+| simple | tuning | 0.84 | 2.2 s | ferry 100 %; boat 100 %; uuv1 28 %; wreck 86 % | 2 (6.0) |
+| simple | test | 0.82 / 0.82 / 0.82 | 2.2 s / 2.2 s / 2.2 s | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 0 % / 28 % / 25 %; wreck 67 % / 66 % / 97 % | 1 (3.0) / 1 (3.0) / 2 (6.0) |
+| bistatic | tuning | 1.47 | 2.3 s | ferry 100 %; uuv1 69 % | 4 (12.0) |
+| bistatic | test | 1.22 / 1.13 / 1.13 | 2.3 s / 2.3 s / 2.3 s | ferry 100 % / 100 % / 100 %; uuv1 73 % / 59 % / 66 % | 3 (9.0) / 3 (9.0) / 4 (12.0) |
+| multistatic | tuning | 1.79 | 3.6 s | ferry 100 %; tug 100 %; boat 100 %; uuv2 81 %; not tracked: uuv1, diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 2 (6.0) |
+| multistatic | test | 2.00 / 1.85 / 1.87 | 3.6 s / 3.6 s / 3.8 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 0 % / 0 % / 8 %; uuv2 81 % / 72 % / 81 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 2 (6.0) / 2 (6.0) / 3 (9.0) |
 | harbor | tuning | 0.52 | 1.1 s | ferry 72 %; tug 2 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | 5 (2.5) |
 | harbor | test | 0.52 / 0.53 / 0.53 | 1.1 s / 1.1 s / 1.1 s | ferry 72 % / 78 % / 61 %; tug 6 % / 9 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | 4 (2.0) / 4 (2.0) / 4 (2.0) |
-| multistatic_b | test | 1.41 | 2.5 s | ferry 100 %; tug 86 %; boat 80 %; uuv1 27 %; uuv2 45 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 6 (6.0) |
+| multistatic_b | test | 1.60 | 3.2 s | ferry 100 %; tug 86 %; boat 80 %; uuv1 40 %; uuv2 68 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 7 (7.0) |
 <!-- /reproduce-table -->
 
 Per recording, `output/reproduce/runs/<recording>/`. What they say:
 
 * **Tuning to test.** The noise seeds do not move the ships: on every seed of the simple, bistatic and multistatic
   recordings the ferry, the tug and the boat are tracked in <!-- reproduce:range:recordings/[bms][iu]*_seed*/objects/[ftb]*/pd/radiator|pct -->100 %<!-- /reproduce --> of the frames. They move the
-  silent bodies: the simple harbor's wreck <!-- reproduce:range:recordings/simple_seed*/objects/wreck/pd/echo|pct -->67 to 98 %<!-- /reproduce --> on the test seeds against <!-- reproduce:recordings/simple/objects/wreck/pd/echo|pct -->86 %<!-- /reproduce --> on the tuning
-  recording, its UUV <!-- reproduce:range:recordings/simple_seed*/objects/uuv1/pd/echo|pct -->23 to 30 %<!-- /reproduce --> against <!-- reproduce:recordings/simple/objects/uuv1/pd/echo|pct -->28 %<!-- /reproduce -->, the bistatic UUV <!-- reproduce:range:recordings/bistatic_seed*/objects/uuv1/pd/echo|pct -->59 to 69 %<!-- /reproduce --> against
-  <!-- reproduce:recordings/bistatic/objects/uuv1/pd/echo|pct -->67 %<!-- /reproduce -->, the multistatic second UUV <!-- reproduce:range:recordings/multistatic_seed*/objects/uuv2/pd/echo|pct -->83 to 89 %<!-- /reproduce --> against <!-- reproduce:recordings/multistatic/objects/uuv2/pd/echo|pct -->83 %<!-- /reproduce --> and the first
-  <!-- reproduce:range:recordings/multistatic_seed*/objects/uuv1/pd/echo|pct -->0 to 30 %<!-- /reproduce --> against <!-- reproduce:recordings/multistatic/objects/uuv1/pd/echo|pct -->0 %<!-- /reproduce -->.
+  silent bodies: the simple harbor's wreck <!-- reproduce:range:recordings/simple_seed*/objects/wreck/pd/echo|pct -->66 to 97 %<!-- /reproduce --> on the test seeds against <!-- reproduce:recordings/simple/objects/wreck/pd/echo|pct -->86 %<!-- /reproduce --> on the tuning
+  recording, its UUV <!-- reproduce:range:recordings/simple_seed*/objects/uuv1/pd/echo|pct -->0 to 28 %<!-- /reproduce --> against <!-- reproduce:recordings/simple/objects/uuv1/pd/echo|pct -->28 %<!-- /reproduce -->, the bistatic UUV <!-- reproduce:range:recordings/bistatic_seed*/objects/uuv1/pd/echo|pct -->59 to 73 %<!-- /reproduce --> against
+  <!-- reproduce:recordings/bistatic/objects/uuv1/pd/echo|pct -->69 %<!-- /reproduce -->, the multistatic second UUV <!-- reproduce:range:recordings/multistatic_seed*/objects/uuv2/pd/echo|pct -->72 to 81 %<!-- /reproduce --> against <!-- reproduce:recordings/multistatic/objects/uuv2/pd/echo|pct -->81 %<!-- /reproduce --> and the first
+  <!-- reproduce:range:recordings/multistatic_seed*/objects/uuv1/pd/echo|pct -->0 to 8 %<!-- /reproduce --> against <!-- reproduce:recordings/multistatic/objects/uuv1/pd/echo|pct -->0 %<!-- /reproduce -->.
 * **The new geometry.** On `multistatic_b` the ferry, the tug and the boat are tracked in <!-- reproduce:recordings/multistatic_b/objects/ferry/pd/radiator|pct -->100 %<!-- /reproduce -->,
-  <!-- reproduce:recordings/multistatic_b/objects/tug/pd/radiator|pct -->86 %<!-- /reproduce --> and <!-- reproduce:recordings/multistatic_b/objects/boat/pd/radiator|pct -->80 %<!-- /reproduce --> of the frames, the two UUVs by their echo in <!-- reproduce:recordings/multistatic_b/objects/uuv1/pd/echo|pct -->27 %<!-- /reproduce --> and <!-- reproduce:recordings/multistatic_b/objects/uuv2/pd/echo|pct -->45 %<!-- /reproduce -->.
+  <!-- reproduce:recordings/multistatic_b/objects/tug/pd/radiator|pct -->86 %<!-- /reproduce --> and <!-- reproduce:recordings/multistatic_b/objects/boat/pd/radiator|pct -->80 %<!-- /reproduce --> of the frames, the two UUVs by their echo in <!-- reproduce:recordings/multistatic_b/objects/uuv1/pd/echo|pct -->40 %<!-- /reproduce --> and <!-- reproduce:recordings/multistatic_b/objects/uuv2/pd/echo|pct -->68 %<!-- /reproduce -->.
 * **False tracks.** Every track ever confirmed is scored, so on a <!-- reproduce:recordings/simple/record_s|f0 -->20<!-- /reproduce --> s recording a single false track
   already exceeds the criterion of 2 per minute. On the test recordings <!-- reproduce:sum:recordings/*_seed*/false_tracks/radiator -->21<!-- /reproduce --> of the false tracks
-  of the noise seeds are radiator tracks and <!-- reproduce:sum:recordings/*_seed*/false_tracks/echo -->6<!-- /reproduce --> echo tracks (<!-- reproduce:recordings/multistatic_b/false_tracks/radiator -->3<!-- /reproduce --> and <!-- reproduce:recordings/multistatic_b/false_tracks/echo -->3<!-- /reproduce --> on
+  of the noise seeds are radiator tracks and <!-- reproduce:sum:recordings/*_seed*/false_tracks/echo -->12<!-- /reproduce --> echo tracks (<!-- reproduce:recordings/multistatic_b/false_tracks/radiator -->3<!-- /reproduce --> and <!-- reproduce:recordings/multistatic_b/false_tracks/echo -->4<!-- /reproduce --> on
   `multistatic_b`). The false radiator tracks of the 0.5 m and 1 m recordings lie near the loudest ship or near a
   silent body: sidelobes of a ship outside the radiator tracker's 30 m exclusion, and the passive chain locating a
   ship's echo off a silent body (on the simple harbor, off the wreck) as if it radiated. Echo tracks near the moored
@@ -135,8 +136,8 @@ Per recording, `output/reproduce/runs/<recording>/`. What they say:
   the hull is 30 m long. The positions of every false track are in `false_track_list` of `summary.json`.
 * **Silent bodies of the multi ship scene.** Of the two UUVs, the diver, the six pilings and the moored hull, only the
   UUVs are tracked by their echo on any multistatic recording (the others in at most <!-- reproduce:max:recordings/multistatic*/objects/[dpm]*/pd/echo|pct -->0 %<!-- /reproduce --> of the
-  frames); the removal of the ships' direct sound is the limit ([Before and after the k space
-  recordings](#before-and-after-the-k-space-recordings), the true waveform diagnostic).
+  frames); the removal of the ships' direct sound is the limit: <!-- reproduce:range:@studies/direct_path/recording_depth.json:multistatic*/joint/ships/*/cable_median_db|f0 -->6 to 15<!-- /reproduce --> dB on these recordings against <!-- reproduce:range:@studies/direct_path/results.json:cases[range_target_m=?00.0]/rows/joint/cable_median_db|f1 -->22.6 to 26.5<!-- /reproduce --> dB for a
+  lone ship 99 m or more from the cable ([Direct path removal](#direct-path-removal)).
 * **The 5 m harbor** tracks the ferry in <!-- reproduce:range:recordings/harbor*/objects/ferry/pd/radiator|pct -->61 to 78 %<!-- /reproduce --> of its frames and the tug in
   <!-- reproduce:range:recordings/harbor*/objects/tug/pd/radiator|pct -->2 to 9 %<!-- /reproduce -->, with <!-- reproduce:range:recordings/harbor_seed*/false_tracks/per_minute|f1 -->2.0<!-- /reproduce --> false tracks per minute on the test seeds.
 
@@ -148,13 +149,213 @@ Fixed before the test recordings were built (`scripts/reproduce.py`, `CRITERIA`)
 | Criterion | Values | Result |
 |---|---|---|
 | every ship (ferry, tug, boat) tracked with Pd >= 0.8 on multistatic_b (radiator tracks) | {'ferry': 1.0, 'tug': 0.86, 'boat': 0.8} | **fail** |
-| false tracks at most 2 per minute on every test recording | {'simple_seed1': 3.0, 'simple_seed2': 3.0, 'simple_seed3': 6.0, 'bistatic_seed1': 6.0, 'bistatic_seed2': 6.0, 'bistatic_seed3': 6.0, 'multistatic_seed1': 6.0, 'multistatic_seed2': 3.0, 'multistatic_seed3': 6.0, 'harbor_seed1': 2.0, 'harbor_seed2': 2.0, 'harbor_seed3': 2.0, 'multistatic_b': 6.0} | **fail** |
-| the wreck of the simple harbor found by its echo with Pd >= 0.9 on seeds 1 to 3 (echo tracks) | {'simple_seed1': 0.67, 'simple_seed2': 0.86, 'simple_seed3': 0.98} | **fail** |
+| false tracks at most 2 per minute on every test recording | {'simple_seed1': 3.0, 'simple_seed2': 3.0, 'simple_seed3': 6.0, 'bistatic_seed1': 9.0, 'bistatic_seed2': 9.0, 'bistatic_seed3': 12.0, 'multistatic_seed1': 6.0, 'multistatic_seed2': 6.0, 'multistatic_seed3': 9.0, 'harbor_seed1': 2.0, 'harbor_seed2': 2.0, 'harbor_seed3': 2.0, 'multistatic_b': 7.0} | **fail** |
+| the wreck of the simple harbor found by its echo with Pd >= 0.9 on seeds 1 to 3 (echo tracks) | {'simple_seed1': 0.67, 'simple_seed2': 0.66, 'simple_seed3': 0.97} | **fail** |
 | on frames where the moored hull, a UUV and a piling are all measured, the size indicator puts the hull below the piling in at least 70 % of them (multistatic recordings, tuning and multistatic_b) | no frame had the hull, a UUV and a piling all measured: not testable | **not met: not testable** |
 <!-- /reproduce-table -->
 
 The size criterion could not be evaluated: no echo track of the hull, a UUV and a piling was confirmed together on
 either multistatic recording, so there was no frame with all three measured.
+
+## Direct path removal
+
+A silent body is seen only by the ship noise it reflects, below the ship's direct sound on the cable (`levels.json` of
+each recording). The echo chain removes each ship's direct path by fitting delayed copies of a reference waveform to
+every channel (the ECA); how well it does is set by how closely that reference matches the ship's sound as the array
+receives it. The reference is estimated from the traces in one of six ways (`BistaticConfig.ref_mode`,
+`bistatic.estimate_reference`):
+
+* `beam`: every live channel advanced by its range to the tracked ship, sample by sample, and averaged (the reference
+  before this change);
+* `weighted`: the same channels, each frequency of each channel weighted by its modelled response to the ship (the
+  Green's function for a pressure channel, its second difference along the cable for a strain channel, from the chain's
+  propagator at the tracked position) over its noise power (from the residual of a first pass with the beam and the
+  ECA), so that the emitted sound is estimated with the least noise, then given the response the beam of every live
+  channel has, so that the reference is the sound as the array receives it; `weighted_cable` and `hydrophones` do the
+  same on the cable or the four hydrophones alone;
+* `iterated`: `weighted`, the ECA, the modelled echo of every confirmed echo track subtracted from the traces, then the
+  beam again;
+* `joint`: the waveform and one scale per channel solved together, block by block, by alternating least squares on the
+  channels advanced by the track's delays and weighted by their noise power: the direct path of every channel a
+  scaled copy of one unknown waveform, the formulation a joint source and reflectivity inversion would start from. It
+  costs one first pass (the beam and an ECA, for the noise powers) and three passes over the advanced channels per
+  block.
+
+**The default is `joint`**, chosen on the stage 0a cases before any recording was run with it.
+
+### The stage 0a cases
+
+`examples/harbor/05_detection/harbor_cancellation_depth.py` (output in `output/studies/direct_path/`): the ferry's
+signature alone in the bistatic harbor at about 193, 99 and 29 m from the nearest cable channel, stationary and moving
+at 4 m/s, the scenario noise, the echo chain's own ECA settings, the ship position the AIS prediction refined on the
+traces. The direct component given from the truth goes through the same projection, so the depth (its band energy
+before over after, median and 10th percentile over the live cable channels) is a diagnostic, as is the coherence of
+each reference with the true waveform (`coherence_<case>.png`). The gathers were simulated again for this study with
+the k space scheme of the recordings: the cached gathers of the earlier stage 0a predated the trace timing correction
+and could not be used. Depth median / 10th percentile [dB]:
+
+<!-- reproduce-table:file:studies/direct_path/depth_table.md -->
+| Reference | Truth given | stationary 193 m | moving 193 m | stationary 99 m | moving 99 m | stationary 29 m | moving 29 m | Mean of the medians [dB] | Compute per s of data |
+|---|---|---|---|---|---|---|---|---|---|
+| beam | none | 20.1 / 19.2 | 24.1 / 20.6 | 22.8 / 15.5 | 24.3 / 20.6 | 11.3 / 1.6 | 7.5 / 6.8 | 18.3 | 0.35 |
+| weighted | none | 24.3 / 22.1 | 25.1 / 20.6 | 24.1 / 16.6 | 21.9 / 19.4 | 24.2 / 1.7 | 7.0 / 6.4 | 21.1 | 0.56 |
+| weighted_cable | none | 18.4 / 17.7 | 22.4 / 19.1 | 23.0 / 15.2 | 21.8 / 19.1 | 23.8 / 1.3 | 7.0 / 6.4 | 19.4 | 0.56 |
+| hydrophones | none | 14.2 / 14.0 | 11.4 / 9.4 | 9.0 / 8.8 | 13.9 / 12.8 | 8.6 / 0.8 | 7.3 / 5.9 | 10.7 | 0.48 |
+| iterated | none | 20.1 / 19.2 | 24.1 / 20.6 | 22.8 / 15.5 | 24.3 / 20.6 | 11.3 / 1.6 | 7.5 / 6.8 | 18.3 | 0.67 |
+| joint | none | 25.2 / 24.0 | 26.5 / 21.1 | 23.9 / 16.4 | 22.6 / 20.0 | 28.1 / 1.4 | 9.9 / 7.8 | 22.7 | 0.49 |
+| true_waveform | waveform | 51.9 / 30.9 | 23.7 / 20.5 | 46.3 / 18.3 | 23.6 / 20.4 | 29.3 / 27.7 | 15.1 / 12.1 | 31.6 | 0.72 |
+| true_waveform_exact_track | waveform, track | 52.1 / 31.0 | 30.2 / 24.8 | 46.4 / 18.3 | 28.1 / 21.9 | 52.5 / 33.2 | 24.8 / 22.5 | 39.0 | 0.79 |
+<!-- /reproduce-table -->
+
+Criterion, fixed before the run: a mode with no truth input reaches a median of 20 dB on the stationary source at about
+193 m and 99 m and 15 dB on the moving source at about 193 m. **Pass**: <!-- reproduce:count:@studies/direct_path/results.json:passing_modes[*] -->4<!-- /reproduce --> modes do
+(<!-- reproduce:@studies/direct_path/results.json:passing_modes[0] -->beam<!-- /reproduce -->, <!-- reproduce:@studies/direct_path/results.json:passing_modes[1] -->weighted<!-- /reproduce -->, <!-- reproduce:@studies/direct_path/results.json:passing_modes[2] -->iterated<!-- /reproduce -->, <!-- reproduce:@studies/direct_path/results.json:passing_modes[3] -->joint<!-- /reproduce -->). The mean over the six cases puts `joint` first
+(<!-- reproduce:@studies/direct_path/results.json:mean_median_db/joint|f1 -->22.7<!-- /reproduce --> dB), then `weighted` (<!-- reproduce:@studies/direct_path/results.json:mean_median_db/weighted|f1 -->21.1<!-- /reproduce -->), against <!-- reproduce:@studies/direct_path/results.json:mean_median_db/beam|f1 -->18.3<!-- /reproduce --> for the beam. What the table says:
+
+* On these k space gathers the beam alone already reaches <!-- reproduce:@studies/direct_path/results.json:cases[0]/rows/beam/cable_median_db|f1 -->20.1<!-- /reproduce --> dB on the stationary source at 193 m
+  (far less on the leapfrog gathers of the earlier stage 0a, [history](harbor_history.md)). The low end of the band is
+  still where the beam is poorest: its coherence with the true waveform from 100 to 200 Hz is <!-- reproduce:@studies/direct_path/results.json:cases[0]/rows/beam/coherence_by_band/100-200|f2 -->0.53<!-- /reproduce --> on the stationary
+  source at 193 m and <!-- reproduce:@studies/direct_path/results.json:cases[2]/rows/beam/coherence_by_band/100-200|f2 -->0.72<!-- /reproduce --> at 99 m, and the weighting raises it to <!-- reproduce:@studies/direct_path/results.json:cases[0]/rows/weighted/coherence_by_band/100-200|f2 -->0.92<!-- /reproduce --> and <!-- reproduce:@studies/direct_path/results.json:cases[2]/rows/weighted/coherence_by_band/100-200|f2 -->0.88<!-- /reproduce -->.
+* The weighting gains most where the beam is weakest: the stationary source at 29 m, <!-- reproduce:@studies/direct_path/results.json:cases[4]/rows/beam/cable_median_db|f1 -->11.3<!-- /reproduce --> dB with the beam
+  against <!-- reproduce:@studies/direct_path/results.json:cases[4]/rows/weighted/cable_median_db|f1 -->24.2<!-- /reproduce --> weighted and <!-- reproduce:@studies/direct_path/results.json:cases[4]/rows/joint/cable_median_db|f1 -->28.1<!-- /reproduce --> joint. The 10th percentile there stays near <!-- reproduce:@studies/direct_path/results.json:cases[4]/rows/joint/cable_p10_db|f0 -->1<!-- /reproduce --> dB for
+  every estimate from the traces: the channels next to the source.
+* The moving source at 29 m stays below 10 dB with every estimate from the traces (<!-- reproduce:@studies/direct_path/results.json:cases[5]/rows/joint/cable_median_db|f1 -->9.9<!-- /reproduce --> dB joint). Both the
+  waveform and the track limit it: given the true waveform with the estimated track
+  <!-- reproduce:@studies/direct_path/results.json:cases[5]/rows/true_waveform/cable_median_db|f1 -->15.1<!-- /reproduce --> dB, given the exact track as well <!-- reproduce:@studies/direct_path/results.json:cases[5]/rows/true_waveform_exact_track/cable_median_db|f1 -->24.8<!-- /reproduce --> dB.
+* The hydrophones alone are the worst reference (<!-- reproduce:@studies/direct_path/results.json:mean_median_db/hydrophones|f1 -->10.7<!-- /reproduce --> dB mean): four channels average too little noise.
+  `iterated` is the beam again here: these cases have no body, so no echo to subtract.
+* Compute: <!-- reproduce:@studies/direct_path/results.json:cases[0]/rows/beam/compute_s_per_s|f2 -->0.36<!-- /reproduce --> s per second of data for the beam and its ECA, <!-- reproduce:@studies/direct_path/results.json:cases[0]/rows/joint/compute_s_per_s|f2 -->0.49<!-- /reproduce --> for `joint`, <!-- reproduce:@studies/direct_path/results.json:cases[0]/rows/weighted/compute_s_per_s|f2 -->0.58<!-- /reproduce --> for
+  `weighted` (the stationary source at 193 m, Quadro RTX 4000).
+
+### On the recordings
+
+`examples/harbor/05_detection/harbor_direct_path_depth.py` runs the system on the tuning recordings and `multistatic_b`
+with the beam and with `joint` while the truth's direct component of every ship goes through the same projections
+(`stream.run(components=...)`, a diagnostic; the processing never reads it): median / 10th percentile over the live
+cable channels of the depth of each ship's direct path [dB].
+
+<!-- reproduce-table:file:studies/direct_path/recording_depth.md -->
+| Recording | Ship | beam: median / p10 [dB] | joint: median / p10 [dB] |
+|---|---|---|---|
+| simple | boat | 0.9 / 0.9 | 0.9 / 0.8 |
+| simple | ferry | 16.2 / 14.3 | 16.2 / 14.3 |
+| bistatic | ferry | 20.0 / 16.0 | 20.3 / 16.0 |
+| multistatic | boat | 8.6 / 7.0 | 9.2 / 7.4 |
+| multistatic | ferry | 14.6 / 7.6 | 14.6 / 7.8 |
+| multistatic | tug | 8.6 / 8.0 | 8.7 / 8.0 |
+| multistatic_b | boat | 9.5 / 8.0 | 10.4 / 8.4 |
+| multistatic_b | ferry | 9.9 / 8.7 | 10.2 / 8.8 |
+| multistatic_b | tug | 6.3 / 5.6 | 6.3 / 5.6 |
+<!-- /reproduce-table -->
+
+On the recordings the reference is not the limit: `joint` removes each ship's direct path at most
+<!-- reproduce:max:@studies/direct_path/recording_depth.json:*/joint/ships/*/cable_median_db|f1 -->20.3<!-- /reproduce --> dB deep, against <!-- reproduce:max:@studies/direct_path/results.json:cases[*]/rows/joint/cable_median_db|f1 -->28.1<!-- /reproduce --> dB on a lone source, and only
+<!-- reproduce:@studies/direct_path/recording_depth.json:multistatic/joint/ships/tug/cable_median_db|f1 -->8.7<!-- /reproduce --> dB for the multistatic tug and <!-- reproduce:@studies/direct_path/recording_depth.json:multistatic_b/joint/ships/tug/cable_median_db|f1 -->6.3<!-- /reproduce --> dB for the `multistatic_b` tug, within a decibel of the beam everywhere. What differs from
+the stage 0a cases is the other ships: every reference of a ship is formed while the other ships' direct sound is
+still in the traces (they are removed one after the other), and the simple harbor's boat is removed by only
+<!-- reproduce:@studies/direct_path/recording_depth.json:simple/joint/ships/boat/cable_median_db|f1 -->0.9<!-- /reproduce --> dB. That the other ships set the limit is an inference from these two tables, not a separate
+experiment.
+
+### Before and after, on the chain
+
+`scripts/reproduce.py --update` on every recording with `joint` the default of every processing config and nothing
+else changed. Before: `output/studies/direct_path/summary_before.json` (the k space recordings with the beam); after:
+`summary_after.json`. Criteria, fixed before the run (`harbor_direct_path_criteria.py`, `chain_criteria.json`), on the
+test recordings:
+
+* uuv1 tracked with Pd at least 0.5 on the multistatic seeds: <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[0]/values/multistatic_seed1|f2 -->0.00<!-- /reproduce -->, <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[0]/values/multistatic_seed2|f2 -->0.00<!-- /reproduce -->, <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[0]/values/multistatic_seed3|f2 -->0.08<!-- /reproduce -->: **fail**.
+* At least three of the seven static bodies tracked on `multistatic_b`: <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[1]/tracked -->0<!-- /reproduce -->: **fail**. No piling and not the
+  moored hull is tracked on any recording, so the size criterion of stage 2 (hull below piling) is still not testable.
+* No object's Pd falls by more than 3 percentage points: **fail**, <!-- reproduce:count:@studies/direct_path/chain_criteria.json:criteria[2]/values/*/after -->5<!-- /reproduce --> fall: the simple harbor's UUV on seed 1
+  (<!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/simple_seed1?uuv1/before|pct -->23 %<!-- /reproduce --> to <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/simple_seed1?uuv1/after|pct -->0 %<!-- /reproduce -->), its wreck on seed 2 (<!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/simple_seed2?wreck/before|pct -->86 %<!-- /reproduce --> to <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/simple_seed2?wreck/after|pct -->66 %<!-- /reproduce -->), the multistatic uuv1 on seed 2 (<!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/multistatic_seed2?uuv1/before|pct -->30 %<!-- /reproduce --> to
+  <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/multistatic_seed2?uuv1/after|pct -->0 %<!-- /reproduce -->) and uuv2 on seeds 2 and 3 (<!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/multistatic_seed2?uuv2/before|pct -->89 %<!-- /reproduce --> to <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/multistatic_seed2?uuv2/after|pct -->72 %<!-- /reproduce -->, <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/multistatic_seed3?uuv2/before|pct -->86 %<!-- /reproduce --> to <!-- reproduce:@studies/direct_path/chain_criteria.json:criteria[2]/values/multistatic_seed3?uuv2/after|pct -->81 %<!-- /reproduce -->).
+* Compute per second of data at most 1.5 on the 0.5 m recordings: **fail**, <!-- reproduce:range:@studies/direct_path/chain_criteria.json:criteria[3]/values/*|f2 -->1.13 to 2.00<!-- /reproduce --> (before
+  <!-- reproduce:range:@studies/direct_path/summary_before.json:recordings/[bm]*/compute_per_second_of_data/total|f2 -->0.97 to 1.58<!-- /reproduce -->, which already failed it on the multistatic recordings).
+
+What did improve: on `multistatic_b` the two UUVs are tracked by their echo in <!-- reproduce:@studies/direct_path/summary_after.json:recordings/multistatic_b/objects/uuv1/pd/echo|pct -->40 %<!-- /reproduce --> and
+<!-- reproduce:@studies/direct_path/summary_after.json:recordings/multistatic_b/objects/uuv2/pd/echo|pct -->68 %<!-- /reproduce --> of the frames, from <!-- reproduce:@studies/direct_path/summary_before.json:recordings/multistatic_b/objects/uuv1/pd/echo|pct -->27 %<!-- /reproduce --> and <!-- reproduce:@studies/direct_path/summary_before.json:recordings/multistatic_b/objects/uuv2/pd/echo|pct -->45 %<!-- /reproduce -->. False tracks rose on the bistatic recordings
+(<!-- reproduce:range:@studies/direct_path/summary_after.json:recordings/bistatic*/false_tracks/per_minute|f1 -->9.0 to 12.0<!-- /reproduce --> per minute, from <!-- reproduce:range:@studies/direct_path/summary_before.json:recordings/bistatic*/false_tracks/per_minute|f1 -->6.0 to 9.0<!-- /reproduce -->). The silent bodies now tracked are the ones tracked before: the UUVs and the
+wreck; uuv1 of the multistatic seeds is tracked in at most <!-- reproduce:max:@studies/direct_path/summary_after.json:recordings/multistatic_seed*/objects/uuv1/pd/echo|pct -->8 %<!-- /reproduce --> of the frames, and the diver, the pilings and the
+moored hull are not. The rule fixed in advance
+made `joint` the default although it moves the chain this way; the beam is one setting away
+(`--set echo.bistatic.ref_mode=beam`). Every number, before and after (`harbor_numbers_before_after.py --compute`):
+
+<!-- reproduce-table:file:studies/direct_path/before_after.md -->
+| Recording | Compute per s of data before / after | Object (track kind) | Pd before / after | Median error [m] before / after | Moved |
+|---|---|---|---|---|---|
+| simple | 0.71 / 0.84 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| simple | 0.71 / 0.84 | boat (radiator) | 100 % / 100 % | 0.3 / 0.3 |  |
+| simple | 0.71 / 0.84 | uuv1 (echo) | 28 % / 28 % | 2.7 / 2.7 |  |
+| simple | 0.71 / 0.84 | wreck (echo) | 86 % / 86 % | 2.8 / 2.8 |  |
+| simple | 0.71 / 0.84 | false tracks (per minute) | 2 (6.0) / 2 (6.0) | |  |
+| bistatic | 0.97 / 1.47 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| bistatic | 0.97 / 1.47 | uuv1 (echo) | 67 % / 69 % | 1.9 / 1.8 |  |
+| bistatic | 0.97 / 1.47 | false tracks (per minute) | 3 (9.0) / 4 (12.0) | | count |
+| multistatic | 1.39 / 1.79 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| multistatic | 1.39 / 1.79 | tug (radiator) | 100 % / 100 % | 0.7 / 0.7 |  |
+| multistatic | 1.39 / 1.79 | boat (radiator) | 100 % / 100 % | 1.0 / 1.0 |  |
+| multistatic | 1.39 / 1.79 | uuv2 (echo) | 83 % / 81 % | 1.7 / 1.1 | error |
+| multistatic | 1.39 / 1.79 | false tracks (per minute) | 2 (6.0) / 2 (6.0) | |  |
+| harbor | 0.52 / 0.52 | ferry (radiator) | 72 % / 72 % | 1.2 / 1.2 |  |
+| harbor | 0.52 / 0.52 | tug (radiator) | 2 % / 2 % | 2.0 / 2.0 |  |
+| harbor | 0.52 / 0.52 | false tracks (per minute) | 5 (2.5) / 5 (2.5) | |  |
+| simple_seed1 | 0.70 / 0.82 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| simple_seed1 | 0.70 / 0.82 | boat (radiator) | 100 % / 100 % | 0.2 / 0.2 |  |
+| simple_seed1 | 0.70 / 0.82 | uuv1 (echo) | 23 % / 0 % | 2.8 / - | Pd |
+| simple_seed1 | 0.70 / 0.82 | wreck (echo) | 67 % / 67 % | 2.9 / 2.7 |  |
+| simple_seed1 | 0.70 / 0.82 | false tracks (per minute) | 1 (3.0) / 1 (3.0) | |  |
+| simple_seed2 | 0.70 / 0.82 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| simple_seed2 | 0.70 / 0.82 | boat (radiator) | 100 % / 100 % | 0.2 / 0.2 |  |
+| simple_seed2 | 0.70 / 0.82 | uuv1 (echo) | 30 % / 28 % | 3.0 / 3.1 |  |
+| simple_seed2 | 0.70 / 0.82 | wreck (echo) | 86 % / 66 % | 2.8 / 2.8 | Pd |
+| simple_seed2 | 0.70 / 0.82 | false tracks (per minute) | 1 (3.0) / 1 (3.0) | |  |
+| simple_seed3 | 0.70 / 0.82 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| simple_seed3 | 0.70 / 0.82 | boat (radiator) | 100 % / 100 % | 0.2 / 0.2 |  |
+| simple_seed3 | 0.70 / 0.82 | uuv1 (echo) | 25 % / 25 % | 2.6 / 2.6 |  |
+| simple_seed3 | 0.70 / 0.82 | wreck (echo) | 98 % / 97 % | 2.5 / 2.7 |  |
+| simple_seed3 | 0.70 / 0.82 | false tracks (per minute) | 2 (6.0) / 2 (6.0) | |  |
+| bistatic_seed1 | 0.98 / 1.22 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| bistatic_seed1 | 0.98 / 1.22 | uuv1 (echo) | 69 % / 73 % | 1.9 / 1.8 | Pd |
+| bistatic_seed1 | 0.98 / 1.22 | false tracks (per minute) | 2 (6.0) / 3 (9.0) | | count |
+| bistatic_seed2 | 0.99 / 1.13 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| bistatic_seed2 | 0.99 / 1.13 | uuv1 (echo) | 59 % / 59 % | 2.1 / 1.9 |  |
+| bistatic_seed2 | 0.99 / 1.13 | false tracks (per minute) | 2 (6.0) / 3 (9.0) | | count |
+| bistatic_seed3 | 1.07 / 1.13 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| bistatic_seed3 | 1.07 / 1.13 | uuv1 (echo) | 67 % / 66 % | 2.1 / 2.0 |  |
+| bistatic_seed3 | 1.07 / 1.13 | false tracks (per minute) | 2 (6.0) / 4 (12.0) | | count |
+| multistatic_seed1 | 1.58 / 2.00 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| multistatic_seed1 | 1.58 / 2.00 | tug (radiator) | 100 % / 100 % | 0.7 / 0.7 |  |
+| multistatic_seed1 | 1.58 / 2.00 | boat (radiator) | 100 % / 100 % | 0.9 / 0.9 |  |
+| multistatic_seed1 | 1.58 / 2.00 | uuv2 (echo) | 83 % / 81 % | 1.3 / 1.1 |  |
+| multistatic_seed1 | 1.58 / 2.00 | false tracks (per minute) | 2 (6.0) / 2 (6.0) | |  |
+| multistatic_seed2 | 1.40 / 1.85 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| multistatic_seed2 | 1.40 / 1.85 | tug (radiator) | 100 % / 100 % | 0.7 / 0.7 |  |
+| multistatic_seed2 | 1.40 / 1.85 | boat (radiator) | 100 % / 100 % | 0.9 / 0.9 |  |
+| multistatic_seed2 | 1.40 / 1.85 | uuv1 (echo) | 30 % / 0 % | 2.3 / - | Pd |
+| multistatic_seed2 | 1.40 / 1.85 | uuv2 (echo) | 89 % / 72 % | 1.5 / 1.3 | Pd |
+| multistatic_seed2 | 1.40 / 1.85 | false tracks (per minute) | 1 (3.0) / 2 (6.0) | | count |
+| multistatic_seed3 | 1.33 / 1.87 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| multistatic_seed3 | 1.33 / 1.87 | tug (radiator) | 100 % / 100 % | 0.7 / 0.7 |  |
+| multistatic_seed3 | 1.33 / 1.87 | boat (radiator) | 100 % / 100 % | 0.9 / 0.9 |  |
+| multistatic_seed3 | 1.33 / 1.87 | uuv1 (echo) | 0 % / 8 % | - / 1.8 | Pd |
+| multistatic_seed3 | 1.33 / 1.87 | uuv2 (echo) | 86 % / 81 % | 1.7 / 1.8 | Pd |
+| multistatic_seed3 | 1.33 / 1.87 | false tracks (per minute) | 2 (6.0) / 3 (9.0) | | count |
+| harbor_seed1 | 0.52 / 0.52 | ferry (radiator) | 72 % / 72 % | 1.0 / 1.0 |  |
+| harbor_seed1 | 0.52 / 0.52 | tug (radiator) | 6 % / 6 % | 2.0 / 2.0 |  |
+| harbor_seed1 | 0.52 / 0.52 | false tracks (per minute) | 4 (2.0) / 4 (2.0) | |  |
+| harbor_seed2 | 0.53 / 0.53 | ferry (radiator) | 78 % / 78 % | 1.2 / 1.2 |  |
+| harbor_seed2 | 0.53 / 0.53 | tug (radiator) | 9 % / 9 % | 2.0 / 2.0 |  |
+| harbor_seed2 | 0.53 / 0.53 | false tracks (per minute) | 4 (2.0) / 4 (2.0) | |  |
+| harbor_seed3 | 0.53 / 0.53 | ferry (radiator) | 61 % / 61 % | 1.2 / 1.2 |  |
+| harbor_seed3 | 0.53 / 0.53 | tug (radiator) | 6 % / 6 % | 2.0 / 2.0 |  |
+| harbor_seed3 | 0.53 / 0.53 | false tracks (per minute) | 4 (2.0) / 4 (2.0) | |  |
+| multistatic_b | 1.41 / 1.60 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
+| multistatic_b | 1.41 / 1.60 | tug (radiator) | 86 % / 86 % | 0.7 / 0.7 |  |
+| multistatic_b | 1.41 / 1.60 | boat (radiator) | 80 % / 80 % | 0.5 / 0.5 |  |
+| multistatic_b | 1.41 / 1.60 | uuv1 (echo) | 27 % / 40 % | 2.1 / 1.8 | Pd |
+| multistatic_b | 1.41 / 1.60 | uuv2 (echo) | 45 % / 68 % | 1.7 / 2.0 | Pd |
+| multistatic_b | 1.41 / 1.60 | false tracks (per minute) | 6 (6.0) / 7 (7.0) | | count |
+<!-- /reproduce-table -->
 
 ## Walkthrough: from the traces to the harbor picture
 
@@ -201,8 +402,9 @@ track to every reporting ship over time is `04_ais_crosscheck_distance.png`.
 Look at the label of each track: the two AIS ships by name, the boat as a radiator without a report.
 
 **5. Removing the ships' own sound** (`05_direct_path_removal.py`). A silent body is seen only by the ship noise it
-reflects, far below the ship's direct sound. For every strong track the chain forms a reference beam toward it
-and removes the delayed copies of that reference from every channel (ECA, delays following the track). On one channel
+reflects, far below the ship's direct sound. For every strong track the chain estimates the ship's sound as the array
+receives it (the waveform and a scale per channel solved together, [Direct path removal](#direct-path-removal)) and
+removes delayed copies of it from every channel (ECA, delays following the track). On one channel
 (`_trace.png`, `_spectrum.png`) and over every channel:
 
 ![step 5](../output/walkthrough/simple/05_direct_path_removal_channels.png)
@@ -223,7 +425,7 @@ Look at the bright spot on the wreck and the echo tracks over it and over the UU
 **7. The harbor picture** (`07_harbor_picture.py`). Radiator tracks (with their AIS label) and echo tracks over the true
 positions, scored with the stage 2 definitions (Pd per object: `07_harbor_picture_pd.png`, `07_harbor_picture.json`). On
 the multistatic recording the ferry, the tug and the boat are tracked in <!-- reproduce:recordings/multistatic/objects/ferry/pd/radiator|pct -->100 %<!-- /reproduce -->, <!-- reproduce:recordings/multistatic/objects/tug/pd/radiator|pct -->100 %<!-- /reproduce --> and <!-- reproduce:recordings/multistatic/objects/boat/pd/radiator|pct -->100 %<!-- /reproduce --> of the
-frames and the second UUV by its echo in <!-- reproduce:recordings/multistatic/objects/uuv2/pd/echo|pct -->83 %<!-- /reproduce -->; there are <!-- reproduce:recordings/multistatic/false_tracks/radiator -->0<!-- /reproduce --> false radiator tracks and <!-- reproduce:recordings/multistatic/false_tracks/echo -->2<!-- /reproduce --> false echo tracks.
+frames and the second UUV by its echo in <!-- reproduce:recordings/multistatic/objects/uuv2/pd/echo|pct -->81 %<!-- /reproduce -->; there are <!-- reproduce:recordings/multistatic/false_tracks/radiator -->0<!-- /reproduce --> false radiator tracks and <!-- reproduce:recordings/multistatic/false_tracks/echo -->2<!-- /reproduce --> false echo tracks.
 
 ![step 7](../output/walkthrough/multistatic/07_harbor_picture_map.png)
 
@@ -275,44 +477,44 @@ is a check of the measurement, not of the physics of real hulls.
 | multistatic | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.26 (1) | 9.2 x 2.3 | 4.0 (4.0) |
 | multistatic | tug | ship, - | own noise 66 | 66 | - | - | - | 0.83 (0.7) | 15.5 x 3.5 | 3.0 (3.0) |
 | multistatic | boat | ship, - | own noise 66 | 66 | - | - | - | 0.59 (0.3) | 46.9 x 6.2 | 5.0 (5.0) |
-| multistatic | uuv2 | uuv, 3 x 1 m | echo 53 | 53 | -8.1 | about a wavelength or larger | 4.6 / 4.1 | - | 6.9 x 2.3 | 1.5 (1.5) |
+| multistatic | uuv2 | uuv, 3 x 1 m | echo 52 | 52 | -9.3 | about a wavelength or larger | 4.8 / 5.0 | - | 6.9 x 2.3 | 1.4 (1.5) |
 | multistatic_b | ferry | ship, - | own noise 226 | 226 | - | - | - | 1.15 (1) | 11.6 x 3.7 | 3.4 (3.5) |
 | multistatic_b | tug | ship, - | own noise 194 | 194 | - | - | - | 0.73 (0.7) | 32.8 x 4.5 | 2.5 (2.5) |
 | multistatic_b | boat | ship, - | own noise 197 | 180 | - | - | - | 0.45 (0.3) | 21.2 x 4.4 | 4.3 (3.7) |
-| multistatic_b | uuv1 | uuv, 3 x 1 m | echo 143 | 60 | -5.9 | about a wavelength or larger | 6.5 / 7.2 | - | 9.6 x 3.6 | 1.7 (1.7) |
-| multistatic_b | uuv2 | uuv, 3 x 1 m | echo 190 | 101 | -2.1 | about a wavelength or larger | 3.8 / 6.0 | - | 6.9 x 4.2 | 1.3 (1.2) |
+| multistatic_b | uuv1 | uuv, 3 x 1 m | echo 161 | 89 | -6.7 | about a wavelength or larger | 5.7 / 4.8 | - | 9.6 x 4.3 | 1.9 (1.7) |
+| multistatic_b | uuv2 | uuv, 3 x 1 m | echo 172 | 152 | -3.0 | about a wavelength or larger | 2.9 / 3.7 | - | 4.6 x 2.3 | 0.9 (1.2) |
 | simple | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.09 (1) | 5.2 x 3.5 | 4.0 (4.0) |
 | simple | boat | ship, - | own noise 66 | 66 | - | - | - | 0.28 (0.3) | 4.6 x 2.3 | 2.5 (2.5) |
-| simple | uuv1 | uuv, 6 x 2 m | echo 18 | 18 | -4.7 | about a wavelength or larger | 4.1 / 3.5 | - | 4.9 x 2.3 | 1.4 (1.5) |
-| simple | wreck | static, 4 x 4 m | echo 64, own noise 32 | 55 | -4.8 | about a wavelength or larger | 3.5 / 4.8 | 0.18 (0) | 4.6 x 4.6 | 0.2 (0.0) |
+| simple | uuv1 | uuv, 6 x 2 m | echo 18 | 18 | -4.4 | about a wavelength or larger | 4.1 / 3.5 | - | 4.9 x 2.3 | 1.4 (1.5) |
+| simple | wreck | static, 4 x 4 m | echo 64, own noise 32 | 55 | -4.4 | about a wavelength or larger | 3.5 / 4.8 | 0.18 (0) | 4.6 x 4.6 | 0.2 (0.0) |
 | simple_seed1 | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.07 (1) | 5.2 x 3.5 | 4.0 (4.0) |
 | simple_seed1 | boat | ship, - | own noise 66 | 66 | - | - | - | 0.28 (0.3) | 4.6 x 2.3 | 2.5 (2.5) |
-| simple_seed1 | uuv1 | uuv, 6 x 2 m | echo 16 | 15 | -11.5 | about a wavelength or larger | 3.4 / 3.5 | - | 4.6 x 2.3 | 1.4 (1.5) |
 | simple_seed1 | wreck | static, 4 x 4 m | echo 64, own noise 34 | 43 | -5.0 | about a wavelength or larger | 3.5 / 4.8 | 0.18 (0) | 5.2 x 3.5 | 0.2 (0.0) |
 | bistatic | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.32 (1) | 6.9 x 2.3 | 4.0 (4.0) |
-| bistatic | uuv1 | uuv, 3 x 1 m | own noise 29, echo 43 | 55 | -1.2 | about a wavelength or larger | 3.9 / 3.1 | 0.17 (0) | 8.8 x 2.9 | 2.0 (2.0) |
+| bistatic | uuv1 | uuv, 3 x 1 m | own noise 29, echo 44 | 56 | +1.6 | smaller than about a wavelength | 3.9 / 2.9 | 0.17 (0) | 7.7 x 2.9 | 1.9 (2.0) |
 | bistatic_seed1 | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.36 (1) | 6.9 x 2.3 | 4.0 (4.0) |
-| bistatic_seed1 | uuv1 | uuv, 3 x 1 m | own noise 28, echo 44 | 44 | -0.5 | about a wavelength or larger | 3.9 / 3.0 | 0.18 (0) | 7.7 x 2.9 | 2.1 (2.0) |
+| bistatic_seed1 | uuv1 | uuv, 3 x 1 m | own noise 28, echo 47 | 47 | +2.6 | smaller than about a wavelength | 3.9 / 2.9 | 0.18 (0) | 7.7 x 2.9 | 2.1 (2.0) |
 <!-- /reproduce-table -->
 
 What the characteristics get right and wrong:
 
 * **Speed** of the tracked ships against the truth (table above): the multistatic boat <!-- reproduce:characteristics/multistatic[object=boat]/median/speed|f1 -->5.0<!-- /reproduce --> m/s against
   <!-- reproduce:characteristics/multistatic[object=boat]/true_speed|f1 -->5.0<!-- /reproduce -->, the `multistatic_b` ferry <!-- reproduce:characteristics/multistatic_b[object=ferry]/median/speed|f1 -->3.4<!-- /reproduce --> against <!-- reproduce:characteristics/multistatic_b[object=ferry]/true_speed|f1 -->3.5<!-- /reproduce --> and boat <!-- reproduce:characteristics/multistatic_b[object=boat]/median/speed|f1 -->4.3<!-- /reproduce --> against <!-- reproduce:characteristics/multistatic_b[object=boat]/true_speed|f1 -->3.7<!-- /reproduce -->; the UUVs
-  tracked by their echo <!-- reproduce:range:characteristics/*[object=uuv*]/median/speed|f1 -->1.3 to 2.1<!-- /reproduce --> m/s against <!-- reproduce:range:characteristics/*[object=uuv*]/true_speed|f1 -->1.2 to 2.0<!-- /reproduce -->.
+  tracked by their echo <!-- reproduce:range:characteristics/*[object=uuv*]/median/speed|f1 -->0.9 to 2.1<!-- /reproduce --> m/s against <!-- reproduce:range:characteristics/*[object=uuv*]/true_speed|f1 -->1.2 to 2.0<!-- /reproduce -->.
 * **Source level** at 100 m against the truth (table below): <!-- reproduce:range:source_levels[recording=simple*]/error_db|+f1 -->-0.9 to +0.8<!-- /reproduce --> dB on the simple harbor, where the constant
   was calibrated; <!-- reproduce:range:source_levels[recording=bistatic*]/error_db|+f1 -->+2.4 to +2.7<!-- /reproduce --> dB for the bistatic ferry; <!-- reproduce:range:source_levels[recording=multistatic*][object=ferry,tug]/error_db|+f1 -->+0.3 to +2.5<!-- /reproduce --> dB for the multistatic ferry and
   tug and <!-- reproduce:range:source_levels[recording=multistatic*][object=boat]/error_db|+f1 -->+3.5 to +6.2<!-- /reproduce --> dB for the multistatic boat, the quietest ship, whose map peak shares energy with the
   louder ships' sidelobes. The constant from the simple harbor does not carry to the 5 m harbor
   (<!-- reproduce:range:source_levels[recording=harbor*]/error_db|+f1 -->+13.6 to +14.0<!-- /reproduce --> dB: another grid, band and signature spectrum).
-* **Size indicator**: every body tracked by its echo in the table is called "about a wavelength or larger": the
-  simple harbor's 4 m wreck (<!-- reproduce:characteristics/simple[object=wreck]/median/size_ratio_db|+f1 -->-4.8<!-- /reproduce --> and <!-- reproduce:characteristics/simple_seed1[object=wreck]/median/size_ratio_db|+f1 -->-5.0<!-- /reproduce --> dB; wavelengths 4 to 15 m there), but also its 6 x 2 m
-  UUV (<!-- reproduce:characteristics/simple[object=uuv1]/median/size_ratio_db|+f1 -->-4.7<!-- /reproduce --> and <!-- reproduce:characteristics/simple_seed1[object=uuv1]/median/size_ratio_db|+f1 -->-11.5<!-- /reproduce --> dB) and the 1 x 3 m UUVs of the bistatic recording (<!-- reproduce:characteristics/bistatic[object=uuv1]/median/size_ratio_db|+f1 -->-1.2<!-- /reproduce --> and
-  <!-- reproduce:characteristics/bistatic_seed1[object=uuv1]/median/size_ratio_db|+f1 -->-0.5<!-- /reproduce --> dB) and of the multistatic recordings (<!-- reproduce:range:characteristics/multistatic*[object=uuv*]/median/size_ratio_db|+f1 -->-8.1 to -2.1<!-- /reproduce --> dB). On these recordings it does not separate a
-  body smaller than the wavelength from one larger. The criterion of the stage (hull below piling) is untestable
-  because neither is tracked.
+* **Size indicator**: the simple harbor's 4 m wreck is called "about a wavelength or larger"
+  (<!-- reproduce:characteristics/simple[object=wreck]/median/size_ratio_db|+f1 -->-4.4<!-- /reproduce --> and <!-- reproduce:characteristics/simple_seed1[object=wreck]/median/size_ratio_db|+f1 -->-5.0<!-- /reproduce --> dB; wavelengths 4 to 15 m there), and so are its 6 x 2 m UUV
+  (<!-- reproduce:characteristics/simple[object=uuv1]/median/size_ratio_db|+f1 -->-4.4<!-- /reproduce --> dB on the tuning recording) and the 1 x 3 m UUVs of the multistatic recordings (<!-- reproduce:range:characteristics/multistatic*[object=uuv*]/median/size_ratio_db|+f1 -->-9.3 to -3.0<!-- /reproduce --> dB),
+  while the same 1 x 3 m UUV on the bistatic recording is called "smaller than about a wavelength"
+  (<!-- reproduce:characteristics/bistatic[object=uuv1]/median/size_ratio_db|+f1 -->+1.6<!-- /reproduce --> and <!-- reproduce:characteristics/bistatic_seed1[object=uuv1]/median/size_ratio_db|+f1 -->+2.6<!-- /reproduce --> dB). One body called both ways: on these recordings the indicator does not
+  separate a body smaller than the wavelength from one larger. The criterion of the stage (hull below piling) is
+  untestable because neither is tracked.
 * **How it is seen**: the bistatic UUV is reported "seen both ways" (by its own noise in
-  <!-- reproduce:characteristics/bistatic[object=uuv1]/seen/own noise -->29<!-- /reproduce --> frames, by its echo in <!-- reproduce:characteristics/bistatic[object=uuv1]/seen/echo -->43<!-- /reproduce -->): the passive chain locates the ferry's echo off it and the radiator
+  <!-- reproduce:characteristics/bistatic[object=uuv1]/seen/own noise -->29<!-- /reproduce --> frames, by its echo in <!-- reproduce:characteristics/bistatic[object=uuv1]/seen/echo -->44<!-- /reproduce -->): the passive chain locates the ferry's echo off it and the radiator
   tracker tracks that, so a silent body is labelled as radiating. The same mechanism makes the simple harbor's wreck
   "seen both ways" (own noise in <!-- reproduce:characteristics/simple[object=wreck]/seen/own noise -->32<!-- /reproduce --> frames, echo in <!-- reproduce:characteristics/simple[object=wreck]/seen/echo -->64<!-- /reproduce -->).
 * **Half maximum widths** are <!-- reproduce:range:characteristics/simple*[*]/median/width_major|f1 -->4.6 to 5.2<!-- /reproduce --> m along their major axis on the simple harbor's loop and

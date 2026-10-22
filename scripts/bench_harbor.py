@@ -78,9 +78,9 @@ from acoustic_sim.sources import CustomTrajectorySource  # noqa: E402
 
 BISTATIC_SCENARIO = ROOT / "examples" / "configs" / "harbor_bistatic.scenario.json"
 MULTISTATIC_SCENARIO = ROOT / "examples" / "configs" / "harbor_multistatic.scenario.json"
-DATA_ROOT = Path(__import__("os").environ.get("BENCH_DATA_ROOT", ROOT))      # where output/recordings/bistatic and output/studies/history/harbor_cancellation_depth live
+DATA_ROOT = Path(__import__("os").environ.get("BENCH_DATA_ROOT", ROOT))      # where output/recordings/bistatic and output/studies/direct_path live
 FINE_DATASET = DATA_ROOT / "output" / "recordings" / "bistatic" / "dataset.npz"
-CANCEL_CACHE = DATA_ROOT / "output" / "studies" / "history" / "harbor_cancellation_depth" / "cache"
+CANCEL_CACHE = DATA_ROOT / "output" / "studies" / "direct_path" / "cache"
 
 FDTD_CASES = {
     # name: (scenario, total_time, bodies)

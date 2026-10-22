@@ -47,6 +47,7 @@ from acoustic_sim.water.sensors import SensorLayout
 METHODS = ("bartlett", "bartlett_phat", "coherent", "mvdr", "music")
 REMOVALS = ("none", "eca", "patch", "adaptive", "patch+adaptive")
 REFERENCES = ("data", "true_waveform")
+REF_MODES = ("beam", "weighted", "weighted_cable", "hydrophones", "iterated", "joint")
 IMPLS = ("reference", "vectorized")
 MAP_SCALES = ("max", "none")
 ECA_GRAMS = ("matmul", "prefix")
@@ -99,6 +100,22 @@ class BistaticConfig:
         jittery track against 24 dB with the exact one for the ship at 4 m/s).  0: no smoothing.
     ref_channels : str
         Channels for the data reference beam: ``"all"`` or a cable name or ``"hydrophones"``.
+    ref_mode : str
+        How the data reference is estimated from the traces (:func:`estimate_reference`; ``reference == "data"``
+        with per sample delays only).  ``"beam"``: the delay and sum of the channels toward the tracked ship.
+        ``"weighted"``: each channel and frequency weighted by its modelled response to the ship (the chain's
+        propagator at the tracked position: the Green's function for a pressure channel, its second difference
+        along the cable for a strain channel) over its noise power, estimated from the residual of a first
+        pass (the beam and the ECA): the maximum ratio combination.  ``"weighted_cable"``: the same on the cable
+        channels only.  ``"hydrophones"``: the same on the hydrophones only.  ``"iterated"``: ``"weighted"``,
+        the ECA, the modelled echo of every body given (the echo tracks) subtracted from the traces, then the
+        beam again.  ``"joint"``: the waveform and one scale per channel solved together by alternating least
+        squares over every block (the direct path of every channel a scaled copy of one waveform at the
+        track's delays), from the beam, ``ref_iterations`` times.
+    ref_iterations : int
+        Alternations of ``"joint"``.
+    ref_psd_s : float
+        Segment length [s] of the noise power estimate of the weighted modes (Welch).
     patch_half, svd_rtol : float
         Patch half width [m] (3 x 3 points) and singular value cut of the patch replicas.
     adaptive_rank, adaptive_window : int
@@ -171,6 +188,9 @@ class BistaticConfig:
     eca_doppler: bool = False
     track_smooth_s: float = 0.0
     ref_channels: str = "all"
+    ref_mode: str = "beam"
+    ref_iterations: int = 3
+    ref_psd_s: float = 0.5
     patch_half: float = 1.0
     svd_rtol: float = 0.05
     adaptive_rank: int = 2
@@ -198,6 +218,8 @@ class BistaticConfig:
             raise ValueError(f"reference must be one of {REFERENCES}, got {self.reference!r}")
         if self.impl not in IMPLS:
             raise ValueError(f"impl must be one of {IMPLS}, got {self.impl!r}")
+        if self.ref_mode not in REF_MODES:
+            raise ValueError(f"ref_mode must be one of {REF_MODES}, got {self.ref_mode!r}")
         if self.eca_gram not in ECA_GRAMS:
             raise ValueError(f"eca_gram must be one of {ECA_GRAMS}, got {self.eca_gram!r}")
         if self.map_scale not in MAP_SCALES:
@@ -618,6 +640,198 @@ def make_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_xy:
         w = np.sum(np.abs(seg) ** 2, axis=1) > 0
         out[lo:hi] = seg[w, lo - a:hi - a].mean(axis=0)
     return out
+
+
+# ----------------------------------------------------------------------
+# Reference estimators (BistaticConfig.ref_mode)
+# ----------------------------------------------------------------------
+
+def _aligned_rows(x, rec: np.ndarray, ship_t: np.ndarray, fs: float, bc: BistaticConfig, chunk: int = 16):
+    """Every row of *x* (N, n) advanced by its per sample range to the ship (the terms of the delay and sum of
+    :func:`_reference_doppler_vectorized`, kept apart): row ``i`` at ``t`` is ``x_i(t + |s(t) - r_i| / c)``.
+    Returns an array of ``_xp(bc)``."""
+    xp = _xp(bc)
+    n = x.shape[1]
+    up_n = n * UPSAMPLE
+    grid = xp.arange(up_n, dtype=float)
+    ship_d, rec_d = xp.asarray(ship_t), xp.asarray(rec)
+    j = xp.arange(n, dtype=float)
+    out = xp.zeros((x.shape[0], n))
+    for c0 in range(0, x.shape[0], chunk):
+        xc = x[c0:c0 + chunk]
+        if xp is np:
+            up = resample(np.asarray(xc, dtype=np.float64), up_n, axis=1)
+        else:
+            from cupyx.scipy.signal import resample as cp_resample
+
+            up = cp_resample(xp.asarray(xc, dtype=np.float64), up_n, axis=1)
+        adv = xp.hypot(ship_d[None, :, 0] - rec_d[c0:c0 + chunk, None, 0], ship_d[None, :, 1] - rec_d[c0:c0 + chunk, None, 1]) / bc.c * fs
+        pos = (j[None, :] + adv) * UPSAMPLE
+        for i in range(up.shape[0]):
+            out[c0 + i] = xp.interp(pos[i], grid, up[i], left=0.0, right=0.0)
+    return out
+
+
+def channel_response(layout: SensorLayout, ship_xy: np.ndarray, freqs: np.ndarray, bc: BistaticConfig,
+                     chans: np.ndarray) -> np.ndarray:
+    """Modelled response (F, Nc) of the channels *chans* to a unit source at *ship_xy* at *freqs* [Hz], with the
+    delay to the channel's position removed: ``collapse(G(k |p - s|)) exp(+i k |r_i - s|)`` through the chain's
+    propagator (the Green's function for a pressure channel, its second difference along the cable for a strain
+    channel).  What remains is the amplitude and the phase of the channel's response that a delay and sum
+    ignores."""
+    model = ReplicaModel(layout, bc.c, propagator=bc.propagator)
+    ks = 2.0 * np.pi * np.asarray(freqs, dtype=float) / bc.c
+    H = np.asarray(_asnumpy(model.many(np.atleast_2d(ship_xy), ks)))[:, 0, :][:, chans]          # (F, Nc)
+    r = np.hypot(*(layout.receivers[chans] - np.asarray(ship_xy)[None, :]).T)
+    return H * np.exp(1j * ks[:, None] * r[None, :])
+
+
+def residual_psd(residual: np.ndarray, fs: float, freqs: np.ndarray, seg_s: float) -> np.ndarray:
+    """Noise power (Nc, F) of every row of *residual* at *freqs*: Welch with *seg_s* second Hann segments,
+    interpolated; floored at a millionth of the median so a dead row does not divide by zero."""
+    from scipy.signal import welch
+
+    nper = min(int(round(seg_s * fs)), residual.shape[1])
+    f, P = welch(np.asarray(residual, dtype=np.float64), fs=fs, nperseg=nper, axis=1)
+    out = np.stack([np.interp(freqs, f, p) for p in P])
+    return np.maximum(out, 1e-6 * max(float(np.median(out)), 1e-300))
+
+
+def _band_filter_blocks(Y, W_blocks: list[np.ndarray], wf: np.ndarray, nb: int, fs: float, bc: BistaticConfig,
+                        pad_s: float = 0.25):
+    """``sum_i W_i * Y_i`` per block: block ``b`` of the output is the block of the rows of *Y* (Nc, n) filtered
+    by ``W_blocks[b]`` (F, Nc), given at the frequencies *wf* and zero outside them, and summed over rows."""
+    xp = _xp(bc)
+    n = Y.shape[1]
+    pad = int(round(pad_s * fs))
+    out = xp.zeros(n)
+    for b, Wb in enumerate(W_blocks):
+        lo, hi = b * nb, min((b + 1) * nb, n)
+        if hi <= lo:
+            break
+        a, z = max(lo - pad, 0), min(hi + pad, n)
+        L = z - a
+        f = np.fft.rfftfreq(L, 1.0 / fs)
+        inb = (f >= wf[0]) & (f <= wf[-1])
+        Wf = np.zeros((len(f), Wb.shape[1]), dtype=complex)
+        Wf[inb] = np.stack([np.interp(f[inb], wf, Wb[:, i].real) + 1j * np.interp(f[inb], wf, Wb[:, i].imag)
+                            for i in range(Wb.shape[1])], axis=1)
+        spec = xp.fft.rfft(Y[:, a:z], axis=1)                                                     # (Nc, F)
+        seg = xp.fft.irfft(xp.sum(spec * xp.asarray(Wf.T), axis=0), L)
+        out[lo:hi] = seg[lo - a:hi - a]
+    return out
+
+
+def _joint_reference(Y, sig2: np.ndarray, init, nb: int, iterations: int, bc: BistaticConfig):
+    """Alternating least squares per block: ``Y_i(t) = a_i s(t) + n_i(t)`` with ``var n_i = sig2_i``; the scales
+    ``a_i = <Y_i, s> / <s, s>``, then the waveform ``s = sum_i a_i Y_i / sig2_i / sum_i a_i^2 / sig2_i``, from
+    *init*, *iterations* times (the rank one fit of the aligned, noise whitened channels)."""
+    xp = _xp(bc)
+    n = Y.shape[1]
+    w = xp.asarray(1.0 / np.maximum(sig2, 1e-300))
+    out = xp.array(init, copy=True)
+    for lo in range(0, n, nb):
+        hi = min(lo + nb, n)
+        Yb, s = Y[:, lo:hi], out[lo:hi]
+        for _ in range(iterations):
+            a = (Yb @ s) / max(float(s @ s), 1e-300)
+            den = float(xp.sum(a * a * w))
+            if den <= 0:
+                break
+            s = ((a * w) @ Yb) / den
+        out[lo:hi] = s
+    return out
+
+
+def _mode_channels(layout: SensorLayout, chans: np.ndarray, mode: str) -> np.ndarray:
+    chans = np.asarray(chans)
+    if mode == "hydrophones":
+        sl = layout.slices.get("hydrophones")
+        return chans[(chans >= sl.start) & (chans < sl.stop)] if sl is not None else chans[:0]
+    if mode == "weighted_cable":
+        keep = np.zeros(layout.n_receivers, bool)
+        for c in layout.cables:
+            sl = layout.slices[c.name]
+            keep[sl] = True
+        return chans[keep[chans]]
+    return chans
+
+
+def estimate_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_b: np.ndarray, bc: BistaticConfig,
+                       chans: np.ndarray, ship_t: np.ndarray, blocks: set[int] | None = None,
+                       bodies: list[np.ndarray] | None = None, info: dict | None = None) -> np.ndarray:
+    """The data reference of ``bc.ref_mode`` (:class:`BistaticConfig`), aligned to the emission time, shape (n,).
+
+    *ship_b* (K_b, 2): the tracked ship position per ECA block; *ship_t* (n, 2): per sample; *chans*: the live
+    channels; *blocks*: the ECA blocks whose residual estimates the noise power (default: all); *bodies*: the
+    positions (2,) of the echo tracks whose modelled echo ``"iterated"`` subtracts.  Nothing here reads the truth.
+    *info*, when given, receives the intermediate products (``"psd"``, ``"freqs"``, ``"channels"``)."""
+    mode = bc.ref_mode
+    beam = replace(bc, reference="data", ref_mode="beam")
+    if mode == "beam":
+        return make_reference(traces, layout, fs, ship_b, bc.eca_block_s, beam, chans, ship_t=ship_t)
+    xp = _xp(bc)
+    nb = int(round(bc.eca_block_s * fs))
+    x = np.asarray(traces, dtype=np.float64)
+    # First pass: the beam and the ECA; the residual is the noise of every channel.
+    ref0 = make_reference(x, layout, fs, ship_b, bc.eca_block_s, beam, chans, ship_t=ship_t)
+    res = eca_remove([x], ref0, layout, fs, ship_b, [], bc.eca_block_s, beam, ship_t=ship_t, blocks=blocks)[0]
+    if blocks:
+        cols = np.concatenate([np.arange(b * nb, min((b + 1) * nb, x.shape[1])) for b in sorted(blocks)])
+    else:
+        cols = np.arange(x.shape[1])
+    chans = np.sort(np.asarray(chans))
+    use = _mode_channels(layout, chans, "weighted" if mode in ("iterated", "joint") else mode)
+    if len(use) == 0:
+        raise ValueError(f"ref_mode {mode!r}: no live channel of that kind")
+    # The weights cover the whole spectrum, not only the processing band: the direct path has energy outside the band
+    # and a reference without it leaves that energy in every channel (measured on the analytic case: the true
+    # waveform limited to 100 to 600 Hz removes 14 dB of a direct path in 80 to 700 Hz, unlimited 69 dB).
+    df = 1.0 / bc.ref_psd_s
+    wf = np.arange(df, 0.49 * fs, df)
+    psd = residual_psd(res[use][:, cols], fs, wf, bc.ref_psd_s)                                     # (Nc, F)
+    if info is not None:
+        info.update(psd=psd, freqs=wf, channels=use)
+    Y = _aligned_rows(x[use], layout.receivers[use], ship_t, fs, bc)
+    if mode == "joint":
+        sig2 = np.mean(psd[:, (wf >= bc.f_lo) & (wf <= bc.f_hi)], axis=1)
+        return _asnumpy(_joint_reference(Y, sig2, xp.mean(Y, axis=0), nb, bc.ref_iterations, bc))
+    # Maximum ratio combination: the emitted waveform estimated as sum_i conj(A_i) X_i / N_i / sum_i |A_i|^2 / N_i,
+    # then given the response the beam of every live channel has to it (the mean of A over *chans*), so that the
+    # reference is the ship's sound as the array receives it, with the least noise.  Without the second factor the
+    # reference's spectrum is sum |A|^2 / N (a strain cable: the fourth power of frequency), which the ECA's short
+    # filters cannot undo (measured on the analytic case: 21 dB against 23 dB for the beam despite the higher
+    # coherence; the hydrophones alone 6 dB).
+    coarse = wf[::4] if len(wf) > 8 else wf                     # the response without its delay is smooth in frequency
+    pos = np.searchsorted(chans, use)
+    W = []
+    for b in range(len(ship_b)):
+        A = channel_response(layout, ship_b[b], coarse, bc, chans)
+        A = np.stack([np.interp(wf, coarse, A[:, i].real) + 1j * np.interp(wf, coarse, A[:, i].imag) for i in range(A.shape[1])], axis=1)
+        Au = A[:, pos]
+        mrc = np.conj(Au) / psd.T
+        den = np.sum(mrc * Au, axis=1).real
+        W.append(mrc * (np.mean(A, axis=1) / np.maximum(den, 1e-300))[:, None])
+    ref = _band_filter_blocks(Y, W, wf, nb, fs, bc)
+    ref = _asnumpy(ref)
+    if mode != "iterated":
+        return ref
+    # Iterated: the echo of every body modelled on the residual of the weighted reference and subtracted from the
+    # traces, then the beam again.
+    res1 = eca_remove([x], ref, layout, fs, ship_b, [], bc.eca_block_s, beam, ship_t=ship_t, blocks=blocks)[0]
+    clean = x
+    for body in bodies or []:
+        body = np.asarray(body, dtype=float)
+        extra = np.hypot(*(ship_t - body[None, :]).T) / bc.c * fs                                    # source to body [samples]
+        j = np.arange(x.shape[1], dtype=float)
+        shifted = _resample_at(ref, j - extra)
+        body_t = np.repeat(body[None, :], x.shape[1], axis=0)
+        body_b = np.repeat(body[None, :], len(ship_b), axis=0)
+        res2 = eca_remove([res1], shifted, layout, fs, body_b, [], bc.eca_block_s, beam, ship_t=body_t, blocks=blocks)[0]
+        echo = res1 - res2
+        clean = clean - echo
+        res1 = res2
+    return make_reference(clean, layout, fs, ship_b, bc.eca_block_s, beam, chans, ship_t=ship_t)
 
 
 @dataclass
@@ -1245,8 +1459,10 @@ def eca_stage(
     bc: BistaticConfig,
     true_waveform: np.ndarray | None = None,
     components: list[np.ndarray] | tuple = (),
+    bodies: list[np.ndarray] | None = None,
 ) -> tuple[list[np.ndarray], np.ndarray]:
-    """Time domain direct path removal of :func:`run_bistatic`: reference, image lags, ECA.
+    """Time domain direct path removal of :func:`run_bistatic`: reference (``bc.ref_mode``, :func:`estimate_reference`;
+    *bodies* for ``"iterated"``), image lags, ECA.
 
     The ship position of every ECA block is interpolated from ``ship.refined`` (and, with
     ``bc.eca_doppler``, the position of every sample).  The same projection is applied to
@@ -1267,7 +1483,12 @@ def eca_stage(
     else:
         sl = layout.slices[bc.ref_channels]
         chans = np.arange(sl.start, sl.stop)[sp.weights[sl] > 0]
-    waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, true_waveform, ship_t=ship_t)
+    if bc.reference == "data" and bc.ref_mode != "beam":
+        if ship_t is None:
+            raise ValueError(f"ref_mode {bc.ref_mode!r} needs eca_doppler (per sample delays)")
+        waveform = estimate_reference(traces, layout, fs, ship_b, bc, chans, ship_t, bodies=bodies)
+    else:
+        waveform = make_reference(traces, layout, fs, ship_b, bc.eca_block_s, bc, chans, true_waveform, ship_t=ship_t)
     images = [clutter_images(env, sxy) for sxy in ship_b] if bc.eca_images else []
     outs = eca_remove([traces] + list(components), waveform, layout, fs, ship_b, images, bc.eca_block_s, bc, ship_t=ship_t)
     return outs, waveform
