@@ -1,0 +1,190 @@
+{
+  "gpu": "Quadro RTX 4000",
+  "note": "one run of the first illuminator, warmed up, solver.run() timed alone (median of the timed runs); memory: peak of CuPy's pool over the run (the desktop held about 1.3 GB of the 8 GB card besides)",
+  "recordings": {
+    "simple": {
+      "grid": [
+        401,
+        501
+      ],
+      "dx": 1.0,
+      "fs": 3000.0,
+      "steps": 6000,
+      "sample_points": 299,
+      "bodies": 2,
+      "source": "ferry",
+      "cases": {
+        "float64, no bodies": {
+          "ms_per_step": 1.4476499696666754,
+          "runs_ms_per_step": [
+            1.417730403333356,
+            1.4775695359999947
+          ],
+          "pool_peak_mb": 43.8310546875
+        },
+        "float64, bodies": {
+          "ms_per_step": 1.5565682419166553,
+          "runs_ms_per_step": [
+            1.5598314988333186,
+            1.5533049849999923
+          ],
+          "pool_peak_mb": 44.21728515625
+        },
+        "float32, no bodies": {
+          "ms_per_step": 0.25823571466666334,
+          "runs_ms_per_step": [
+            0.27168878816667075,
+            0.2447826411666559
+          ],
+          "pool_peak_mb": 21.94140625
+        },
+        "float32, bodies": {
+          "ms_per_step": 0.2895336684166523,
+          "runs_ms_per_step": [
+            0.2675970004999802,
+            0.3114703363333244
+          ],
+          "pool_peak_mb": 22.32763671875
+        }
+      }
+    },
+    "bistatic": {
+      "grid": [
+        601,
+        801
+      ],
+      "dx": 0.5,
+      "fs": 6000.0,
+      "steps": 12000,
+      "sample_points": 592,
+      "bodies": 1,
+      "source": "ferry",
+      "cases": {
+        "float64, no bodies": {
+          "ms_per_step": 2.529525457874996,
+          "runs_ms_per_step": [
+            2.5597298997500006,
+            2.4993210159999912
+          ],
+          "pool_peak_mb": 107.8291015625
+        },
+        "float64, bodies": {
+          "ms_per_step": 2.592327896625003,
+          "runs_ms_per_step": [
+            2.6029318107500026,
+            2.581723982500004
+          ],
+          "pool_peak_mb": 108.21923828125
+        },
+        "float32, no bodies": {
+          "ms_per_step": 0.4580947814999945,
+          "runs_ms_per_step": [
+            0.4573542096666567,
+            0.4588353533333323
+          ],
+          "pool_peak_mb": 53.962890625
+        },
+        "float32, bodies": {
+          "ms_per_step": 0.45920159154166146,
+          "runs_ms_per_step": [
+            0.46281032475000455,
+            0.4555928583333184
+          ],
+          "pool_peak_mb": 54.35302734375
+        }
+      }
+    },
+    "multistatic_b": {
+      "grid": [
+        601,
+        801
+      ],
+      "dx": 0.5,
+      "fs": 6000.0,
+      "steps": 12000,
+      "sample_points": 592,
+      "bodies": 10,
+      "source": "ferry",
+      "cases": {
+        "float64, no bodies": {
+          "ms_per_step": 2.519690781833333,
+          "runs_ms_per_step": [
+            2.5092572234999957,
+            2.53012434016667
+          ],
+          "pool_peak_mb": 107.8291015625
+        },
+        "float64, bodies": {
+          "ms_per_step": 2.5538228041666757,
+          "runs_ms_per_step": [
+            2.543172028583342,
+            2.5644735797500102
+          ],
+          "pool_peak_mb": 111.6181640625
+        },
+        "float32, no bodies": {
+          "ms_per_step": 0.44308199508333246,
+          "runs_ms_per_step": [
+            0.4423470811666637,
+            0.4438169090000012
+          ],
+          "pool_peak_mb": 53.962890625
+        },
+        "float32, bodies": {
+          "ms_per_step": 0.48246570612499795,
+          "runs_ms_per_step": [
+            0.4826929763333207,
+            0.4822384359166752
+          ],
+          "pool_peak_mb": 57.751953125
+        }
+      }
+    },
+    "harbor": {
+      "grid": [
+        361,
+        481
+      ],
+      "dx": 5.0,
+      "fs": 600.0,
+      "steps": 1200,
+      "sample_points": 129,
+      "bodies": 1,
+      "source": "ferry",
+      "cases": {
+        "float64, no bodies": {
+          "ms_per_step": 0.6676429929165314,
+          "runs_ms_per_step": [
+            0.6754150516665428,
+            0.6598709341665199
+          ],
+          "pool_peak_mb": 27.09130859375
+        },
+        "float64, bodies": {
+          "ms_per_step": 0.6704562916667101,
+          "runs_ms_per_step": [
+            0.6724280725001108,
+            0.6684845108333093
+          ],
+          "pool_peak_mb": 27.13720703125
+        },
+        "float32, no bodies": {
+          "ms_per_step": 0.21984480624998545,
+          "runs_ms_per_step": [
+            0.21967238000001998,
+            0.2200172324999509
+          ],
+          "pool_peak_mb": 13.5546875
+        },
+        "float32, bodies": {
+          "ms_per_step": 0.24102480500005186,
+          "runs_ms_per_step": [
+            0.23911282750001797,
+            0.24293678250008574
+          ],
+          "pool_peak_mb": 13.6005859375
+        }
+      }
+    }
+  }
+}
