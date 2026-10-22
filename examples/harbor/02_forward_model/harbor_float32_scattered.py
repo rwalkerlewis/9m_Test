@@ -10,7 +10,8 @@ Criterion, fixed before the run (the prompt's "the scattered component within 1e
 performance work measured it, ``scripts/bench_harbor.py:rel_rms``): for every scattered component of every recording,
 the rms of the difference float32 less float64 over every channel and sample is at most 1e-3 of the rms of the
 float64 component.  The same ratio of the direct components and the worst channel's ratio are reported beside it
-(information, no criterion).  Writes ``scattered.json`` and ``scattered.md``.
+(information, no criterion); a recording whose truth holds no components (``harbor``, one run per vessel with the
+bodies in it) has no scattered component, and its noise free sum is compared instead (information).  Writes ``scattered.json`` and ``scattered.md``.
 
 A float32 gather can rarely carry a disturbance from the GPU fault of ``output/studies/float32/gpu_determinism.md``,
 which does not repeat.  Rule, fixed before the run: a component over the limit is attributed to that fault only if its
@@ -55,6 +56,9 @@ def worst_channel(a: np.ndarray, b: np.ndarray) -> float:
 
 def compare(t64: Truth, t32: Truth) -> dict:
     rows = {}
+    if not t64.components:                     # a recording without components (``harbor``): the noise free sum only
+        rows["clean"] = {"rel_rms": rel_rms(t32.clean, t64.clean), "worst_channel_rel_rms": worst_channel(t32.clean, t64.clean)}
+        return rows
     for key in sorted(t64.components):
         if not key.startswith(("scattered:", "direct:")):
             continue
@@ -86,8 +90,8 @@ def main() -> None:
         for k, r in rows.items():
             print(f"{rec} {k}: {r['rel_rms']:.2e} (worst channel {r['worst_channel_rel_rms']:.2e})", flush=True)
     sc = [r["rel_rms"] for rows in res["recordings"].values() for k, r in rows.items() if k.startswith("scattered:")]
-    res["max_scattered_rel_rms"] = float(max(sc))
-    res["passed"] = bool(max(sc) <= CRITERION["scattered_rel_rms"])
+    res["max_scattered_rel_rms"] = float(max(sc, default=0.0))
+    res["passed"] = bool(res["max_scattered_rel_rms"] <= CRITERION["scattered_rel_rms"])
     path.write_text(json.dumps(res, indent=2))
     lines = ["| Recording | Component | rms difference over rms | worst channel |", "|---|---|---|---|"]
     for rec, rows in res["recordings"].items():
