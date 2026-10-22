@@ -1,7 +1,7 @@
 {
   "recording": "harbor_seed3",
   "run": {
-    "git_commit": "8dc4cf034f2288728e0cc2e3228a468cb2588ed3",
+    "git_commit": "12ffdef6f064af35ad2a172aeaa31ecf293c1007",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/harbor.json",
     "processing_config_sha256": "dbf0b73ec00b241b4894c3c29a46b6522587d7f7546ce284e925832691383739",
@@ -13,7 +13,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 3,
-    "wall_s": 64.16134813000099,
+    "wall_s": 64.19416668699705,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

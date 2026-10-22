@@ -4,7 +4,7 @@ propagation error of each recording's forward model beside them (the worst hydro
 marks a number that differs by more than the tolerance of ``scripts/reproduce.py`` (fractions 3 percentage points,
 medians 0.5 m, false tracks exactly).
 
-    python examples/harbor/01_datasets/harbor_numbers_before_after.py BEFORE.json AFTER.json [--out table.md]
+    python examples/harbor/01_datasets/harbor_numbers_before_after.py BEFORE.json AFTER.json [--out table.md] [--compute]
 
 ``git show <commit>:output/reproduce/summary.json > before.json`` gives a committed summary.
 """
@@ -24,8 +24,11 @@ def worst_propagation_error(numbers: dict, family: str) -> float | None:
     return None if p is None else max((h["error_ms"] for h in p["hydrophones"]), key=abs)
 
 
-def table(before: dict, after: dict) -> str:
-    rows = ["| Recording | Propagation error, worst hydrophone [ms] before / after | Object (track kind) | Pd before / after | "
+def table(before: dict, after: dict, compute: bool = False) -> str:
+    """The table; with *compute* the second column is the compute per second of data instead of the propagation
+    error."""
+    second = "Compute per s of data before / after" if compute else "Propagation error, worst hydrophone [ms] before / after"
+    rows = [f"| Recording | {second} | Object (track kind) | Pd before / after | "
             "Median error [m] before / after | Moved |", "|---|---|---|---|---|---|"]
     pct = lambda v: "-" if v is None else f"{100 * v:.0f} %"
     met = lambda v: "-" if v is None else f"{v:.1f}"
@@ -34,6 +37,9 @@ def table(before: dict, after: dict) -> str:
         fam = ra["family"]
         pb, pa = worst_propagation_error(before, fam), worst_propagation_error(after, fam)
         prop = f"{'-' if pb is None else f'{pb:+.2f}'} / {'-' if pa is None else f'{pa:+.2f}'}"
+        if compute:
+            cb = rb["compute_per_second_of_data"]["total"] if rb else None
+            prop = f"{'-' if cb is None else f'{cb:.2f}'} / {ra['compute_per_second_of_data']['total']:.2f}"
         for oid, oa in ra["objects"].items():
             kind = "radiator" if oa["radiates"] else "echo"
             ob = rb["objects"].get(oid) if rb else None
@@ -62,8 +68,9 @@ def main() -> None:
     ap.add_argument("before")
     ap.add_argument("after")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--compute", action="store_true", help="compute per second of data instead of the propagation error")
     a = ap.parse_args()
-    md = table(json.loads(Path(a.before).read_text()), json.loads(Path(a.after).read_text()))
+    md = table(json.loads(Path(a.before).read_text()), json.loads(Path(a.after).read_text()), compute=a.compute)
     if a.out:
         Path(a.out).parent.mkdir(parents=True, exist_ok=True)
         Path(a.out).write_text(md)
