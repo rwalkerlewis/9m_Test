@@ -17,9 +17,11 @@ from acoustic_sim.water.scatterer import Scatterer, body_factor
 from acoustic_sim.water.vessels import Track
 from acoustic_sim.sources import CustomTrajectorySource, StaticSource
 
-from ._gpu import HAS_GPU
+from ._gpu import HAS_GPU, requires_gpu
 
-gpu = pytest.mark.skipif(not HAS_GPU, reason="CuPy / GPU not available")
+def gpu(f):
+    """Needs CuPy and a GPU: marked ``gpu`` and skipped without one."""
+    return pytest.mark.gpu(pytest.mark.skipif(not HAS_GPU, reason="CuPy / GPU not available")(f))
 
 DX, C, FS = 0.5, 1500.0, 6000.0
 TOTAL = 0.3
@@ -464,7 +466,7 @@ def test_kspace_batched_runs_match_single_runs_with_moving_bodies(scene, tmp_pat
                                                                                                layout.n_samples, max_batch=10 ** 6)
 
 
-@pytest.mark.parametrize("use_cuda", [False, pytest.param(True, marks=gpu)])
+@pytest.mark.parametrize("use_cuda", [False, pytest.param(True, marks=requires_gpu)])
 def test_kspace_direct_arrival_is_on_time(use_cuda):
     """Uniform water, k space step: the direct arrival at 30 and 60 m (axis and diagonal) is at the injection time plus
     range over speed, to a tenth of a step, against the free field prediction ``green2d`` (the processing's replica)

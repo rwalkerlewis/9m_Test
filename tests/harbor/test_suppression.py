@@ -221,8 +221,7 @@ def test_occupancy_reacquires_after_the_target_jumps(cuda):
 
 # ----------------------------- GPU / CPU parity -----------------------------
 
-@pytest.mark.parametrize("cuda", [pytest.param(True, id="gpu", marks=pytest.mark.skipif(
-    not __import__("tests.harbor._gpu", fromlist=["HAS_GPU"]).HAS_GPU, reason="no GPU"))])
+@pytest.mark.parametrize("cuda", [pytest.param(True, id="gpu", marks=__import__("tests.harbor._gpu", fromlist=["requires_gpu"]).requires_gpu)])
 def test_gpu_matches_cpu_on_the_full_ship_suppression_chain(cuda):
     out = {}
     for use_cuda in (False, True):

@@ -32,14 +32,14 @@ from acoustic_sim.water.bistatic import (
 from acoustic_sim.water.diagnostics import SimulatorAwarePropagator
 from acoustic_sim.water.dispersion import DispersionModel
 
-from ._gpu import HAS_GPU
+from ._gpu import HAS_GPU, requires_gpu
 
 FS, T, C, F_MAX = 2000.0, 3.0, 1495.0, 500.0
 F_HI = 0.95 * F_MAX          # the band top these tests were written with (the old default 0.95 f_max)
 SHIP = np.array([150.0, 250.0])
 BODY = np.array([260.0, 180.0])
 DEVICES = [pytest.param(False, id="cpu"),
-           pytest.param(True, id="gpu", marks=pytest.mark.skipif(not HAS_GPU, reason="CuPy / GPU not available"))]
+           pytest.param(True, id="gpu", marks=requires_gpu)]
 # Dispersion of a resolved scheme (the fine 0.5 m grid); the scene itself is analytic, the model only
 # exercises the direction dependent wavenumber path.
 DISPERSION = SimulatorAwarePropagator(DispersionModel(0.5, 1.0 / 6000.0, C, 4))

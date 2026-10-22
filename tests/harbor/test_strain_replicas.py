@@ -134,6 +134,7 @@ def test_streaming_fast_replicas_match_the_scanner(mode, cuda):
         assert err < tol, (int(i), err)
 
 
+@pytest.mark.gpu
 @pytest.mark.skipif(not HAS_GPU, reason="CuPy / GPU not available")
 def test_gpu_strain_passive_map_matches_the_cpu():
     layout = _layout("strain")

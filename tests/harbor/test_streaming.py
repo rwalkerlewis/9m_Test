@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from acoustic_sim.contract import ChartEnvironment
 from acoustic_sim.water.ais import AISReports
@@ -131,6 +132,7 @@ def test_tracker_confirms_moving_radiators_and_ais_labels_them_afterwards():
     assert sorted(labels.values(), key=str) == [None, "ferry"]
 
 
+@pytest.mark.gpu
 def test_fast_replicas_match_green2d_on_the_gpu():
     """``green2d_bins`` (phase recurrence) and the streaming echo kernel (channel replicas from the range table)
     against ``green2d`` and ``SensorLayout.collapse``."""
