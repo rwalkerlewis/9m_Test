@@ -61,7 +61,7 @@ from acoustic_sim.water.streaming import (
 )
 from acoustic_sim.water.suppression import SuppressionConfig
 
-SCHEMA = "harbor_picture/1"
+SCHEMA = "harbor_picture/2"
 NO_REPORTS = AISReports(np.array([], dtype=str), np.empty(0), np.empty((0, 2)), np.empty(0), np.empty(0))
 
 
