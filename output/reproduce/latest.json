@@ -6,59 +6,22 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5305234860956262,
-        "echo": 0.6000791465521615,
-        "characteristics": 0.07448281019678689,
-        "total": 1.2050854428445745
+        "passive": 0.5087278366539977,
+        "echo": 0.5050896354012366,
+        "characteristics": 0.09390696994378231,
+        "total": 1.1077244419990167
       },
       "latency_s": {
-        "median": 2.683,
-        "max": 3.759
+        "median": 2.368,
+        "max": 3.368
       },
       "false_tracks": {
-        "count": 4,
-        "per_minute": 12.0,
-        "radiator": 4,
+        "count": 0,
+        "per_minute": 0.0,
+        "radiator": 0,
         "echo": 0
       },
-      "false_track_list": [
-        {
-          "track": "r6",
-          "median_xy": [
-            108.0,
-            260.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 20.71949368642293
-        },
-        {
-          "track": "r7",
-          "median_xy": [
-            149.0,
-            257.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 21.213203435596427
-        },
-        {
-          "track": "r15",
-          "median_xy": [
-            205.0,
-            226.0
-          ],
-          "nearest_object": "wreck",
-          "median_error_m": 14.562822602497734
-        },
-        {
-          "track": "r14",
-          "median_xy": [
-            199.0,
-            243.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 21.400934559032695
-        }
-      ],
+      "false_track_list": [],
       "objects": {
         "ferry": {
           "kind": "ship",
@@ -69,9 +32,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.5186130644654572,
+            "radiator": 0.5064428936315432,
             "echo": null,
-            "any": 0.5186130644654572
+            "any": 0.5064428936315432
           },
           "tracks": [
             "r1"
@@ -86,9 +49,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.29770625775239246,
+            "radiator": 0.28681141870055227,
             "echo": null,
-            "any": 0.29770625775239246
+            "any": 0.28681141870055227
           },
           "tracks": [
             "r2"
@@ -99,16 +62,16 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.3125,
-            "any": 0.30303030303030304
+            "echo": 0.296875,
+            "any": 0.2878787878787879
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 2.7796120065610284,
-            "any": 2.7796120065610284
+            "echo": 2.9545199131270663,
+            "any": 2.9545199131270663
           },
           "tracks": [
-            "e14"
+            "e8"
           ]
         },
         "wreck": {
@@ -116,13 +79,13 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.953125,
-            "any": 0.9242424242424242
+            "echo": 1.0,
+            "any": 0.9696969696969697
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 0.6706713054842809,
-            "any": 0.6706713054842809
+            "echo": 0.5173455790921428,
+            "any": 0.5173455790921428
           },
           "tracks": [
             "e1"
@@ -140,14 +103,14 @@
           "ferry": 0.0,
           "boat": 0.0,
           "uuv1": 0.4788732394366197,
-          "wreck": 0.7323943661971831
+          "wreck": 1.0
         }
       },
       "gpu": "Quadro RTX 4000",
       "ellipse_coverage": {
-        "fixes": 183,
-        "inside": 151,
-        "fraction": 0.825136612021858
+        "fixes": 204,
+        "inside": 188,
+        "fraction": 0.9215686274509803
       }
     },
     "bistatic": {
@@ -156,48 +119,48 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.7881309140524536,
-        "echo": 0.6510054873986519,
-        "characteristics": 0.0939660844480386,
-        "total": 1.533102485899144
+        "passive": 0.7567699045524933,
+        "echo": 0.5772079291011323,
+        "characteristics": 0.10831314355382346,
+        "total": 1.442290977207449
       },
       "latency_s": {
-        "median": 2.798,
-        "max": 5.088
+        "median": 2.593,
+        "max": 4.063
       },
       "false_tracks": {
         "count": 3,
         "per_minute": 9.0,
-        "radiator": 2,
-        "echo": 1
+        "radiator": 1,
+        "echo": 2
       },
       "false_track_list": [
         {
           "track": "r2",
           "median_xy": [
-            134.0,
+            130.0,
             216.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 20.61552812808828
+          "median_error_m": 22.6274169979695
         },
         {
-          "track": "r6",
+          "track": "e7",
           "median_xy": [
-            256.0,
-            114.0
+            301.0,
+            47.0
           ],
           "nearest_object": "uuv1",
-          "median_error_m": 22.620223049377543
+          "median_error_m": 98.71764256581972
         },
         {
-          "track": "e66",
+          "track": "e31",
           "median_xy": [
-            120.0,
+            118.0,
             42.0
           ],
           "nearest_object": "uuv1",
-          "median_error_m": 120.7235266022052
+          "median_error_m": 122.25248692315851
         }
       ],
       "objects": {
@@ -210,9 +173,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.5617810713290454,
+            "radiator": 0.5203844732503323,
             "echo": null,
-            "any": 0.5617810713290454
+            "any": 0.5203844732503323
           },
           "tracks": [
             "r1"
@@ -227,12 +190,12 @@
             "any": 0.8939393939393939
           },
           "median_error_m": {
-            "radiator": 1.2402994881191298,
-            "echo": 1.7888612257241445,
-            "any": 1.7401947230244414
+            "radiator": 0.7789823637969471,
+            "echo": 1.5823985546034651,
+            "any": 1.5267801770031548
           },
           "tracks": [
-            "e43",
+            "e20",
             "r4"
           ]
         }
@@ -249,9 +212,9 @@
       },
       "gpu": "Quadro RTX 4000",
       "ellipse_coverage": {
-        "fixes": 116,
-        "inside": 72,
-        "fraction": 0.6206896551724138
+        "fixes": 117,
+        "inside": 104,
+        "fraction": 0.8888888888888888
       }
     },
     "multistatic": {
@@ -260,57 +223,39 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.8031729936526972,
-        "echo": 1.595762747045228,
-        "characteristics": 0.38967116379644723,
-        "total": 2.7886069044943724
+        "passive": 0.7864651132011204,
+        "echo": 1.053431000096316,
+        "characteristics": 0.36554437640588733,
+        "total": 2.2054404897033235
       },
       "latency_s": {
-        "median": 4.965,
-        "max": 6.328
+        "median": 3.809,
+        "max": 4.622
       },
       "false_tracks": {
-        "count": 4,
-        "per_minute": 12.0,
-        "radiator": 3,
+        "count": 2,
+        "per_minute": 6.0,
+        "radiator": 1,
         "echo": 1
       },
       "false_track_list": [
         {
           "track": "r4",
           "median_xy": [
-            66.0,
-            172.0
+            46.0,
+            126.0
           ],
           "nearest_object": "boat",
-          "median_error_m": 20.473881151134655
+          "median_error_m": 19.169787928685324
         },
         {
-          "track": "r6",
-          "median_xy": [
-            96.0,
-            142.0
-          ],
-          "nearest_object": "boat",
-          "median_error_m": 21.44906757880166
-        },
-        {
-          "track": "r7",
-          "median_xy": [
-            313.0,
-            249.0
-          ],
-          "nearest_object": "tug",
-          "median_error_m": 22.630753955847005
-        },
-        {
-          "track": "e44",
+          "track": "e16",
           "median_xy": [
             332.0,
-            206.0
+            204.0
           ],
           "nearest_object": "tug",
-          "median_error_m": 55.930685755379045
+          "median_error_m": 54.75543718996613
         }
       ],
       "objects": {
@@ -323,9 +268,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.7176984226386587,
+            "radiator": 0.5928711812131716,
             "echo": null,
-            "any": 0.7176984226386587
+            "any": 0.5928711812131716
           },
           "tracks": [
             "r1"
@@ -340,9 +285,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 1.2324162040764572,
+            "radiator": 0.7797430080461392,
             "echo": null,
-            "any": 1.2324162040764572
+            "any": 0.7797430080461392
           },
           "tracks": [
             "r3"
@@ -357,9 +302,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 1.7603151864299849,
+            "radiator": 1.313863242563741,
             "echo": null,
-            "any": 1.7603151864299849
+            "any": 1.313863242563741
           },
           "tracks": [
             "r2"
@@ -370,16 +315,16 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.65625,
-            "any": 0.6363636363636364
+            "echo": 0.828125,
+            "any": 0.803030303030303
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 2.5924362039684627,
-            "any": 2.5924362039684627
+            "echo": 1.8997104048225497,
+            "any": 1.8997104048225497
           },
           "tracks": [
-            "e31"
+            "e11"
           ]
         },
         "uuv2": {
@@ -387,16 +332,16 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.75,
-            "any": 0.7272727272727273
+            "echo": 0.96875,
+            "any": 0.9393939393939394
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.5844400922411288,
-            "any": 1.5844400922411288
+            "echo": 1.0081394860499169,
+            "any": 1.0081394860499169
           },
           "tracks": [
-            "e34"
+            "e5"
           ]
         },
         "diver": {
@@ -509,17 +454,16 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.6875,
-            "any": 0.6666666666666666
+            "echo": 0.828125,
+            "any": 0.803030303030303
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.0107606727998535,
-            "any": 1.0107606727998535
+            "echo": 0.3324154027718927,
+            "any": 0.3324154027718927
           },
           "tracks": [
-            "e20",
-            "e30"
+            "e10"
           ]
         }
       },
@@ -543,23 +487,23 @@
           "ferry": 0.0,
           "tug": 0.0,
           "boat": 0.0,
-          "uuv1": 0.43661971830985913,
-          "uuv2": 0.38028169014084506,
+          "uuv1": 0.4507042253521127,
+          "uuv2": 0.5774647887323944,
           "diver": 0.014084507042253521,
-          "piling1": 0.0,
-          "piling2": 0.0,
-          "piling3": 0.04225352112676056,
+          "piling1": 0.056338028169014086,
+          "piling2": 0.014084507042253521,
+          "piling3": 0.08450704225352113,
           "piling4": 0.0,
-          "piling5": 0.056338028169014086,
-          "piling6": 0.0,
+          "piling5": 0.07042253521126761,
+          "piling6": 0.028169014084507043,
           "moored": 0.0
         }
       },
       "gpu": "Quadro RTX 4000",
       "ellipse_coverage": {
-        "fixes": 252,
-        "inside": 212,
-        "fraction": 0.8412698412698413
+        "fixes": 310,
+        "inside": 310,
+        "fraction": 1.0
       },
       "size_order": {
         "frames_all_three": 0,
@@ -573,84 +517,48 @@
       "held_out": false,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.6275537514655298,
+        "passive": 0.5932634736838129,
         "echo": 0.0,
-        "characteristics": 0.01752282000852574,
-        "total": 0.6450765714740555
+        "characteristics": 0.003293395882913804,
+        "total": 0.5965568695667268
       },
       "latency_s": {
-        "median": 1.3335,
-        "max": 1.419
+        "median": 1.2429999999999999,
+        "max": 1.383
       },
       "false_tracks": {
-        "count": 7,
-        "per_minute": 3.5,
-        "radiator": 7,
+        "count": 3,
+        "per_minute": 1.5,
+        "radiator": 3,
         "echo": 0
       },
       "false_track_list": [
         {
-          "track": "r6",
+          "track": "r12",
           "median_xy": [
-            1397.5,
-            550.0
+            1440.0,
+            695.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 21.93171219946133
+          "median_error_m": 42.28609259233479
         },
         {
-          "track": "r7",
+          "track": "r13",
           "median_xy": [
-            1410.0,
-            530.0
+            1385.0,
+            755.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 44.654227123532216
-        },
-        {
-          "track": "r8",
-          "median_xy": [
-            1422.5,
-            530.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 65.45838241839827
-        },
-        {
-          "track": "r9",
-          "median_xy": [
-            1425.0,
-            350.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 88.32326986700622
-        },
-        {
-          "track": "r11",
-          "median_xy": [
-            1485.0,
-            820.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 25.345867828267696
+          "median_error_m": 39.12657691761639
         },
         {
           "track": "r14",
           "median_xy": [
-            1527.5,
-            842.5
+            1435.0,
+            720.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 20.89400323090065
-        },
-        {
-          "track": "r15",
-          "median_xy": [
-            1580.0,
-            830.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 31.20164267457258
+          "median_error_m": 20.071764089289932
         }
       ],
       "objects": {
@@ -658,16 +566,15 @@
           "kind": "ship",
           "radiates": true,
           "pd": {
-            "radiator": 0.46296296296296297,
-            "any": 0.46296296296296297
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
           },
           "median_error_m": {
-            "radiator": 2.445240274492513,
-            "any": 2.445240274492513
+            "radiator": 1.4270179067862216,
+            "any": 1.4270179067862216
           },
           "tracks": [
-            "r10",
-            "r12",
+            "r11",
             "r5"
           ]
         },
@@ -679,8 +586,8 @@
             "any": 0.037037037037037035
           },
           "median_error_m": {
-            "radiator": 4.481471153096893,
-            "any": 4.481471153096893
+            "radiator": 1.8972269785759142,
+            "any": 1.8972269785759142
           },
           "tracks": [
             "r16"
@@ -766,9 +673,9 @@
       },
       "gpu": "Quadro RTX 4000",
       "ellipse_coverage": {
-        "fixes": 80,
-        "inside": 69,
-        "fraction": 0.8625
+        "fixes": 56,
+        "inside": 45,
+        "fraction": 0.8035714285714286
       },
       "size_order": {
         "frames_all_three": 0,
@@ -782,32 +689,22 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.42139180194790243,
-        "echo": 0.35834763334933084,
-        "characteristics": 0.04001678685526713,
-        "total": 0.8197562221525004
+        "passive": 0.5011463630529761,
+        "echo": 0.5017507426506199,
+        "characteristics": 0.0992020374040294,
+        "total": 1.1020991431076255
       },
       "latency_s": {
-        "median": 2.179,
-        "max": 3.363
+        "median": 2.38,
+        "max": 3.374
       },
       "false_tracks": {
-        "count": 1,
-        "per_minute": 3.0,
-        "radiator": 1,
+        "count": 0,
+        "per_minute": 0.0,
+        "radiator": 0,
         "echo": 0
       },
-      "false_track_list": [
-        {
-          "track": "r19",
-          "median_xy": [
-            193.0,
-            233.0
-          ],
-          "nearest_object": "wreck",
-          "median_error_m": 24.041630560342615
-        }
-      ],
+      "false_track_list": [],
       "objects": {
         "ferry": {
           "kind": "ship",
@@ -818,9 +715,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.533385414123799,
+            "radiator": 0.5114391271531677,
             "echo": null,
-            "any": 0.533385414123799
+            "any": 0.5114391271531677
           },
           "tracks": [
             "r1"
@@ -835,9 +732,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.23599751707452343,
+            "radiator": 0.2451499259845647,
             "echo": null,
-            "any": 0.23599751707452343
+            "any": 0.2451499259845647
           },
           "tracks": [
             "r2"
@@ -848,33 +745,33 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.0,
-            "any": 0.0
+            "echo": 0.65625,
+            "any": 0.6363636363636364
           },
           "median_error_m": {
             "radiator": null,
-            "echo": null,
-            "any": null
+            "echo": 2.952167796725681,
+            "any": 2.952167796725681
           },
-          "tracks": []
+          "tracks": [
+            "e6"
+          ]
         },
         "wreck": {
           "kind": "static",
           "radiates": false,
           "pd": {
-            "radiator": 0.045454545454545456,
-            "echo": 0.671875,
-            "any": 0.6515151515151515
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
           },
           "median_error_m": {
-            "radiator": 4.923271270202362,
-            "echo": 2.684045454160561,
-            "any": 2.684045454160561
+            "radiator": null,
+            "echo": 0.5742800222432822,
+            "any": 0.5742800222432822
           },
           "tracks": [
-            "e2",
-            "e37",
-            "r18"
+            "e1"
           ]
         }
       },
@@ -887,12 +784,17 @@
         },
         "echo": {
           "ferry": 0.0,
-          "boat": 0.5915492957746479,
-          "uuv1": 0.2535211267605634,
-          "wreck": 0.9859154929577465
+          "boat": 0.0,
+          "uuv1": 0.5633802816901409,
+          "wreck": 1.0
         }
       },
-      "gpu": "Quadro RTX 4000"
+      "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 218,
+        "inside": 200,
+        "fraction": 0.9174311926605505
+      }
     },
     "simple_seed2": {
       "family": "simple",
@@ -900,14 +802,127 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.4205711576003523,
-        "echo": 0.35500107470070363,
-        "characteristics": 0.042272005951963364,
-        "total": 0.8178442382530193
+        "passive": 0.4983061142018414,
+        "echo": 0.5004460455042136,
+        "characteristics": 0.09416805204527919,
+        "total": 1.0929202117513341
       },
       "latency_s": {
-        "median": 2.174,
-        "max": 3.365
+        "median": 2.372,
+        "max": 3.372
+      },
+      "false_tracks": {
+        "count": 0,
+        "per_minute": 0.0,
+        "radiator": 0,
+        "echo": 0
+      },
+      "false_track_list": [],
+      "objects": {
+        "ferry": {
+          "kind": "ship",
+          "radiates": true,
+          "pd": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "median_error_m": {
+            "radiator": 0.507288980009726,
+            "echo": null,
+            "any": 0.507288980009726
+          },
+          "tracks": [
+            "r1"
+          ]
+        },
+        "boat": {
+          "kind": "ship",
+          "radiates": true,
+          "pd": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "median_error_m": {
+            "radiator": 0.25146551983678034,
+            "echo": null,
+            "any": 0.25146551983678034
+          },
+          "tracks": [
+            "r2"
+          ]
+        },
+        "uuv1": {
+          "kind": "uuv",
+          "radiates": false,
+          "pd": {
+            "radiator": 0.0,
+            "echo": 0.3125,
+            "any": 0.30303030303030304
+          },
+          "median_error_m": {
+            "radiator": null,
+            "echo": 2.847723100380595,
+            "any": 2.847723100380595
+          },
+          "tracks": [
+            "e7"
+          ]
+        },
+        "wreck": {
+          "kind": "static",
+          "radiates": false,
+          "pd": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          },
+          "median_error_m": {
+            "radiator": null,
+            "echo": 0.538701759450225,
+            "any": 0.538701759450225
+          },
+          "tracks": [
+            "e1"
+          ]
+        }
+      },
+      "peaks": {
+        "passive": {
+          "ferry": 1.0,
+          "boat": 0.8472222222222222,
+          "uuv1": 0.0,
+          "wreck": 0.013888888888888888
+        },
+        "echo": {
+          "ferry": 0.0,
+          "boat": 0.0,
+          "uuv1": 0.5352112676056338,
+          "wreck": 1.0
+        }
+      },
+      "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 205,
+        "inside": 186,
+        "fraction": 0.9073170731707317
+      }
+    },
+    "simple_seed3": {
+      "family": "simple",
+      "seed": 3,
+      "held_out": true,
+      "record_s": 20.0,
+      "compute_per_second_of_data": {
+        "passive": 0.5047602188475139,
+        "echo": 0.5007164997507061,
+        "characteristics": 0.10073156824946636,
+        "total": 1.1062082868476864
+      },
+      "latency_s": {
+        "median": 2.382,
+        "max": 3.377
       },
       "false_tracks": {
         "count": 1,
@@ -917,141 +932,13 @@
       },
       "false_track_list": [
         {
-          "track": "r21",
+          "track": "r4",
           "median_xy": [
-            207.0,
-            225.0
-          ],
-          "nearest_object": "wreck",
-          "median_error_m": 16.55294535724685
-        }
-      ],
-      "objects": {
-        "ferry": {
-          "kind": "ship",
-          "radiates": true,
-          "pd": {
-            "radiator": 1.0,
-            "echo": 0.0,
-            "any": 1.0
-          },
-          "median_error_m": {
-            "radiator": 0.533385414123799,
-            "echo": null,
-            "any": 0.533385414123799
-          },
-          "tracks": [
-            "r1"
-          ]
-        },
-        "boat": {
-          "kind": "ship",
-          "radiates": true,
-          "pd": {
-            "radiator": 1.0,
-            "echo": 0.0,
-            "any": 1.0
-          },
-          "median_error_m": {
-            "radiator": 0.23599751707452343,
-            "echo": null,
-            "any": 0.23599751707452343
-          },
-          "tracks": [
-            "r2"
-          ]
-        },
-        "uuv1": {
-          "kind": "uuv",
-          "radiates": false,
-          "pd": {
-            "radiator": 0.0,
-            "echo": 0.28125,
-            "any": 0.2727272727272727
-          },
-          "median_error_m": {
-            "radiator": null,
-            "echo": 3.091940460891119,
-            "any": 3.091940460891119
-          },
-          "tracks": [
-            "e17"
-          ]
-        },
-        "wreck": {
-          "kind": "static",
-          "radiates": false,
-          "pd": {
-            "radiator": 0.0,
-            "echo": 0.65625,
-            "any": 0.6363636363636364
-          },
-          "median_error_m": {
-            "radiator": null,
-            "echo": 2.789809643774062,
-            "any": 2.789809643774062
-          },
-          "tracks": [
-            "e1",
-            "r15"
-          ]
-        }
-      },
-      "peaks": {
-        "passive": {
-          "ferry": 1.0,
-          "boat": 0.8472222222222222,
-          "uuv1": 0.0,
-          "wreck": 0.013888888888888888
-        },
-        "echo": {
-          "ferry": 0.0,
-          "boat": 0.6338028169014085,
-          "uuv1": 0.2535211267605634,
-          "wreck": 0.9859154929577465
-        }
-      },
-      "gpu": "Quadro RTX 4000"
-    },
-    "simple_seed3": {
-      "family": "simple",
-      "seed": 3,
-      "held_out": true,
-      "record_s": 20.0,
-      "compute_per_second_of_data": {
-        "passive": 0.4212558121042093,
-        "echo": 0.35342047714439107,
-        "characteristics": 0.0431498149955587,
-        "total": 0.817826104244159
-      },
-      "latency_s": {
-        "median": 2.174,
-        "max": 3.337
-      },
-      "false_tracks": {
-        "count": 2,
-        "per_minute": 6.0,
-        "radiator": 2,
-        "echo": 0
-      },
-      "false_track_list": [
-        {
-          "track": "r16",
-          "median_xy": [
-            105.0,
-            285.0
+            108.0,
+            263.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 42.20189569201838
-        },
-        {
-          "track": "r19",
-          "median_xy": [
-            195.0,
-            233.0
-          ],
-          "nearest_object": "wreck",
-          "median_error_m": 23.53720459187964
+          "median_error_m": 19.33659014741448
         }
       ],
       "objects": {
@@ -1064,9 +951,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.5333854141238131,
+            "radiator": 0.5151960031035113,
             "echo": null,
-            "any": 0.5333854141238131
+            "any": 0.5151960031035113
           },
           "tracks": [
             "r1"
@@ -1081,9 +968,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.24653382087475612,
+            "radiator": 0.22698768479582238,
             "echo": null,
-            "any": 0.24653382087475612
+            "any": 0.22698768479582238
           },
           "tracks": [
             "r2"
@@ -1094,16 +981,16 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.25,
-            "any": 0.24242424242424243
+            "echo": 0.609375,
+            "any": 0.5909090909090909
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 2.6360044457106415,
-            "any": 2.6360044457106415
+            "echo": 2.652964621767175,
+            "any": 2.652964621767175
           },
           "tracks": [
-            "e15"
+            "e7"
           ]
         },
         "wreck": {
@@ -1111,17 +998,16 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.96875,
-            "any": 0.9393939393939394
+            "echo": 1.0,
+            "any": 0.9696969696969697
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 2.744886154287639,
-            "any": 2.744886154287639
+            "echo": 0.49547915146485416,
+            "any": 0.49547915146485416
           },
           "tracks": [
-            "e1",
-            "r18"
+            "e1"
           ]
         }
       },
@@ -1134,12 +1020,17 @@
         },
         "echo": {
           "ferry": 0.0,
-          "boat": 0.6197183098591549,
-          "uuv1": 0.2535211267605634,
-          "wreck": 0.971830985915493
+          "boat": 0.0,
+          "uuv1": 0.5352112676056338,
+          "wreck": 1.0
         }
       },
-      "gpu": "Quadro RTX 4000"
+      "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 215,
+        "inside": 197,
+        "fraction": 0.9162790697674419
+      }
     },
     "bistatic_seed1": {
       "family": "bistatic",
@@ -1147,48 +1038,30 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.6265981055461453,
-        "echo": 0.4895805622501939,
-        "characteristics": 0.10336708824615926,
-        "total": 1.2195457560424985
+        "passive": 0.8184249762511172,
+        "echo": 0.5544173447487992,
+        "characteristics": 0.1034202231465315,
+        "total": 1.4762625441464479
       },
       "latency_s": {
-        "median": 2.349,
-        "max": 3.337
+        "median": 2.594,
+        "max": 3.932
       },
       "false_tracks": {
-        "count": 3,
-        "per_minute": 9.0,
-        "radiator": 1,
-        "echo": 2
+        "count": 1,
+        "per_minute": 3.0,
+        "radiator": 0,
+        "echo": 1
       },
       "false_track_list": [
         {
-          "track": "e4",
+          "track": "e32",
           "median_xy": [
-            132.0,
-            174.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 34.05877273185284
-        },
-        {
-          "track": "r4",
-          "median_xy": [
-            154.0,
-            228.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 41.72529209005014
-        },
-        {
-          "track": "e40",
-          "median_xy": [
-            115.0,
+            112.0,
             42.0
           ],
           "nearest_object": "uuv1",
-          "median_error_m": 124.45430826006964
+          "median_error_m": 126.65612959698078
         }
       ],
       "objects": {
@@ -1201,9 +1074,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.5300000000000011,
+            "radiator": 0.5300943312279586,
             "echo": null,
-            "any": 0.5300000000000011
+            "any": 0.5300943312279586
           },
           "tracks": [
             "r1"
@@ -1213,17 +1086,17 @@
           "kind": "uuv",
           "radiates": false,
           "pd": {
-            "radiator": 0.0,
-            "echo": 0.734375,
-            "any": 0.7121212121212122
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
           },
           "median_error_m": {
-            "radiator": null,
-            "echo": 1.8197848494472315,
-            "any": 1.8197848494472315
+            "radiator": 2.06346485202575,
+            "echo": 1.5850976313972536,
+            "any": 1.6346490620283836
           },
           "tracks": [
-            "e8",
+            "e19",
             "r5"
           ]
         }
@@ -1235,10 +1108,15 @@
         },
         "echo": {
           "ferry": 0.0,
-          "uuv1": 0.9154929577464789
+          "uuv1": 0.7323943661971831
         }
       },
-      "gpu": "Quadro RTX 4000"
+      "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 117,
+        "inside": 114,
+        "fraction": 0.9743589743589743
+      }
     },
     "bistatic_seed2": {
       "family": "bistatic",
@@ -1246,42 +1124,33 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5408168188514537,
-        "echo": 0.4872248421481345,
-        "characteristics": 0.10338881889765617,
-        "total": 1.1314304798972443
+        "passive": 0.7600057073002973,
+        "echo": 0.6411887558046147,
+        "characteristics": 0.10234305884659989,
+        "total": 1.5035375219515117
       },
       "latency_s": {
-        "median": 2.337,
-        "max": 3.325
+        "median": 2.817,
+        "max": 4.527
       },
       "false_tracks": {
-        "count": 3,
-        "per_minute": 9.0,
+        "count": 2,
+        "per_minute": 6.0,
         "radiator": 1,
-        "echo": 2
+        "echo": 1
       },
       "false_track_list": [
         {
-          "track": "e9",
+          "track": "r6",
           "median_xy": [
-            180.0,
-            182.0
+            226.0,
+            98.0
           ],
-          "nearest_object": "ferry",
-          "median_error_m": 27.20294101747089
+          "nearest_object": "uuv1",
+          "median_error_m": 11.58281754688175
         },
         {
-          "track": "r11",
-          "median_xy": [
-            154.0,
-            228.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 41.77319714841083
-        },
-        {
-          "track": "e42",
+          "track": "e35",
           "median_xy": [
             115.0,
             42.0
@@ -1300,9 +1169,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.5300000000000296,
+            "radiator": 0.5247839753253811,
             "echo": null,
-            "any": 0.5300000000000296
+            "any": 0.5247839753253811
           },
           "tracks": [
             "r1"
@@ -1317,12 +1186,12 @@
             "any": 0.8939393939393939
           },
           "median_error_m": {
-            "radiator": 3.7386004767388745,
-            "echo": 1.9308729671120473,
-            "any": 2.4710962596174433
+            "radiator": 3.200361695756362,
+            "echo": 2.0294555337385294,
+            "any": 2.3270384930057295
           },
           "tracks": [
-            "e7",
+            "e27",
             "r3"
           ]
         }
@@ -1334,10 +1203,15 @@
         },
         "echo": {
           "ferry": 0.0,
-          "uuv1": 0.8732394366197183
+          "uuv1": 0.6197183098591549
         }
       },
-      "gpu": "Quadro RTX 4000"
+      "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 113,
+        "inside": 97,
+        "fraction": 0.8584070796460177
+      }
     },
     "bistatic_seed3": {
       "family": "bistatic",
@@ -1345,51 +1219,42 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5415395728035947,
-        "echo": 0.48168641480369845,
-        "characteristics": 0.1075535177034908,
-        "total": 1.1307795053107839
+        "passive": 0.7757261057035066,
+        "echo": 0.6347548199461016,
+        "characteristics": 0.10627860724780476,
+        "total": 1.516759532897413
       },
       "latency_s": {
-        "median": 2.318,
-        "max": 3.328
+        "median": 2.775,
+        "max": 4.583
       },
       "false_tracks": {
-        "count": 4,
-        "per_minute": 12.0,
+        "count": 3,
+        "per_minute": 9.0,
         "radiator": 2,
-        "echo": 2
+        "echo": 1
       },
       "false_track_list": [
         {
-          "track": "r2",
+          "track": "r3",
           "median_xy": [
-            257.0,
-            117.0
+            132.0,
+            216.0
+          ],
+          "nearest_object": "ferry",
+          "median_error_m": 21.26029162546928
+        },
+        {
+          "track": "r5",
+          "median_xy": [
+            226.0,
+            98.0
           ],
           "nearest_object": "uuv1",
-          "median_error_m": 25.26086404522413
+          "median_error_m": 11.58281754688175
         },
         {
-          "track": "e3",
-          "median_xy": [
-            140.0,
-            176.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 29.732137494637033
-        },
-        {
-          "track": "r12",
-          "median_xy": [
-            154.0,
-            228.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 41.72529209005011
-        },
-        {
-          "track": "e43",
+          "track": "e44",
           "median_xy": [
             113.0,
             42.0
@@ -1408,9 +1273,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.5300000000000011,
+            "radiator": 0.5233545556050777,
             "echo": null,
-            "any": 0.5300000000000011
+            "any": 0.5233545556050777
           },
           "tracks": [
             "r1"
@@ -1420,18 +1285,18 @@
           "kind": "uuv",
           "radiates": false,
           "pd": {
-            "radiator": 0.16666666666666666,
-            "echo": 0.65625,
-            "any": 0.803030303030303
+            "radiator": 0.22727272727272727,
+            "echo": 0.6875,
+            "any": 0.8939393939393939
           },
           "median_error_m": {
-            "radiator": 3.113571467271219,
-            "echo": 1.960847911798872,
-            "any": 2.069176380988532
+            "radiator": 3.1885055516311,
+            "echo": 1.645717366392694,
+            "any": 1.7151323884581067
           },
           "tracks": [
-            "e6",
-            "r8"
+            "e31",
+            "r2"
           ]
         }
       },
@@ -1442,10 +1307,15 @@
         },
         "echo": {
           "ferry": 0.0,
-          "uuv1": 0.8732394366197183
+          "uuv1": 0.7183098591549296
         }
       },
-      "gpu": "Quadro RTX 4000"
+      "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 116,
+        "inside": 114,
+        "fraction": 0.9827586206896551
+      }
     },
     "multistatic_seed1": {
       "family": "multistatic",
@@ -1453,39 +1323,39 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.7731267010996816,
-        "echo": 1.014374426354334,
-        "characteristics": 0.21627129755215718,
-        "total": 2.003772425006173
+        "passive": 0.6944629089462978,
+        "echo": 1.0417748123014463,
+        "characteristics": 0.34015553794670267,
+        "total": 2.0763932591944467
       },
       "latency_s": {
-        "median": 3.556,
-        "max": 4.556
+        "median": 3.778,
+        "max": 4.591
       },
       "false_tracks": {
         "count": 2,
         "per_minute": 6.0,
-        "radiator": 0,
-        "echo": 2
+        "radiator": 1,
+        "echo": 1
       },
       "false_track_list": [
         {
-          "track": "e20",
+          "track": "r4",
           "median_xy": [
-            240.0,
-            258.0
+            46.0,
+            126.0
           ],
-          "nearest_object": "moored",
-          "median_error_m": 10.770329614269007
+          "nearest_object": "boat",
+          "median_error_m": 19.169787928685324
         },
         {
-          "track": "e27",
+          "track": "e13",
           "median_xy": [
             332.0,
             204.0
           ],
           "nearest_object": "tug",
-          "median_error_m": 55.12737141544256
+          "median_error_m": 55.42668807172584
         }
       ],
       "objects": {
@@ -1498,9 +1368,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.5300000000000296,
+            "radiator": 0.5793911988908309,
             "echo": null,
-            "any": 0.5300000000000296
+            "any": 0.5793911988908309
           },
           "tracks": [
             "r1"
@@ -1515,9 +1385,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.7325894672278228,
+            "radiator": 0.8381500460189737,
             "echo": null,
-            "any": 0.7325894672278228
+            "any": 0.8381500460189737
           },
           "tracks": [
             "r3"
@@ -1532,9 +1402,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.9287804978706697,
+            "radiator": 1.4230637177113912,
             "echo": null,
-            "any": 0.9287804978706697
+            "any": 1.4230637177113912
           },
           "tracks": [
             "r2"
@@ -1545,31 +1415,33 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.0,
-            "any": 0.0
+            "echo": 0.65625,
+            "any": 0.6363636363636364
           },
           "median_error_m": {
             "radiator": null,
-            "echo": null,
-            "any": null
+            "echo": 1.7296427345881007,
+            "any": 1.7296427345881007
           },
-          "tracks": []
+          "tracks": [
+            "e4"
+          ]
         },
         "uuv2": {
           "kind": "uuv",
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.8125,
-            "any": 0.7878787878787878
+            "echo": 0.953125,
+            "any": 0.9242424242424242
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.1440466634164235,
-            "any": 1.1440466634164235
+            "echo": 1.0918488772102952,
+            "any": 1.0918488772102952
           },
           "tracks": [
-            "e17"
+            "e5"
           ]
         },
         "diver": {
@@ -1682,15 +1554,17 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.0,
-            "any": 0.0
+            "echo": 0.8125,
+            "any": 0.7878787878787878
           },
           "median_error_m": {
             "radiator": null,
-            "echo": null,
-            "any": null
+            "echo": 0.3183663149579692,
+            "any": 0.3183663149579692
           },
-          "tracks": []
+          "tracks": [
+            "e12"
+          ]
         }
       },
       "peaks": {
@@ -1713,19 +1587,24 @@
           "ferry": 0.0,
           "tug": 0.0,
           "boat": 0.0,
-          "uuv1": 0.2676056338028169,
-          "uuv2": 0.38028169014084506,
-          "diver": 0.0,
-          "piling1": 0.0,
-          "piling2": 0.014084507042253521,
-          "piling3": 0.04225352112676056,
+          "uuv1": 0.4084507042253521,
+          "uuv2": 0.5492957746478874,
+          "diver": 0.028169014084507043,
+          "piling1": 0.04225352112676056,
+          "piling2": 0.04225352112676056,
+          "piling3": 0.11267605633802817,
           "piling4": 0.014084507042253521,
           "piling5": 0.04225352112676056,
-          "piling6": 0.014084507042253521,
+          "piling6": 0.028169014084507043,
           "moored": 0.0
         }
       },
       "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 298,
+        "inside": 298,
+        "fraction": 1.0
+      },
       "size_order": {
         "frames_all_three": 0,
         "hull_below_piling": 0,
@@ -1738,39 +1617,39 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.6252598129467515,
-        "echo": 1.0222651282529114,
-        "characteristics": 0.2019021403575607,
-        "total": 1.8494270815572236
+        "passive": 0.7660228047498094,
+        "echo": 1.039677962449059,
+        "characteristics": 0.3335366778941534,
+        "total": 2.139237445093022
       },
       "latency_s": {
-        "median": 3.571,
-        "max": 4.602
+        "median": 3.743,
+        "max": 4.607
       },
       "false_tracks": {
         "count": 2,
         "per_minute": 6.0,
-        "radiator": 0,
-        "echo": 2
+        "radiator": 1,
+        "echo": 1
       },
       "false_track_list": [
         {
-          "track": "e25",
+          "track": "r4",
           "median_xy": [
-            240.0,
-            258.0
+            46.0,
+            126.0
           ],
-          "nearest_object": "moored",
-          "median_error_m": 10.198039027185569
+          "nearest_object": "boat",
+          "median_error_m": 19.169787928685324
         },
         {
-          "track": "e32",
+          "track": "e20",
           "median_xy": [
             332.0,
-            206.0
+            204.0
           ],
           "nearest_object": "tug",
-          "median_error_m": 55.69196940335126
+          "median_error_m": 55.22059560475662
         }
       ],
       "objects": {
@@ -1783,9 +1662,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.530000000000058,
+            "radiator": 0.5907621952585801,
             "echo": null,
-            "any": 0.530000000000058
+            "any": 0.5907621952585801
           },
           "tracks": [
             "r1"
@@ -1800,9 +1679,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.745053197448462,
+            "radiator": 0.7076108335392475,
             "echo": null,
-            "any": 0.745053197448462
+            "any": 0.7076108335392475
           },
           "tracks": [
             "r3"
@@ -1817,9 +1696,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.9328661711965998,
+            "radiator": 1.2556497041707966,
             "echo": null,
-            "any": 0.9328661711965998
+            "any": 1.2556497041707966
           },
           "tracks": [
             "r2"
@@ -1830,31 +1709,33 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.0,
-            "any": 0.0
+            "echo": 0.625,
+            "any": 0.6060606060606061
           },
           "median_error_m": {
             "radiator": null,
-            "echo": null,
-            "any": null
+            "echo": 1.7056155848936638,
+            "any": 1.7056155848936638
           },
-          "tracks": []
+          "tracks": [
+            "e7"
+          ]
         },
         "uuv2": {
           "kind": "uuv",
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.71875,
-            "any": 0.696969696969697
+            "echo": 0.9375,
+            "any": 0.9090909090909091
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.3473319575572635,
-            "any": 1.3473319575572635
+            "echo": 0.6034093766617972,
+            "any": 0.6034093766617972
           },
           "tracks": [
-            "e1"
+            "e6"
           ]
         },
         "diver": {
@@ -1967,15 +1848,17 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.0,
-            "any": 0.0
+            "echo": 0.796875,
+            "any": 0.7727272727272727
           },
           "median_error_m": {
             "radiator": null,
-            "echo": null,
-            "any": null
+            "echo": 0.7589466384404397,
+            "any": 0.7589466384404397
           },
-          "tracks": []
+          "tracks": [
+            "e15"
+          ]
         }
       },
       "peaks": {
@@ -1998,19 +1881,24 @@
           "ferry": 0.0,
           "tug": 0.0,
           "boat": 0.0,
-          "uuv1": 0.30985915492957744,
-          "uuv2": 0.38028169014084506,
-          "diver": 0.014084507042253521,
-          "piling1": 0.014084507042253521,
-          "piling2": 0.0,
-          "piling3": 0.014084507042253521,
-          "piling4": 0.0,
-          "piling5": 0.056338028169014086,
-          "piling6": 0.0,
+          "uuv1": 0.4788732394366197,
+          "uuv2": 0.5211267605633803,
+          "diver": 0.0,
+          "piling1": 0.04225352112676056,
+          "piling2": 0.014084507042253521,
+          "piling3": 0.028169014084507043,
+          "piling4": 0.028169014084507043,
+          "piling5": 0.09859154929577464,
+          "piling6": 0.014084507042253521,
           "moored": 0.0
         }
       },
       "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 296,
+        "inside": 295,
+        "fraction": 0.9966216216216216
+      },
       "size_order": {
         "frames_all_three": 0,
         "hull_below_piling": 0,
@@ -2023,14 +1911,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.6108404718477687,
-        "echo": 1.0489984203537461,
-        "characteristics": 0.20863143714886973,
-        "total": 1.8684703293503844
+        "passive": 0.7757210838513856,
+        "echo": 1.0417085448505532,
+        "characteristics": 0.3575374423940957,
+        "total": 2.1749670710960345
       },
       "latency_s": {
-        "median": 3.754,
-        "max": 5.154
+        "median": 3.735,
+        "max": 4.647
       },
       "false_tracks": {
         "count": 3,
@@ -2040,31 +1928,31 @@
       },
       "false_track_list": [
         {
-          "track": "e15",
+          "track": "r4",
           "median_xy": [
-            240.0,
-            258.0
+            46.0,
+            126.0
           ],
-          "nearest_object": "moored",
-          "median_error_m": 10.770329614269007
+          "nearest_object": "boat",
+          "median_error_m": 19.169787928685324
         },
         {
-          "track": "e31",
+          "track": "e18",
           "median_xy": [
             332.0,
-            206.0
+            204.0
           ],
           "nearest_object": "tug",
-          "median_error_m": 55.69196940335126
+          "median_error_m": 54.16698669332469
         },
         {
-          "track": "r9",
+          "track": "e19",
           "median_xy": [
-            258.0,
-            249.0
+            252.0,
+            234.0
           ],
           "nearest_object": "moored",
-          "median_error_m": 15.273360299226528
+          "median_error_m": 25.0
         }
       ],
       "objects": {
@@ -2077,9 +1965,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.530000000000058,
+            "radiator": 0.6011230481200911,
             "echo": null,
-            "any": 0.530000000000058
+            "any": 0.6011230481200911
           },
           "tracks": [
             "r1"
@@ -2094,9 +1982,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.7325894672278228,
+            "radiator": 0.8144140934823954,
             "echo": null,
-            "any": 0.7325894672278228
+            "any": 0.8144140934823954
           },
           "tracks": [
             "r3"
@@ -2111,9 +1999,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.8572117537932644,
+            "radiator": 1.091106111041365,
             "echo": null,
-            "any": 0.8572117537932644
+            "any": 1.091106111041365
           },
           "tracks": [
             "r2"
@@ -2124,16 +2012,16 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.078125,
-            "any": 0.07575757575757576
+            "echo": 0.84375,
+            "any": 0.8181818181818182
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.761274405211582,
-            "any": 1.761274405211582
+            "echo": 1.8089673356405047,
+            "any": 1.8089673356405047
           },
           "tracks": [
-            "e11"
+            "e10"
           ]
         },
         "uuv2": {
@@ -2141,16 +2029,16 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.8125,
-            "any": 0.7878787878787878
+            "echo": 0.9375,
+            "any": 0.9090909090909091
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.7857852974272568,
-            "any": 1.7857852974272568
+            "echo": 1.190613025163415,
+            "any": 1.190613025163415
           },
           "tracks": [
-            "e3"
+            "e5"
           ]
         },
         "diver": {
@@ -2263,15 +2151,17 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.0,
-            "any": 0.0
+            "echo": 0.765625,
+            "any": 0.7424242424242424
           },
           "median_error_m": {
             "radiator": null,
-            "echo": null,
-            "any": null
+            "echo": 0.29832867780353856,
+            "any": 0.29832867780353856
           },
-          "tracks": []
+          "tracks": [
+            "e15"
+          ]
         }
       },
       "peaks": {
@@ -2294,19 +2184,24 @@
           "ferry": 0.0,
           "tug": 0.0,
           "boat": 0.0,
-          "uuv1": 0.36619718309859156,
-          "uuv2": 0.352112676056338,
+          "uuv1": 0.49295774647887325,
+          "uuv2": 0.5211267605633803,
           "diver": 0.014084507042253521,
-          "piling1": 0.028169014084507043,
-          "piling2": 0.0,
-          "piling3": 0.028169014084507043,
-          "piling4": 0.0,
-          "piling5": 0.056338028169014086,
-          "piling6": 0.0,
+          "piling1": 0.07042253521126761,
+          "piling2": 0.014084507042253521,
+          "piling3": 0.056338028169014086,
+          "piling4": 0.014084507042253521,
+          "piling5": 0.09859154929577464,
+          "piling6": 0.014084507042253521,
           "moored": 0.0
         }
       },
       "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 307,
+        "inside": 306,
+        "fraction": 0.996742671009772
+      },
       "size_order": {
         "frames_all_three": 0,
         "hull_below_piling": 0,
@@ -2319,14 +2214,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5167920397319298,
+        "passive": 0.5937987625076251,
         "echo": 0.0,
-        "characteristics": 0.004398903741578882,
-        "total": 0.5211909434735086
+        "characteristics": 0.0036880155913725805,
+        "total": 0.5974867780989978
       },
       "latency_s": {
-        "median": 1.109,
-        "max": 1.242
+        "median": 1.2385000000000002,
+        "max": 1.37
       },
       "false_tracks": {
         "count": 4,
@@ -2336,40 +2231,40 @@
       },
       "false_track_list": [
         {
-          "track": "r10",
-          "median_xy": [
-            1425.0,
-            555.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 64.41273166075176
-        },
-        {
-          "track": "r12",
-          "median_xy": [
-            1422.5,
-            382.5
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 86.26263835810684
-        },
-        {
-          "track": "r17",
-          "median_xy": [
-            1415.0,
-            790.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 49.235124588932045
-        },
-        {
           "track": "r7",
           "median_xy": [
-            1460.0,
-            840.0
+            1395.0,
+            370.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 58.570124187693175
+          "median_error_m": 21.572457817528907
+        },
+        {
+          "track": "r9",
+          "median_xy": [
+            1400.0,
+            320.0
+          ],
+          "nearest_object": "ferry",
+          "median_error_m": 39.44616584663209
+        },
+        {
+          "track": "r14",
+          "median_xy": [
+            1440.0,
+            695.0
+          ],
+          "nearest_object": "ferry",
+          "median_error_m": 42.28609259233479
+        },
+        {
+          "track": "r15",
+          "median_xy": [
+            1385.0,
+            755.0
+          ],
+          "nearest_object": "ferry",
+          "median_error_m": 39.12657691761639
         }
       ],
       "objects": {
@@ -2377,17 +2272,16 @@
           "kind": "ship",
           "radiates": true,
           "pd": {
-            "radiator": 0.7222222222222222,
-            "any": 0.7222222222222222
+            "radiator": 0.7407407407407407,
+            "any": 0.7407407407407407
           },
           "median_error_m": {
-            "radiator": 1.0100099312076347,
-            "any": 1.0100099312076347
+            "radiator": 2.758739401635099,
+            "any": 2.758739401635099
           },
           "tracks": [
-            "r18",
-            "r6",
-            "r9"
+            "r13",
+            "r8"
           ]
         },
         "tug": {
@@ -2398,12 +2292,12 @@
             "any": 0.05555555555555555
           },
           "median_error_m": {
-            "radiator": 1.9582396891748264,
-            "any": 1.9582396891748264
+            "radiator": 2.1351887502662823,
+            "any": 2.1351887502662823
           },
           "tracks": [
             "r1",
-            "r22"
+            "r18"
           ]
         },
         "moored": {
@@ -2485,6 +2379,11 @@
         "echo": null
       },
       "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 54,
+        "inside": 43,
+        "fraction": 0.7962962962962963
+      },
       "size_order": {
         "frames_all_three": 0,
         "hull_below_piling": 0,
@@ -2497,57 +2396,48 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5291318750600719,
+        "passive": 0.607702840965673,
         "echo": 0.0,
-        "characteristics": 0.0044448493419622535,
-        "total": 0.5335767244020341
+        "characteristics": 0.003636842633447183,
+        "total": 0.61133968359912
       },
       "latency_s": {
-        "median": 1.1085,
-        "max": 2.81
+        "median": 1.245,
+        "max": 2.979
       },
       "false_tracks": {
-        "count": 4,
-        "per_minute": 2.0,
-        "radiator": 4,
+        "count": 3,
+        "per_minute": 1.5,
+        "radiator": 3,
         "echo": 0
       },
       "false_track_list": [
         {
-          "track": "r9",
+          "track": "r11",
           "median_xy": [
-            1415.0,
-            480.0
+            1440.0,
+            695.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 66.03786792439622
-        },
-        {
-          "track": "r10",
-          "median_xy": [
-            1425.0,
-            285.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 116.0775602776007
+          "median_error_m": 42.28609259233479
         },
         {
           "track": "r12",
           "median_xy": [
-            1425.0,
-            395.0
+            1385.0,
+            755.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 92.66067126888305
+          "median_error_m": 39.12657691761639
         },
         {
-          "track": "r6",
+          "track": "r13",
           "median_xy": [
-            1450.0,
-            820.0
+            1435.0,
+            720.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 49.69602611498657
+          "median_error_m": 20.071764089289932
         }
       ],
       "objects": {
@@ -2555,33 +2445,32 @@
           "kind": "ship",
           "radiates": true,
           "pd": {
-            "radiator": 0.7777777777777778,
-            "any": 0.7777777777777778
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
           },
           "median_error_m": {
-            "radiator": 1.1699999999999875,
-            "any": 1.1699999999999875
+            "radiator": 1.4135416513141918,
+            "any": 1.4135416513141918
           },
           "tracks": [
-            "r18",
-            "r5",
-            "r8"
+            "r10",
+            "r5"
           ]
         },
         "tug": {
           "kind": "ship",
           "radiates": true,
           "pd": {
-            "radiator": 0.09259259259259259,
-            "any": 0.09259259259259259
+            "radiator": 0.07407407407407407,
+            "any": 0.07407407407407407
           },
           "median_error_m": {
-            "radiator": 1.9582396891748264,
-            "any": 1.9582396891748264
+            "radiator": 1.5676085497590857,
+            "any": 1.5676085497590857
           },
           "tracks": [
             "r1",
-            "r22"
+            "r15"
           ]
         },
         "moored": {
@@ -2663,6 +2552,11 @@
         "echo": null
       },
       "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 58,
+        "inside": 48,
+        "fraction": 0.8275862068965517
+      },
       "size_order": {
         "frames_all_three": 0,
         "hull_below_piling": 0,
@@ -2675,14 +2569,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5292769237750083,
+        "passive": 0.5944313527498404,
         "echo": 0.0,
-        "characteristics": 0.004459611716811196,
-        "total": 0.5337365354918195
+        "characteristics": 0.0038401452083538365,
+        "total": 0.5982714979581942
       },
       "latency_s": {
-        "median": 1.108,
-        "max": 2.802
+        "median": 1.241,
+        "max": 1.378
       },
       "false_tracks": {
         "count": 4,
@@ -2692,40 +2586,40 @@
       },
       "false_track_list": [
         {
-          "track": "r6",
+          "track": "r7",
           "median_xy": [
-            1425.0,
-            560.0
+            1395.0,
+            375.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 66.06252099445314
+          "median_error_m": 21.213203435596505
         },
         {
           "track": "r9",
           "median_xy": [
-            1417.5,
-            317.5
+            1400.0,
+            320.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 83.62364197825437
+          "median_error_m": 39.44616584663209
         },
         {
-          "track": "r7",
+          "track": "r14",
           "median_xy": [
-            1415.0,
-            362.5
+            1440.0,
+            695.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 66.89001307107803
+          "median_error_m": 42.28609259233479
         },
         {
-          "track": "r10",
+          "track": "r15",
           "median_xy": [
-            1425.0,
-            285.0
+            1385.0,
+            755.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 116.0775602776007
+          "median_error_m": 39.12657691761639
         }
       ],
       "objects": {
@@ -2733,17 +2627,15 @@
           "kind": "ship",
           "radiates": true,
           "pd": {
-            "radiator": 0.6111111111111112,
-            "any": 0.6111111111111112
+            "radiator": 0.6666666666666666,
+            "any": 0.6666666666666666
           },
           "median_error_m": {
-            "radiator": 1.169999999999959,
-            "any": 1.169999999999959
+            "radiator": 3.0240052435751847,
+            "any": 3.0240052435751847
           },
           "tracks": [
-            "r11",
-            "r12",
-            "r18",
+            "r13",
             "r8"
           ]
         },
@@ -2755,11 +2647,11 @@
             "any": 0.05555555555555555
           },
           "median_error_m": {
-            "radiator": 1.9582396891748264,
-            "any": 1.9582396891748264
+            "radiator": 1.4535524287453017,
+            "any": 1.4535524287453017
           },
           "tracks": [
-            "r22"
+            "r18"
           ]
         },
         "moored": {
@@ -2841,6 +2733,11 @@
         "echo": null
       },
       "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 52,
+        "inside": 41,
+        "fraction": 0.7884615384615384
+      },
       "size_order": {
         "frames_all_three": 0,
         "hull_below_piling": 0,
@@ -2853,88 +2750,106 @@
       "held_out": true,
       "record_s": 60.0,
       "compute_per_second_of_data": {
-        "passive": 0.5025969464521041,
-        "echo": 0.8770952268845577,
-        "characteristics": 0.22019317631663096,
-        "total": 1.5998853496532925
+        "passive": 0.8674223847682394,
+        "echo": 1.098798767165863,
+        "characteristics": 0.34775121255200553,
+        "total": 2.3139723644861077
       },
       "latency_s": {
-        "median": 3.183,
-        "max": 4.567
+        "median": 3.616,
+        "max": 5.135
       },
       "false_tracks": {
         "count": 7,
         "per_minute": 7.0,
-        "radiator": 3,
-        "echo": 4
+        "radiator": 2,
+        "echo": 5
       },
       "false_track_list": [
         {
-          "track": "r5",
+          "track": "r3",
           "median_xy": [
-            284.0,
-            90.0
+            336.0,
+            104.0
           ],
           "nearest_object": "boat",
-          "median_error_m": 32.448372131857
+          "median_error_m": 20.822080200841377
         },
         {
           "track": "e1",
           "median_xy": [
-            236.0,
-            188.0
+            264.0,
+            202.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 26.168395137901737
+          "median_error_m": 26.83351899350912
         },
         {
-          "track": "e6",
+          "track": "e2",
           "median_xy": [
-            301.0,
-            144.0
+            274.0,
+            175.0
+          ],
+          "nearest_object": "uuv2",
+          "median_error_m": 50.461838831649466
+        },
+        {
+          "track": "e9",
+          "median_xy": [
+            296.0,
+            90.0
           ],
           "nearest_object": "boat",
-          "median_error_m": 30.237398246974134
+          "median_error_m": 28.288731357803837
         },
         {
-          "track": "e20",
+          "track": "r22",
           "median_xy": [
-            158.0,
-            150.0
+            181.0,
+            124.0
           ],
           "nearest_object": "tug",
-          "median_error_m": 38.777833651837966
+          "median_error_m": 19.59780926148706
         },
         {
-          "track": "r3",
-          "median_xy": [
-            316.0,
-            164.0
-          ],
-          "nearest_object": "boat",
-          "median_error_m": 31.61286099718391
-        },
-        {
-          "track": "r30",
-          "median_xy": [
-            135.0,
-            212.0
-          ],
-          "nearest_object": "ferry",
-          "median_error_m": 41.098684506318726
-        },
-        {
-          "track": "e54",
+          "track": "e64",
           "median_xy": [
             56.0,
-            260.0
+            259.0
           ],
           "nearest_object": "piling6",
-          "median_error_m": 15.524174696260024
+          "median_error_m": 13.779067361430211
+        },
+        {
+          "track": "e66",
+          "median_xy": [
+            44.0,
+            244.0
+          ],
+          "nearest_object": "piling6",
+          "median_error_m": 15.508062419270823
         }
       ],
       "objects": {
         "ferry": {
+          "kind": "ship",
+          "radiates": true,
+          "pd": {
+            "radiator": 0.9911504424778761,
+            "echo": 0.0,
+            "any": 0.9911504424778761
+          },
+          "median_error_m": {
+            "radiator": 0.25689951455794413,
+            "echo": null,
+            "any": 0.25689951455794413
+          },
+          "tracks": [
+            "r2",
+            "r28"
+          ]
+        },
+        "tug": {
           "kind": "ship",
           "radiates": true,
           "pd": {
@@ -2943,26 +2858,9 @@
             "any": 1.0
           },
           "median_error_m": {
-            "radiator": 0.4541462075803287,
+            "radiator": 0.5146853542768788,
             "echo": null,
-            "any": 0.4541462075803287
-          },
-          "tracks": [
-            "r2"
-          ]
-        },
-        "tug": {
-          "kind": "ship",
-          "radiates": true,
-          "pd": {
-            "radiator": 0.8584070796460177,
-            "echo": 0.0,
-            "any": 0.8584070796460177
-          },
-          "median_error_m": {
-            "radiator": 0.7133610438453837,
-            "echo": null,
-            "any": 0.7133610438453837
+            "any": 0.5146853542768788
           },
           "tracks": [
             "r4"
@@ -2972,18 +2870,18 @@
           "kind": "ship",
           "radiates": true,
           "pd": {
-            "radiator": 0.7964601769911505,
+            "radiator": 0.6991150442477876,
             "echo": 0.0,
-            "any": 0.7964601769911505
+            "any": 0.6991150442477876
           },
           "median_error_m": {
-            "radiator": 0.482473827922751,
+            "radiator": 0.22476920285819246,
             "echo": null,
-            "any": 0.482473827922751
+            "any": 0.22476920285819246
           },
           "tracks": [
             "r1",
-            "r43"
+            "r25"
           ]
         },
         "uuv1": {
@@ -2991,16 +2889,17 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.39732142857142855,
-            "any": 0.3938053097345133
+            "echo": 0.6026785714285714,
+            "any": 0.5973451327433629
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.8451500708441144,
-            "any": 1.8451500708441144
+            "echo": 1.6350442278965678,
+            "any": 1.6350442278965678
           },
           "tracks": [
-            "e22"
+            "e6",
+            "e73"
           ]
         },
         "uuv2": {
@@ -3008,16 +2907,16 @@
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.6785714285714286,
-            "any": 0.672566371681416
+            "echo": 0.8839285714285714,
+            "any": 0.8761061946902655
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 2.0331088172168075,
-            "any": 2.0331088172168075
+            "echo": 1.0361734974090497,
+            "any": 1.0361734974090497
           },
           "tracks": [
-            "e19"
+            "e5"
           ]
         },
         "diver": {
@@ -3158,22 +3057,27 @@
           "moored": 0.0
         },
         "echo": {
-          "ferry": 0.008658008658008658,
-          "tug": 0.025974025974025976,
-          "boat": 0.05194805194805195,
-          "uuv1": 0.29004329004329005,
-          "uuv2": 0.36796536796536794,
-          "diver": 0.021645021645021644,
-          "piling1": 0.0,
-          "piling2": 0.0,
-          "piling3": 0.004329004329004329,
+          "ferry": 0.0,
+          "tug": 0.0,
+          "boat": 0.04329004329004329,
+          "uuv1": 0.5281385281385281,
+          "uuv2": 0.6883116883116883,
+          "diver": 0.09523809523809523,
+          "piling1": 0.008658008658008658,
+          "piling2": 0.004329004329004329,
+          "piling3": 0.0,
           "piling4": 0.0,
           "piling5": 0.0,
-          "piling6": 0.004329004329004329,
+          "piling6": 0.0,
           "moored": 0.0
         }
       },
       "gpu": "Quadro RTX 4000",
+      "ellipse_coverage": {
+        "fixes": 877,
+        "inside": 821,
+        "fraction": 0.936145952109464
+      },
       "size_order": {
         "frames_all_three": 0,
         "hull_below_piling": 0,
@@ -3202,7 +3106,7 @@
           "source_level": 1.2644,
           "width_major": 9.24,
           "width_minor": 2.31,
-          "speed": 3.99,
+          "speed": 4.0,
           "residual": 0.67
         },
         "size_ratio_per_frame": {}
@@ -3226,7 +3130,7 @@
           "source_level": 0.8275,
           "width_major": 15.49,
           "width_minor": 3.5,
-          "speed": 2.9450000000000003,
+          "speed": 3.02,
           "residual": 1.2349999999999999
         },
         "size_ratio_per_frame": {}
@@ -3250,7 +3154,7 @@
           "source_level": 0.5935,
           "width_major": 46.9,
           "width_minor": 6.235,
-          "speed": 4.89,
+          "speed": 4.91,
           "residual": 1.4
         },
         "size_ratio_per_frame": {}
@@ -3265,64 +3169,75 @@
           1.0
         ],
         "true_speed": 2.000000000000001,
-        "detected_frames": 42,
+        "detected_frames": 53,
         "seen": {
-          "echo": 42
+          "echo": 53
         },
         "median": {
-          "size_ratio_db": 14.9,
-          "strength_db": 1.4,
-          "along": 3.5,
-          "across": 6.4,
+          "size_ratio_db": -4.9,
+          "strength_db": -7.9,
+          "along": 4.3,
+          "across": 4.0,
           "source_level": null,
-          "width_major": 8.99,
-          "width_minor": 3.44,
-          "speed": 2.07,
-          "residual": 1.17
+          "width_major": 4.62,
+          "width_minor": 2.31,
+          "speed": 2.01,
+          "residual": 1.24
         },
         "size_ratio_per_frame": {
-          "7.5": -5.3,
-          "7.75": -8.9,
-          "8.0": -9.3,
-          "8.25": -9.3,
-          "8.5": -9.3,
-          "8.75": -7.3,
-          "9.0": -7.3,
-          "9.25": -5.3,
-          "9.5": 4.3,
-          "9.75": -5.3,
-          "10.0": -5.3,
-          "10.25": -5.3,
-          "10.5": -0.6,
-          "10.75": 9.0,
-          "11.0": 14.9,
-          "11.25": 14.9,
-          "11.5": 14.9,
-          "11.75": 14.9,
-          "12.0": 14.9,
-          "12.25": 14.9,
-          "12.5": 14.9,
-          "12.75": 14.9,
-          "13.0": 14.9,
-          "13.25": 14.9,
-          "13.5": 14.9,
-          "13.75": 14.9,
-          "14.0": 14.9,
-          "14.25": 14.9,
-          "14.5": 16.8,
-          "14.75": 16.8,
-          "15.0": 16.8,
-          "15.25": 11.9,
-          "15.5": 15.7,
-          "15.75": 15.7,
-          "16.0": 15.7,
-          "16.25": 15.7,
-          "16.5": 15.7,
-          "16.75": 15.7,
-          "17.0": 15.7,
-          "17.25": 15.7,
-          "17.5": 15.7,
-          "17.75": 15.7
+          "4.75": -14.9,
+          "5.0": -9.1,
+          "5.25": -3.3,
+          "5.5": -3.3,
+          "5.75": -7.3,
+          "6.0": -7.3,
+          "6.25": -7.3,
+          "6.5": -7.3,
+          "6.75": -9.6,
+          "7.0": -10.5,
+          "7.25": -11.3,
+          "7.5": -10.5,
+          "7.75": -10.5,
+          "8.0": -10.5,
+          "8.25": -10.5,
+          "8.5": -10.5,
+          "8.75": -10.5,
+          "9.0": -10.5,
+          "9.25": -6.6,
+          "9.5": -4.6,
+          "9.75": -4.6,
+          "10.0": -4.6,
+          "10.25": -4.6,
+          "10.5": -4.6,
+          "10.75": -3.4,
+          "11.0": -3.4,
+          "11.25": -3.4,
+          "11.5": -4.6,
+          "11.75": -3.3,
+          "12.0": -4.6,
+          "12.25": -4.6,
+          "12.5": -4.6,
+          "12.75": -5.7,
+          "13.0": -6.2,
+          "13.25": -6.2,
+          "13.5": -6.2,
+          "13.75": -6.2,
+          "14.0": -6.2,
+          "14.25": -6.2,
+          "14.5": -4.9,
+          "14.75": -4.9,
+          "15.0": -4.9,
+          "15.25": -7.9,
+          "15.5": -4.9,
+          "15.75": -4.9,
+          "16.0": -4.9,
+          "16.25": -4.9,
+          "16.5": -4.9,
+          "16.75": -4.9,
+          "17.0": -4.9,
+          "17.25": -4.9,
+          "17.5": -4.9,
+          "17.75": -4.9
         }
       },
       {
@@ -3335,70 +3250,84 @@
           1.0
         ],
         "true_speed": 1.5000000000000024,
-        "detected_frames": 48,
+        "detected_frames": 62,
         "seen": {
-          "echo": 48
+          "echo": 62
         },
         "median": {
-          "size_ratio_db": 9.4,
-          "strength_db": -0.6,
-          "along": 5.9,
-          "across": 4.2,
+          "size_ratio_db": -2.4,
+          "strength_db": -6.5,
+          "along": 5.2,
+          "across": 3.8,
           "source_level": null,
           "width_major": 6.93,
-          "width_minor": 3.55,
-          "speed": 1.52,
-          "residual": 0.98
+          "width_minor": 2.31,
+          "speed": 1.42,
+          "residual": 1.22
         },
         "size_ratio_per_frame": {
-          "6.0": -13.7,
-          "6.25": -5.1,
-          "6.5": -5.1,
-          "6.75": -5.1,
-          "7.0": -5.1,
-          "7.25": -5.1,
-          "7.5": 3.5,
-          "7.75": 3.5,
-          "8.0": 3.5,
-          "8.25": 4.0,
-          "8.5": 4.6,
-          "8.75": 7.3,
-          "9.0": 10.0,
-          "9.25": 11.7,
-          "9.5": 13.1,
-          "9.75": 13.1,
-          "10.0": 13.1,
-          "10.25": 13.5,
-          "10.5": 13.5,
-          "10.75": 13.5,
-          "11.0": 14.2,
-          "11.25": 13.5,
-          "11.5": 13.5,
-          "11.75": 13.5,
-          "12.0": 13.5,
-          "12.25": 13.5,
-          "12.5": 13.5,
-          "12.75": 13.5,
-          "13.0": 13.5,
-          "13.25": 13.5,
-          "13.5": 11.8,
-          "13.75": 11.8,
-          "14.0": 11.8,
-          "14.25": 11.8,
-          "14.5": 11.8,
-          "14.75": 11.8,
-          "15.0": 8.8,
-          "15.25": 8.8,
-          "15.5": 8.8,
-          "15.75": 8.8,
-          "16.0": 8.8,
-          "16.25": 8.8,
-          "16.5": 8.8,
-          "16.75": 8.8,
-          "17.0": 8.8,
-          "17.25": 8.8,
-          "17.5": 8.8,
-          "17.75": 8.8
+          "2.5": 4.6,
+          "2.75": -0.8,
+          "3.0": -2.6,
+          "3.25": -0.0,
+          "3.5": -2.6,
+          "3.75": -0.0,
+          "4.0": 0.6,
+          "4.25": 1.6,
+          "4.5": -1.0,
+          "4.75": 0.5,
+          "5.0": 0.5,
+          "5.25": -1.4,
+          "5.5": -1.4,
+          "5.75": -2.9,
+          "6.0": -3.3,
+          "6.25": -3.7,
+          "6.5": -4.9,
+          "6.75": -4.9,
+          "7.0": -4.9,
+          "7.25": -4.9,
+          "7.5": -4.9,
+          "7.75": -8.5,
+          "8.0": -7.1,
+          "8.25": -9.1,
+          "8.5": -9.1,
+          "8.75": -7.1,
+          "9.0": -9.1,
+          "9.25": -10.5,
+          "9.5": -9.1,
+          "9.75": -5.7,
+          "10.0": -3.4,
+          "10.25": -3.4,
+          "10.5": -3.4,
+          "10.75": -3.4,
+          "11.0": -3.4,
+          "11.25": -2.1,
+          "11.5": -2.1,
+          "11.75": -2.1,
+          "12.0": -2.1,
+          "12.25": -2.1,
+          "12.5": -2.1,
+          "12.75": -2.1,
+          "13.0": -2.1,
+          "13.25": -2.1,
+          "13.5": -2.1,
+          "13.75": -2.1,
+          "14.0": -2.1,
+          "14.25": -2.4,
+          "14.5": -2.4,
+          "14.75": -2.4,
+          "15.0": -2.4,
+          "15.25": -2.4,
+          "15.5": -2.4,
+          "15.75": -2.4,
+          "16.0": -2.4,
+          "16.25": -2.4,
+          "16.5": -2.4,
+          "16.75": -2.4,
+          "17.0": -2.4,
+          "17.25": -2.4,
+          "17.5": -2.4,
+          "17.75": -2.4
         }
       },
       {
@@ -3411,66 +3340,75 @@
           6.0
         ],
         "true_speed": 0.0,
-        "detected_frames": 44,
+        "detected_frames": 53,
         "seen": {
-          "echo": 44
+          "echo": 53
         },
         "median": {
-          "size_ratio_db": 13.2,
-          "strength_db": 9.15,
-          "along": 7.0,
-          "across": 6.0,
+          "size_ratio_db": -0.8,
+          "strength_db": -3.8,
+          "along": 7.9,
+          "across": 7.2,
           "source_level": null,
-          "width_major": 9.24,
+          "width_major": 11.55,
           "width_minor": 2.31,
-          "speed": 0.36,
-          "residual": 0.755
+          "speed": 0.93,
+          "residual": 2.21
         },
         "size_ratio_per_frame": {
-          "7.0": 17.4,
-          "7.25": 17.4,
-          "7.5": 17.4,
-          "7.75": 17.4,
-          "8.0": 17.4,
-          "8.25": 17.4,
-          "8.5": 17.4,
-          "8.75": 17.4,
-          "9.0": 17.4,
-          "9.25": 17.4,
-          "9.5": 0.6,
-          "9.75": 0.6,
-          "10.0": 0.6,
-          "10.25": 0.6,
-          "10.5": 0.6,
-          "10.75": 0.6,
-          "11.0": 0.6,
-          "11.25": 0.6,
-          "11.5": 13.2,
-          "11.75": 9.1,
-          "12.0": 3.7,
-          "12.25": 9.1,
-          "12.5": 11.9,
-          "12.75": 11.7,
-          "13.0": 13.2,
-          "13.25": 11.4,
-          "13.5": 11.4,
-          "13.75": 11.4,
-          "14.0": 11.4,
-          "14.25": 13.2,
-          "14.5": 13.2,
-          "14.75": 13.2,
-          "15.0": 13.2,
-          "15.25": 13.2,
-          "15.5": 13.2,
-          "15.75": 13.2,
-          "16.0": 4.3,
-          "16.25": 8.0,
-          "16.5": 19.4,
-          "16.75": 30.9,
-          "17.0": 28.2,
-          "17.25": 25.6,
-          "17.5": 23.3,
-          "17.75": 23.3
+          "4.75": -0.4,
+          "5.0": -0.9,
+          "5.25": -1.5,
+          "5.5": -3.0,
+          "5.75": -3.0,
+          "6.0": -3.0,
+          "6.25": -4.5,
+          "6.5": -7.2,
+          "6.75": -4.5,
+          "7.0": -3.0,
+          "7.25": -3.0,
+          "7.5": -3.0,
+          "7.75": -0.8,
+          "8.0": -0.8,
+          "8.25": -3.7,
+          "8.5": 1.0,
+          "8.75": 1.0,
+          "9.0": -1.2,
+          "9.25": -2.2,
+          "9.5": -4.6,
+          "9.75": -5.7,
+          "10.0": -5.7,
+          "10.25": -4.0,
+          "10.5": -4.0,
+          "10.75": -2.2,
+          "11.0": -4.0,
+          "11.25": -4.0,
+          "11.5": -1.8,
+          "11.75": -0.4,
+          "12.0": -0.0,
+          "12.25": -0.4,
+          "12.5": -0.6,
+          "12.75": -0.6,
+          "13.0": -0.6,
+          "13.25": 0.5,
+          "13.5": 0.5,
+          "13.75": -0.8,
+          "14.0": -0.8,
+          "14.25": -2.7,
+          "14.5": 0.3,
+          "14.75": 0.3,
+          "15.0": 2.3,
+          "15.25": 3.6,
+          "15.5": 5.0,
+          "15.75": 5.7,
+          "16.0": 6.3,
+          "16.25": 6.8,
+          "16.5": 7.9,
+          "16.75": 6.9,
+          "17.0": 8.3,
+          "17.25": 8.8,
+          "17.5": 7.4,
+          "17.75": 8.8
         }
       }
     ],
@@ -3482,22 +3420,30 @@
         "true_level_pa": 1.0,
         "true_size_m": null,
         "true_speed": 3.4999999999999596,
-        "detected_frames": 226,
+        "detected_frames": 224,
         "seen": {
-          "own noise": 226
+          "own noise": 241,
+          "both": 6
         },
         "median": {
-          "size_ratio_db": null,
-          "strength_db": null,
-          "along": null,
-          "across": null,
-          "source_level": 1.1466,
-          "width_major": 11.55,
-          "width_minor": 3.6799999999999997,
-          "speed": 3.44,
-          "residual": 1.41
+          "size_ratio_db": -12.2,
+          "strength_db": 2.1,
+          "along": 11.9,
+          "across": 10.1,
+          "source_level": 1.1373,
+          "width_major": 14.05,
+          "width_minor": 3.74,
+          "speed": 3.5,
+          "residual": 1.35
         },
-        "size_ratio_per_frame": {}
+        "size_ratio_per_frame": {
+          "9.75": -12.2,
+          "10.0": -12.2,
+          "10.25": -12.2,
+          "10.5": -12.2,
+          "10.75": -12.2,
+          "11.0": -12.2
+        }
       },
       {
         "object": "tug",
@@ -3506,22 +3452,28 @@
         "true_level_pa": 0.7,
         "true_size_m": null,
         "true_speed": 2.499999999999996,
-        "detected_frames": 194,
+        "detected_frames": 226,
         "seen": {
-          "own noise": 194
+          "own noise": 222,
+          "both": 4
         },
         "median": {
-          "size_ratio_db": null,
-          "strength_db": null,
-          "along": null,
-          "across": null,
-          "source_level": 0.7261,
-          "width_major": 32.825,
-          "width_minor": 4.475,
-          "speed": 2.4850000000000003,
-          "residual": 1.37
+          "size_ratio_db": -16.8,
+          "strength_db": -10.0,
+          "along": 4.4,
+          "across": 4.8,
+          "source_level": 0.7281,
+          "width_major": 29.92,
+          "width_minor": 4.49,
+          "speed": 2.49,
+          "residual": 1.45
         },
-        "size_ratio_per_frame": {}
+        "size_ratio_per_frame": {
+          "47.0": -16.8,
+          "47.25": -16.8,
+          "47.5": -16.8,
+          "47.75": -16.8
+        }
       },
       {
         "object": "boat",
@@ -3530,20 +3482,20 @@
         "true_level_pa": 0.3,
         "true_size_m": null,
         "true_speed": 3.7092207735249043,
-        "detected_frames": 180,
+        "detected_frames": 158,
         "seen": {
-          "own noise": 197
+          "own noise": 192
         },
         "median": {
           "size_ratio_db": null,
           "strength_db": null,
           "along": null,
           "across": null,
-          "source_level": 0.4513,
-          "width_major": 21.25,
-          "width_minor": 4.38,
-          "speed": 4.28,
-          "residual": 1.25
+          "source_level": 0.4521,
+          "width_major": 27.27,
+          "width_minor": 4.48,
+          "speed": 4.45,
+          "residual": 1.24
         },
         "size_ratio_per_frame": {}
       },
@@ -3557,183 +3509,221 @@
           1.0
         ],
         "true_speed": 1.6999999999999735,
-        "detected_frames": 89,
+        "detected_frames": 135,
         "seen": {
-          "echo": 161
+          "echo": 194,
+          "both": 4
         },
         "median": {
-          "size_ratio_db": -6.7,
-          "strength_db": -8.0,
-          "along": 5.7,
-          "across": 4.8,
-          "source_level": null,
-          "width_major": 9.64,
-          "width_minor": 4.26,
-          "speed": 1.93,
-          "residual": 1.61
+          "size_ratio_db": -8.8,
+          "strength_db": -4.6,
+          "along": 5.5,
+          "across": 5.3,
+          "source_level": 0.79055,
+          "width_major": 9.41,
+          "width_minor": 4.16,
+          "speed": 1.65,
+          "residual": 1.53
         },
         "size_ratio_per_frame": {
-          "14.75": -19.2,
-          "15.0": -11.4,
-          "15.25": -3.9,
-          "15.5": -3.9,
-          "15.75": -3.9,
-          "16.0": -3.9,
-          "16.25": -3.9,
-          "16.5": -3.9,
-          "16.75": -3.9,
-          "17.0": -3.9,
-          "17.25": -3.9,
-          "17.5": -3.9,
-          "17.75": -7.0,
-          "18.0": -7.0,
-          "18.25": -6.3,
-          "18.5": -6.3,
-          "18.75": -8.2,
+          "5.25": -12.5,
+          "5.5": -16.0,
+          "5.75": -12.5,
+          "6.0": -16.0,
+          "6.25": -19.3,
+          "6.5": -19.4,
+          "6.75": -19.3,
+          "7.0": -18.5,
+          "7.25": -18.5,
+          "7.5": -17.4,
+          "7.75": -17.4,
+          "8.0": -17.4,
+          "8.25": -17.4,
+          "8.5": -14.3,
+          "8.75": -10.7,
+          "9.0": -10.7,
+          "9.25": -10.7,
+          "9.5": -10.7,
+          "9.75": -10.4,
+          "10.0": -10.4,
+          "10.25": -9.4,
+          "10.5": -8.9,
+          "10.75": -7.5,
+          "11.0": -7.7,
+          "11.25": -7.7,
+          "11.5": -8.9,
+          "11.75": -8.9,
+          "12.0": -7.7,
+          "12.25": -5.9,
+          "12.5": -5.9,
+          "12.75": -6.6,
+          "13.0": -8.8,
+          "13.25": -8.8,
+          "13.5": -8.8,
+          "13.75": -6.0,
+          "14.0": -6.0,
+          "14.25": -8.8,
+          "14.5": -11.2,
+          "14.75": -11.2,
+          "15.0": -11.2,
+          "15.25": -8.3,
+          "15.5": -8.3,
+          "15.75": -11.8,
+          "16.0": -8.3,
+          "16.25": -8.5,
+          "16.5": -4.7,
+          "16.75": -4.7,
+          "17.0": -5.9,
+          "17.25": -6.1,
+          "17.5": -9.3,
+          "17.75": -6.1,
+          "18.0": -7.9,
+          "18.25": -6.1,
+          "18.5": -6.5,
+          "18.75": -7.6,
           "19.0": -6.3,
-          "19.25": -8.2,
-          "19.5": -8.2,
-          "19.75": -8.2,
-          "20.0": -8.2,
-          "20.25": -10.2,
-          "20.5": -10.2,
-          "20.75": -9.9,
-          "21.0": -9.9,
-          "21.25": -9.6,
-          "21.5": -9.6,
-          "21.75": -7.9,
-          "22.0": -5.0,
-          "22.25": -5.0,
-          "22.5": -5.0,
-          "22.75": -5.0,
-          "23.0": -6.4,
-          "23.25": -5.0,
-          "23.5": -6.4,
-          "23.75": -5.8,
-          "24.0": -5.8,
-          "24.25": -5.8,
-          "24.5": -5.8,
-          "24.75": -6.7,
-          "25.0": -6.7,
-          "25.25": -5.9,
-          "25.5": -5.9,
-          "25.75": -5.9,
-          "26.0": -5.9,
-          "26.25": -5.9,
-          "26.5": -4.7,
-          "26.75": -5.7,
-          "27.0": -4.2,
-          "27.25": -6.0,
-          "27.5": -3.3,
-          "27.75": -5.3,
-          "28.0": -3.3,
-          "28.25": -3.3,
-          "28.5": -3.3,
-          "28.75": -3.3,
-          "29.0": -3.3,
-          "29.25": -3.3,
-          "29.5": -3.7,
-          "29.75": -2.6,
-          "30.0": -2.6,
-          "30.25": 0.3,
-          "30.5": 0.3,
-          "30.75": 0.3,
-          "31.0": 0.3,
-          "31.25": 2.0,
-          "31.5": 2.0,
-          "31.75": 2.0,
-          "32.0": 2.0,
-          "32.25": 2.0,
-          "32.5": 1.5,
-          "32.75": 1.5,
-          "33.0": 1.5,
-          "33.25": 1.5,
-          "33.5": 1.5,
-          "33.75": 1.5,
-          "34.0": 1.5,
-          "34.25": 2.4,
-          "34.5": 1.5,
-          "34.75": 2.4,
-          "35.0": 1.5,
-          "35.25": 1.4,
-          "35.5": 2.3,
-          "35.75": 2.3,
-          "36.0": 2.3,
-          "36.25": 0.2,
-          "36.5": -0.0,
-          "36.75": -0.0,
-          "37.0": -0.0,
-          "37.25": -0.0,
-          "37.5": -1.8,
-          "37.75": -1.8,
-          "38.0": -1.8,
-          "38.25": -3.1,
-          "38.5": -3.1,
-          "38.75": -4.5,
-          "39.0": -4.5,
-          "39.25": -9.9,
-          "39.5": -9.1,
-          "39.75": -9.1,
-          "40.0": -9.1,
-          "40.25": -9.1,
-          "40.5": -9.1,
-          "40.75": -9.1,
-          "41.0": -9.1,
-          "41.25": -9.1,
-          "41.5": -9.1,
-          "41.75": -9.1,
-          "42.0": -9.1,
-          "42.25": -14.6,
-          "42.5": -15.9,
-          "42.75": -15.9,
-          "43.0": -15.9,
-          "43.25": -15.9,
-          "43.5": -15.9,
-          "43.75": -15.9,
-          "44.0": -15.9,
-          "44.25": -15.9,
-          "44.5": -15.9,
-          "44.75": -15.9,
-          "45.0": -15.9,
-          "45.25": -15.9,
-          "45.5": -15.9,
-          "45.75": -15.9,
-          "46.0": -15.9,
-          "46.25": -15.9,
-          "46.5": -15.9,
-          "46.75": -15.9,
-          "47.0": -15.9,
-          "47.25": -15.9,
-          "47.5": -15.9,
-          "47.75": -15.9,
-          "48.0": -15.9,
-          "48.25": -15.9,
-          "48.5": -15.9,
-          "48.75": -15.9,
-          "49.0": -15.9,
-          "49.25": -15.9,
-          "49.5": -15.9,
-          "49.75": -15.9,
-          "50.0": -15.9,
-          "50.25": -15.9,
-          "50.5": -15.9,
-          "50.75": -15.9,
-          "51.0": -15.9,
-          "51.25": -15.9,
-          "51.5": -15.9,
-          "51.75": -15.9,
-          "52.0": -15.9,
-          "52.25": -15.9,
-          "52.5": -15.9,
-          "52.75": -15.9,
-          "53.0": -15.9,
-          "53.25": -15.9,
-          "53.5": -15.9,
-          "53.75": -15.9,
-          "54.0": -15.9,
-          "54.25": -15.9,
-          "54.5": -15.9,
-          "54.75": -15.9
+          "19.25": -7.7,
+          "19.5": -7.7,
+          "19.75": -7.7,
+          "20.0": -6.3,
+          "20.25": -8.6,
+          "20.5": -8.6,
+          "20.75": -6.2,
+          "21.0": -5.1,
+          "21.25": -5.1,
+          "21.5": -4.4,
+          "21.75": -4.8,
+          "22.0": -5.5,
+          "22.25": -5.5,
+          "22.5": -6.0,
+          "22.75": -6.0,
+          "23.0": -6.0,
+          "23.25": -5.9,
+          "23.5": -6.7,
+          "23.75": -6.7,
+          "24.0": -6.5,
+          "24.25": -6.5,
+          "24.5": -6.5,
+          "24.75": -6.5,
+          "25.0": -6.5,
+          "25.25": -6.3,
+          "25.5": -6.3,
+          "25.75": -6.3,
+          "26.0": -6.5,
+          "26.25": -4.5,
+          "26.5": -2.6,
+          "26.75": -2.6,
+          "27.0": -2.6,
+          "27.25": -5.2,
+          "27.5": -1.9,
+          "27.75": -4.5,
+          "28.0": -4.2,
+          "28.25": -3.5,
+          "28.5": -3.4,
+          "28.75": -3.4,
+          "29.0": -6.4,
+          "29.25": -6.4,
+          "29.5": -6.4,
+          "29.75": -6.0,
+          "30.0": -7.7,
+          "30.25": -7.7,
+          "30.5": -8.3,
+          "30.75": -8.3,
+          "31.0": -8.3,
+          "31.25": -6.5,
+          "31.5": -6.4,
+          "31.75": -6.6,
+          "32.0": -6.6,
+          "32.25": -6.7,
+          "32.5": -6.2,
+          "32.75": -4.7,
+          "33.0": -2.6,
+          "33.25": -4.7,
+          "33.5": -6.2,
+          "33.75": -7.3,
+          "34.0": -7.6,
+          "34.25": -8.9,
+          "34.5": -8.9,
+          "34.75": -8.9,
+          "35.0": -8.9,
+          "35.25": -8.5,
+          "35.5": -5.0,
+          "35.75": -5.0,
+          "36.0": -1.4,
+          "36.25": -1.4,
+          "36.5": -3.7,
+          "36.75": -2.0,
+          "37.0": -3.8,
+          "37.25": -5.6,
+          "37.5": -7.0,
+          "37.75": -7.0,
+          "38.0": -8.6,
+          "38.25": -11.4,
+          "38.5": -11.4,
+          "38.75": -14.6,
+          "39.0": -14.6,
+          "39.25": -16.7,
+          "39.5": -16.7,
+          "39.75": -16.8,
+          "40.0": -16.8,
+          "40.25": -16.8,
+          "40.5": -16.8,
+          "40.75": -16.8,
+          "41.0": -16.8,
+          "41.25": -16.8,
+          "41.5": -16.8,
+          "41.75": -16.8,
+          "42.0": -16.8,
+          "42.25": -16.8,
+          "42.5": -16.8,
+          "42.75": -16.8,
+          "43.0": -16.8,
+          "43.25": -16.8,
+          "43.5": -16.8,
+          "43.75": -16.8,
+          "44.0": -16.8,
+          "44.25": -16.8,
+          "44.5": -16.8,
+          "44.75": -16.8,
+          "45.0": -16.8,
+          "45.25": -16.8,
+          "45.5": -16.8,
+          "45.75": -16.8,
+          "46.0": -16.8,
+          "46.25": -16.8,
+          "46.5": -16.8,
+          "46.75": -16.8,
+          "47.0": -16.8,
+          "47.25": -16.8,
+          "47.5": -16.8,
+          "47.75": -16.8,
+          "48.0": -16.8,
+          "48.25": -16.8,
+          "48.5": -16.8,
+          "48.75": -16.8,
+          "49.0": -16.8,
+          "49.25": -16.8,
+          "49.5": -16.8,
+          "49.75": -16.8,
+          "50.0": -16.8,
+          "50.25": -16.8,
+          "50.5": -16.8,
+          "50.75": -16.8,
+          "51.0": -16.8,
+          "51.25": -16.8,
+          "51.5": -16.8,
+          "51.75": -16.8,
+          "52.0": -16.8,
+          "55.5": -16.1,
+          "55.75": -12.4,
+          "56.0": -9.7,
+          "56.25": -9.7,
+          "56.5": -9.7,
+          "56.75": -9.2,
+          "57.0": -9.7,
+          "57.25": -9.7,
+          "57.5": -9.2,
+          "57.75": -8.6
         }
       },
       {
@@ -3746,194 +3736,237 @@
           1.0
         ],
         "true_speed": 1.200000000000003,
-        "detected_frames": 152,
+        "detected_frames": 198,
         "seen": {
-          "echo": 172
+          "echo": 215
         },
         "median": {
-          "size_ratio_db": -3.0,
-          "strength_db": -5.7,
+          "size_ratio_db": -3.9,
+          "strength_db": -4.6,
           "along": 2.9,
-          "across": 3.7,
+          "across": 4.8,
           "source_level": null,
-          "width_major": 4.62,
-          "width_minor": 2.31,
-          "speed": 0.89,
-          "residual": 1.8
+          "width_major": 7.53,
+          "width_minor": 2.85,
+          "speed": 1.09,
+          "residual": 1.41
         },
         "size_ratio_per_frame": {
-          "6.25": -8.1,
-          "6.5": -8.5,
-          "6.75": -8.1,
-          "7.0": -8.5,
-          "7.25": -8.1,
-          "7.5": -6.8,
-          "7.75": -8.1,
-          "8.0": -8.1,
-          "8.25": -8.3,
-          "8.5": -8.3,
-          "8.75": -8.3,
-          "9.0": -8.3,
-          "9.25": -8.7,
-          "9.5": -7.0,
-          "9.75": -7.0,
-          "10.0": -7.0,
-          "10.25": -4.6,
-          "10.5": -4.6,
-          "10.75": -3.2,
-          "11.0": -3.2,
-          "11.25": -2.7,
-          "11.5": -2.7,
-          "11.75": -0.8,
-          "12.0": 0.0,
-          "12.25": 0.2,
-          "12.5": 0.2,
-          "12.75": -0.3,
-          "13.0": -0.3,
-          "13.25": -1.5,
-          "13.5": -1.5,
-          "13.75": -1.5,
-          "14.0": -3.5,
-          "14.25": -2.4,
-          "14.5": -2.4,
-          "14.75": -3.5,
-          "15.0": -6.6,
-          "15.25": -7.9,
-          "15.5": -5.8,
-          "15.75": -5.8,
-          "16.0": -8.0,
-          "16.25": -8.0,
-          "16.5": -8.0,
-          "16.75": -8.0,
-          "17.0": -8.0,
-          "18.5": -8.0,
-          "24.0": -8.0,
-          "24.25": -8.0,
-          "24.5": -5.1,
-          "24.75": -2.4,
-          "25.0": -2.4,
-          "25.25": -2.4,
-          "25.5": -2.4,
-          "25.75": -2.4,
-          "26.0": -2.4,
-          "26.25": -2.4,
-          "26.5": -2.4,
-          "26.75": -3.6,
-          "27.0": -2.4,
-          "27.25": -2.4,
-          "27.5": -2.4,
-          "27.75": -2.8,
-          "28.0": -2.4,
-          "28.25": -2.4,
-          "28.5": -2.4,
-          "28.75": -2.4,
-          "29.0": -2.8,
-          "29.25": -2.8,
-          "29.5": -2.8,
-          "29.75": -1.2,
-          "30.0": -0.6,
-          "30.25": -0.6,
-          "30.5": -0.6,
-          "30.75": 0.8,
-          "31.0": 1.3,
-          "31.25": 1.3,
-          "31.5": 1.3,
-          "31.75": 1.3,
-          "32.0": 1.3,
-          "32.25": 1.3,
-          "32.5": 1.3,
-          "32.75": 1.3,
-          "33.0": 1.3,
-          "33.25": 1.3,
-          "33.5": 1.3,
-          "33.75": 1.3,
-          "34.0": 1.3,
-          "34.25": 1.3,
-          "34.5": 1.3,
-          "34.75": -0.6,
-          "35.0": -0.6,
-          "35.25": -0.6,
-          "35.5": -0.4,
-          "35.75": -0.4,
-          "36.0": -0.4,
-          "36.25": 0.2,
-          "36.5": 0.2,
-          "36.75": 0.2,
-          "37.0": 0.2,
-          "37.25": 0.4,
-          "37.5": 0.4,
-          "37.75": -0.0,
-          "38.0": -0.0,
-          "38.25": -0.0,
-          "38.5": -0.0,
-          "38.75": -0.0,
-          "39.0": -0.0,
-          "39.25": -1.0,
-          "39.5": -1.0,
-          "39.75": -2.5,
-          "40.0": -2.5,
-          "40.25": -2.5,
-          "40.5": -2.5,
-          "40.75": -2.5,
-          "41.0": -2.5,
-          "41.25": -2.5,
-          "41.5": -2.5,
-          "41.75": -2.5,
-          "42.0": -2.5,
-          "42.25": -2.5,
-          "42.5": -2.5,
-          "42.75": -2.7,
-          "43.0": -2.7,
-          "43.25": -3.9,
-          "43.5": -3.9,
-          "43.75": -3.9,
-          "44.0": -3.9,
-          "44.25": -3.9,
-          "44.5": -3.9,
-          "44.75": -3.9,
-          "45.0": -3.9,
-          "45.25": -3.9,
-          "45.5": -3.9,
-          "45.75": -3.9,
-          "46.0": -3.9,
-          "46.25": -3.9,
-          "46.5": -3.9,
-          "46.75": -3.9,
-          "47.0": -3.9,
-          "47.25": -3.9,
-          "47.5": -3.9,
-          "47.75": -3.9,
-          "48.0": -3.9,
-          "48.25": -3.9,
-          "48.5": -3.9,
-          "48.75": -3.9,
-          "49.0": -3.9,
-          "49.25": -3.9,
-          "49.5": -3.9,
-          "49.75": -3.9,
-          "50.0": -3.9,
-          "50.25": -3.9,
-          "50.5": -3.9,
-          "50.75": -3.9,
-          "51.0": -3.9,
-          "51.25": -3.9,
-          "51.5": -3.9,
-          "51.75": -3.9,
-          "52.0": -3.9,
-          "52.25": -3.9,
-          "52.5": -3.9,
-          "52.75": -3.9,
-          "53.0": -3.9,
-          "53.25": -3.9,
-          "53.5": -3.9,
-          "53.75": -3.9,
-          "54.0": -3.9,
-          "54.25": -3.9,
-          "54.5": -3.9,
-          "54.75": -3.9,
-          "55.0": -3.9,
-          "55.25": -3.9,
-          "55.5": -3.9
+          "4.0": -17.4,
+          "4.25": -9.0,
+          "4.5": -17.4,
+          "4.75": -9.0,
+          "5.0": -9.1,
+          "5.25": -6.9,
+          "5.5": -4.7,
+          "5.75": -2.6,
+          "6.0": -2.6,
+          "6.25": -4.4,
+          "6.5": -4.4,
+          "6.75": -4.4,
+          "7.0": -4.4,
+          "7.25": -3.9,
+          "7.5": -6.0,
+          "7.75": -8.9,
+          "8.0": -8.8,
+          "8.25": -9.8,
+          "8.5": -8.8,
+          "8.75": -9.4,
+          "9.0": -8.5,
+          "9.25": -9.4,
+          "9.5": -9.4,
+          "9.75": -8.8,
+          "10.0": -7.6,
+          "10.25": -5.6,
+          "10.5": -7.2,
+          "10.75": -4.4,
+          "11.0": -1.3,
+          "11.25": -1.2,
+          "11.5": -1.1,
+          "11.75": -1.7,
+          "12.0": -1.1,
+          "12.25": -1.0,
+          "12.5": -1.0,
+          "12.75": -1.7,
+          "13.0": -1.8,
+          "13.25": -2.6,
+          "13.5": -2.9,
+          "13.75": -2.9,
+          "14.0": -4.6,
+          "14.25": -6.2,
+          "14.5": -4.6,
+          "14.75": -5.2,
+          "15.0": -5.2,
+          "15.25": -4.9,
+          "15.5": -4.9,
+          "15.75": -7.5,
+          "16.0": -6.4,
+          "16.25": -5.6,
+          "16.5": -8.8,
+          "16.75": -6.3,
+          "17.0": -5.6,
+          "17.25": -6.3,
+          "17.5": -6.3,
+          "17.75": -6.3,
+          "18.0": -6.0,
+          "18.25": -1.6,
+          "18.5": 4.2,
+          "18.75": 4.2,
+          "19.0": 1.0,
+          "19.25": 1.0,
+          "19.5": -3.1,
+          "19.75": -3.1,
+          "20.0": -4.7,
+          "20.25": -4.7,
+          "20.5": -4.9,
+          "20.75": -8.0,
+          "21.0": -7.9,
+          "21.25": -11.1,
+          "21.5": -8.3,
+          "21.75": -5.0,
+          "22.0": -4.8,
+          "22.25": -8.3,
+          "22.5": -4.8,
+          "22.75": -3.5,
+          "23.0": -3.5,
+          "23.25": -3.5,
+          "23.5": 0.5,
+          "23.75": 4.3,
+          "24.0": 4.3,
+          "24.25": 4.3,
+          "24.5": 1.0,
+          "24.75": -3.5,
+          "25.0": -3.5,
+          "25.25": -3.1,
+          "25.5": -3.1,
+          "25.75": -3.1,
+          "26.0": -2.5,
+          "26.25": -2.9,
+          "26.5": -2.9,
+          "26.75": -1.8,
+          "27.0": -2.9,
+          "27.25": -2.9,
+          "27.5": -2.9,
+          "27.75": -4.0,
+          "28.0": -5.0,
+          "28.25": -5.9,
+          "28.5": -5.3,
+          "28.75": -5.3,
+          "29.0": -6.3,
+          "29.25": -6.3,
+          "29.5": -6.3,
+          "29.75": -4.7,
+          "30.0": -4.8,
+          "30.25": -8.1,
+          "30.5": -8.3,
+          "30.75": -8.3,
+          "31.0": -6.7,
+          "31.25": -3.3,
+          "31.5": -4.9,
+          "31.75": -7.4,
+          "32.0": -7.2,
+          "32.25": -5.9,
+          "32.5": -5.9,
+          "32.75": -6.3,
+          "33.0": -5.9,
+          "33.25": -6.3,
+          "33.5": -5.9,
+          "33.75": -5.9,
+          "34.0": -5.9,
+          "34.25": -5.9,
+          "34.5": -7.5,
+          "34.75": -7.5,
+          "35.0": -5.9,
+          "35.25": -5.9,
+          "35.5": -5.9,
+          "35.75": -4.6,
+          "36.0": -4.2,
+          "36.25": -1.6,
+          "36.5": -0.6,
+          "36.75": 0.4,
+          "37.0": 1.6,
+          "37.25": 2.2,
+          "37.5": 2.8,
+          "37.75": 2.8,
+          "38.0": 2.8,
+          "38.25": 2.8,
+          "38.5": 2.8,
+          "38.75": 1.5,
+          "39.0": 1.5,
+          "39.25": 1.5,
+          "39.5": -1.4,
+          "39.75": -3.8,
+          "40.0": -5.1,
+          "40.25": -5.1,
+          "40.5": -6.2,
+          "40.75": -6.2,
+          "41.0": -6.3,
+          "41.25": -7.5,
+          "41.5": -7.3,
+          "41.75": -8.4,
+          "42.0": -8.5,
+          "42.25": -7.4,
+          "42.5": -7.4,
+          "42.75": -6.1,
+          "43.0": -6.2,
+          "43.25": -5.4,
+          "43.5": -4.9,
+          "43.75": -4.9,
+          "44.0": -4.9,
+          "44.25": -4.9,
+          "44.5": -4.9,
+          "44.75": -4.9,
+          "45.0": -4.9,
+          "45.25": -3.1,
+          "45.5": -3.1,
+          "45.75": -3.1,
+          "46.0": -3.1,
+          "46.25": -3.1,
+          "46.5": -3.1,
+          "46.75": -3.1,
+          "47.0": -3.1,
+          "47.25": -3.1,
+          "47.5": -3.1,
+          "47.75": -3.1,
+          "48.0": -3.1,
+          "48.25": -3.1,
+          "48.5": -3.1,
+          "48.75": -3.1,
+          "49.0": -3.1,
+          "49.25": -3.1,
+          "49.5": -3.1,
+          "49.75": -3.1,
+          "50.0": -3.1,
+          "50.25": -3.1,
+          "50.5": -3.1,
+          "50.75": -3.1,
+          "51.0": -3.1,
+          "51.25": -3.1,
+          "51.5": -3.1,
+          "51.75": -3.1,
+          "52.0": -3.1,
+          "52.25": -3.1,
+          "52.5": -3.1,
+          "52.75": -3.1,
+          "53.0": -3.1,
+          "53.25": -3.1,
+          "53.5": -3.1,
+          "53.75": -3.1,
+          "54.0": -3.1,
+          "54.25": -3.1,
+          "54.5": -3.1,
+          "54.75": -3.1,
+          "55.0": -3.1,
+          "55.25": -3.1,
+          "55.5": -3.1,
+          "55.75": -3.1,
+          "56.0": -3.1,
+          "56.25": -3.1,
+          "56.5": -3.1,
+          "56.75": -3.1,
+          "57.0": -3.1,
+          "57.25": -3.1,
+          "57.5": -3.1
         }
       }
     ],
@@ -3981,7 +4014,7 @@
           "source_level": 0.28235,
           "width_major": 4.62,
           "width_minor": 2.31,
-          "speed": 2.47,
+          "speed": 2.465,
           "residual": 0.77
         },
         "size_ratio_per_frame": {}
@@ -3996,42 +4029,41 @@
           2.0
         ],
         "true_speed": 1.5000000000000082,
-        "detected_frames": 20,
+        "detected_frames": 19,
         "seen": {
-          "echo": 20
+          "echo": 19
         },
         "median": {
-          "size_ratio_db": 3.1,
-          "strength_db": 13.75,
-          "along": 4.8,
-          "across": 3.7,
+          "size_ratio_db": -5.2,
+          "strength_db": -5.9,
+          "along": 4.1,
+          "across": 4.1,
           "source_level": null,
           "width_major": 5.16,
           "width_minor": 3.53,
-          "speed": 1.43,
-          "residual": 0.985
+          "speed": 1.52,
+          "residual": 0.91
         },
         "size_ratio_per_frame": {
-          "13.0": 3.7,
-          "13.25": -0.1,
-          "13.5": -3.9,
-          "13.75": -0.1,
-          "14.0": 3.7,
-          "14.25": 3.7,
-          "14.5": 4.5,
-          "14.75": 3.7,
-          "15.0": 3.7,
-          "15.25": 3.2,
-          "15.5": 3.0,
-          "15.75": 3.0,
-          "16.0": 4.4,
-          "16.25": 5.0,
-          "16.5": 4.1,
-          "16.75": 3.0,
-          "17.0": -0.4,
-          "17.25": -0.4,
-          "17.5": 0.1,
-          "17.75": 0.6
+          "13.25": -24.2,
+          "13.5": -12.6,
+          "13.75": -5.6,
+          "14.0": -7.5,
+          "14.25": -7.5,
+          "14.5": -5.6,
+          "14.75": -7.5,
+          "15.0": -5.9,
+          "15.25": -5.7,
+          "15.5": -5.2,
+          "15.75": -5.2,
+          "16.0": -4.0,
+          "16.25": -4.0,
+          "16.5": -4.0,
+          "16.75": -0.7,
+          "17.0": -0.7,
+          "17.25": -2.1,
+          "17.5": 0.7,
+          "17.75": 1.0
         }
       },
       {
@@ -4044,86 +4076,86 @@
           4.0
         ],
         "true_speed": 0.0,
-        "detected_frames": 61,
+        "detected_frames": 64,
         "seen": {
           "echo": 64
         },
         "median": {
-          "size_ratio_db": -3.1,
-          "strength_db": 1.1,
+          "size_ratio_db": -6.4,
+          "strength_db": -5.7,
           "along": 4.5,
           "across": 4.2,
           "source_level": null,
-          "width_major": 5.16,
-          "width_minor": 4.42,
-          "speed": 0.13,
-          "residual": 0.62
+          "width_major": 4.62,
+          "width_minor": 3.53,
+          "speed": 0.15,
+          "residual": 0.67
         },
         "size_ratio_per_frame": {
-          "2.0": 2.0,
-          "2.25": -0.3,
-          "2.5": 1.8,
-          "2.75": -0.4,
-          "3.0": -2.5,
-          "3.25": -2.6,
-          "3.5": -2.6,
-          "3.75": -2.6,
-          "4.0": -3.1,
-          "4.25": -3.1,
-          "4.5": -3.3,
-          "4.75": -4.1,
-          "5.0": -4.1,
-          "5.25": -3.7,
-          "5.5": -4.1,
-          "5.75": -5.7,
-          "6.0": -4.1,
-          "6.25": -5.7,
-          "6.5": -6.1,
-          "6.75": -5.8,
-          "7.0": -5.8,
-          "7.25": -6.1,
-          "7.5": -6.3,
-          "7.75": -6.3,
-          "8.0": -6.3,
+          "2.0": -7.5,
+          "2.25": -9.9,
+          "2.5": -8.2,
+          "2.75": -7.8,
+          "3.0": -8.2,
+          "3.25": -7.8,
+          "3.5": -8.2,
+          "3.75": -7.8,
+          "4.0": -8.7,
+          "4.25": -5.5,
+          "4.5": -3.9,
+          "4.75": -6.0,
+          "5.0": -6.0,
+          "5.25": -6.0,
+          "5.5": -5.4,
+          "5.75": -6.2,
+          "6.0": -5.4,
+          "6.25": -6.0,
+          "6.5": -6.6,
+          "6.75": -6.0,
+          "7.0": -6.0,
+          "7.25": -6.2,
+          "7.5": -6.4,
+          "7.75": -6.4,
+          "8.0": -6.4,
           "8.25": -6.4,
           "8.5": -6.1,
           "8.75": -6.4,
           "9.0": -6.4,
           "9.25": -6.4,
           "9.5": -6.8,
-          "9.75": -5.3,
-          "10.0": -6.4,
-          "10.25": -5.5,
-          "10.5": -6.9,
-          "10.75": -6.8,
-          "11.0": -5.5,
-          "11.25": -5.5,
-          "11.5": -4.2,
-          "11.75": -4.2,
-          "12.0": -3.6,
-          "12.25": -0.6,
-          "12.5": -0.6,
-          "12.75": -0.6,
-          "13.0": -0.6,
-          "13.25": -0.6,
-          "13.5": -0.6,
-          "13.75": -0.6,
-          "14.0": -0.6,
-          "14.25": -0.6,
-          "14.5": -0.6,
-          "14.75": -0.6,
-          "15.0": -0.6,
-          "15.25": -0.6,
-          "15.5": -0.6,
-          "15.75": -0.6,
-          "16.0": -0.6,
-          "16.25": -0.6,
-          "16.5": -0.6,
-          "16.75": -0.6,
-          "17.0": -0.6,
-          "17.25": -0.6,
-          "17.5": -0.6,
-          "17.75": -0.6
+          "9.75": -5.2,
+          "10.0": -6.2,
+          "10.25": -5.4,
+          "10.5": -6.7,
+          "10.75": -6.5,
+          "11.0": -5.4,
+          "11.25": -5.4,
+          "11.5": -4.3,
+          "11.75": -4.3,
+          "12.0": -4.3,
+          "12.25": -5.4,
+          "12.5": -5.4,
+          "12.75": -6.3,
+          "13.0": -8.6,
+          "13.25": -10.1,
+          "13.5": -10.1,
+          "13.75": -10.1,
+          "14.0": -8.6,
+          "14.25": -7.9,
+          "14.5": -7.9,
+          "14.75": -7.9,
+          "15.0": -7.5,
+          "15.25": -7.4,
+          "15.5": -7.1,
+          "15.75": -7.1,
+          "16.0": -7.1,
+          "16.25": -4.5,
+          "16.5": -1.1,
+          "16.75": -1.1,
+          "17.0": -1.1,
+          "17.25": -0.5,
+          "17.5": -0.5,
+          "17.75": -1.1
         }
       }
     ],
@@ -4147,7 +4179,7 @@
           "source_level": 1.07125,
           "width_major": 5.16,
           "width_minor": 3.53,
-          "speed": 4.0,
+          "speed": 3.99,
           "residual": 1.12
         },
         "size_ratio_per_frame": {}
@@ -4171,10 +4203,80 @@
           "source_level": 0.2763,
           "width_major": 4.62,
           "width_minor": 2.31,
-          "speed": 2.49,
+          "speed": 2.4850000000000003,
           "residual": 0.77
         },
         "size_ratio_per_frame": {}
+      },
+      {
+        "object": "uuv1",
+        "type": "uuv",
+        "radiates": false,
+        "true_level_pa": 0.0,
+        "true_size_m": [
+          6.0,
+          2.0
+        ],
+        "true_speed": 1.5000000000000082,
+        "detected_frames": 42,
+        "seen": {
+          "echo": 42
+        },
+        "median": {
+          "size_ratio_db": -3.3,
+          "strength_db": -7.550000000000001,
+          "along": 4.0,
+          "across": 4.1,
+          "source_level": null,
+          "width_major": 5.16,
+          "width_minor": 3.38,
+          "speed": 1.56,
+          "residual": 0.915
+        },
+        "size_ratio_per_frame": {
+          "7.5": 10.8,
+          "7.75": 3.8,
+          "8.0": 3.8,
+          "8.25": -3.2,
+          "8.5": -3.2,
+          "8.75": -3.6,
+          "9.0": -3.6,
+          "9.25": -3.6,
+          "9.5": -3.2,
+          "9.75": -3.2,
+          "10.0": -3.2,
+          "10.25": -1.1,
+          "10.5": -3.2,
+          "10.75": -3.2,
+          "11.0": -3.6,
+          "11.25": -3.6,
+          "11.5": -3.6,
+          "11.75": -3.3,
+          "12.0": -3.3,
+          "12.25": -3.3,
+          "12.5": -0.8,
+          "12.75": -0.8,
+          "13.0": -0.8,
+          "13.25": -3.6,
+          "13.5": -0.7,
+          "13.75": -0.7,
+          "14.0": -2.8,
+          "14.25": -6.8,
+          "14.5": -6.8,
+          "14.75": -7.3,
+          "15.0": -7.8,
+          "15.25": -7.7,
+          "15.5": -7.7,
+          "15.75": -7.7,
+          "16.0": -7.5,
+          "16.25": -5.3,
+          "16.5": -5.3,
+          "16.75": -5.3,
+          "17.0": -4.5,
+          "17.25": -3.8,
+          "17.5": -2.1,
+          "17.75": -1.0
+        }
       },
       {
         "object": "wreck",
@@ -4186,86 +4288,86 @@
           4.0
         ],
         "true_speed": 0.0,
-        "detected_frames": 43,
+        "detected_frames": 64,
         "seen": {
-          "echo": 64,
-          "own noise": 34
+          "echo": 64
         },
         "median": {
-          "size_ratio_db": -5.05,
-          "strength_db": -9.2,
-          "along": 3.5,
-          "across": 4.8,
-          "source_level": 0.17815,
-          "width_major": 5.16,
+          "size_ratio_db": -5.6,
+          "strength_db": -5.9,
+          "along": 4.5,
+          "across": 4.55,
+          "source_level": null,
+          "width_major": 4.62,
           "width_minor": 3.53,
-          "speed": 0.23,
-          "residual": 0.82
+          "speed": 0.14,
+          "residual": 0.67
         },
         "size_ratio_per_frame": {
-          "2.25": -9.6,
-          "2.5": -9.3,
-          "2.75": -9.1,
-          "3.0": -9.3,
-          "3.25": -9.1,
-          "3.5": -7.1,
-          "3.75": -5.1,
-          "4.0": -7.1,
-          "4.25": -4.3,
-          "4.5": -4.1,
-          "4.75": -4.7,
-          "5.0": -4.7,
-          "5.25": -5.0,
-          "5.5": -4.7,
-          "5.75": -5.6,
-          "6.0": -4.7,
-          "6.25": -4.9,
-          "6.5": -5.6,
-          "6.75": -5.6,
-          "7.0": -4.3,
-          "7.25": -4.3,
-          "7.5": -4.3,
-          "7.75": -4.3,
-          "8.0": -4.3,
-          "8.25": -4.3,
-          "8.5": -4.3,
-          "8.75": -4.3,
-          "9.0": -4.3,
-          "9.25": -4.3,
-          "9.5": -4.3,
-          "9.75": -4.3,
-          "10.0": -4.3,
-          "10.25": -4.3,
-          "10.5": -4.3,
-          "10.75": -4.3,
-          "11.0": -4.3,
-          "11.25": -4.3,
-          "11.5": -4.3,
-          "11.75": -4.3,
-          "12.0": -4.3,
-          "12.25": -4.3,
-          "12.5": -4.3,
-          "12.75": -5.6,
+          "2.0": -8.1,
+          "2.25": -9.1,
+          "2.5": -8.3,
+          "2.75": -8.2,
+          "3.0": -8.3,
+          "3.25": -8.2,
+          "3.5": -8.3,
+          "3.75": -8.2,
+          "4.0": -9.1,
+          "4.25": -6.5,
+          "4.5": -3.1,
+          "4.75": -3.1,
+          "5.0": -3.1,
+          "5.25": -3.1,
+          "5.5": -3.1,
+          "5.75": -4.3,
+          "6.0": -1.2,
+          "6.25": -3.3,
+          "6.5": -5.9,
+          "6.75": -5.9,
+          "7.0": -5.9,
+          "7.25": -6.7,
+          "7.5": -6.7,
+          "7.75": -5.9,
+          "8.0": -5.9,
+          "8.25": -5.6,
+          "8.5": -3.9,
+          "8.75": -5.6,
+          "9.0": -5.6,
+          "9.25": -3.7,
+          "9.5": -3.7,
+          "9.75": -3.7,
+          "10.0": -5.2,
+          "10.25": -4.5,
+          "10.5": -6.4,
+          "10.75": -6.4,
+          "11.0": -5.6,
+          "11.25": -6.1,
+          "11.5": -5.6,
+          "11.75": -5.6,
+          "12.0": -4.7,
+          "12.25": -5.7,
+          "12.5": -5.1,
+          "12.75": -5.1,
           "13.0": -5.6,
-          "13.25": -5.6,
-          "13.5": -5.6,
-          "13.75": -5.6,
-          "14.0": -5.6,
-          "14.25": -5.6,
-          "14.5": -5.6,
-          "14.75": -5.6,
-          "15.0": -5.6,
-          "15.25": -5.6,
+          "13.25": -6.0,
+          "13.5": -7.6,
+          "13.75": -7.6,
+          "14.0": -11.1,
+          "14.25": -10.6,
+          "14.5": -10.8,
+          "14.75": -7.3,
+          "15.0": -6.7,
+          "15.25": -6.4,
           "15.5": -5.6,
           "15.75": -5.6,
-          "16.0": -5.6,
-          "16.25": -5.6,
-          "16.5": -5.6,
-          "16.75": -5.6,
-          "17.0": -5.6,
-          "17.25": -5.6,
-          "17.5": -5.6,
-          "17.75": 1.5
+          "16.0": -5.1,
+          "16.25": -1.8,
+          "16.5": 0.2,
+          "16.75": 0.2,
+          "17.0": 0.2,
+          "17.25": 0.2,
+          "17.5": 0.1,
+          "17.75": -1.0
         }
       }
     ],
@@ -4310,62 +4412,62 @@
           "echo": 45
         },
         "median": {
-          "size_ratio_db": 1.9,
-          "strength_db": -11.0,
+          "size_ratio_db": 1.8,
+          "strength_db": -11.1,
           "along": 3.9,
           "across": 2.9,
           "source_level": 0.1782,
-          "width_major": 7.71,
+          "width_major": 8.675,
           "width_minor": 2.85,
-          "speed": 1.9,
-          "residual": 1.5950000000000002
+          "speed": 1.8250000000000002,
+          "residual": 1.77
         },
         "size_ratio_per_frame": {
-          "6.75": 4.3,
-          "7.0": 2.5,
+          "6.75": 4.1,
+          "7.0": 2.3,
           "7.25": 0.7,
-          "7.5": 0.7,
+          "7.5": 0.6,
           "7.75": 0.7,
-          "8.0": 1.9,
-          "8.25": 3.1,
-          "8.5": 1.9,
-          "8.75": 1.9,
-          "9.0": 1.9,
-          "9.25": 3.3,
-          "9.5": 3.3,
-          "9.75": 3.0,
-          "10.0": 2.3,
-          "10.25": 2.3,
-          "10.5": 2.3,
-          "10.75": 2.1,
-          "11.0": 2.1,
-          "11.25": 1.6,
-          "11.5": 0.8,
-          "11.75": 1.6,
-          "12.0": 1.1,
-          "12.25": 0.8,
-          "12.5": 0.3,
-          "12.75": 0.8,
-          "13.0": 0.9,
-          "13.25": 3.4,
-          "13.5": 3.4,
-          "13.75": 1.2,
-          "14.0": 1.7,
-          "14.25": 3.9,
-          "14.5": 5.4,
-          "14.75": 3.8,
-          "15.0": 2.0,
-          "15.25": 2.0,
-          "15.5": 2.5,
-          "15.75": 2.5,
-          "16.0": 2.2,
-          "16.25": 2.2,
-          "16.5": 1.5,
-          "16.75": 1.5,
-          "17.0": 1.6,
-          "17.25": 1.6,
-          "17.5": 0.8,
-          "17.75": -0.4
+          "8.0": 1.8,
+          "8.25": 3.0,
+          "8.5": 1.8,
+          "8.75": 1.8,
+          "9.0": 1.8,
+          "9.25": 3.2,
+          "9.5": 3.2,
+          "9.75": 2.9,
+          "10.0": 2.2,
+          "10.25": 2.2,
+          "10.5": 2.2,
+          "10.75": 1.9,
+          "11.0": 1.9,
+          "11.25": 1.3,
+          "11.5": 0.6,
+          "11.75": 1.3,
+          "12.0": 0.9,
+          "12.25": 0.6,
+          "12.5": 0.0,
+          "12.75": 0.6,
+          "13.0": 0.6,
+          "13.25": 3.3,
+          "13.5": 3.3,
+          "13.75": 0.9,
+          "14.0": 1.5,
+          "14.25": 3.8,
+          "14.5": 5.3,
+          "14.75": 3.6,
+          "15.0": 1.8,
+          "15.25": 1.8,
+          "15.5": 2.2,
+          "15.75": 2.2,
+          "16.0": 1.9,
+          "16.25": 1.9,
+          "16.5": 1.4,
+          "16.75": 1.4,
+          "17.0": 2.0,
+          "17.25": 1.4,
+          "17.5": 0.6,
+          "17.75": 0.6
         }
       }
     ],
@@ -4404,70 +4506,68 @@
           1.0
         ],
         "true_speed": 2.000000000000001,
-        "detected_frames": 47,
+        "detected_frames": 59,
         "seen": {
-          "own noise": 28,
-          "echo": 47
+          "own noise": 31,
+          "echo": 45
         },
         "median": {
-          "size_ratio_db": 2.6,
-          "strength_db": -11.3,
+          "size_ratio_db": 3.1,
+          "strength_db": -11.7,
           "along": 3.9,
           "across": 2.9,
-          "source_level": 0.1767,
-          "width_major": 7.71,
+          "source_level": 0.1789,
+          "width_major": 9.785,
           "width_minor": 2.85,
-          "speed": 2.07,
-          "residual": 1.58
+          "speed": 1.9649999999999999,
+          "residual": 1.61
         },
         "size_ratio_per_frame": {
-          "6.25": 2.3,
-          "6.5": -3.9,
-          "6.75": 2.3,
-          "7.0": 3.1,
-          "7.25": 3.8,
-          "7.5": 3.1,
-          "7.75": 3.8,
-          "8.0": 3.1,
-          "8.25": 3.8,
-          "8.5": 3.8,
-          "8.75": 3.8,
-          "9.0": 2.1,
-          "9.25": 2.0,
-          "9.5": 3.7,
-          "9.75": 2.0,
-          "10.0": 2.6,
-          "10.25": 2.6,
-          "10.5": 3.0,
-          "10.75": 3.0,
-          "11.0": 3.0,
-          "11.25": 2.0,
-          "11.5": 2.0,
+          "6.75": 7.7,
+          "7.0": 5.7,
+          "7.25": 4.3,
+          "7.5": 4.0,
+          "7.75": 4.3,
+          "8.0": 4.0,
+          "8.25": 3.9,
+          "8.5": 3.7,
+          "8.75": 3.7,
+          "9.0": 2.5,
+          "9.25": 2.5,
+          "9.5": 4.1,
+          "9.75": 2.5,
+          "10.0": 3.0,
+          "10.25": 3.2,
+          "10.5": 3.6,
+          "10.75": 3.1,
+          "11.0": 3.1,
+          "11.25": 2.4,
+          "11.5": 2.4,
           "11.75": 3.1,
           "12.0": 3.6,
           "12.25": 3.6,
           "12.5": 3.6,
-          "12.75": 3.6,
-          "13.0": 4.3,
-          "13.25": 4.3,
-          "13.5": 4.1,
-          "13.75": 3.1,
+          "12.75": 4.1,
+          "13.0": 4.8,
+          "13.25": 4.8,
+          "13.5": 4.8,
+          "13.75": 3.5,
           "14.0": 1.7,
           "14.25": 1.7,
           "14.5": 4.3,
           "14.75": 1.7,
           "15.0": 0.5,
-          "15.25": -0.0,
+          "15.25": -0.2,
           "15.5": 0.5,
           "15.75": 0.5,
-          "16.0": 1.0,
-          "16.25": -0.2,
-          "16.5": -0.6,
-          "16.75": -0.6,
-          "17.0": 0.6,
-          "17.25": 1.4,
-          "17.5": 0.3,
-          "17.75": 0.3
+          "16.0": 1.1,
+          "16.25": -0.4,
+          "16.5": -0.7,
+          "16.75": -0.7,
+          "17.0": 0.8,
+          "17.25": 1.3,
+          "17.5": 0.2,
+          "17.75": 0.2
         }
       }
     ]
@@ -4521,8 +4621,8 @@
       "recording": "harbor",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 4.8498,
-      "error_db": 13.71447658364389
+      "estimate_pa": 5.0401,
+      "error_db": 14.048783066280937
     },
     {
       "recording": "simple_seed1",
@@ -4654,43 +4754,43 @@
       "recording": "harbor_seed1",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 4.9516,
-      "error_db": 13.894911085309063
+      "estimate_pa": 5.0017499999999995,
+      "error_db": 13.98243961620706
     },
     {
       "recording": "harbor_seed2",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 4.7928,
-      "error_db": 13.61178613164617
+      "estimate_pa": 5.01895,
+      "error_db": 14.012257383128055
     },
     {
       "recording": "harbor_seed3",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 4.8515,
-      "error_db": 13.7175207143348
+      "estimate_pa": 4.9225,
+      "error_db": 13.843714496203116
     },
     {
       "recording": "multistatic_b",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 1.1466,
-      "error_db": 1.1882387487731305
+      "estimate_pa": 1.1373,
+      "error_db": 1.1175007829219405
     },
     {
       "recording": "multistatic_b",
       "object": "tug",
       "true_pa": 0.7,
-      "estimate_pa": 0.7261,
-      "error_db": 0.3179679348587804
+      "estimate_pa": 0.7281,
+      "error_db": 0.3418598207468079
     },
     {
       "recording": "multistatic_b",
       "object": "boat",
       "true_pa": 0.3,
-      "estimate_pa": 0.4513,
-      "error_db": 3.546881576009668
+      "estimate_pa": 0.4521,
+      "error_db": 3.562265046292637
     }
   ],
   "propagation_error_ms": {
@@ -5060,9 +5160,9 @@
       "id": "ships_multistatic_b",
       "text": "every ship (ferry, tug, boat) tracked with Pd >= 0.8 on multistatic_b (radiator tracks)",
       "values": {
-        "ferry": 1.0,
-        "tug": 0.8584070796460177,
-        "boat": 0.7964601769911505
+        "ferry": 0.9911504424778761,
+        "tug": 1.0,
+        "boat": 0.6991150442477876
       },
       "passed": false
     },
@@ -5070,17 +5170,17 @@
       "id": "false_tracks",
       "text": "false tracks at most 2 per minute on every test recording",
       "values": {
-        "simple_seed1": 3.0,
-        "simple_seed2": 3.0,
-        "simple_seed3": 6.0,
-        "bistatic_seed1": 9.0,
-        "bistatic_seed2": 9.0,
-        "bistatic_seed3": 12.0,
+        "simple_seed1": 0.0,
+        "simple_seed2": 0.0,
+        "simple_seed3": 3.0,
+        "bistatic_seed1": 3.0,
+        "bistatic_seed2": 6.0,
+        "bistatic_seed3": 9.0,
         "multistatic_seed1": 6.0,
         "multistatic_seed2": 6.0,
         "multistatic_seed3": 9.0,
         "harbor_seed1": 2.0,
-        "harbor_seed2": 2.0,
+        "harbor_seed2": 1.5,
         "harbor_seed3": 2.0,
         "multistatic_b": 7.0
       },
@@ -5090,11 +5190,11 @@
       "id": "wreck_echo",
       "text": "the wreck of the simple harbor found by its echo with Pd >= 0.9 on seeds 1 to 3 (echo tracks)",
       "values": {
-        "simple_seed1": 0.671875,
-        "simple_seed2": 0.65625,
-        "simple_seed3": 0.96875
+        "simple_seed1": 1.0,
+        "simple_seed2": 1.0,
+        "simple_seed3": 1.0
       },
-      "passed": false
+      "passed": true
     },
     {
       "id": "size_order",
@@ -5118,7 +5218,7 @@
     }
   ],
   "run": {
-    "git_commit": "ae9cb4f4d9ecd5a9eb035ef6d02d23d6eb057005",
+    "git_commit": "69c2891c6e8e2c851b223aaddecfd0f800bb4ef3",
     "git_dirty": true,
     "processing_config": null,
     "processing_config_sha256": null,
@@ -5130,7 +5230,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": null,
-    "wall_s": 225.30853748321533,
+    "wall_s": 25.747615814208984,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

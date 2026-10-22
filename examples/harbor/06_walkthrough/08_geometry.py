@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Step 8, the geometry behind the picture: where the chain thinks things are going, and which paths the sound takes.
 
-First: projected positions.  At three moments each confirmed track's straight line fit over its past fixes is
-extended 0.5, 1 and 2 s ahead (open circles; this is how the tracker gates its next fix and how the echo chain
-places the illuminator between fixes); filled circles: where the object really was at those times.
+First: projected positions.  At three moments each confirmed track's Kalman filter state is extended 0.5, 1 and 2 s
+ahead at its velocity (open circles; this is the prediction the tracker gates its next fix with); filled circles: where the object really was at those times.
 Then one frame, in three images: the echo map (or, without an echo chain, the passive map) with its peaks; the
 illuminator where the echo chain put it, its direct paths to a few sensors (solid), and for the strongest echo
 peak the path illuminator - peak - sensors (dashed); and the ellipse of equal delay through the peak (dotted):
@@ -43,7 +42,8 @@ for q, t_now in enumerate(T * np.array([0.3, 0.55, 0.8])):
         if not any(f[0] <= t_now for f in fx) or fx[-1][0] < t_now - 1.0:
             continue
         col = colors[j % 10]
-        proj = draw_projection(ax, fx, t_now, horizons, color=col, label=f"{k}: projected +0.5/1/2 s" if q == 0 else None)
+        proj = draw_projection(ax, fx, t_now, horizons, color=col, label=f"{k}: projected +0.5/1/2 s" if q == 0 else None,
+                               states=run["states"].get(k))
         obj = matches[k]["true_object"]
         if obj is not None and len(proj):
             true_xy = tru.tracks[obj].position_at(t_now + np.asarray(horizons))
@@ -96,7 +96,7 @@ for j, (k, fx) in enumerate(run["tracks"].items()):
         continue
     errs = []
     for f in fx[6::2]:
-        times, proj = projected_positions(fx, f[0], look)
+        times, proj = projected_positions(fx, f[0], look, states=run["states"].get(k))
         errs.append(np.hypot(*(proj - tru.tracks[obj].position_at(times)).T))
     if errs:
         ax.plot(look, np.nanmedian(np.array(errs), axis=0), "o-", color=colors[j % 10], ms=3, label=f"{k} ({obj})")

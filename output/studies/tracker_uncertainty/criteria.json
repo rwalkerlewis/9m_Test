@@ -1,0 +1,163 @@
+{
+  "criteria": [
+    {
+      "id": "false_tracks",
+      "text": "false tracks per minute at most half of the value before on every test recording and at most 2 on multistatic_b",
+      "values": {
+        "simple_seed1": {
+          "before": 3.0,
+          "after": 0.0
+        },
+        "simple_seed2": {
+          "before": 3.0,
+          "after": 0.0
+        },
+        "simple_seed3": {
+          "before": 6.0,
+          "after": 3.0
+        },
+        "bistatic_seed1": {
+          "before": 9.0,
+          "after": 3.0
+        },
+        "bistatic_seed2": {
+          "before": 9.0,
+          "after": 6.0
+        },
+        "bistatic_seed3": {
+          "before": 12.0,
+          "after": 9.0
+        },
+        "multistatic_seed1": {
+          "before": 6.0,
+          "after": 6.0
+        },
+        "multistatic_seed2": {
+          "before": 6.0,
+          "after": 6.0
+        },
+        "multistatic_seed3": {
+          "before": 9.0,
+          "after": 9.0
+        },
+        "harbor_seed1": {
+          "before": 2.0,
+          "after": 2.0
+        },
+        "harbor_seed2": {
+          "before": 2.0,
+          "after": 1.5
+        },
+        "harbor_seed3": {
+          "before": 2.0,
+          "after": 2.0
+        },
+        "multistatic_b": {
+          "before": 7.0,
+          "after": 7.0
+        }
+      },
+      "passed": false
+    },
+    {
+      "id": "wreck",
+      "text": "the simple harbor's wreck at least 0.9 on every test seed",
+      "values": {
+        "simple_seed1": 1.0,
+        "simple_seed2": 1.0,
+        "simple_seed3": 1.0
+      },
+      "passed": true
+    },
+    {
+      "id": "no_fall",
+      "text": "no object's Pd falls by more than 3 percentage points",
+      "values": {
+        "bistatic_seed1/uuv1": {
+          "before": 0.734375,
+          "after": 0.703125
+        },
+        "multistatic_b/boat": {
+          "before": 0.7964601769911505,
+          "after": 0.6991150442477876
+        }
+      },
+      "passed": false
+    },
+    {
+      "id": "ellipse",
+      "text": "the 95 % ellipse contains the truth in 85 to 99 % of fixes",
+      "values": {
+        "simple_seed1": {
+          "fixes": 218,
+          "inside": 200,
+          "fraction": 0.9174311926605505
+        },
+        "simple_seed2": {
+          "fixes": 205,
+          "inside": 186,
+          "fraction": 0.9073170731707317
+        },
+        "simple_seed3": {
+          "fixes": 215,
+          "inside": 197,
+          "fraction": 0.9162790697674419
+        },
+        "bistatic_seed1": {
+          "fixes": 117,
+          "inside": 114,
+          "fraction": 0.9743589743589743
+        },
+        "bistatic_seed2": {
+          "fixes": 113,
+          "inside": 97,
+          "fraction": 0.8584070796460177
+        },
+        "bistatic_seed3": {
+          "fixes": 116,
+          "inside": 114,
+          "fraction": 0.9827586206896551
+        },
+        "multistatic_seed1": {
+          "fixes": 298,
+          "inside": 298,
+          "fraction": 1.0
+        },
+        "multistatic_seed2": {
+          "fixes": 296,
+          "inside": 295,
+          "fraction": 0.9966216216216216
+        },
+        "multistatic_seed3": {
+          "fixes": 307,
+          "inside": 306,
+          "fraction": 0.996742671009772
+        },
+        "harbor_seed1": {
+          "fixes": 54,
+          "inside": 43,
+          "fraction": 0.7962962962962963
+        },
+        "harbor_seed2": {
+          "fixes": 58,
+          "inside": 48,
+          "fraction": 0.8275862068965517
+        },
+        "harbor_seed3": {
+          "fixes": 52,
+          "inside": 41,
+          "fraction": 0.7884615384615384
+        },
+        "multistatic_b": {
+          "fixes": 877,
+          "inside": 821,
+          "fraction": 0.936145952109464
+        }
+      },
+      "fixes": 2926,
+      "inside": 2760,
+      "fraction": 0.9432672590567327,
+      "passed": true
+    }
+  ]
+}

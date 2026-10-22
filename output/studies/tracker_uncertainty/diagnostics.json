@@ -1,0 +1,192 @@
+{
+  "simple": {
+    "bodies": {
+      "wreck": {
+        "frames": 72,
+        "frames_with_a_peak_within_25m": 34,
+        "peaks_explained_as_sidelobes": 33,
+        "explained_by": [
+          "r1"
+        ],
+        "radiator_tracks_within_25m": []
+      },
+      "uuv1": {
+        "frames": 72,
+        "frames_with_a_peak_within_25m": 0,
+        "peaks_explained_as_sidelobes": 0,
+        "explained_by": [],
+        "radiator_tracks_within_25m": []
+      }
+    },
+    "confirmation_tests": [
+      {
+        "t": 1.5,
+        "track": "r1",
+        "xy": [
+          127.0,
+          259.0
+        ],
+        "frames": 6,
+        "coherence": {},
+        "held": false
+      },
+      {
+        "t": 1.5,
+        "track": "r2",
+        "xy": [
+          153.0,
+          121.0
+        ],
+        "frames": 6,
+        "coherence": {
+          "r1": 0.22391522515632817
+        },
+        "held": false
+      }
+    ],
+    "held_as_echo": {}
+  },
+  "bistatic": {
+    "bodies": {
+      "uuv1": {
+        "frames": 72,
+        "frames_with_a_peak_within_25m": 15,
+        "peaks_explained_as_sidelobes": 3,
+        "explained_by": [
+          "r4"
+        ],
+        "radiator_tracks_within_25m": [
+          "r9"
+        ]
+      }
+    },
+    "confirmation_tests": [
+      {
+        "t": 1.5,
+        "track": "r1",
+        "xy": [
+          146.0,
+          200.0
+        ],
+        "frames": 6,
+        "coherence": {},
+        "held": false
+      },
+      {
+        "t": 1.5,
+        "track": "r4",
+        "xy": [
+          234.0,
+          102.0
+        ],
+        "frames": 6,
+        "coherence": {
+          "r1": 0.28137440220426296
+        },
+        "held": false
+      },
+      {
+        "t": 1.75,
+        "track": "r2",
+        "xy": [
+          130.0,
+          216.0
+        ],
+        "frames": 6,
+        "coherence": {
+          "r1": 0.377015102945986,
+          "r4": 0.290529350065602
+        },
+        "held": false
+      }
+    ],
+    "held_as_echo": {}
+  },
+  "multistatic": {
+    "bodies": {
+      "uuv1": {
+        "frames": 72,
+        "frames_with_a_peak_within_25m": 0,
+        "peaks_explained_as_sidelobes": 0,
+        "explained_by": [],
+        "radiator_tracks_within_25m": []
+      },
+      "uuv2": {
+        "frames": 72,
+        "frames_with_a_peak_within_25m": 8,
+        "peaks_explained_as_sidelobes": 5,
+        "explained_by": [
+          "r2"
+        ],
+        "radiator_tracks_within_25m": []
+      },
+      "moored": {
+        "frames": 72,
+        "frames_with_a_peak_within_25m": 5,
+        "peaks_explained_as_sidelobes": 4,
+        "explained_by": [
+          "r3"
+        ],
+        "radiator_tracks_within_25m": [
+          "r7"
+        ]
+      }
+    },
+    "confirmation_tests": [
+      {
+        "t": 1.5,
+        "track": "r1",
+        "xy": [
+          146.0,
+          198.0
+        ],
+        "frames": 6,
+        "coherence": {},
+        "held": false
+      },
+      {
+        "t": 1.5,
+        "track": "r2",
+        "xy": [
+          64.0,
+          116.0
+        ],
+        "frames": 6,
+        "coherence": {
+          "r1": 0.19035628197528567
+        },
+        "held": false
+      },
+      {
+        "t": 1.5,
+        "track": "r3",
+        "xy": [
+          306.0,
+          242.0
+        ],
+        "frames": 6,
+        "coherence": {
+          "r1": 0.17537522585799764,
+          "r2": 0.16768833787720452
+        },
+        "held": false
+      },
+      {
+        "t": 1.75,
+        "track": "r4",
+        "xy": [
+          46.0,
+          126.0
+        ],
+        "frames": 6,
+        "coherence": {
+          "r1": 0.21037825221430034,
+          "r2": 0.25407122916475194,
+          "r3": 0.18791772386500963
+        },
+        "held": false
+      }
+    ],
+    "held_as_echo": {}
+  }
+}

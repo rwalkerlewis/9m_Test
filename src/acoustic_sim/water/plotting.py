@@ -135,12 +135,21 @@ def draw_bistatic_ellipse(ax, source_xy, receiver_xy, through_xy, color: str = "
     ax.plot(e[:, 0], e[:, 1], ":", color=color, lw=1.1, alpha=0.9, label=label)
 
 
-def projected_positions(fixes, t_now: float, horizons=(0.5, 1.0, 2.0), fit_s: float = 4.0) -> tuple[np.ndarray, np.ndarray]:
-    """Positions a track projects ahead of *t_now*: the straight line fitted to its fixes ``(t, xy, ...)`` of the past
-    *fit_s* seconds (as ``RadiatorTrack.predict``) evaluated at ``t_now + horizons``.  Returns (times, xy)."""
+def projected_positions(fixes, t_now: float, horizons=(0.5, 1.0, 2.0), fit_s: float = 4.0,
+                        states=None) -> tuple[np.ndarray, np.ndarray]:
+    """Positions a track projects ahead of *t_now*, at ``t_now + horizons``.  With *states* (the track's Kalman filter
+    states ``(t, x, P)``, ``RadiatorTrack.states``): the newest state at or before *t_now* extended at its velocity, as
+    the tracker predicts.  Without: the straight line fitted to its fixes ``(t, xy, ...)`` of the past *fit_s* seconds.
+    Returns (times, xy)."""
+    times = t_now + np.asarray(horizons, dtype=float)
+    if states is not None:
+        past = [s for s in states if s[0] <= t_now]
+        if not past:
+            return times, np.full((len(times), 2), np.nan)
+        ts, x = past[-1][0], np.asarray(past[-1][1], float)
+        return times, x[None, :2] + np.outer(times - ts, x[2:])
     tt = np.array([f[0] for f in fixes if f[0] <= t_now])
     xy = np.array([f[1] for f in fixes if f[0] <= t_now]).reshape(-1, 2)
-    times = t_now + np.asarray(horizons, dtype=float)
     if len(tt) == 0:
         return times, np.full((len(times), 2), np.nan)
     m = tt >= tt[-1] - fit_s
@@ -152,13 +161,13 @@ def projected_positions(fixes, t_now: float, horizons=(0.5, 1.0, 2.0), fit_s: fl
 
 
 def draw_projection(ax, fixes, t_now: float, horizons=(0.5, 1.0, 2.0), fit_s: float = 4.0, color: str = "k",
-                    label: str | None = "projected (line fit, +0.5/1/2 s)") -> np.ndarray:
+                    label: str | None = "projected (+0.5/1/2 s)", states=None) -> np.ndarray:
     """The track's fixes up to *t_now* (thin line), its position at *t_now* (dot) and the positions it projects ahead
-    (open markers joined by an arrow).  Returns the projected positions."""
+    (open markers joined by an arrow; :func:`projected_positions`).  Returns the projected positions."""
     past = np.array([f[1] for f in fixes if f[0] <= t_now]).reshape(-1, 2)
     if not len(past):
         return np.empty((0, 2))
-    _, proj = projected_positions(fixes, t_now, horizons, fit_s)
+    _, proj = projected_positions(fixes, t_now, horizons, fit_s, states=states)
     ax.plot(past[:, 0], past[:, 1], "-", color=color, lw=1.2, alpha=0.7)
     ax.plot(*past[-1], "o", color=color, ms=5)
     ax.plot(proj[:, 0], proj[:, 1], "o", mfc="none", mec=color, ms=6, label=label)
