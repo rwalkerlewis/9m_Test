@@ -108,9 +108,8 @@ def test_streaming_echo_is_causal():
 
 
 def test_tracker_confirms_moving_radiators_and_ais_labels_them_afterwards():
-    """Two radiators and random clutter: two confirmed tracks, the clutter and a sidelobe next to the stronger
-    radiator are not confirmed, only the stronger one is strong enough for the echo chain (the weaker scores 20 %),
-    and the AIS cross check labels the one that reports."""
+    """Two radiators and random clutter: two confirmed tracks (the clutter is not confirmed), both illuminators when no
+    map is given, and the AIS cross check labels the one that reports.  (Sidelobes: ``test_tracker.py``.)"""
     from acoustic_sim.water.streaming import FrameResult, RadiatorTracker, ais_crosscheck
 
     rng = np.random.default_rng(1)
@@ -118,13 +117,13 @@ def test_tracker_confirms_moving_radiators_and_ais_labels_them_afterwards():
     for k in range(60):
         t = 0.25 * k
         a, b = np.array([100.0 + 3.0 * t, 200.0]), np.array([300.0, 100.0 + 1.5 * t])
-        pts = [a + rng.normal(0, 1, 2), b + rng.normal(0, 1, 2), a + [0.0, 20.0], rng.uniform(0, 400, 2)]
-        tracker.update(FrameResult(t, np.array(pts), np.array([100.0, 20.0, 40.0, 30.0]), {}, 0.0, 0.0))
+        pts = [a + rng.normal(0, 1, 2), b + rng.normal(0, 1, 2), rng.uniform(0, 400, 2)]
+        tracker.update(FrameResult(t, np.array(pts), np.array([100.0, 20.0, 30.0]), {}, 0.0, 0.0))
     conf = tracker.confirmed()
     assert len(conf) == 2
     ends = sorted(tr.fixes[-1][1][0] for tr in conf.values())
     assert abs(ends[0] - 144.0) < 5 and abs(ends[1] - 300.0) < 5
-    assert list(tracker.strong()) == [max(conf, key=lambda k: conf[k].score)]
+    assert list(tracker.illuminators()) == sorted(conf, key=lambda k: -conf[k].score)
     k = 12
     reports = AISReports(np.array(["ferry"] * k), np.arange(k) * 1.25, np.array([[100.0 + 3.0 * 1.25 * i, 200.0] for i in range(k)]),
                          np.full(k, 3.0), np.zeros(k))
@@ -223,8 +222,8 @@ def test_streaming_passive_uses_only_the_ais_reports_already_received():
 
 def test_end_to_end_passive_tracker_echo_locates_the_silent_body_without_truth():
     """The path ``examples/harbor/05_detection/harbor_stream.py`` runs, on a synthetic 8 s scene (one ship, one silent scatterer, no AIS):
-    ``StreamingPassive`` -> ``RadiatorTracker`` -> ``StreamingEcho`` with the strong tracks as illuminators.  Nothing
-    from the truth goes in.  The ship becomes the one strong track (within 3 m), and the top echo peak is within 8 m
+    ``StreamingPassive`` -> ``RadiatorTracker`` -> ``StreamingEcho`` with the illuminators (tracks above the map's floor).  Nothing
+    from the truth goes in.  The ship becomes the one illuminator (within 3 m), and the top echo peak is within 8 m
     of the scatterer in at least half of the mapped frames, and the sum of the frame maps (each over its median, as
     walkthrough step 6) peaks within 5 m of it."""
     from acoustic_sim.water.bistatic import BistaticConfig
@@ -234,23 +233,25 @@ def test_end_to_end_passive_tracker_echo_locates_the_silent_body_without_truth()
 
     rec = _field_recording(8.0)                                 # measured: 62 % of the frames within 8 m, record sum on the body
     _, chart, pc, stc, none = _setup()
-    passive = StreamingPassive(rec["layout"], rec["fs"], chart, pc, stc=stc)
-    tracker = RadiatorTracker()
+    passive = StreamingPassive(rec["layout"], rec["fs"], chart, pc, stc=stc, keep_maps=True)
+    tracker = RadiatorTracker(grid=passive.grid)
     bc = BistaticConfig(c=rec["c"], f_lo=80.0, f_hi=450.0, grid_dx=5.0, edge=20.0, exclusion_radius=30.0, coherent_norm="snr",
                         map_scale="none", eca_doppler=True, track_smooth_s=1.0, eca_images=False)
     echo = StreamingEcho(rec["layout"], rec["fs"], chart, bc, EchoStreamConfig(step_blocks=1, history_s=0.5, lookahead_s=0.4),
                          keep_maps=True)
-    sent, e_frames = {}, []
+    sent, e_frames, last = {}, [], None
     for s0 in range(0, rec["traces"].shape[1], 500):
         chunk = rec["traces"][:, s0:s0 + 500]
-        for f in passive.push(chunk, none):
+        t_now = (s0 + chunk.shape[1]) / rec["fs"]
+        for f in passive.push(chunk, none, explain={k: tr.predict(t_now) for k, tr in tracker.confirmed().items()}):
             tracker.update(f)
+            last = f
         fixes = {}
-        for k, tr in tracker.strong().items():
-            fixes[k] = [(f[0], f[1]) for f in tr.fixes[sent.get(k, 0):]]
-            sent[k] = len(tr.fixes)
+        for k, tr in tracker.illuminators(last).items():
+            fixes[k] = [(st[0], st[1][:2]) for st in tr.states[sent.get(k, 0):]]
+            sent[k] = len(tr.states)
         e_frames += [f for f in echo.push(chunk, fixes) if f.ships]
-    strong = tracker.strong()
+    strong = tracker.illuminators(last)
     assert len(strong) == 1
     tr = next(iter(strong.values()))
     err = [np.hypot(*(f[1] - (np.array([150.0, 250.0]) + [4.0 * f[0], 0.0]))) for f in tr.fixes[-8:]]

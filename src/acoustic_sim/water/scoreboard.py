@@ -40,6 +40,7 @@ from acoustic_sim.contract import Provenance, Truth
 
 DETECT_RADIUS = 5.0
 FA_RADIUS = 10.0
+ELLIPSE95_CHI2 = float(-2.0 * np.log(0.05))      # chi squared, 2 degrees of freedom, 0.95
 PFA = 0.05
 
 
@@ -394,14 +395,67 @@ def _full_hit(run: ChainMaps, tru: Truth, oid: str, threshold: Threshold, detect
 FIRM = ("confirmed", "static")
 
 
-def match_tracks(tracks: dict, truth: Truth, radius: float, objects: list[str] | None = None) -> list[dict]:
-    """Every track against the truth: matched to the object nearest over its fixes (median distance) when that is
-    within *radius*, else a false track.  *tracks*: id -> fixes ``(t, xy, ...)``."""
+def static_body_cells(truth: Truth, oid: str) -> np.ndarray | None:
+    """The cell centres (M, 2) of a static body's mask as the forward model draws it (the scenario's body of a vessel
+    with one waypoint on the solver grid: a rectangle or an ellipse of the body's length along its heading and width
+    across it, heading +x for a body that never moved, as ``scatterer.Scatterer.pose_at``); ``None`` for a moving object
+    or a radiator without a body.  Computed here from the truth's scenario: the scoring side does not import the forward
+    model."""
+    v = next((x for x in truth.scenario.get("vessels", []) if x.get("id") == oid), None)
+    if v is None or not v.get("body_length") or len(v.get("waypoints", [])) != 1 or oid not in truth.tracks:
+        return None
+    dx = float(truth.scenario.get("environment", {}).get("dx", 1.0))
+    length = float(v["body_length"])
+    width = float(v.get("body_width") or length)
+    centre = np.asarray(v["waypoints"][0], dtype=float)
+    heading = np.array([1.0, 0.0])
+    half = length + width + 4 * dx
+    x = np.arange(np.floor((centre[0] - half) / dx), np.ceil((centre[0] + half) / dx) + 1) * dx
+    y = np.arange(np.floor((centre[1] - half) / dx), np.ceil((centre[1] + half) / dx) + 1) * dx
+    X, Y = np.meshgrid(x - centre[0], y - centre[1])
+    along = X * heading[0] + Y * heading[1]
+    across = -X * heading[1] + Y * heading[0]
+    if v.get("body_shape", "rect") == "ellipse":
+        inside = (along / (0.5 * length)) ** 2 + (across / (0.5 * width)) ** 2 <= 1.0
+    else:
+        inside = (np.abs(along) <= 0.5 * length) & (np.abs(across) <= 0.5 * width)
+    return np.column_stack([X[inside] + centre[0], Y[inside] + centre[1]])
+
+
+class ObjectDistance:
+    """Distance from a point to each true object: to the outline of a static body's mask (0 inside it), to the
+    centre of everything else (moving bodies and radiators keep their centre)."""
+
+    def __init__(self, truth: Truth) -> None:
+        self.truth = truth
+        self.cells = {oid: static_body_cells(truth, oid) for oid in truth.tracks}
+
+    def __call__(self, oid: str, t: float, xy) -> float:
+        cells = self.cells.get(oid)
+        xy = np.asarray(xy, dtype=float)
+        if cells is not None and len(cells):
+            return float(np.min(np.hypot(*(cells - xy[None, :]).T)))
+        return float(np.hypot(*(self.truth.tracks[oid].position_at(t)[0] - xy)))
+
+    def nearest_point(self, oid: str, t: float, xy) -> np.ndarray:
+        """The point of the object the distance is measured to."""
+        cells = self.cells.get(oid)
+        xy = np.asarray(xy, dtype=float)
+        if cells is not None and len(cells):
+            return cells[int(np.argmin(np.hypot(*(cells - xy[None, :]).T)))]
+        return self.truth.tracks[oid].position_at(t)[0]
+
+
+def match_tracks(tracks: dict, truth: Truth, radius: float, objects: list[str] | None = None,
+                 dist: ObjectDistance | None = None) -> list[dict]:
+    """Every track against the truth: matched to the object nearest over its fixes (median distance, to the outline
+    of a static body and the centre of anything else, :class:`ObjectDistance`) when that is within *radius*, else a
+    false track.  *tracks*: id -> fixes ``(t, xy, ...)``."""
     ids = objects if objects is not None else list(truth.tracks)
+    dist = dist or ObjectDistance(truth)
     out = []
     for k, fixes in tracks.items():
-        d = {oid: float(np.median([np.hypot(*(truth.tracks[oid].position_at(f[0])[0] - np.asarray(f[1]))) for f in fixes]))
-             for oid in ids}
+        d = {oid: float(np.median([dist(oid, f[0], f[1]) for f in fixes])) for oid in ids}
         nearest = min(d, key=d.get)
         xy = np.array([f[1] for f in fixes], dtype=float)
         out.append({"track": k, "fixes": len(fixes), "first_t": float(fixes[0][0]), "last_t": float(fixes[-1][0]),
@@ -431,8 +485,9 @@ def score_picture(records: list[dict], truth: Truth, record_s: float, confirm: d
     """The stage 2 scoring of a picture (definitions above).  *confirm*: the ``confirm`` of each tracker
     (``{"radiator": 6, "echo": 8}``)."""
     tracks = picture_tracks(records)
+    dist = ObjectDistance(truth)
     matches = {m["track"]: dict(m, kind=tracks[m["track"]]["kind"])
-               for m in match_tracks({k: v["fixes"] for k, v in tracks.items()}, truth, assoc_radius)}
+               for m in match_tracks({k: v["fixes"] for k, v in tracks.items()}, truth, assoc_radius, dist=dist)}
     times = np.array([r["t"] for r in records])
     chain_of = {"radiator": "passive", "echo": "echo"}
     per = {}
@@ -465,7 +520,7 @@ def score_picture(records: list[dict], truth: Truth, record_s: float, confirm: d
                             continue
                         if matches.get(tid, {}).get("true_object") != oid:
                             continue
-                        d = float(np.hypot(*(np.asarray(st["xy"]) - pos[k])))
+                        d = dist(oid, records[k]["t"], st["xy"])
                         best = d if best is None else min(best, d)
                 if best is not None and best <= hit_radius:
                     errs.append(best)
@@ -475,7 +530,24 @@ def score_picture(records: list[dict], truth: Truth, record_s: float, confirm: d
             row["median_error_m"][kind] = float(np.median(errs)) if errs else None
         per[oid] = row
     false = [m for m in matches.values() if m["false_track"]]
+    # The 95 % ellipse of every confirmed track's position at the frames it had a fix: does it hold the truth?
+    n_in = n_all = 0
+    seen: set = set()
+    for rec in records:
+        for o in rec["objects"]:
+            for tk, tid in o.get("tracks", {}).items():
+                st = o.get("track_state", {}).get(tid)
+                if st is None or st["status"] not in FIRM or not st.get("detected") or st.get("cov") is None:
+                    continue
+                m = matches.get(tid)
+                if m is None or m["true_object"] is None or (tid, rec["t"]) in seen:
+                    continue
+                seen.add((tid, rec["t"]))
+                d = dist.nearest_point(m["true_object"], rec["t"], st["xy"]) - np.asarray(st["xy"], float)
+                n_all += 1
+                n_in += int(d @ np.linalg.solve(np.asarray(st["cov"], float), d) <= ELLIPSE95_CHI2)
     return {"objects": per, "tracks": list(matches.values()),
+            "ellipse_coverage": {"fixes": n_all, "inside": n_in, "fraction": n_in / n_all if n_all else None},
             "false_tracks": {"count": len(false), "per_minute": len(false) / (record_s / 60.0),
                              "radiator": sum(1 for m in false if m["kind"] == "radiator"),
                              "echo": sum(1 for m in false if m["kind"] == "echo"), "tracks": false},

@@ -39,17 +39,20 @@
     "min_separation": 20.0
   },
   "tracker": {
-    "gate": 15.0,
-    "max_speed": 6.0,
-    "exclusion": 60.0,
-    "strong_fraction": 0.25,
+    "accel": 0.05,
+    "meas_scale": 0.1,
+    "meas_floor": 2.5,
+    "init_speed": 3.0,
+    "gate_probability": 0.99,
     "confirm": 3,
     "confirm_window_s": 8.0,
     "drop_s": 8.0,
-    "fit_s": 20.0,
-    "static_speed": 0.2,
     "static_s": 10.0,
-    "lost_s": 4.0
+    "lost_s": 4.0,
+    "shape_radius": 60,
+    "explain_fraction": 0.5,
+    "illuminator_margin_db": 10.0,
+    "echo_coherence": 0.7
   },
   "echo": null,
   "characteristics": {

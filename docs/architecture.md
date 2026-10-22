@@ -186,6 +186,9 @@ definitions above where they differ (`scoreboard.score_picture`, read from the p
 * a detection within 5 m of an object's true position is a hit;
 * a confirmed track (confirmed or static at least once) is matched to the object nearest over its fixes (median distance)
   if within 10 m (20 m on the 5 m harbor), otherwise it is a false track;
+* distances to a static body (one waypoint and a body: the pilings, the moored hull, the wreck) are to its outline, the
+  mask the forward model drew (`scoreboard.ObjectDistance`; 0 inside it), and to the centre of anything else (from the
+  tracker change, [Harbor, the tracker](harbor.md#the-tracker));
 * the false alarm rate is the number of confirmed false tracks per minute of recording;
 * Pd per object (and per kind of track: radiator, echo, either) is the fraction of frames, from the first frame the object
   could have been confirmed, in which a confirmed track matched to it is within 5 m.  The first frame it could have been

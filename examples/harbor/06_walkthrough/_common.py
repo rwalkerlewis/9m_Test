@@ -88,6 +88,7 @@ def products(a: argparse.Namespace) -> dict:
         "dataset": a.dataset, "record_s": res.record_s, "fs": obs.fs,
         "passive": {"grid": pic.passive.grid, "frames": [(f.t, f.xy, f.score, f.B) for f in pic.p_frames]},
         "tracks": {k: [(f[0], f[1], f[2]) for f in tr.fixes] for k, tr in final.items()},
+        "states": {k: [(s[0], s[1], s[2]) for s in tr.states] for k, tr in final.items()},
         "tracks_ever": tracks_ever,
         "strong": sorted(pic.sent),
         "labels": ais_crosscheck(final, obs.reports),

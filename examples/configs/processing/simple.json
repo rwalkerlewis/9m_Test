@@ -39,17 +39,20 @@
     "min_separation": 20.0
   },
   "tracker": {
-    "gate": 6.0,
-    "max_speed": 6.0,
-    "exclusion": 30.0,
-    "strong_fraction": 0.25,
+    "accel": 0.05,
+    "meas_scale": 0.25,
+    "meas_floor": 1.0,
+    "init_speed": 3.0,
+    "gate_probability": 0.99,
     "confirm": 6,
     "confirm_window_s": 2.0,
     "drop_s": 2.0,
-    "fit_s": 4.0,
-    "static_speed": 0.2,
     "static_s": 10.0,
-    "lost_s": 4.0
+    "lost_s": 4.0,
+    "shape_radius": 20,
+    "explain_fraction": 0.5,
+    "illuminator_margin_db": 10.0,
+    "echo_coherence": 0.7
   },
   "echo": {
     "stream": {
@@ -95,17 +98,18 @@
       "max_peaks": 3
     },
     "tracker": {
-      "gate": 6.0,
-      "max_speed": 3.0,
-      "exclusion": 15.0,
-      "strong_fraction": 0.25,
+      "accel": 0.2,
+      "meas_scale": 1.5,
+      "meas_floor": 1.0,
+      "init_speed": 2.0,
+      "gate_probability": 0.99,
       "confirm": 8,
       "confirm_window_s": 3.0,
       "drop_s": 8.0,
-      "fit_s": 4.0,
-      "static_speed": 0.2,
       "static_s": 10.0,
-      "lost_s": 4.0
+      "lost_s": 4.0,
+      "shape_radius": 20,
+      "exclusion": 15.0
     }
   },
   "characteristics": {
