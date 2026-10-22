@@ -42,6 +42,8 @@ parametric studies but is not used by the production pipeline.
 | [Usage](usage.md) | Installation, CLI commands, running examples |
 | [Studies](studies.md) | Nine parametric robustness studies |
 | [Harbor](harbor.md) | 2-D harbor DAS + hydrophone detection of hidden submerged objects (separate from the drone pipeline): scenario, processing chain, GPU, findings |
+| [Noise](noise.md) | The harbor noise models: the default and `harbor_v2` (snapping shrimp, wind, quay machinery, fibre and interrogator noise), each component's source, and how far the numbers depend on it |
+| [CI](ci.md) | What the two GitHub workflows run, and how to register a GPU runner |
 | [Generated outputs](outputs.md) | What is tracked under `output/`, how to regenerate it, cleanup |
 | [Glossary](glossary.md) | Definitions of terms, acronyms, and concepts |
 

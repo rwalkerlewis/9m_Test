@@ -1,0 +1,198 @@
+{
+  "recording": "bistatic_seed0_harbor_v2",
+  "record_s": 20.0,
+  "held_out": false,
+  "ais_used_in_processing": false,
+  "compute_per_second_of_data": {
+    "passive": 0.6526715408959717,
+    "echo": 0.5002745851510554,
+    "characteristics": 0.09119576620432782,
+    "total": 1.244141892251355
+  },
+  "latency_s": {
+    "median": 2.348,
+    "max": 3.348
+  },
+  "objects": {
+    "ferry": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "pd": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      },
+      "frames": {
+        "radiator": 66,
+        "echo": 64,
+        "any": 66
+      },
+      "hits": {
+        "radiator": 66,
+        "echo": 0,
+        "any": 66
+      },
+      "median_error_m": {
+        "radiator": 0.6410537617684997,
+        "echo": null,
+        "any": 0.6410537617684997
+      },
+      "tracks": [
+        "r1"
+      ]
+    },
+    "uuv1": {
+      "kind": "uuv",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.53125,
+        "any": 0.5151515151515151
+      },
+      "frames": {
+        "radiator": 66,
+        "echo": 64,
+        "any": 66
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 34,
+        "any": 34
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": 1.924964457772547,
+        "any": 1.924964457772547
+      },
+      "tracks": [
+        "e10"
+      ]
+    }
+  },
+  "tracks": [
+    {
+      "track": "r1",
+      "fixes": 66,
+      "first_t": 1.5,
+      "last_t": 17.75,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 1.0,
+      "first_xy": [
+        146.0,
+        198.0
+      ],
+      "last_xy": [
+        210.0,
+        200.0
+      ],
+      "median_xy": [
+        178.0,
+        200.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "e10",
+      "fixes": 29,
+      "first_t": 9.5,
+      "last_t": 17.75,
+      "true_object": "uuv1",
+      "false_track": false,
+      "nearest_object": "uuv1",
+      "median_error_m": 2.4665715182552903,
+      "first_xy": [
+        222.0,
+        110.0
+      ],
+      "last_xy": [
+        210.0,
+        122.0
+      ],
+      "median_xy": [
+        216.0,
+        118.0
+      ],
+      "kind": "echo"
+    }
+  ],
+  "false_tracks": {
+    "count": 0,
+    "per_minute": 0.0,
+    "radiator": 0,
+    "echo": 0,
+    "tracks": []
+  },
+  "ellipse_coverage": {
+    "fixes": 95,
+    "inside": 92,
+    "fraction": 0.968421052631579
+  },
+  "held_as_echo": {},
+  "sidelobe_peaks": 263,
+  "definitions": {
+    "hit_radius_m": 5.0,
+    "assoc_radius_m": 10.0,
+    "confirm": {
+      "radiator": 6,
+      "echo": 8
+    }
+  },
+  "peaks": {
+    "passive": {
+      "frames": 72,
+      "objects": {
+        "ferry": {
+          "frames": 72,
+          "hit": 1.0,
+          "median_error_m": 1.0
+        },
+        "uuv1": {
+          "frames": 72,
+          "hit": 0.0,
+          "median_error_m": null
+        }
+      }
+    },
+    "echo": {
+      "frames": 71,
+      "objects": {
+        "ferry": {
+          "frames": 71,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "uuv1": {
+          "frames": 71,
+          "hit": 0.5492957746478874,
+          "median_error_m": 2.240709497991748
+        }
+      }
+    }
+  },
+  "run": {
+    "git_commit": "85412ff766ed338cec007fdc01458ac4622e6238",
+    "git_dirty": true,
+    "processing_config": "/workspace/examples/configs/processing/bistatic.json",
+    "processing_config_sha256": "7a4b77fee449c0b854f4788f79e82a2f9003fd7c6dd52ed57760ac435bb091cd",
+    "processing_overrides": [],
+    "observation": "/workspace/output/studies/noise_model/bistatic/seed0/harbor_v2/dataset.observation.npz",
+    "observation_sha256": "5a7ccfeac35783cb2a9b8fe517d662c0b59dfd1105268bf1541dac7625666df3",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 0,
+    "wall_s": 24.955682281011832,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "chunk_s": 0.25
+  }
+}

@@ -251,3 +251,14 @@ def test_harbor_v2_config_round_trips_and_default_model_unchanged(layout):
     old = generate_noise(layout, FS, N, NoiseConfig(), np.random.default_rng(0))
     v2_off = generate_noise(layout, FS, N, NoiseConfig(model="harbor_v2"), np.random.default_rng(0))
     assert np.array_equal(old.noise_only, v2_off.noise_only)       # every component off: the old model, bit for bit
+
+
+def test_components_on_a_strain_cable_have_one_row_per_channel():
+    """Strain channels are the second difference of three sample points: the acoustic components are drawn at the
+    sample points and collapsed to one row per receiver."""
+    cable = Cable("c", np.array([[50.0, 100.0], [350.0, 100.0]]), channel_spacing=4.0, das_mode="strain", gauge_length=2.0)
+    lay = SensorLayout(cables=[cable], hydrophones=np.array([[100.0, 200.0]]))
+    env = _harbor_with_quay()
+    x, _ = shrimp_noise(lay, FS2, 3000, ShrimpConfig(enabled=True, latitude_deg=30.0), np.random.default_rng(7), env)
+    y = surface_noise(lay, FS2, 3000, SurfaceConfig(enabled=True), np.random.default_rng(8))
+    assert x.shape == y.shape == (lay.n_receivers, 3000)

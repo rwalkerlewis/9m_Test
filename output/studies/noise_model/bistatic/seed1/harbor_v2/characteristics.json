@@ -1,0 +1,130 @@
+{
+  "recording": "bistatic_seed1_harbor_v2",
+  "run": {
+    "git_commit": "85412ff766ed338cec007fdc01458ac4622e6238",
+    "git_dirty": true,
+    "processing_config": "/workspace/examples/configs/processing/bistatic.json",
+    "processing_config_sha256": "7a4b77fee449c0b854f4788f79e82a2f9003fd7c6dd52ed57760ac435bb091cd",
+    "processing_overrides": [],
+    "observation": "/workspace/output/studies/noise_model/bistatic/seed1/harbor_v2/dataset.observation.npz",
+    "observation_sha256": "3bfeb6f2a0cccc17819a5a7750803d9fb7fa818804f03d14077546e69e012972",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 1,
+    "wall_s": 28.096472032004385,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "chunk_s": 0.25
+  },
+  "objects": [
+    {
+      "object": "ferry",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 1.0,
+      "true_size_m": null,
+      "true_speed": 4.0,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 1.35315,
+        "width_major": 7.3,
+        "width_minor": 3.65,
+        "speed": 4.0,
+        "residual": 0.77
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "uuv1",
+      "type": "uuv",
+      "radiates": false,
+      "true_level_pa": 0.0,
+      "true_size_m": [
+        3.0,
+        1.0
+      ],
+      "true_speed": 2.000000000000001,
+      "detected_frames": 50,
+      "seen": {
+        "echo": 50
+      },
+      "median": {
+        "size_ratio_db": 4.949999999999999,
+        "strength_db": -12.399999999999999,
+        "along": 5.4,
+        "across": 4.85,
+        "source_level": null,
+        "width_major": 7.71,
+        "width_minor": 2.84,
+        "speed": 2.0,
+        "residual": 1.8
+      },
+      "size_ratio_per_frame": {
+        "5.5": -7.4,
+        "5.75": -7.4,
+        "6.0": -7.4,
+        "6.25": -7.4,
+        "6.5": -7.4,
+        "6.75": 1.5,
+        "7.0": 6.1,
+        "7.25": 6.1,
+        "7.5": 6.5,
+        "7.75": 6.5,
+        "8.0": 6.3,
+        "8.25": 6.5,
+        "8.5": 6.3,
+        "8.75": 6.5,
+        "9.0": 6.3,
+        "9.25": 6.5,
+        "9.5": 4.8,
+        "9.75": 4.4,
+        "10.0": 4.4,
+        "10.25": 4.4,
+        "10.5": 6.0,
+        "10.75": 6.0,
+        "11.0": 5.4,
+        "11.25": 5.4,
+        "11.5": 5.4,
+        "11.75": 7.0,
+        "12.0": 6.8,
+        "12.25": 6.8,
+        "12.5": 6.8,
+        "12.75": 7.3,
+        "13.0": 7.3,
+        "13.25": 7.3,
+        "13.5": 7.3,
+        "13.75": 5.1,
+        "14.0": 4.3,
+        "14.25": 4.3,
+        "14.5": 5.6,
+        "14.75": 4.3,
+        "15.0": 3.5,
+        "15.25": 3.0,
+        "15.5": 4.3,
+        "15.75": 3.0,
+        "16.0": 2.6,
+        "16.25": 1.9,
+        "16.5": 0.9,
+        "16.75": 1.9,
+        "17.0": 2.6,
+        "17.25": 2.1,
+        "17.5": 0.9,
+        "17.75": 0.9
+      }
+    }
+  ],
+  "size_order": null
+}

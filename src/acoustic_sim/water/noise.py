@@ -163,7 +163,7 @@ class ShrimpConfig:
     rate_per_m: float = 0.3
     sl_pp_db: float = 186.0
     sl_pp_db_sd: float = 1.5
-    band_fraction_db: float = -20.0
+    band_fraction_db: float = -40.0
     edge_spacing_m: float = 5.0
     click_samples: int = 1
     transition_m: float = 5.0
@@ -317,7 +317,7 @@ def shrimp_noise(layout: SensorLayout, fs: float, n: int, cfg: ShrimpConfig, rng
     S = layout.sample_points
     out = np.zeros((len(S), n))
     if not len(pts):
-        return layout.collapse(out), {"clicks": 0, "edge_points": 0}
+        return layout.collapse(out.T).T, {"clicks": 0, "edge_points": 0}
     edge_len = len(pts) * cfg.edge_spacing_m
     T = n / fs
     k = rng.poisson(cfg.rate_per_m * edge_len * T)
@@ -338,7 +338,7 @@ def shrimp_noise(layout: SensorLayout, fs: float, n: int, cfg: ShrimpConfig, rng
             ok = ii < n
             cols = np.broadcast_to(np.arange(len(S))[None, :], ii.shape)
             np.add.at(out, (cols[ok], ii[ok]), a[ok] * (1.0 if q == 0 else -1.0))     # two samples: a doublet
-    return layout.collapse(out), {"clicks": int(k), "edge_points": int(len(pts)), "edge_length_m": float(edge_len)}
+    return layout.collapse(out.T).T, {"clicks": int(k), "edge_points": int(len(pts)), "edge_length_m": float(edge_len)}
 
 
 def surface_noise(layout: SensorLayout, fs: float, n: int, cfg: SurfaceConfig, rng: np.random.Generator) -> np.ndarray:
@@ -361,7 +361,7 @@ def surface_noise(layout: SensorLayout, fs: float, n: int, cfg: SurfaceConfig, r
     for i in range(1, m):
         w[i] = a * w[i - 1] + cfg.variation_db * np.sqrt(1 - a * a) * rng.standard_normal()
     gain = 10.0 ** (np.interp(np.arange(n) * dt, np.arange(m), w) / 20.0)
-    return layout.collapse(x * gain[None, :])
+    return layout.collapse((x * gain[None, :]).T).T
 
 
 def machinery_signal(n: int, fs: float, cfg: MachineryConfig, rng: np.random.Generator, f_max: float) -> np.ndarray:
