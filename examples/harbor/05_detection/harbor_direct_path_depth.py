@@ -34,7 +34,7 @@ PROCESSING = {"simple": "simple", "bistatic": "bistatic", "multistatic": "multis
 def depth_per_ship(component_energy: dict, live: np.ndarray, cable: slice) -> dict:
     out = {}
     for key, steps in component_energy.items():
-        if not key.startswith("direct:") or not steps:
+        if not key.startswith(("direct:", "scattered:")) or not steps:
             continue
         e0 = np.sum([b for b, _ in steps], axis=0)
         e1 = np.sum([a for _, a in steps], axis=0)
@@ -43,8 +43,8 @@ def depth_per_ship(component_energy: dict, live: np.ndarray, cable: slice) -> di
         ok[cable.stop:] = False
         ok &= e0 > 0
         d = 10 * np.log10(np.maximum(e0[ok], 1e-300) / np.maximum(e1[ok], 1e-300))
-        out[key.split(":", 1)[1]] = {"cable_median_db": float(np.median(d)), "cable_p10_db": float(np.percentile(d, 10)),
-                                     "steps": len(steps)}
+        name = key.split(":", 1)[1] if key.startswith("direct:") else key
+        out[name] = {"cable_median_db": float(np.median(d)), "cable_p10_db": float(np.percentile(d, 10)), "steps": len(steps)}
     return out
 
 
@@ -54,10 +54,13 @@ def main() -> None:
     ap.add_argument("--modes", nargs="*", default=["beam", "weighted"])
     ap.add_argument("--out", default="output/studies/direct_path")
     ap.add_argument("--cpu", action="store_true")
+    ap.add_argument("--precision", default=None, choices=("float64", "mixed"), help="echo.bistatic.eca_precision of every run")
+    ap.add_argument("--scattered", action="store_true", help="also pass the scattered components (the echo loss)")
+    ap.add_argument("--name", default="recording_depth", help="stem of the output files")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    path = out / "recording_depth.json"
+    path = out / f"{a.name}.json"
     res = json.loads(path.read_text()) if path.exists() else {}
     for rec in a.recordings:
         cfg_path = ROOT / "examples" / "configs" / "processing" / f"{PROCESSING[rec]}.json"
@@ -65,9 +68,11 @@ def main() -> None:
         obs = Observation.load(obs_path)
         truth = Truth.load(contract_paths(obs_path)[1])
         gain = np.asarray(truth.gain, dtype=np.float64)[:, None]
-        comps = {k: gain * np.asarray(v, dtype=np.float64) for k, v in truth.components.items() if k.startswith("direct:")}
+        comps = {k: gain * np.asarray(v, dtype=np.float64) for k, v in truth.components.items()
+                 if k.startswith("direct:") or (a.scattered and k.startswith("scattered:"))}
         for mode in a.modes:
-            cfg = load_processing(cfg_path, [f"echo.bistatic.ref_mode={mode}"])
+            cfg = load_processing(cfg_path, [f"echo.bistatic.ref_mode={mode}"]
+                                  + ([f"echo.bistatic.eca_precision={a.precision}"] if a.precision else []))
             r = run(obs, cfg, use_cuda=not a.cpu, provenance=Provenance(data="forward_model", truth_inputs=["components"]),
                     observation_path=obs_path, components=comps)
             echo = r.picture.echo
@@ -76,7 +81,8 @@ def main() -> None:
                 live &= ~np.asarray(truth.dead, bool)
             cable = obs.geometry.slices[obs.geometry.cables[0].name]
             res.setdefault(rec, {})[mode] = {"ships": depth_per_ship(echo.component_energy, live, cable),
-                                             "compute_per_second_of_data": r.compute_per_second, "run": r.run}
+                                             "compute_per_second_of_data": r.compute_per_second, "run": r.run,
+                                             "echo_peaks": [[f.t, np.asarray(f.xy).tolist()] for f in r.picture.e_frames]}
             print(rec, mode, {k: round(v["cable_median_db"], 1) for k, v in res[rec][mode]["ships"].items()},
                   f"compute {r.compute_per_second['total']:.2f} s/s", flush=True)
             path.write_text(json.dumps(res, indent=2, default=str))
@@ -88,7 +94,7 @@ def main() -> None:
             cells = [f"{res[rec][m]['ships'][s]['cable_median_db']:.1f} / {res[rec][m]['ships'][s]['cable_p10_db']:.1f}"
                      if m in res[rec] and s in res[rec][m]["ships"] else "-" for m in a.modes]
             lines.append(f"| {rec} | {s} | " + " | ".join(cells) + " |")
-    (out / "recording_depth.md").write_text("\n".join(lines) + "\n")
+    (out / f"{a.name}.md").write_text("\n".join(lines) + "\n")
 
 
 if __name__ == "__main__":

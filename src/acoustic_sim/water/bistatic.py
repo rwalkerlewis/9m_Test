@@ -141,6 +141,11 @@ class BistaticConfig:
     eca_chunk : int
         Channels whose normal equations the vectorized ECA forms and solves together (memory against
         kernel launches).
+    eca_precision : str
+        ``"float64"`` (default): the vectorized ECA in double precision with the loaded normal equations.
+        ``"mixed"``: the per sample work (the reference resampled at the track's delays, the delayed copies, the
+        projection applied to every channel) in single precision, and the least squares fit of every channel and block
+        by a QR of its delayed copies in double precision, without loading (:func:`_project_out_qr`).
     map_scale : str
         ``"max"`` (default): the maps of a run are divided by their largest value (over all frames), so a
         map is relative to the run's peak.  ``"none"``: the maps are returned as computed (with
@@ -201,6 +206,7 @@ class BistaticConfig:
     map_scale: str = "max"
     eca_gram: str = "matmul"
     eca_chunk: int = 32
+    eca_precision: str = "float64"
     mvdr_loading: float = 0.05
     music_rank: int = 3
     min_separation: float = 20.0
@@ -218,6 +224,8 @@ class BistaticConfig:
             raise ValueError(f"reference must be one of {REFERENCES}, got {self.reference!r}")
         if self.impl not in IMPLS:
             raise ValueError(f"impl must be one of {IMPLS}, got {self.impl!r}")
+        if self.eca_precision not in ("float64", "mixed"):
+            raise ValueError(f"eca_precision must be 'float64' or 'mixed', got {self.eca_precision!r}")
         if self.ref_mode not in REF_MODES:
             raise ValueError(f"ref_mode must be one of {REF_MODES}, got {self.ref_mode!r}")
         if self.eca_gram not in ECA_GRAMS:
@@ -993,6 +1001,29 @@ def _project_out_batched(S, segs, loading: float = 1e-14, G=None):
     return segs - xp.matmul(S, x)
 
 
+def _project_out_qr(S, segs):
+    """Each segment minus its least squares fit on the columns of *S*: *S* (Ng, block, L) and *segs* (Ng, block, R) in
+    single precision; the fit by a QR of every channel's ``S`` in double precision (no normal equations, so no loading),
+    the projection applied in single precision.  Returns (Ng, block, R) in the dtype of *segs*."""
+    xp = _module_of(S)
+    S64 = S.astype(np.float64)
+    try:
+        Q, R = xp.linalg.qr(S64)                                                            # batched: (Ng, block, L), (Ng, L, L)
+    except Exception:
+        QR = [xp.linalg.qr(S64[g]) for g in range(S64.shape[0])]
+        Q, R = xp.stack([q for q, _ in QR]), xp.stack([r for _, r in QR])
+    rhs = xp.matmul(Q.transpose(0, 2, 1), segs.astype(np.float64))                          # (Ng, L, R) accumulated in double
+    if xp is np:
+        from scipy.linalg import solve_triangular as st
+
+        x = np.stack([st(R[g], rhs[g], lower=False, check_finite=False) for g in range(R.shape[0])])
+    else:
+        from cupyx.scipy.linalg import solve_triangular as st
+
+        x = st(R, rhs, lower=False)
+    return segs - xp.matmul(S, x.astype(S.dtype))
+
+
 def _eca_lags(nominal: np.ndarray, half: int, hi: int) -> list[np.ndarray]:
     """Per channel lag sets of the reference: the union of the windows around the nominal delays
     (``nominal`` (N, P)), restricted to ``[0, hi)``."""
@@ -1017,6 +1048,8 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
         refp = xp.asarray(np.concatenate([np.zeros(n), ref]))                                # lag L of block [lo, hi): refp[n + lo - L : n + hi - L]
     else:
         ref_up = xp.asarray(resample(ref, n * UPSAMPLE))
+        if bc.eca_precision == "mixed":
+            ref_up = ref_up.astype(np.float32)
         j_up = xp.arange(n * UPSAMPLE, dtype=float)
         j_all = xp.arange(n, dtype=float)
         rec_d = xp.asarray(rec)
@@ -1053,6 +1086,8 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
                                  paths[None, :, :, 1] - rec_d[idx][:, None, None, 1]) / bc.c * fs    # (Ng, P, z - a)
                     pos = (j_all[a:z][None, None, :] - d) * UPSAMPLE
                     bases = xp.interp(pos.ravel(), j_up, ref_up, left=0.0, right=0.0).reshape(pos.shape)
+                    if bc.eca_precision == "mixed":
+                        bases = bases.astype(np.float32)
                     basep = xp.concatenate([xp.zeros(bases.shape[:2] + (pad,)), bases, xp.zeros(bases.shape[:2] + (pad,))], axis=-1)
                     owner = np.argmin(np.abs(lags[:, :, None] - nominal[idx][:, None, :]), axis=2)      # (Ng, L)
                     off = lags - np.take_along_axis(nominal[idx], owner, axis=1)
@@ -1060,11 +1095,14 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
                     W = from_window(basep, block, axis=-1)                                           # (Ng, P, n_win, block)
                     S = W[xp.asarray(np.arange(len(idx)))[:, None], xp.asarray(owner), xp.asarray(start)]   # (Ng, L, block)
                 G = None
-                if ship_t is not None and bc.eca_gram == "prefix" and basep.shape[1] == 1:
+                if ship_t is not None and bc.eca_gram == "prefix" and basep.shape[1] == 1 and bc.eca_precision != "mixed":
                     G = _gram_prefix(basep[:, 0, :], start, block)
                 S = xp.ascontiguousarray(S.transpose(0, 2, 1))                                        # (Ng, block, L)
                 segs = xp.asarray(np.stack([out[idx, lo:hi] for out in outs], axis=-1))               # (Ng, block, R)
-                cleaned = _asnumpy(_project_out_batched(S, segs, G=G))
+                if bc.eca_precision == "mixed":
+                    cleaned = _asnumpy(_project_out_qr(S.astype(np.float32), segs.astype(np.float32)))
+                else:
+                    cleaned = _asnumpy(_project_out_batched(S, segs, G=G))
                 for r_i, out in enumerate(outs):
                     out[idx, lo:hi] = cleaned[:, :, r_i]
     return outs

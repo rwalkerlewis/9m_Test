@@ -1,0 +1,6 @@
+{
+  "criterion_db": 0.3,
+  "max_abs_difference_db": 6.677341346517096e-08,
+  "passed": true,
+  "device": "cpu"
+}

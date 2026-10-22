@@ -1,0 +1,17 @@
+criterion: at least one mode with no truth input reaches a median depth over the live cable channels of 20 dB on the stationary source at about 193 m and at about 99 m, and 15 dB on the moving source at about 193 m with the tracked position; the mode with no truth input of the highest mean median depth over the six cases becomes the default ref_mode of every processing config
+grid 801 x 601 at 0.5 m, fs 6000 Hz, 60000 steps, 200 channels, time scheme kspace, processing band 100 to 760 Hz
+6 FDTD runs (cached in output/studies/direct_path/cache) in 1 s
+stationary  193.0 m  joint                      median  25.2 dB  p10  24.0 dB  coherence 0.995  compute 1.89 s/s
+stationary  193.0 m  beam                       median  20.1 dB  p10  19.2 dB  coherence 0.993  compute 0.96 s/s
+moving      193.0 m  joint                      median  26.5 dB  p10  21.1 dB  coherence 0.865  compute 1.68 s/s
+moving      193.0 m  beam                       median  24.1 dB  p10  20.6 dB  coherence 0.857  compute 0.86 s/s
+stationary   99.0 m  joint                      median  23.9 dB  p10  16.4 dB  coherence 0.998  compute 1.75 s/s
+stationary   99.0 m  beam                       median  22.8 dB  p10  15.5 dB  coherence 0.997  compute 0.89 s/s
+moving       99.0 m  joint                      median  22.6 dB  p10  20.0 dB  coherence 0.895  compute 1.72 s/s
+moving       99.0 m  beam                       median  24.3 dB  p10  20.6 dB  coherence 0.919  compute 0.85 s/s
+stationary   29.0 m  joint                      median  28.1 dB  p10   1.4 dB  coherence 0.988  compute 1.65 s/s
+stationary   29.0 m  beam                       median  11.3 dB  p10   1.6 dB  coherence 0.985  compute 0.85 s/s
+moving       29.0 m  joint                      median   9.9 dB  p10   7.8 dB  coherence 0.058  compute 1.68 s/s
+moving       29.0 m  beam                       median   7.5 dB  p10   6.8 dB  coherence 0.060  compute 0.87 s/s
+criterion PASS: passing modes ['joint', 'beam']; best mode by the mean over the six cases: joint (22.7 dB)
+wrote output/studies/float32/stage0a_float64

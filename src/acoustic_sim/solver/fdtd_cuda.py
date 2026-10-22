@@ -338,7 +338,7 @@ class FusedFDTD:
             coeffs, self.dtype, mask is not None, cpml is not None, None if cpml is None else cpml["d1"], self.scheme)
         if self.scheme == "kspace":
             c2 = scheme["ratio"]                                    # the kernel multiplies the k-space Laplacian by (c / c0)^2
-            self.k_kernel = cp.asarray(scheme["kernel"])
+            self.k_kernel = cp.asarray(scheme["kernel"], dtype=self.dtype)   # single precision FFT product with float32 fields
         self.q = cp.zeros(p.shape, dtype=self.dtype) if self.scheme != "leapfrog" else None
         self.c2 = cp.ascontiguousarray(c2, dtype=self.dtype)
         self.sigma = cp.ascontiguousarray(sigma, dtype=self.dtype)
