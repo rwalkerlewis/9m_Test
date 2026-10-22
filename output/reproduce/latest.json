@@ -84,8 +84,8 @@
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 0.5173455790921428,
-            "any": 0.5173455790921428
+            "echo": 1.1714303554630177,
+            "any": 1.1714303554630177
           },
           "tracks": [
             "e1"
@@ -767,8 +767,8 @@
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 0.5742800222432822,
-            "any": 0.5742800222432822
+            "echo": 1.2667432407290895,
+            "any": 1.2667432407290895
           },
           "tracks": [
             "e1"
@@ -880,8 +880,8 @@
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 0.538701759450225,
-            "any": 0.538701759450225
+            "echo": 1.2132974788045257,
+            "any": 1.2132974788045257
           },
           "tracks": [
             "e1"
@@ -1003,8 +1003,8 @@
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 0.49547915146485416,
-            "any": 0.49547915146485416
+            "echo": 1.1976827341614777,
+            "any": 1.1976827341614777
           },
           "tracks": [
             "e1"
@@ -2818,7 +2818,7 @@
             259.0
           ],
           "nearest_object": "piling6",
-          "median_error_m": 13.779067361430211
+          "median_error_m": 13.880842958355569
         },
         {
           "track": "e66",
@@ -2827,7 +2827,7 @@
             244.0
           ],
           "nearest_object": "piling6",
-          "median_error_m": 15.508062419270823
+          "median_error_m": 15.532224567009067
         }
       ],
       "objects": {
@@ -5218,7 +5218,7 @@
     }
   ],
   "run": {
-    "git_commit": "69c2891c6e8e2c851b223aaddecfd0f800bb4ef3",
+    "git_commit": "71726039bfd28de3c3ad5be9e6a75b81ddc37d7a",
     "git_dirty": true,
     "processing_config": null,
     "processing_config_sha256": null,
@@ -5230,7 +5230,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": null,
-    "wall_s": 25.747615814208984,
+    "wall_s": 25.389942407608032,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

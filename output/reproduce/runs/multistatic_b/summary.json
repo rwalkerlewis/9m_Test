@@ -628,7 +628,7 @@
       "true_object": null,
       "false_track": true,
       "nearest_object": "piling6",
-      "median_error_m": 13.779067361430211,
+      "median_error_m": 13.880842958355569,
       "first_xy": [
         56.0,
         260.0
@@ -651,7 +651,7 @@
       "true_object": null,
       "false_track": true,
       "nearest_object": "piling6",
-      "median_error_m": 15.508062419270823,
+      "median_error_m": 15.532224567009067,
       "first_xy": [
         44.0,
         244.0
@@ -842,7 +842,7 @@
         "true_object": null,
         "false_track": true,
         "nearest_object": "piling6",
-        "median_error_m": 13.779067361430211,
+        "median_error_m": 13.880842958355569,
         "first_xy": [
           56.0,
           260.0
@@ -865,7 +865,7 @@
         "true_object": null,
         "false_track": true,
         "nearest_object": "piling6",
-        "median_error_m": 15.508062419270823,
+        "median_error_m": 15.532224567009067,
         "first_xy": [
           44.0,
           244.0

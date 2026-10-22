@@ -119,8 +119,8 @@
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 0.49547915146485416,
-        "any": 0.49547915146485416
+        "echo": 1.1976827341614777,
+        "any": 1.1976827341614777
       },
       "tracks": [
         "e1"
@@ -205,7 +205,7 @@
       "true_object": "wreck",
       "false_track": false,
       "nearest_object": "wreck",
-      "median_error_m": 1.0,
+      "median_error_m": 1.4142135623730951,
       "first_xy": [
         198.0,
         212.0

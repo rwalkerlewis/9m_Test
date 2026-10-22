@@ -396,27 +396,30 @@ FIRM = ("confirmed", "static")
 
 
 def static_body_cells(truth: Truth, oid: str) -> np.ndarray | None:
-    """The cell centres (M, 2) of a static body's mask as the forward model drew it (the scenario's body of a vessel
-    with one waypoint, on the solver grid, ``scatterer.body_factor``); ``None`` for a moving object or a radiator
-    without a body."""
-    from acoustic_sim.water.scatterer import Scatterer, body_factor
-
+    """The cell centres (M, 2) of a static body's mask as the forward model draws it (the scenario's body of a vessel
+    with one waypoint on the solver grid: a rectangle or an ellipse of the body's length along its heading and width
+    across it, heading +x for a body that never moved, as ``scatterer.Scatterer.pose_at``); ``None`` for a moving object
+    or a radiator without a body.  Computed here from the truth's scenario: the scoring side does not import the forward
+    model."""
     v = next((x for x in truth.scenario.get("vessels", []) if x.get("id") == oid), None)
     if v is None or not v.get("body_length") or len(v.get("waypoints", [])) != 1 or oid not in truth.tracks:
         return None
     dx = float(truth.scenario.get("environment", {}).get("dx", 1.0))
-    sc = Scatterer(oid, truth.tracks[oid], float(v["body_length"]), float(v.get("body_width") or v["body_length"]),
-                   v.get("body_kind", "soft"), float(v.get("body_strength", 0.5)), v.get("body_shape", "rect"))
-    centre, heading = sc.pose_at(float(truth.tracks[oid].t[0]))
-    half = sc.length + sc.width + 4 * dx
+    length = float(v["body_length"])
+    width = float(v.get("body_width") or length)
+    centre = np.asarray(v["waypoints"][0], dtype=float)
+    heading = np.array([1.0, 0.0])
+    half = length + width + 4 * dx
     x = np.arange(np.floor((centre[0] - half) / dx), np.ceil((centre[0] + half) / dx) + 1) * dx
     y = np.arange(np.floor((centre[1] - half) / dx), np.ceil((centre[1] + half) / dx) + 1) * dx
-    got = body_factor(sc, centre, heading, x, y, dx)
-    if got is None:
-        return None
-    rows, cols, f = got
-    iy, ix = np.nonzero(f < 0.999)
-    return np.column_stack([x[cols][ix], y[rows][iy]])
+    X, Y = np.meshgrid(x - centre[0], y - centre[1])
+    along = X * heading[0] + Y * heading[1]
+    across = -X * heading[1] + Y * heading[0]
+    if v.get("body_shape", "rect") == "ellipse":
+        inside = (along / (0.5 * length)) ** 2 + (across / (0.5 * width)) ** 2 <= 1.0
+    else:
+        inside = (np.abs(along) <= 0.5 * length) & (np.abs(across) <= 0.5 * width)
+    return np.column_stack([X[inside] + centre[0], Y[inside] + centre[1]])
 
 
 class ObjectDistance:

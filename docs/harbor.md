@@ -453,7 +453,7 @@ Every number, before and after (`harbor_numbers_before_after.py --compute`):
 | simple | 0.84 / 1.11 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
 | simple | 0.84 / 1.11 | boat (radiator) | 100 % / 100 % | 0.3 / 0.3 |  |
 | simple | 0.84 / 1.11 | uuv1 (echo) | 28 % / 30 % | 2.7 / 3.0 |  |
-| simple | 0.84 / 1.11 | wreck (echo) | 86 % / 100 % | 2.8 / 0.5 | Pd, error |
+| simple | 0.84 / 1.11 | wreck (echo) | 86 % / 100 % | 2.8 / 1.2 | Pd, error |
 | simple | 0.84 / 1.11 | false tracks (per minute) | 2 (6.0) / 0 (0.0) | | count |
 | bistatic | 1.47 / 1.44 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
 | bistatic | 1.47 / 1.44 | uuv1 (echo) | 69 % / 70 % | 1.8 / 1.6 |  |
@@ -471,17 +471,17 @@ Every number, before and after (`harbor_numbers_before_after.py --compute`):
 | simple_seed1 | 0.82 / 1.10 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
 | simple_seed1 | 0.82 / 1.10 | boat (radiator) | 100 % / 100 % | 0.2 / 0.2 |  |
 | simple_seed1 | 0.82 / 1.10 | uuv1 (echo) | 0 % / 66 % | - / 3.0 | Pd |
-| simple_seed1 | 0.82 / 1.10 | wreck (echo) | 67 % / 100 % | 2.7 / 0.6 | Pd, error |
+| simple_seed1 | 0.82 / 1.10 | wreck (echo) | 67 % / 100 % | 2.7 / 1.3 | Pd, error |
 | simple_seed1 | 0.82 / 1.10 | false tracks (per minute) | 1 (3.0) / 0 (0.0) | | count |
 | simple_seed2 | 0.82 / 1.09 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
 | simple_seed2 | 0.82 / 1.09 | boat (radiator) | 100 % / 100 % | 0.2 / 0.3 |  |
 | simple_seed2 | 0.82 / 1.09 | uuv1 (echo) | 28 % / 31 % | 3.1 / 2.8 | Pd |
-| simple_seed2 | 0.82 / 1.09 | wreck (echo) | 66 % / 100 % | 2.8 / 0.5 | Pd, error |
+| simple_seed2 | 0.82 / 1.09 | wreck (echo) | 66 % / 100 % | 2.8 / 1.2 | Pd, error |
 | simple_seed2 | 0.82 / 1.09 | false tracks (per minute) | 1 (3.0) / 0 (0.0) | | count |
 | simple_seed3 | 0.82 / 1.11 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
 | simple_seed3 | 0.82 / 1.11 | boat (radiator) | 100 % / 100 % | 0.2 / 0.2 |  |
 | simple_seed3 | 0.82 / 1.11 | uuv1 (echo) | 25 % / 61 % | 2.6 / 2.7 | Pd |
-| simple_seed3 | 0.82 / 1.11 | wreck (echo) | 97 % / 100 % | 2.7 / 0.5 | Pd, error |
+| simple_seed3 | 0.82 / 1.11 | wreck (echo) | 97 % / 100 % | 2.7 / 1.2 | Pd, error |
 | simple_seed3 | 0.82 / 1.11 | false tracks (per minute) | 2 (6.0) / 1 (3.0) | | count |
 | bistatic_seed1 | 1.22 / 1.48 | ferry (radiator) | 100 % / 100 % | 0.5 / 0.5 |  |
 | bistatic_seed1 | 1.22 / 1.48 | uuv1 (echo) | 73 % / 70 % | 1.8 / 1.6 | Pd |
