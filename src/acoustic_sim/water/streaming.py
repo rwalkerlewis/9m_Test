@@ -56,7 +56,9 @@ class StreamConfig:
     ``block_frames``: frames processed together; ``history_s``: past data used by the QC, the noise
     floors and the interference projector; ``warmup_s``: data before the first output;
     ``interference_every``: frames between projector updates; ``max_peaks`` / ``min_separation``:
-    peaks reported per frame.
+    peaks reported per frame; ``full_patterns``: with ``push(explain=...)``, the predicted map of every position over
+    the whole scan grid (``FrameResult.patterns``; the tracker needs only the response between the block's peaks and
+    tracks, ``pair_R``, which is always computed).
     """
 
     block_frames: int = 4
@@ -65,6 +67,7 @@ class StreamConfig:
     interference_every: int = 16
     max_peaks: int = 3
     min_separation: float = 20.0
+    full_patterns: bool = False
 
 
 @dataclass
@@ -79,6 +82,9 @@ class FrameResult:
     spectrum: np.ndarray | None = field(default=None, repr=False)   # with keep_spectra: band spectrum (N, F) of the frame
     weights: np.ndarray | None = field(default=None, repr=False)    # ... and the channel weights it was formed with
     refs: dict | None = field(default=None, repr=False)             # echo chain: reference spectrum (F,) per illuminator
+    patterns: dict | None = field(default=None, repr=False)         # passive chain: predicted map (G,) per track, 1 at it
+    pair_cells: np.ndarray | None = field(default=None, repr=False) # passive chain: the block's peak and track cells (C, 2)
+    pair_R: np.ndarray | None = field(default=None, repr=False)     # ... the response at each to a source at each (C, C)
 
 
 class StreamingPassive:
@@ -119,12 +125,18 @@ class StreamingPassive:
 
     # ------------------------------------------------------------------
 
-    def push(self, samples: np.ndarray, reports: AISReports | None = None) -> list[FrameResult]:
+    def push(self, samples: np.ndarray, reports: AISReports | None = None,
+             explain: dict[str, np.ndarray] | None = None) -> list[FrameResult]:
         """Append *samples* (N, n) and process every complete block.  *reports* (optional): AIS reports
         received so far, whose ships are then refined, projected out and excluded; without them every
-        radiator, ships included, is located from the traces alone."""
+        radiator, ships included, is located from the traces alone.  *explain* (track id -> predicted position):
+        the map the array would produce for a point source at each position alone (the layout's response through
+        the same replicas, whitening weights and interference projection as the data map, summed over the scanned
+        bins), normalised to 1 at that position's cell, is returned with every frame of the block
+        (``FrameResult.patterns``)."""
         if reports is None:
             reports = _NO_REPORTS
+        self.explain = dict(explain or {})
         self.raw = np.concatenate([self.raw, np.asarray(samples, dtype=np.float64)], axis=1)
         self.t_samples += samples.shape[1]
         out = []
@@ -212,6 +224,9 @@ class StreamingPassive:
                 else:
                     self.U.pop(i, None)                                               # no interference above the floor now
         B = xp.zeros((len(self.grid), b), dtype=np.float32)
+        pat_ids = list(getattr(self, "explain", {}) or {})
+        pat_cells = [int(np.argmin(np.hypot(*(self.grid - np.asarray(self.explain[k], float)).T))) for k in pat_ids]
+        Pat = xp.zeros((len(self.grid), len(pat_ids)), dtype=np.float32) if pat_ids and stc.full_patterns else None
         greens = None
         if self._fast:
             greens = self._greens()
@@ -231,13 +246,24 @@ class StreamingPassive:
             norm = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=1), 1e-12)
             M = xp.abs(A.conj() @ Zbi) ** 2 / norm[:, None]
             B += xp.maximum(M - pc.clip_tau, 0.0).astype(np.float32)
+            if Pat is not None:                                                       # predicted maps: the beam pattern
+                cells = xp.asarray(pat_cells)
+                Ag = A[cells]                                                         # (J, N)
+                Pat += (xp.abs(A.conj() @ Ag.T) ** 2 / (norm[:, None] * norm[cells][None, :])).astype(np.float32)
         B = dev.asnumpy(B).astype(np.float64)
+        patterns = None
+        if Pat is not None:
+            Pn = dev.asnumpy(Pat).astype(np.float64)
+            patterns = {k: Pn[:, j] / max(Pn[pat_cells[j], j], 1e-30) for j, k in enumerate(pat_ids)}
         ships: list[dict[str, np.ndarray]] = [{} for _ in range(b)]
         if est is not None:
             for v, vid in enumerate(est.ids):
                 for k in np.flatnonzero(est.present[:, v]):
                     B[np.hypot(*(self.grid - est.refined[k, v]).T) < sc.exclusion_radius, k] = 0.0
                     ships[k][vid] = est.refined[k, v]
+        peak_cells = [_nms(B[:, k], self.grid, stc.min_separation, stc.max_peaks, 0.0) for k in range(b)]
+        pair_cells = np.unique(np.concatenate([np.asarray(g, int) for g in peak_cells] + [np.asarray(pat_cells, int)]))
+        pair_R = self._pair_response(pair_cells, wc, wd, sigma2, bins) if len(pair_cells) else np.zeros((0, 0))
         self.frames_done += b
         compute = time.perf_counter() - t0
         spectra = dev.asnumpy(spec).astype(np.complex64) if self.keep_spectra else None
@@ -247,8 +273,24 @@ class StreamingPassive:
             frame_end = (starts[k] + self.nper) / self.fs
             out.append(FrameResult(float(times[k]), self.grid[g], B[g, k], ships[k], compute,
                                    float(stop / self.fs - frame_end + compute), B[:, k].copy() if self.keep_maps else None,
-                                   spectra[:, k, :] if spectra is not None else None, w if spectra is not None else None))
+                                   spectra[:, k, :] if spectra is not None else None, w if spectra is not None else None,
+                                   patterns=patterns, pair_cells=self.grid[pair_cells], pair_R=pair_R))
         return out
+
+    def _pair_response(self, cells: np.ndarray, wc: Whitened, wd, sigma2, bins: list[int]) -> np.ndarray:
+        """The array's response at each of the grid *cells* to a point source at each other, through the same
+        replicas, whitening weights and interference projection as the data map: ``R[a, b]`` the mean over the scanned
+        bins of ``|a_a^H a_b|^2 / (|a_a|^2 |a_b|^2)`` (1 on the diagonal), the map a source at ``b`` alone produces at
+        ``a`` relative to its own peak."""
+        xp, dev = self.dev.xp, self.dev
+        geom = self.scanner._geometry(self.grid[cells])
+        R = xp.zeros((len(cells), len(cells)), dtype=np.float64)
+        for i in bins:
+            A = self.scanner._replicas(geom, wc, i)
+            A = self.scanner._project(A, self.U.get(i))
+            n = xp.maximum(xp.sum(xp.abs(A) ** 2, axis=1), 1e-12)
+            R += (xp.abs(A.conj() @ A.T) ** 2 / (n[:, None] * n[None, :])).astype(np.float64)
+        return dev.asnumpy(R / max(len(bins), 1))
 
     def _init_fast_greens(self) -> None:
         """Tables for :meth:`_greens`: the free field replicas of the scanned bins in order, from the ranges
@@ -464,60 +506,129 @@ def _strain_greens_kernel():
 
 @dataclass
 class TrackerConfig:
-    """``gate``: a peak joins a track if within this distance [m] of the track's predicted position (plus
-    ``max_speed`` times the time since its last fix); ``exclusion``: a track does not confirm within this
-    distance [m] of a stronger confirmed track (sidelobes of a loud source; checked at every update); ``confirm``: fixes within ``confirm_window_s`` that make a
-    track confirmed; ``strong_fraction``: :meth:`RadiatorTracker.strong` keeps the confirmed tracks scoring at
-    least this fraction of the strongest (an echo of a loud ship is located by the passive chain too, about
-    10 dB below the ship; set on the bistatic and multistatic recordings); ``drop_s``: a track without a fix for this long is dropped; ``fit_s``: past fixes used
-    for the prediction (straight line fit); ``static_speed`` / ``static_s``: a confirmed track whose fitted speed stays below
-    ``static_speed`` [m/s] for ``static_s`` [s] is static; ``lost_s``: a dropped confirmed track is kept this long as lost
-    (for the picture; it takes no more fixes)."""
+    """Parameters of a :class:`RadiatorTracker` (radiator tracks and echo tracks each have their own).
 
-    gate: float = 6.0
-    max_speed: float = 6.0
-    exclusion: float = 30.0
-    strong_fraction: float = 0.25
+    Every track is a constant velocity Kalman filter (state: position and velocity).  ``accel``: the process noise, a
+    white acceleration of this standard deviation [m/s^2]; ``meas_scale``, ``meas_floor``: the measurement noise of a
+    fix, ``meas_scale`` times the standard deviation of a Gaussian with the half maximum widths of the map peak that
+    produced it (along its two axes; width / 2.355) with a floor of ``meas_floor`` [m] per axis; ``init_speed``: the
+    standard deviation [m/s] of the velocity of a new track; ``gate_probability``: a peak joins a track when its
+    Mahalanobis distance to the track's prediction is within the chi squared quantile of this probability (2 degrees
+    of freedom); ``confirm``: gated fixes within ``confirm_window_s`` that confirm a track; ``drop_s``: a track without
+    a gated fix for this long is dropped; ``lost_s``: a dropped confirmed track is kept this long as lost (for the
+    picture); ``static_s``: a confirmed track whose velocity is within its covariance of zero (Mahalanobis distance
+    within the ``gate_probability`` quantile) for this long is static; ``shape_radius``: the region [m] the half
+    maximum widths are measured in.
+
+    ``explain_fraction`` (radiator tracks, with the predicted maps of :class:`StreamingPassive`): a peak is explained by
+    a confirmed track (a sidelobe of it) when the map the array would produce for that track alone, scaled to the
+    track's own peak, exceeds this fraction of the data map at the peak; an explained peak starts no track and is no fix
+    for another track.  ``illuminator_margin_db``: a confirmed radiator track whose peak is this far above the map's
+    noise floor (the median of the frame's map over the cells it is above zero) is an illuminator of the echo chain.
+    ``echo_coherence``: a radiator track about to confirm whose least squares source spectrum is coherent with an
+    illuminator's above this level (over its frames, mean over the band) and which sits, within the gate, on an echo map
+    peak of that illuminator is an echo and is never confirmed (``HarborPicture``).  ``exclusion`` [m] (echo tracks): a
+    track does not confirm within this distance of a stronger confirmed track (0: off).
+    """
+
+    accel: float = 0.05
+    meas_scale: float = 1.0
+    meas_floor: float = 1.0
+    init_speed: float = 3.0
+    gate_probability: float = 0.99
     confirm: int = 6
     confirm_window_s: float = 2.0
     drop_s: float = 2.0
-    fit_s: float = 4.0
-    static_speed: float = 0.2
     static_s: float = 10.0
     lost_s: float = 4.0
+    shape_radius: float = 20.0
+    explain_fraction: float = 0.5
+    illuminator_margin_db: float = 10.0
+    echo_coherence: float = 0.7
+    exclusion: float = 0.0
+
+    @property
+    def gate_chi2(self) -> float:
+        """The chi squared quantile (2 degrees of freedom) of ``gate_probability``: ``-2 ln(1 - p)``."""
+        return float(-2.0 * np.log(1.0 - self.gate_probability))
+
+
+def fix_covariance(widths_m, major_deg: float | None, cfg: TrackerConfig) -> np.ndarray:
+    """Measurement covariance (2, 2) of a fix from the half maximum widths ``(major, minor)`` [m] of its map peak and
+    the direction of the major axis (degrees clockwise from north); without widths the floor alone."""
+    floor = cfg.meas_floor ** 2 * np.eye(2)
+    if widths_m is None or major_deg is None or not np.all(np.isfinite(widths_m)):
+        return floor
+    s = cfg.meas_scale * np.asarray(widths_m, dtype=float) / 2.355
+    a = np.radians(major_deg)
+    u = np.array([np.sin(a), np.cos(a)])                     # east, north
+    v = np.array([-u[1], u[0]])
+    return s[0] ** 2 * np.outer(u, u) + s[1] ** 2 * np.outer(v, v) + floor
 
 
 @dataclass
 class RadiatorTrack:
+    """One track: its fixes ``(t, xy, score)`` and a constant velocity Kalman filter (``x``: east, north, their
+    velocities; ``P`` its covariance; ``t_state`` the time of the state)."""
+
     id: str
     fixes: list = field(default_factory=list)       # (t, xy, score)
     confirmed: bool = False
     confirmed_t: float | None = None                # first time the track was confirmed
-    slow_since: float | None = None                 # fitted speed below ``static_speed`` since this time
+    slow_since: float | None = None                 # velocity within its covariance of zero since this time
     static: bool = False
     lost_t: float | None = None                     # dropped at this time (kept as lost for ``lost_s``)
+    x: np.ndarray | None = None
+    P: np.ndarray | None = None
+    t_state: float = 0.0
+    accel: float = 0.05
+    held: bool = False                              # about to confirm but held (an echo, ``HarborPicture``)
+    states: list = field(default_factory=list)      # (t, x, P) after every update
 
-    def velocity(self, fit_s: float) -> np.ndarray | None:
-        """Velocity [m/s] of the straight line fitted to the fixes of the last *fit_s* seconds (``None`` with fewer
-        than 3)."""
-        tt = np.array([f[0] for f in self.fixes])
-        m = tt >= tt[-1] - fit_s
-        if m.sum() < 3:
-            return None
-        xy = np.array([f[1] for f in self.fixes])[m]
-        A = np.column_stack([np.ones(m.sum()), tt[m] - tt[-1]])
-        coef, *_ = np.linalg.lstsq(A, xy, rcond=None)
-        return coef[1]
+    def start(self, t: float, z: np.ndarray, R: np.ndarray, init_speed: float) -> None:
+        self.x = np.array([z[0], z[1], 0.0, 0.0])
+        self.P = np.zeros((4, 4))
+        self.P[:2, :2] = R
+        self.P[2:, 2:] = init_speed ** 2 * np.eye(2)
+        self.t_state = t
 
-    def predict(self, t: float, fit_s: float) -> np.ndarray:
-        tt = np.array([f[0] for f in self.fixes])
-        xy = np.array([f[1] for f in self.fixes])
-        m = tt >= tt[-1] - fit_s
-        if m.sum() < 3:
-            return xy[-1]
-        A = np.column_stack([np.ones(m.sum()), tt[m] - tt[-1]])
-        coef, *_ = np.linalg.lstsq(A, xy[m], rcond=None)
-        return coef[0] + coef[1] * (t - tt[-1])
+    def predicted(self, t: float) -> tuple[np.ndarray, np.ndarray]:
+        """State and covariance at *t* (constant velocity, white acceleration process noise)."""
+        dt = t - self.t_state
+        F = np.eye(4)
+        F[0, 2] = F[1, 3] = dt
+        q = self.accel ** 2
+        Q = np.zeros((4, 4))
+        Q[:2, :2] = q * dt ** 4 / 4.0 * np.eye(2)
+        Q[:2, 2:] = Q[2:, :2] = q * dt ** 3 / 2.0 * np.eye(2)
+        Q[2:, 2:] = q * dt ** 2 * np.eye(2)
+        return F @ self.x, F @ self.P @ F.T + Q
+
+    def innovation(self, t: float, z: np.ndarray, R: np.ndarray) -> float:
+        """Mahalanobis distance squared of the fix *z* (covariance *R*) to the prediction at *t*."""
+        x, P = self.predicted(t)
+        S = P[:2, :2] + R
+        d = np.asarray(z, float) - x[:2]
+        return float(d @ np.linalg.solve(S, d))
+
+    def update(self, t: float, z: np.ndarray, R: np.ndarray) -> None:
+        x, P = self.predicted(t)
+        S = P[:2, :2] + R
+        K = P[:, :2] @ np.linalg.inv(S)
+        self.x = x + K @ (np.asarray(z, float) - x[:2])
+        I_KH = np.eye(4)
+        I_KH[:, :2] -= K
+        self.P = I_KH @ P @ I_KH.T + K @ R @ K.T          # Joseph form
+        self.t_state = t
+        self.states.append((t, self.x.copy(), self.P.copy()))
+
+    def velocity(self, fit_s: float | None = None) -> np.ndarray | None:
+        """The filter's velocity [m/s] (``None`` before the second fix)."""
+        return None if self.x is None or len(self.fixes) < 2 else self.x[2:].copy()
+
+    def predict(self, t: float, fit_s: float | None = None) -> np.ndarray:
+        """The filter's position at *t*."""
+        return self.predicted(t)[0][:2]
 
     @property
     def score(self) -> float:
@@ -525,17 +636,70 @@ class RadiatorTrack:
 
 
 class RadiatorTracker:
-    """Causal tracks of the radiating objects from the per frame peaks of the passive chain (no AIS): every
-    peak joins the nearest track within the gate (one peak per track, strongest peaks first), the others
-    start new tracks; a track is confirmed after ``confirm`` fixes within ``confirm_window_s``."""
+    """Causal tracks from the per frame peaks of a map (the passive chain's radiators, or the echo chain's bodies):
+    every track a constant velocity Kalman filter (:class:`TrackerConfig`).  Per frame, strongest peak first: the
+    peaks a confirmed track explains (its predicted map, ``FrameResult.patterns``) are dropped unless inside that
+    track's own gate; each other peak joins the untaken track of the smallest Mahalanobis distance within the gate,
+    or starts a new track; a track is confirmed after ``confirm`` gated fixes within ``confirm_window_s`` (unless
+    *hold* says it is an echo).  *grid*: the map's cells (for the half maximum widths of each peak; without it every
+    fix gets the floor covariance)."""
 
-    def __init__(self, cfg: TrackerConfig | None = None, prefix: str = "r") -> None:
+    def __init__(self, cfg: TrackerConfig | None = None, prefix: str = "r", grid: np.ndarray | None = None,
+                 hold=None) -> None:
         self.cfg = cfg or TrackerConfig()
         self.tracks: dict[str, RadiatorTrack] = {}
         self.lost: dict[str, RadiatorTrack] = {}       # dropped tracks that had been confirmed, for ``lost_s``
         self.prefix = prefix
+        self.grid = grid
+        self.hold = hold                                # hold(track, t) -> True: do not confirm it (yet)
+        xs = np.unique(grid[:, 0]) if grid is not None else np.empty(0)
+        self.cell = float(np.min(np.diff(xs))) if len(xs) > 1 else 1.0   # the map's cell size [m]
         self.frames: list[float] = []                  # times of the frames the tracker was updated with
+        self.explained: list[tuple[float, np.ndarray, str]] = []   # (t, peak, track) peaks dropped as sidelobes
         self._n = 0
+
+    def _fix_cov(self, frame: FrameResult, xy: np.ndarray) -> tuple[np.ndarray, dict | None]:
+        if self.grid is None or frame.B is None:
+            return fix_covariance(None, None, self.cfg), None
+        from acoustic_sim.water.characteristics import peak_shape
+
+        sh = peak_shape(frame.B, self.grid, xy, self.cfg.shape_radius)
+        return fix_covariance(sh.get("widths_m"), sh.get("major_deg"), self.cfg), sh
+
+    def _response(self, frame: FrameResult, src: np.ndarray, at: np.ndarray, key: str | None = None) -> float | None:
+        """The map a source at *src* alone produces at *at*, relative to its own peak (``FrameResult.pair_R`` between
+        the nearest of the block's cells, else the full predicted map of track *key*); ``None`` without either."""
+        if frame.pair_R is not None and len(frame.pair_R):
+            c = frame.pair_cells
+            i, j = int(np.argmin(np.hypot(*(c - at).T))), int(np.argmin(np.hypot(*(c - src).T)))
+            tol = 1.5 * self.cell
+            if np.hypot(*(c[i] - at)) <= tol and np.hypot(*(c[j] - src)) <= tol:
+                return float(frame.pair_R[i, j])
+        if frame.patterns and key in frame.patterns and self.grid is not None:
+            return float(frame.patterns[key][int(np.argmin(np.hypot(*(self.grid - at).T)))])
+        return None
+
+    def _own_peak(self, frame: FrameResult, xy: np.ndarray) -> float:
+        near = np.hypot(*(self.grid - xy).T) <= 1.5 * self.cell
+        return float(np.max(frame.B[near])) if near.any() else 0.0
+
+    def _explains(self, frame: FrameResult, tr: RadiatorTrack, xy: np.ndarray, value: float, R: np.ndarray, t: float,
+                  src: np.ndarray | None = None) -> bool:
+        """Whether the confirmed track *tr* (its peak at *src*, default its prediction) explains a peak of *value* at
+        *xy*: outside its gate, and its predicted map there, scaled to its own peak, at least ``explain_fraction`` of
+        the data map."""
+        if self.grid is None or frame.B is None or tr.innovation(t, xy, R) <= self.cfg.gate_chi2:
+            return False
+        src = tr.predict(t) if src is None else np.asarray(src, float)
+        r = self._response(frame, src, xy, tr.id)
+        return r is not None and r * self._own_peak(frame, src) >= self.cfg.explain_fraction * max(value, 1e-30)
+
+    def _explaining(self, frame: FrameResult, xy: np.ndarray, value: float, R: np.ndarray, t: float) -> str | None:
+        """The confirmed track whose predicted map explains the peak at *xy* (not one whose own gate it is in)."""
+        for k, tr in self.tracks.items():
+            if tr.confirmed and self._explains(frame, tr, xy, value, R, t):
+                return k
+        return None
 
     def update(self, frame: FrameResult) -> None:
         cfg, t = self.cfg, frame.t
@@ -547,49 +711,76 @@ class RadiatorTracker:
                 self.lost[tid] = tr
         for tid in [k for k, tr in self.lost.items() if t - tr.lost_t > cfg.lost_s]:
             self.lost.pop(tid)
-        pred = {k: tr.predict(t, cfg.fit_s) for k, tr in self.tracks.items()}
         taken: set[str] = set()
         for xy, sc in zip(frame.xy, frame.score):
-            best, dbest = None, np.inf
-            for k, p in pred.items():
-                if k in taken:
-                    continue
-                d = float(np.hypot(*(xy - p)))
-                gate = cfg.gate + cfg.max_speed * (t - self.tracks[k].fixes[-1][0])
-                if d <= gate and d < dbest:
-                    best, dbest = k, d
+            xy = np.asarray(xy, float)
+            R, _ = self._fix_cov(frame, xy)
+            by = self._explaining(frame, xy, float(sc), R, t)
+            if by is not None:
+                self.explained.append((t, xy, by))
+                continue
+            best, dbest = None, cfg.gate_chi2
+            for firm in (True, False):                  # a confirmed track first: a tentative one does not steal its fixes
+                for k, tr in self.tracks.items():
+                    if k in taken or tr.confirmed is not firm:
+                        continue
+                    d2 = tr.innovation(t, xy, R)
+                    if d2 <= dbest:
+                        best, dbest = k, d2
+                if best is not None:
+                    break
+            if best is None and any(tr.confirmed and tr.innovation(t, xy, R) <= cfg.gate_chi2 for tr in self.tracks.values()):
+                continue                                # in the gate of a confirmed track that took another peak: no new track
             if best is None:
                 self._n += 1
                 best = f"{self.prefix}{self._n}"
-                self.tracks[best] = RadiatorTrack(best)
-            self.tracks[best].fixes.append((t, np.asarray(xy, float), float(sc)))
+                tr = RadiatorTrack(best, accel=cfg.accel)
+                tr.start(t, xy, R, cfg.init_speed)
+                tr.states.append((t, tr.x.copy(), tr.P.copy()))
+                self.tracks[best] = tr
+            else:
+                self.tracks[best].update(t, xy, R)
+            self.tracks[best].fixes.append((t, xy, float(sc)))
             taken.add(best)
         kept: list[RadiatorTrack] = []
         for tr in sorted(self.tracks.values(), key=lambda x: -x.score):                   # strongest first
             recent = sum(1 for f in tr.fixes if f[0] >= t - cfg.confirm_window_s)
-            near = any(np.hypot(*(o.fixes[-1][1] - tr.fixes[-1][1])) < cfg.exclusion for o in kept)
-            tr.confirmed = (tr.confirmed or recent >= cfg.confirm) and not near
+            near = cfg.exclusion > 0 and any(np.hypot(*(o.predict(t) - tr.predict(t))) < cfg.exclusion for o in kept)
+            if not tr.confirmed and tr.fixes[-1][0] == t and frame.B is not None and self.grid is not None:
+                # A track confirming in the same frame as a stronger one: a sidelobe of it is not confirmed.
+                fx = tr.fixes[-1]
+                Rf, _ = self._fix_cov(frame, fx[1])
+                near = near or any(o.fixes[-1][0] == t and self._explains(frame, o, fx[1], fx[2], Rf, t, src=o.fixes[-1][1])
+                                   for o in kept)
+            if not tr.confirmed and recent >= cfg.confirm and not near:
+                tr.held = bool(self.hold is not None and self.hold(tr, t))
+                tr.confirmed = not tr.held
+            elif tr.confirmed and near:
+                tr.confirmed = False
             if tr.confirmed:
                 kept.append(tr)
                 if tr.confirmed_t is None:
                     tr.confirmed_t = t
-            if tr.fixes[-1][0] == t:                                                    # static: slow for static_s
-                v = tr.velocity(cfg.fit_s)
-                slow = v is not None and float(np.hypot(*v)) < cfg.static_speed
+            if tr.fixes[-1][0] == t and tr.x is not None:                                # static: velocity ~ 0
+                v, Pv = tr.x[2:], tr.P[2:, 2:]
+                slow = len(tr.fixes) >= 3 and float(v @ np.linalg.solve(Pv, v)) <= cfg.gate_chi2
                 tr.slow_since = (tr.slow_since if tr.slow_since is not None else t) if slow else None
             tr.static = tr.confirmed and tr.slow_since is not None and t - tr.slow_since >= cfg.static_s
 
     def confirmed(self) -> dict[str, RadiatorTrack]:
         return {k: tr for k, tr in self.tracks.items() if tr.confirmed}
 
-    def strong(self) -> dict[str, RadiatorTrack]:
-        """Confirmed tracks scoring at least ``strong_fraction`` of the strongest, strongest first: the radiators
+    def illuminators(self, frame: FrameResult | None = None) -> dict[str, RadiatorTrack]:
+        """Confirmed tracks whose peak is ``illuminator_margin_db`` above the map's noise floor (the median of the
+        frame's map over the cells above zero; without a map every confirmed track), strongest first: the radiators
         whose direct paths the echo chain removes and whose echoes it maps."""
         conf = self.confirmed()
-        if not conf:
-            return {}
-        top = max(tr.score for tr in conf.values())
-        return dict(sorted(((k, tr) for k, tr in conf.items() if tr.score >= self.cfg.strong_fraction * top), key=lambda kv: -kv[1].score))
+        if frame is None or frame.B is None:
+            return dict(sorted(conf.items(), key=lambda kv: -kv[1].score))
+        pos = frame.B[frame.B > 0]
+        floor = float(np.median(pos)) if len(pos) else 0.0
+        lim = floor * 10 ** (self.cfg.illuminator_margin_db / 10.0)
+        return dict(sorted(((k, tr) for k, tr in conf.items() if tr.score >= lim), key=lambda kv: -kv[1].score))
 
 
 def ais_crosscheck(tracks: dict[str, RadiatorTrack], reports: AISReports, gate: float = 25.0, last: int = 8) -> dict[str, str | None]:

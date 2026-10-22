@@ -76,10 +76,10 @@ def test_every_entry_point_writes_the_run_block(recording, tmp_path):
     obs_path = d / "ci.observation.npz"
     out = tmp_path / "cli"
     assert main(["--observation", str(obs_path), "--processing", str(CONFIG), "--out", str(out), "--cpu", "--no-video",
-                 "--set", "tracker.gate=3.5"]) == 0
+                 "--set", "tracker.gate_probability=0.995"]) == 0
     header, records = read_picture(out / "picture.jsonl")
     assert records and RUN_KEYS <= set(header["run"])
-    assert header["run"]["processing_overrides"] == ["tracker.gate=3.5"]
+    assert header["run"]["processing_overrides"] == ["tracker.gate_probability=0.995"]
     assert header["run"]["observation_sha256"] and header["run"]["gpu"] == "cpu"
     assert RUN_KEYS <= set(json.loads((out / "summary.json").read_text())["run"])
 

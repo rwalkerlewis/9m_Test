@@ -215,6 +215,8 @@ def collect(rec: Recording, s: dict) -> dict:
            "false_track_list": [{"track": t["track"], "median_xy": t["median_xy"], "nearest_object": t["nearest_object"],
                                  "median_error_m": t["median_error_m"]} for t in s["false_tracks"]["tracks"]],
            "objects": objs, "peaks": peaks, "gpu": s["run"]["gpu"]}
+    if "ellipse_coverage" in s:
+        out["ellipse_coverage"] = s["ellipse_coverage"]
     if "size_order" in s:
         out["size_order"] = s["size_order"]
     return out
@@ -268,7 +270,8 @@ def compare(new: dict, old: dict) -> list[tuple[str, object, object, str]]:
     rows = []
     for k in sorted(set(a) | set(b)):
         x, y = a.get(k), b.get(k)
-        if "compute_per_second" in k or "latency" in k or k.endswith("/gpu") or "/tracks[" in k or "false_track_list" in k:
+        if ("compute_per_second" in k or "latency" in k or k.endswith("/gpu") or "/tracks[" in k or "false_track_list" in k
+                or k.endswith("ellipse_coverage/fixes") or k.endswith("ellipse_coverage/inside")):
             rows.append((k, x, y, "info"))
             continue
         if isinstance(x, (int, float)) and not isinstance(x, bool) and isinstance(y, (int, float)) and not isinstance(y, bool):

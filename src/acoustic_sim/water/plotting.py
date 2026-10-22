@@ -316,8 +316,12 @@ class HarborPictureView:
             col = {"own noise": "#1f77b4", "echo": "#d62728", "both": "#9467bd"}[o["seen"]]
             mk = {"own noise": "o", "echo": "s", "both": "D"}[o["seen"]]
             ax.plot(*xy, mk, color=col, ms=7, mec="k", alpha=alpha)
+            e95 = o["position"].get("ellipse95")
             w = o["position"].get("halfmax_width_m")
-            if w:
+            if e95:                                                   # the track's 95 % ellipse (its covariance)
+                ax.add_patch(Ellipse(xy, e95["major_m"], e95["minor_m"], angle=90.0 - e95["major_deg"], fill=False, ec=col,
+                                     lw=1.0, alpha=alpha))
+            elif w:
                 ax.add_patch(Ellipse(xy, w[0], w[1], angle=90.0 - o["position"]["halfmax_major_deg"], fill=False, ec=col,
                                      lw=1.0, alpha=alpha))
             v = o["velocity"]["vxy"]
@@ -348,8 +352,8 @@ class HarborPictureView:
         if self.truth is not None:
             ax.plot([], [], "--", color="0.4", label="true positions (for comparison)")
         ax.legend(fontsize=11, loc="lower left")
-        ax.set_title(f"{self.title}: operator picture at t = {t:.2f} s, latency {rec['latency_s']:.2f} s\nellipses: half maximum "
-                     f"width of the map peak; arrows: {self.lead_s:g} s ahead", fontsize=13)
+        ax.set_title(f"{self.title}: operator picture at t = {t:.2f} s, latency {rec['latency_s']:.2f} s\nellipses: 95 % "
+                     f"position uncertainty of each track; arrows: {self.lead_s:g} s ahead", fontsize=13)
         ax.tick_params(labelsize=11)
         ax.xaxis.label.set_size(12)
         ax.yaxis.label.set_size(12)

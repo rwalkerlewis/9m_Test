@@ -112,6 +112,15 @@ def size_order_check(rows: list[dict], hull: str, uuvs: list[str], piling_prefix
             "fraction": len(below) / len(frames) if frames else None}
 
 
+def _nearest(truth, tr) -> dict | None:
+    """The true object nearest (median over its fixes) to a radiator track held as an echo (scoring side)."""
+    if tr is None:
+        return None
+    d = {oid: float(np.median([np.hypot(*(t.position_at(f[0])[0] - np.asarray(f[1]))) for f in tr.fixes])) for oid, t in truth.tracks.items()}
+    k = min(d, key=d.get)
+    return {"object": k, "median_m": d[k]}
+
+
 def run_recording(name: str, processing: Path, observation: Path, truth_path: Path, out: Path, held_out: bool,
                   use_cuda: bool = True, seed: int | None = None, overrides=(), chunk: float | None = None, video: bool = True,
                   truth_in_video: bool = False, figures: bool = True) -> dict:
@@ -138,6 +147,10 @@ def run_recording(name: str, processing: Path, observation: Path, truth_path: Pa
                "compute_per_second_of_data": res.compute_per_second,
                "latency_s": {"median": float(np.median(lat)), "max": float(np.max(lat))},
                "objects": score["objects"], "tracks": score["tracks"], "false_tracks": score["false_tracks"],
+               "ellipse_coverage": score["ellipse_coverage"],
+               "held_as_echo": {k: dict(v, nearest_object=_nearest(truth, pic.tracker.tracks.get(k) or pic.tracker.lost.get(k)))
+                                for k, v in pic.echo_held.items()},
+               "sidelobe_peaks": len(pic.tracker.explained),
                "definitions": score["definitions"],
                "peaks": {"passive": {"frames": len(pic.p_frames), "objects": p_peaks},
                          "echo": None if e_peaks is None else {"frames": len(e_frames), "objects": e_peaks}},

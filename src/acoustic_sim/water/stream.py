@@ -77,7 +77,7 @@ def _parse_value(text: str):
 
 
 def apply_override(raw: dict, item: str) -> None:
-    """``key=value`` on the nested config *raw* (``tracker.gate=8``, ``echo.bistatic.eca_images=true``); the value
+    """``key=value`` on the nested config *raw* (``tracker.gate_probability=0.995``, ``echo.bistatic.eca_images=true``); the value
     is read as JSON when it parses, else as a string.  The key must exist."""
     key, sep, value = item.partition("=")
     if not sep:
@@ -196,13 +196,13 @@ class HarborPicture:
         self.pc = cfg.processing(env, use_cuda)
         self.passive = StreamingPassive(layout, fs, env, self.pc, SuppressionConfig(), cfg.stream(), keep_maps=True,
                                         keep_spectra=True)
-        self.tracker = RadiatorTracker(cfg.tracker(), prefix="r")
+        self.tracker = RadiatorTracker(cfg.tracker(), prefix="r", grid=self.passive.grid, hold=self._hold_echo)
         self.echo = self.echo_tracker = None
         if cfg.has_echo:
             self.bc = cfg.bistatic(env, use_cuda)
             self.echo = StreamingEcho(layout, fs, env, self.bc, cfg.echo_stream(), keep_maps=True, keep_clean=keep_clean,
                                       keep_spectra=True)
-            self.echo_tracker = RadiatorTracker(cfg.echo_tracker(), prefix="e")
+            self.echo_tracker = RadiatorTracker(cfg.echo_tracker(), prefix="e", grid=self.echo.grid)
         self.cc = cfg.characteristics()
         self.c = self.pc.c
         self.window = get_window("hann", self.passive.nper)
@@ -220,6 +220,9 @@ class HarborPicture:
         self.seconds = {"passive": 0.0, "echo": 0.0, "characteristics": 0.0}
         self.n_in = 0
         self._snap_t, self._snap = -np.inf, {}
+        self.spec_buf: list[tuple[float, np.ndarray, np.ndarray]] = []   # recent passive frames: (t, spectrum, weights)
+        self.echo_held: dict[str, dict] = {}                # radiator tracks held as echoes: track -> illuminator, coherence
+        self._last_frame: FrameResult | None = None
 
     # ------------------------------------------------------------------
 
@@ -227,11 +230,18 @@ class HarborPicture:
         n0 = len(self.records)
         self.n_in += samples.shape[1]
         t0 = time.perf_counter()
-        new = self.passive.push(samples)
+        t_now = self.n_in / self.fs
+        explain = {k: tr.predict(t_now) for k, tr in self.tracker.confirmed().items()}
+        new = self.passive.push(samples, explain=explain)
         self.seconds["passive"] += time.perf_counter() - t0
         for f in new:
             t1 = time.perf_counter()
+            if f.spectrum is not None:
+                self.spec_buf.append((f.t, f.spectrum, f.weights))
+                self.spec_buf = self.spec_buf[-32:]
             self.tracker.update(f)
+            f.patterns = None
+            self._last_frame = f
             self.seconds["passive"] += time.perf_counter() - t1
             t1 = time.perf_counter()
             self._measure_radiators(f)                         # the tracks as they stand after this frame
@@ -244,11 +254,11 @@ class HarborPicture:
                 self._emit(f.t, f.latency_s + time.perf_counter() - t1, self.snaps.pop()[1], None, passive=True, echo_out=False)
         if self.echo is not None:
             t1 = time.perf_counter()
-            strong = self.tracker.strong()
+            strong = self.tracker.illuminators(self._last_frame)
             fixes = {}
-            for k, tr in strong.items():
-                fixes[k] = [(f[0], f[1]) for f in tr.fixes[self.sent.get(k, 0):]]
-                self.sent[k] = len(tr.fixes)
+            for k, tr in strong.items():                    # the filtered positions: the illuminator where the track puts it
+                fixes[k] = [(st[0], st[1][:2]) for st in tr.states[self.sent.get(k, 0):]]
+                self.sent[k] = len(tr.states)
             bodies = ([tr.fixes[-1][1] for tr in self.echo_tracker.confirmed().values()]
                       if self.echo.bc.ref_mode == "iterated" else None)
             got = self.echo.push(samples, fixes, bodies=bodies)
@@ -258,6 +268,48 @@ class HarborPicture:
         return self.records[n0:]
 
     # ------------------------------------------------------------------ radiators
+
+    def _hold_echo(self, tr, t: float) -> bool:
+        """Whether the radiator track *tr*, about to confirm at *t*, is an echo of an illuminator and must not
+        confirm: its least squares source spectrum over its frames is coherent (``echo_coherence``, mean over the
+        band of the coherence across frames) with an illuminator's, and an echo map peak of that illuminator lies
+        within its gate.  Held (not yet confirmed) while the echo chain has not mapped its frames."""
+        if tr.id in self.echo_held:
+            return True
+        if self.echo is None:
+            return False
+        cfg = self.tracker.cfg
+        frames = {round(ft, 6): (X, w) for ft, X, w in self.spec_buf}
+        fx = [f for f in tr.fixes if round(f[0], 6) in frames][-8:]
+        if len(fx) < 3:
+            return False
+        freqs = self.passive.freqs
+        best = None
+        for k, il in self.tracker.illuminators(self._last_frame).items():
+            if k == tr.id:
+                continue
+            sc, si = [], []
+            for ft, xy, _ in fx:
+                X, w = frames[round(ft, 6)]
+                sc.append(source_spectrum(X, w, self.layout, xy, freqs, self.c))
+                si.append(source_spectrum(X, w, self.layout, il.predict(ft), freqs, self.c))
+            coh = spectral_coherence(np.array(sc), np.array(si))
+            if coh >= cfg.echo_coherence and (best is None or coh > best[1]):
+                best = (k, coh)
+        if best is None:
+            return False
+        k, coh = best
+        t0 = fx[0][0]
+        mapped = [e for e in self.e_frames if e.t >= t0 and k in (e.ships or {})]
+        if not mapped:
+            last = self.e_frames[-1].t if self.e_frames else -np.inf
+            return last < fx[-1][0]                              # the echo chain has not reached these frames: wait
+        floor = cfg.meas_floor ** 2 * np.eye(2)
+        on_peak = any(tr.innovation(e.t, p, floor) <= cfg.gate_chi2 for e in mapped for p in np.atleast_2d(e.xy))
+        if on_peak:
+            self.echo_held[tr.id] = {"illuminator": k, "coherence": coh, "t": t}
+        return on_peak
+
 
     def _measure_radiators(self, f: FrameResult) -> None:
         cc = self.cc
@@ -297,7 +349,18 @@ class HarborPicture:
         if status == "tentative":
             obj["xy"] = obj["fix_xy"]
             return obj
-        kin = kinematics(tr.fixes, min(t, last[0]) if status == "lost" else t, self.cc.fit_s)
+        t_at = min(t, last[0]) if status == "lost" else t
+        kin = kinematics(tr.fixes, t_at, self.cc.fit_s)
+        if tr.x is not None:                                       # the Kalman filter's state and covariance at t
+            x, P = tr.predicted(t_at)
+            v = x[2:]
+            speed = float(np.hypot(*v))
+            sv = float(np.sqrt(max(v @ P[2:, 2:] @ v, 0.0)) / speed) if speed > 0 else float(np.sqrt(np.trace(P[2:, 2:]) / 2))
+            kin.update(xy=x[:2].tolist(), velocity=v.tolist(), speed=speed,
+                       heading_deg=float(np.degrees(np.arctan2(v[0], v[1])) % 360.0), speed_se=sv,
+                       heading_se_deg=float(np.degrees(np.sqrt(max(np.array([-v[1], v[0]]) @ P[2:, 2:] @ np.array([-v[1], v[0]]), 0.0))
+                                                       / speed ** 2)) if speed > 0 else None,
+                       cov=P[:2, :2].tolist(), vcov=P[2:, 2:].tolist())
         obj["kin"] = kin
         obj["xy"] = kin["xy"]
         ct = tr.confirmed_t
@@ -338,7 +401,7 @@ class HarborPicture:
         # Echo peaks near a confirmed radiator track are its residual direct path, not a body.
         rad = [np.asarray(o["xy"]) for o in snap.values() if o["status"] in ("confirmed", "static")]
         keep = [i for i, p in enumerate(e.xy) if all(np.hypot(*(p - q)) >= self.bc.exclusion_radius for q in rad)] if e.ships else []
-        fe = FrameResult(e.t, e.xy[keep].reshape(-1, 2), e.score[keep], e.ships, e.compute_s, e.latency_s)
+        fe = FrameResult(e.t, e.xy[keep].reshape(-1, 2), e.score[keep], e.ships, e.compute_s, e.latency_s, B=e.B)
         self.echo_tracker.update(fe)
         self.e_used.append(fe)
         self._measure_echoes(e)
@@ -399,7 +462,7 @@ class HarborPicture:
             for ek, eo in echo.items():
                 if eo["status"] not in firm or ek in used_e:
                     continue
-                if np.hypot(*(np.asarray(ro["xy"]) - np.asarray(eo["xy"]))) <= cc.merge_radius_m:
+                if _close(ro, eo, cc.merge_radius_m, self.tracker.cfg.gate_chi2):
                     since = self.merge_since.setdefault((rk, ek), t)
                     if t - since >= cc.merge_s:
                         merged[rk] = ek
@@ -427,13 +490,16 @@ class HarborPicture:
             return {"id": oid, "seen": seen, "tracks": tracks, "status": "tentative", "position": {"xy": _r(main["xy"]), "fix_t": _r(main["fix_t"], 3)}}
         # Each track's own state (the scoring reads it; a merged object shows the radiator track's position).
         per_track = {o["track"]: {"status": o["status"], "xy": _r(o["xy"]), "fix_t": _r(o["fix_t"], 3), "fix_xy": _r(o["fix_xy"]),
-                                  "detected": o["detected"]} for o in (ro, eo) if o is not None}
+                                  "detected": o["detected"], "cov": _r(o.get("kin", {}).get("cov"), 3)}
+                     for o in (ro, eo) if o is not None}
         status = main["status"]
         if ro is not None and eo is not None and "static" in (ro["status"], eo["status"]):
             status = "static"
         kin = main["kin"]
         pos = {"xy": _r(kin["xy"]), "fix_t": _r(main["fix_t"], 3), "fix_xy": _r(main["fix_xy"]), "detected": main["detected"],
                "residual_m": _r(kin["residual_m"]), "window_s": _r(kin["window_s"], 3), "n_fixes": kin["n_fixes"]}
+        if kin.get("cov") is not None:
+            pos.update(cov=_r(kin["cov"], 3), ellipse95=_r(ellipse95(kin["cov"]), 2))
         if "shape" in main:
             pos.update(halfmax_width_m=_r(main["shape"]["widths_m"]), halfmax_major_deg=_r(main["shape"]["major_deg"], 1),
                        width_measured_t=_r(main["shape_t"], 3))
@@ -442,7 +508,7 @@ class HarborPicture:
                "position": pos,
                "velocity": {"vxy": _r(kin["velocity"]), "speed": _r(kin["speed"]), "speed_se": _r(kin["speed_se"]),
                             "heading_deg": _r(kin["heading_deg"], 1), "heading_se_deg": _r(kin["heading_se_deg"], 1),
-                            "window_s": _r(kin["window_s"], 3), "n_fixes": kin["n_fixes"]}}
+                            "cov": _r(kin.get("vcov"), 4), "window_s": _r(kin["window_s"], 3), "n_fixes": kin["n_fixes"]}}
         if main.get("lost_t") is not None:
             obj["lost_t"] = _r(main["lost_t"], 3)
         if ro is not None:
@@ -467,6 +533,37 @@ class HarborPicture:
             if eo is not main:
                 obj["echo"]["xy"] = _r(eo["xy"])
         return obj
+
+
+def spectral_coherence(a: np.ndarray, b: np.ndarray) -> float:
+    """Coherence of two spectra observed over frames, *a* and *b* (K, F): per frequency
+    ``|sum_k a b*|^2 / (sum_k |a|^2 sum_k |b|^2)`` over the frames, averaged over the band.  An echo is a delayed,
+    scaled copy of its illuminator's sound: a fixed phase per frequency over a few frames, so near 1; two independent
+    sources give about ``1 / K``."""
+    num = np.abs(np.sum(a * np.conj(b), axis=0)) ** 2
+    den = np.sum(np.abs(a) ** 2, axis=0) * np.sum(np.abs(b) ** 2, axis=0)
+    return float(np.mean(num / np.maximum(den, 1e-300)))
+
+
+def ellipse95(cov) -> dict:
+    """The 95 % ellipse of a position covariance (2, 2): full axis lengths [m] and the direction of the major axis
+    (degrees clockwise from north)."""
+    w, V = np.linalg.eigh(np.asarray(cov, dtype=float))
+    k = float(-2.0 * np.log(0.05))                          # chi squared, 2 degrees of freedom, 0.95
+    major = V[:, 1]
+    return {"major_m": float(2 * np.sqrt(k * max(w[1], 0.0))), "minor_m": float(2 * np.sqrt(k * max(w[0], 0.0))),
+            "major_deg": float(np.degrees(np.arctan2(major[0], major[1])) % 180.0)}
+
+
+def _close(ro: dict, eo: dict, radius: float, chi2: float) -> bool:
+    """A radiator and an echo track at the same place: within each other's covariance (Mahalanobis distance
+    within *chi2* with the sum of their covariances and a floor of *radius*), or within *radius* without them."""
+    d = np.asarray(ro["xy"], float) - np.asarray(eo["xy"], float)
+    cr, ce = ro.get("kin", {}).get("cov"), eo.get("kin", {}).get("cov")
+    if cr is None or ce is None:
+        return float(np.hypot(*d)) <= radius
+    S = np.asarray(cr) + np.asarray(ce) + (radius / 2.0) ** 2 * np.eye(2)
+    return float(d @ np.linalg.solve(S, d)) <= chi2
 
 
 def _light(f: FrameResult) -> FrameResult:
