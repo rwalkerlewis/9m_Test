@@ -286,6 +286,24 @@ def render_vessel_gathers(
     return out
 
 
+def machinery_gather(cfg: HarborScenarioConfig, env: HarborEnvironment, layout: SensorLayout,
+                     cache_dir: str | Path | None = None, seed: int = 7) -> np.ndarray:
+    """The quay machinery of ``cfg.noise.harbor_v2.machinery`` at unit level (1 Pa rms at 100 m per machine): one FDTD
+    run of a stationary source per position (cached like the vessels' gathers), summed, (N, n) float32."""
+    from acoustic_sim.water.noise import machinery_signal
+
+    mc = cfg.noise.harbor_v2.machinery
+    fs, n = cfg.fdtd.fs, cfg.fdtd.n_steps
+    f_max = min(f_max_for_grid(env.dx), 0.45 * fs)
+    cal = InjectionCalibration(dx=env.dx, dt=cfg.fdtd.dt, c=float(np.median(env.model.values[env.water])))
+    out = np.zeros((layout.n_receivers, n))
+    for k, pos in enumerate(mc.positions):
+        sig = to_injection(machinery_signal(n, fs, mc, np.random.default_rng(seed + k), f_max), fs, cal, f_max)
+        g = simulate_source(env, layout, cfg.fdtd, sig, position=tuple(pos), cache_dir=cache_dir)
+        out += g.traces.astype(np.float64)
+    return out.astype(np.float32)
+
+
 def assemble_dataset(
     cfg: HarborScenarioConfig,
     layout: SensorLayout,
@@ -298,6 +316,7 @@ def assemble_dataset(
     scatter_gain: dict[str, float] | None = None,
     keep_components: bool = False,
     env: HarborEnvironment | None = None,
+    machinery: np.ndarray | None = None,
     out: str | Path | None = None,
 ) -> HarborDataset:
     """Mix cached unit-level gathers into a noisy dataset.
@@ -354,7 +373,7 @@ def assemble_dataset(
                 if keep_components:
                     comps["scattered:" + key] = sc.astype(np.float32)
 
-    real = noise if noise is not None else generate_noise(layout, fs, n, cfg.noise, rng_noise)
+    real = noise if noise is not None else generate_noise(layout, fs, n, cfg.noise, rng_noise, env=env, machinery=machinery)
     traces = real.apply(clean)
     if keep_components:
         comps["noise"] = (traces.astype(np.float64) - real.gain[:, None] * clean).astype(np.float32)
@@ -363,7 +382,8 @@ def assemble_dataset(
         cfg=cfg, layout=layout, fs=fs, traces=traces, tracks=used, ais=ais,
         clean=clean.astype(np.float32) if keep_clean else None,
         gain=real.gain, dead=real.dead,
-        meta={"shipping_azimuth_deg": real.shipping_azimuth_deg.tolist(),
+        meta={"shipping_azimuth_deg": real.shipping_azimuth_deg.tolist(), "noise_model": cfg.noise.model,
+              "noise_parts": real.parts,
               "bodies": bodies, "scatter_gain": {b: scatter_gain.get(b, 1.0) for b in bodies}},
         components=comps or None,
         env=env,
