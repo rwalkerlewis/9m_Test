@@ -136,8 +136,8 @@ Per recording, `output/reproduce/runs/<recording>/`. What they say:
   the hull is 30 m long. The positions of every false track are in `false_track_list` of `summary.json`.
 * **Silent bodies of the multi ship scene.** Of the two UUVs, the diver, the six pilings and the moored hull, only the
   UUVs are tracked by their echo on any multistatic recording (the others in at most <!-- reproduce:max:recordings/multistatic*/objects/[dpm]*/pd/echo|pct -->0 %<!-- /reproduce --> of the
-  frames); the removal of the ships' direct sound is the limit: <!-- reproduce:range:@studies/direct_path/recording_depth.json:multistatic*/joint/ships/*/cable_median_db|f0 -->6 to 15<!-- /reproduce --> dB on these recordings against 20 dB or more for
-  a lone ship ([Direct path removal](#direct-path-removal)).
+  frames); the removal of the ships' direct sound is the limit: <!-- reproduce:range:@studies/direct_path/recording_depth.json:multistatic*/joint/ships/*/cable_median_db|f0 -->6 to 15<!-- /reproduce --> dB on these recordings against <!-- reproduce:range:@studies/direct_path/results.json:cases[range_target_m=?00.0]/rows/joint/cable_median_db|f1 -->22.6 to 26.5<!-- /reproduce --> dB for a
+  lone ship 99 m or more from the cable ([Direct path removal](#direct-path-removal)).
 * **The 5 m harbor** tracks the ferry in <!-- reproduce:range:recordings/harbor*/objects/ferry/pd/radiator|pct -->61 to 78 %<!-- /reproduce --> of its frames and the tug in
   <!-- reproduce:range:recordings/harbor*/objects/tug/pd/radiator|pct -->2 to 9 %<!-- /reproduce -->, with <!-- reproduce:range:recordings/harbor_seed*/false_tracks/per_minute|f1 -->2.0<!-- /reproduce --> false tracks per minute on the test seeds.
 
@@ -213,7 +213,7 @@ Criterion, fixed before the run: a mode with no truth input reaches a median of 
 (<!-- reproduce:@studies/direct_path/results.json:mean_median_db/joint|f1 -->22.7<!-- /reproduce --> dB), then `weighted` (<!-- reproduce:@studies/direct_path/results.json:mean_median_db/weighted|f1 -->21.1<!-- /reproduce -->), against <!-- reproduce:@studies/direct_path/results.json:mean_median_db/beam|f1 -->18.3<!-- /reproduce --> for the beam. What the table says:
 
 * On these k space gathers the beam alone already reaches <!-- reproduce:@studies/direct_path/results.json:cases[0]/rows/beam/cable_median_db|f1 -->20.1<!-- /reproduce --> dB on the stationary source at 193 m
-  (8.8 dB on the leapfrog gathers of the earlier stage 0a, [history](harbor_history.md)). The low end of the band is
+  (far less on the leapfrog gathers of the earlier stage 0a, [history](harbor_history.md)). The low end of the band is
   still where the beam is poorest: its coherence with the true waveform from 100 to 200 Hz is <!-- reproduce:@studies/direct_path/results.json:cases[0]/rows/beam/coherence_by_band/100-200|f2 -->0.53<!-- /reproduce --> on the stationary
   source at 193 m and <!-- reproduce:@studies/direct_path/results.json:cases[2]/rows/beam/coherence_by_band/100-200|f2 -->0.72<!-- /reproduce --> at 99 m, and the weighting raises it to <!-- reproduce:@studies/direct_path/results.json:cases[0]/rows/weighted/coherence_by_band/100-200|f2 -->0.92<!-- /reproduce --> and <!-- reproduce:@studies/direct_path/results.json:cases[2]/rows/weighted/coherence_by_band/100-200|f2 -->0.88<!-- /reproduce -->.
 * The weighting gains most where the beam is weakest: the stationary source at 29 m, <!-- reproduce:@studies/direct_path/results.json:cases[4]/rows/beam/cable_median_db|f1 -->11.3<!-- /reproduce --> dB with the beam
