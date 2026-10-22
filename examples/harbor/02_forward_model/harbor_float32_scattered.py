@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """The scattered component of every recording in float32 against float64 (prompt ``float32``, section 1).
 
-Each recording's seed 0 is built twice from the same scenario file, once as committed (``output/recordings/<rec>``,
-float64) and once with only ``fdtd.precision = "float32"`` changed (``--built32 <dir>/<rec>``, the same dataset script
-and noise seed).  Compared are the noise free components the truth file holds (``comp:scattered:<illuminator>><bodies>``:
+Each recording's seed 0 is built twice from the same scenario file, once in float64 (``--built64 <dir>/<rec>``) and
+once with only ``fdtd.precision = "float32"`` changed (``--built32 <dir>/<rec>``, the same dataset script and noise
+seed).  Compared are the noise free components the truth file holds (``comp:scattered:<illuminator>><bodies>``:
 the body gathers less the free gathers of the same run, so the subtraction is done in the run's precision).
 
 Criterion, fixed before the run (the prompt's "the scattered component within 1e-3 of its rms", measured as the
@@ -12,7 +12,13 @@ the rms of the difference float32 less float64 over every channel and sample is 
 float64 component.  The same ratio of the direct components and the worst channel's ratio are reported beside it
 (information, no criterion).  Writes ``scattered.json`` and ``scattered.md``.
 
-    python examples/harbor/02_forward_model/harbor_float32_scattered.py --built32 output/studies/float32/build32 \\
+A float32 gather can rarely carry a disturbance from the GPU fault of ``output/studies/float32/gpu_determinism.md``,
+which does not repeat.  Rule, fixed before the run: a component over the limit is attributed to that fault only if its
+float32 gather, deleted from the cache and built again, gives different traces; the rebuilt gather is then compared
+and the number of rebuilt gathers is reported.  If the rebuilt gather gives the same traces, the difference is the
+precision's and the criterion fails.
+
+    python examples/harbor/02_forward_model/harbor_float32_scattered.py --built64 <dir> --built32 output/recordings \\
         [--recordings simple bistatic multistatic multistatic_b harbor]
 """
 
@@ -60,7 +66,8 @@ def compare(t64: Truth, t32: Truth) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--recordings", nargs="*", default=["simple", "bistatic", "multistatic", "multistatic_b", "harbor"])
-    ap.add_argument("--built32", required=True, help="folder holding <rec>/dataset.* built in float32")
+    ap.add_argument("--built64", required=True, help="folder holding <rec>/dataset.* built in float64")
+    ap.add_argument("--built32", default="output/recordings", help="folder holding <rec>/dataset.* built in float32")
     ap.add_argument("--out", default="output/studies/float32")
     a = ap.parse_args()
     out = ROOT / a.out
@@ -69,7 +76,7 @@ def main() -> None:
     res = {"criterion": CRITERION, "measure": "rms of (float32 - float64) over the rms of float64, every channel and sample",
            "recordings": {}}
     for rec in a.recordings:
-        p64 = ROOT / "output" / "recordings" / rec / "dataset.npz"
+        p64 = Path(a.built64) / rec / "dataset.npz"
         p32 = Path(a.built32) / rec / "dataset.npz"
         t64, t32 = Truth.load(contract_paths(p64)[1]), Truth.load(contract_paths(p32)[1])
         if t32.scenario["fdtd"].get("precision") != "float32" or t64.scenario["fdtd"].get("precision", "float64") != "float64":
