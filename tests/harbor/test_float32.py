@@ -1,22 +1,24 @@
 """The k space FDTD in float32 against float64 on the tiny CI scenario (CPU): the traces agree within 1e-3 of each
 receiver's peak at the worst sample and 1e-4 at the median receiver, and the direct arrival at every hydrophone is the
-same to a fraction of a sample (the propagation error unchanged)."""
+same to a fraction of a sample (the propagation error unchanged); on the CPU and, with a GPU, in the fused CUDA step."""
 
 from __future__ import annotations
 
 import copy
 
 import numpy as np
+import pytest
 
 from acoustic_sim.water import HarborScenarioConfig, build_environment, build_layout
 from acoustic_sim.water.fdtd_runner import simulate_source
 
+from ._gpu import DEVICES
 from .test_ci_end_to_end import SCENARIO
 
 
-def _run(precision: str):
+def _run(precision: str, use_cuda: bool = False):
     d = copy.deepcopy(SCENARIO)
-    d["fdtd"].update(time_scheme="kspace", precision=precision, total_time=0.3, use_cuda=False)
+    d["fdtd"].update(time_scheme="kspace", precision=precision, total_time=0.3, use_cuda=use_cuda)
     cfg = HarborScenarioConfig.from_dict(d)
     env = build_environment(cfg)
     layout = build_layout(cfg, env)
@@ -29,9 +31,10 @@ def _run(precision: str):
     return g.traces.astype(np.float64), layout, fs
 
 
-def test_float32_kspace_traces_match_float64():
-    a, layout, fs = _run("float64")
-    b, _, _ = _run("float32")
+@pytest.mark.parametrize("use_cuda", DEVICES)
+def test_float32_kspace_traces_match_float64(use_cuda):
+    a, layout, fs = _run("float64", use_cuda)
+    b, _, _ = _run("float32", use_cuda)
     peak = np.max(np.abs(a), axis=1)
     e = np.max(np.abs(b - a), axis=1) / peak
     assert np.max(e) < 1e-3, np.max(e)

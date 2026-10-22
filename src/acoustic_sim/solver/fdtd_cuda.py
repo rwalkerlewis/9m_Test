@@ -395,9 +395,21 @@ class FusedFDTD:
             self.lw4_kernel(self.grid, _BLOCK, (p, self.q, self.c2, self.mask, np.int32(self.ny), np.int32(self.nx)))
             q = self.q
         elif self.scheme == "kspace":
+            # The k space step waits for the device after every operation.  Without the waits the float32 runs on the
+            # 601 x 801 grids differed from run to run on the Quadro (CUDA 12.9, cuFFT 11.4) in about one fresh process
+            # in four, one in ten by a disturbance of up to 2e-2 of the trace's peak (once 1.4) that starts at one point
+            # of the field; waits around the FFTs alone did not remove it, a wait after every operation did, as
+            # CUDA_LAUNCH_BLOCKING=1 does (docs/physics.md, Precision).  The cause was not found.
             xp = self.xp
+            wait = xp.cuda.Device().synchronize
             spec = xp.fft.rfft2(p, axes=(-2, -1))
-            self.q[...] = xp.fft.irfft2(spec * self.k_kernel, s=(self.ny, self.nx), axes=(-2, -1))
+            wait()
+            prod = spec * self.k_kernel
+            wait()
+            lk = xp.fft.irfft2(prod, s=(self.ny, self.nx), axes=(-2, -1))
+            wait()
+            self.q[...] = lk
+            wait()
             q = self.q
         self.step_kernel(
             self.grid, _BLOCK,
@@ -407,11 +419,15 @@ class FusedFDTD:
              self.psix, self.psiy, self.zetax, self.zetay, *self.cp_prof, q,
              np.int32(n), np.int32(self.n_steps), np.int32(self.ny), np.int32(self.nx)),
         )
+        if self.scheme == "kspace":
+            self.xp.cuda.Device().synchronize()
         if col >= 0:
             self.sampled_to = n
             self._flush()
         for hook in self.post_hooks:
             hook(pp, n)
+        if self.scheme == "kspace" and self.post_hooks:
+            self.xp.cuda.Device().synchronize()
         return pp, p
 
     def sample(self, p, n: int) -> None:
