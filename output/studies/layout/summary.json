@@ -1,0 +1,2545 @@
+{
+  "criterion": "none: a measurement (prompt sensor_layout_study)",
+  "build": "harbor_multistatic_dataset.py with each variant's scenario file: the k space scheme and float64, as the scenario files had them when the study was run",
+  "runs": {
+    "A/seed0": {
+      "variant": "A",
+      "seed": 0,
+      "cable_m": 400.0,
+      "channels": 101,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5287655620372895,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.504950495049505,
+            "strain_weighted": 0.42987899599299023,
+            "aperture_deg": 118.70070495633757,
+            "shadowing": 1.0,
+            "resolution_major_m": 82.20769942189844,
+            "resolution_minor_m": 9.7357092853915
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.13861386138613863,
+            "strain_weighted": 0.12135140197080484,
+            "aperture_deg": 5.871982273027527,
+            "shadowing": 1.0,
+            "resolution_major_m": 121.21597508280335,
+            "resolution_minor_m": 14.619783476010621
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.10891089108910891,
+            "strain_weighted": 0.09549360744296015,
+            "aperture_deg": 4.76064129234129,
+            "shadowing": 1.0,
+            "resolution_major_m": 107.92233555421298,
+            "resolution_minor_m": 13.672182928430628
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.5,
+          "median_error_m": 0.17704825831531407,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.24752475247524752,
+            "strain_weighted": 0.21373163795727845,
+            "aperture_deg": 13.282395134855676,
+            "shadowing": 1.0,
+            "resolution_major_m": 19.156126681084434,
+            "resolution_minor_m": 2.8142500885140156
+          }
+        }
+      },
+      "false_tracks_per_minute": 0.0,
+      "compute_per_second_of_data": 0.437822191149462
+    },
+    "A/seed1": {
+      "variant": "A",
+      "seed": 1,
+      "cable_m": 400.0,
+      "channels": 101,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5508407459109281,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.504950495049505,
+            "strain_weighted": 0.42987899599299023,
+            "aperture_deg": 118.70070495633757,
+            "shadowing": 1.0,
+            "resolution_major_m": 82.20769942189844,
+            "resolution_minor_m": 9.7357092853915
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.13861386138613863,
+            "strain_weighted": 0.12135140197080484,
+            "aperture_deg": 5.871982273027527,
+            "shadowing": 1.0,
+            "resolution_major_m": 121.21597508280335,
+            "resolution_minor_m": 14.619783476010621
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.10891089108910891,
+            "strain_weighted": 0.09549360744296015,
+            "aperture_deg": 4.76064129234129,
+            "shadowing": 1.0,
+            "resolution_major_m": 107.92233555421298,
+            "resolution_minor_m": 13.672182928430628
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.0625,
+          "median_error_m": 0.7410972703052592,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.24752475247524752,
+            "strain_weighted": 0.21373163795727845,
+            "aperture_deg": 13.282395134855676,
+            "shadowing": 1.0,
+            "resolution_major_m": 19.156126681084434,
+            "resolution_minor_m": 2.8142500885140156
+          }
+        }
+      },
+      "false_tracks_per_minute": 0.0,
+      "compute_per_second_of_data": 0.4229805942915846
+    },
+    "A/seed2": {
+      "variant": "A",
+      "seed": 2,
+      "cable_m": 400.0,
+      "channels": 101,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.638474474849752,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.504950495049505,
+            "strain_weighted": 0.42987899599299023,
+            "aperture_deg": 118.70070495633757,
+            "shadowing": 1.0,
+            "resolution_major_m": 82.20769942189844,
+            "resolution_minor_m": 9.7357092853915
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.13861386138613863,
+            "strain_weighted": 0.12135140197080484,
+            "aperture_deg": 5.871982273027527,
+            "shadowing": 1.0,
+            "resolution_major_m": 121.21597508280335,
+            "resolution_minor_m": 14.619783476010621
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.10891089108910891,
+            "strain_weighted": 0.09549360744296015,
+            "aperture_deg": 4.76064129234129,
+            "shadowing": 1.0,
+            "resolution_major_m": 107.92233555421298,
+            "resolution_minor_m": 13.672182928430628
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.515625,
+          "median_error_m": 0.19416487838947213,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.24752475247524752,
+            "strain_weighted": 0.21373163795727845,
+            "aperture_deg": 13.282395134855676,
+            "shadowing": 1.0,
+            "resolution_major_m": 19.156126681084434,
+            "resolution_minor_m": 2.8142500885140156
+          }
+        }
+      },
+      "false_tracks_per_minute": 3.0,
+      "compute_per_second_of_data": 0.43021992280628185
+    },
+    "B/seed0": {
+      "variant": "B",
+      "seed": 0,
+      "cable_m": 400.0,
+      "channels": 101,
+      "hydrophones": 4,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.6726588367273535,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.504950495049505,
+            "strain_weighted": 0.42987899599299023,
+            "aperture_deg": 254.57783868126134,
+            "shadowing": 1.0,
+            "resolution_major_m": 13.298245694844992,
+            "resolution_minor_m": 2.7582500776431984
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.13861386138613863,
+            "strain_weighted": 0.12135140197080484,
+            "aperture_deg": 228.61720371994627,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.10891089108910891,
+            "strain_weighted": 0.09549360744296015,
+            "aperture_deg": 229.99368767057092,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.171875,
+          "median_error_m": 0.8296987405076722,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.24752475247524752,
+            "strain_weighted": 0.21373163795727845,
+            "aperture_deg": 258.9803172189655,
+            "shadowing": 1.0,
+            "resolution_major_m": 16.267067639224127,
+            "resolution_minor_m": 2.682025933707439
+          }
+        }
+      },
+      "false_tracks_per_minute": 9.0,
+      "compute_per_second_of_data": 0.45201039234816565
+    },
+    "B/seed1": {
+      "variant": "B",
+      "seed": 1,
+      "cable_m": 400.0,
+      "channels": 101,
+      "hydrophones": 4,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.636221102925822,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.504950495049505,
+            "strain_weighted": 0.42987899599299023,
+            "aperture_deg": 254.57783868126134,
+            "shadowing": 1.0,
+            "resolution_major_m": 13.298245694844992,
+            "resolution_minor_m": 2.7582500776431984
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.13861386138613863,
+            "strain_weighted": 0.12135140197080484,
+            "aperture_deg": 228.61720371994627,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.10891089108910891,
+            "strain_weighted": 0.09549360744296015,
+            "aperture_deg": 229.99368767057092,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.171875,
+          "median_error_m": 1.7725969649076887,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.24752475247524752,
+            "strain_weighted": 0.21373163795727845,
+            "aperture_deg": 258.9803172189655,
+            "shadowing": 1.0,
+            "resolution_major_m": 16.267067639224127,
+            "resolution_minor_m": 2.682025933707439
+          }
+        }
+      },
+      "false_tracks_per_minute": 6.0,
+      "compute_per_second_of_data": 0.4538971213900368
+    },
+    "B/seed2": {
+      "variant": "B",
+      "seed": 2,
+      "cable_m": 400.0,
+      "channels": 101,
+      "hydrophones": 4,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.6532151682663991,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.504950495049505,
+            "strain_weighted": 0.42987899599299023,
+            "aperture_deg": 254.57783868126134,
+            "shadowing": 1.0,
+            "resolution_major_m": 13.298245694844992,
+            "resolution_minor_m": 2.7582500776431984
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.13861386138613863,
+            "strain_weighted": 0.12135140197080484,
+            "aperture_deg": 228.61720371994627,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.10891089108910891,
+            "strain_weighted": 0.09549360744296015,
+            "aperture_deg": 229.99368767057092,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.21875,
+          "median_error_m": 0.7017836014631145,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.24752475247524752,
+            "strain_weighted": 0.21373163795727845,
+            "aperture_deg": 258.9803172189655,
+            "shadowing": 1.0,
+            "resolution_major_m": 16.267067639224127,
+            "resolution_minor_m": 2.682025933707439
+          }
+        }
+      },
+      "false_tracks_per_minute": 9.0,
+      "compute_per_second_of_data": 0.45928219785928376
+    },
+    "C/seed0": {
+      "variant": "C",
+      "seed": 0,
+      "cable_m": 710.0,
+      "channels": 178,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.4826428007835645,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.2808988764044944,
+            "strain_weighted": 0.27561785998610944,
+            "aperture_deg": 118.45411392663641,
+            "shadowing": 1.0,
+            "resolution_major_m": 76.86699967401266,
+            "resolution_minor_m": 8.83619417025598
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.07303370786516854,
+            "strain_weighted": 0.06599101998698469,
+            "aperture_deg": 5.466089322048958,
+            "shadowing": 1.0,
+            "resolution_major_m": 106.92408236111562,
+            "resolution_minor_m": 11.060769427061617
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.17415730337078653,
+            "strain_weighted": 0.15718057578216324,
+            "aperture_deg": 94.35118586304822,
+            "shadowing": 1.0,
+            "resolution_major_m": 15.255696059806148,
+            "resolution_minor_m": 3.3524739366075007
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.15625,
+          "median_error_m": 0.5277939211860387,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.1348314606741573,
+            "strain_weighted": 0.1254393135844755,
+            "aperture_deg": 12.873146526820733,
+            "shadowing": 1.0,
+            "resolution_major_m": 16.632581330598658,
+            "resolution_minor_m": 2.7014993052145577
+          }
+        }
+      },
+      "false_tracks_per_minute": 6.0,
+      "compute_per_second_of_data": 0.6497666622432007
+    },
+    "C/seed1": {
+      "variant": "C",
+      "seed": 1,
+      "cable_m": 710.0,
+      "channels": 178,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.4767056545344443,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.2808988764044944,
+            "strain_weighted": 0.27561785998610944,
+            "aperture_deg": 118.45411392663641,
+            "shadowing": 1.0,
+            "resolution_major_m": 76.86699967401266,
+            "resolution_minor_m": 8.83619417025598
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.07303370786516854,
+            "strain_weighted": 0.06599101998698469,
+            "aperture_deg": 5.466089322048958,
+            "shadowing": 1.0,
+            "resolution_major_m": 106.92408236111562,
+            "resolution_minor_m": 11.060769427061617
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.17415730337078653,
+            "strain_weighted": 0.15718057578216324,
+            "aperture_deg": 94.35118586304822,
+            "shadowing": 1.0,
+            "resolution_major_m": 15.255696059806148,
+            "resolution_minor_m": 3.3524739366075007
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.125,
+          "median_error_m": 0.20659385762942728,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.1348314606741573,
+            "strain_weighted": 0.1254393135844755,
+            "aperture_deg": 12.873146526820733,
+            "shadowing": 1.0,
+            "resolution_major_m": 16.632581330598658,
+            "resolution_minor_m": 2.7014993052145577
+          }
+        }
+      },
+      "false_tracks_per_minute": 3.0,
+      "compute_per_second_of_data": 0.6231733898996026
+    },
+    "C/seed2": {
+      "variant": "C",
+      "seed": 2,
+      "cable_m": 710.0,
+      "channels": 178,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.4936585446575695,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.2808988764044944,
+            "strain_weighted": 0.27561785998610944,
+            "aperture_deg": 118.45411392663641,
+            "shadowing": 1.0,
+            "resolution_major_m": 76.86699967401266,
+            "resolution_minor_m": 8.83619417025598
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.07303370786516854,
+            "strain_weighted": 0.06599101998698469,
+            "aperture_deg": 5.466089322048958,
+            "shadowing": 1.0,
+            "resolution_major_m": 106.92408236111562,
+            "resolution_minor_m": 11.060769427061617
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.17415730337078653,
+            "strain_weighted": 0.15718057578216324,
+            "aperture_deg": 94.35118586304822,
+            "shadowing": 1.0,
+            "resolution_major_m": 15.255696059806148,
+            "resolution_minor_m": 3.3524739366075007
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.078125,
+          "median_error_m": 0.21470910553583422,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.1348314606741573,
+            "strain_weighted": 0.1254393135844755,
+            "aperture_deg": 12.873146526820733,
+            "shadowing": 1.0,
+            "resolution_major_m": 16.632581330598658,
+            "resolution_minor_m": 2.7014993052145577
+          }
+        }
+      },
+      "false_tracks_per_minute": 9.0,
+      "compute_per_second_of_data": 0.6453772096443572
+    },
+    "D/seed0": {
+      "variant": "D",
+      "seed": 0,
+      "cable_m": 1110.0,
+      "channels": 278,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.6658277101353698,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.2517985611510791,
+            "strain_weighted": 0.2415789318825402,
+            "aperture_deg": 182.45476904822175,
+            "shadowing": 1.0,
+            "resolution_major_m": 12.886640352096833,
+            "resolution_minor_m": 3.1519042554794736
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.31635744976260805,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.25539568345323743,
+            "strain_weighted": 0.26023779290624666,
+            "aperture_deg": 190.0629997291485,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.280163260504746,
+            "resolution_minor_m": 3.181925031780263
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.3057553956834532,
+            "strain_weighted": 0.2855401663664561,
+            "aperture_deg": 268.27464507225403,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.109375,
+          "median_error_m": 0.431045241245053,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16546762589928057,
+            "strain_weighted": 0.14960558149047104,
+            "aperture_deg": 88.53883229838499,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 3.0,
+      "compute_per_second_of_data": 1.1815217708965065
+    },
+    "D/seed1": {
+      "variant": "D",
+      "seed": 1,
+      "cable_m": 1110.0,
+      "channels": 278,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.6127801079655719,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.2517985611510791,
+            "strain_weighted": 0.2415789318825402,
+            "aperture_deg": 182.45476904822175,
+            "shadowing": 1.0,
+            "resolution_major_m": 12.886640352096833,
+            "resolution_minor_m": 3.1519042554794736
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.28007659986057476,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.25539568345323743,
+            "strain_weighted": 0.26023779290624666,
+            "aperture_deg": 190.0629997291485,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.280163260504746,
+            "resolution_minor_m": 3.181925031780263
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.3057553956834532,
+            "strain_weighted": 0.2855401663664561,
+            "aperture_deg": 268.27464507225403,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.015625,
+          "median_error_m": 0.531507290636733,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16546762589928057,
+            "strain_weighted": 0.14960558149047104,
+            "aperture_deg": 88.53883229838499,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 0.0,
+      "compute_per_second_of_data": 1.1549415024994232
+    },
+    "D/seed2": {
+      "variant": "D",
+      "seed": 2,
+      "cable_m": 1110.0,
+      "channels": 278,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5157025805864592,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.2517985611510791,
+            "strain_weighted": 0.2415789318825402,
+            "aperture_deg": 182.45476904822175,
+            "shadowing": 1.0,
+            "resolution_major_m": 12.886640352096833,
+            "resolution_minor_m": 3.1519042554794736
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.3904308381928988,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.25539568345323743,
+            "strain_weighted": 0.26023779290624666,
+            "aperture_deg": 190.0629997291485,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.280163260504746,
+            "resolution_minor_m": 3.181925031780263
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.3057553956834532,
+            "strain_weighted": 0.2855401663664561,
+            "aperture_deg": 268.27464507225403,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16546762589928057,
+            "strain_weighted": 0.14960558149047104,
+            "aperture_deg": 88.53883229838499,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 9.0,
+      "compute_per_second_of_data": 1.2017829938558862
+    },
+    "E/seed0": {
+      "variant": "E",
+      "seed": 0,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5578081657551044,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.3152542372881356,
+            "strain_weighted": 0.2982928092503581,
+            "aperture_deg": 268.4088597288054,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.28744638721415894,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.3288135593220339,
+            "strain_weighted": 0.3292853512257121,
+            "aperture_deg": 267.12225834264734,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.288135593220339,
+            "strain_weighted": 0.28903737612394287,
+            "aperture_deg": 269.2663457389316,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.546875,
+          "median_error_m": 0.5307541803886232,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16610169491525423,
+            "strain_weighted": 0.14727185026756798,
+            "aperture_deg": 179.05298388253016,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 12.0,
+      "compute_per_second_of_data": 1.347772439795517
+    },
+    "E/seed1": {
+      "variant": "E",
+      "seed": 1,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.4566177921996586,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.3152542372881356,
+            "strain_weighted": 0.2982928092503581,
+            "aperture_deg": 268.4088597288054,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.32987279127510116,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.3288135593220339,
+            "strain_weighted": 0.3292853512257121,
+            "aperture_deg": 267.12225834264734,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.288135593220339,
+            "strain_weighted": 0.28903737612394287,
+            "aperture_deg": 269.2663457389316,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.078125,
+          "median_error_m": 0.25,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16610169491525423,
+            "strain_weighted": 0.14727185026756798,
+            "aperture_deg": 179.05298388253016,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 0.0,
+      "compute_per_second_of_data": 1.2545488950556318
+    },
+    "E/seed2": {
+      "variant": "E",
+      "seed": 2,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.585960747985532,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.3152542372881356,
+            "strain_weighted": 0.2982928092503581,
+            "aperture_deg": 268.4088597288054,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.28762415989020274,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.3288135593220339,
+            "strain_weighted": 0.3292853512257121,
+            "aperture_deg": 267.12225834264734,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.288135593220339,
+            "strain_weighted": 0.28903737612394287,
+            "aperture_deg": 269.2663457389316,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.296875,
+          "median_error_m": 0.30016662039608377,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16610169491525423,
+            "strain_weighted": 0.14727185026756798,
+            "aperture_deg": 179.05298388253016,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 6.0,
+      "compute_per_second_of_data": 1.294769418604119
+    },
+    "F/seed0": {
+      "variant": "F",
+      "seed": 0,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 4,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.4419802210584103,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.3152542372881356,
+            "strain_weighted": 0.2982928092503581,
+            "aperture_deg": 268.4088597288054,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.2871355346505051,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.3288135593220339,
+            "strain_weighted": 0.3292853512257121,
+            "aperture_deg": 267.12225834264734,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.288135593220339,
+            "strain_weighted": 0.28903737612394287,
+            "aperture_deg": 269.2663457389316,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.296875,
+          "median_error_m": 0.2024845673131614,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16610169491525423,
+            "strain_weighted": 0.14727185026756798,
+            "aperture_deg": 269.5264919412651,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 6.0,
+      "compute_per_second_of_data": 1.460003814141237
+    },
+    "F/seed1": {
+      "variant": "F",
+      "seed": 1,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 4,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.4640025085078585,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.3152542372881356,
+            "strain_weighted": 0.2982928092503581,
+            "aperture_deg": 268.4088597288054,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.27186930449968316,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.3288135593220339,
+            "strain_weighted": 0.3292853512257121,
+            "aperture_deg": 267.12225834264734,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.288135593220339,
+            "strain_weighted": 0.28903737612394287,
+            "aperture_deg": 269.2663457389316,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.28125,
+          "median_error_m": 0.23270031034670882,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16610169491525423,
+            "strain_weighted": 0.14727185026756798,
+            "aperture_deg": 269.5264919412651,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 6.0,
+      "compute_per_second_of_data": 1.3422747075943335
+    },
+    "F/seed2": {
+      "variant": "F",
+      "seed": 2,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 4,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5552024447561621,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.3152542372881356,
+            "strain_weighted": 0.2982928092503581,
+            "aperture_deg": 268.4088597288054,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.30333480480420943,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.3288135593220339,
+            "strain_weighted": 0.3292853512257121,
+            "aperture_deg": 267.12225834264734,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.288135593220339,
+            "strain_weighted": 0.28903737612394287,
+            "aperture_deg": 269.2663457389316,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.21875,
+          "median_error_m": 0.3632967282952536,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16610169491525423,
+            "strain_weighted": 0.14727185026756798,
+            "aperture_deg": 269.5264919412651,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 3.0,
+      "compute_per_second_of_data": 1.307390082542406
+    },
+    "G/seed0": {
+      "variant": "G",
+      "seed": 0,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 8,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5848903976197515,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.3152542372881356,
+            "strain_weighted": 0.2982928092503581,
+            "aperture_deg": 270.0,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.31814918080368165,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.3288135593220339,
+            "strain_weighted": 0.3292853512257121,
+            "aperture_deg": 267.12225834264734,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.288135593220339,
+            "strain_weighted": 0.28903737612394287,
+            "aperture_deg": 278.1758295416317,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.28125,
+          "median_error_m": 0.10599019513593289,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16610169491525423,
+            "strain_weighted": 0.14727185026756798,
+            "aperture_deg": 295.3461759419467,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 15.0,
+      "compute_per_second_of_data": 1.3907211389494478
+    },
+    "G/seed1": {
+      "variant": "G",
+      "seed": 1,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 8,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.550817095452264,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.3152542372881356,
+            "strain_weighted": 0.2982928092503581,
+            "aperture_deg": 270.0,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.24578622317941617,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.3288135593220339,
+            "strain_weighted": 0.3292853512257121,
+            "aperture_deg": 267.12225834264734,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.288135593220339,
+            "strain_weighted": 0.28903737612394287,
+            "aperture_deg": 278.1758295416317,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.203125,
+          "median_error_m": 0.15524174696260368,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16610169491525423,
+            "strain_weighted": 0.14727185026756798,
+            "aperture_deg": 295.3461759419467,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 9.0,
+      "compute_per_second_of_data": 1.3568331957962072
+    },
+    "G/seed2": {
+      "variant": "G",
+      "seed": 2,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 8,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5367075633838716,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.3152542372881356,
+            "strain_weighted": 0.2982928092503581,
+            "aperture_deg": 270.0,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.2623874029107077,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.3288135593220339,
+            "strain_weighted": 0.3292853512257121,
+            "aperture_deg": 267.12225834264734,
+            "shadowing": 1.0,
+            "resolution_major_m": 4.163331998932265,
+            "resolution_minor_m": 2.5819888974716116
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.288135593220339,
+            "strain_weighted": 0.28903737612394287,
+            "aperture_deg": 278.1758295416317,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.25,
+          "median_error_m": 0.21023849970022346,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.16610169491525423,
+            "strain_weighted": 0.14727185026756798,
+            "aperture_deg": 295.3461759419467,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 6.0,
+      "compute_per_second_of_data": 1.3233294817902788
+    },
+    "H/seed0": {
+      "variant": "H",
+      "seed": 0,
+      "cable_m": 565.685424949238,
+      "channels": 142,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.46936083290517416,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.5352112676056338,
+            "strain_weighted": 0.5541222803160184,
+            "aperture_deg": 137.06891634824947,
+            "shadowing": 1.0,
+            "resolution_major_m": 7.363291149412719,
+            "resolution_minor_m": 3.106221195544031
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.5070422535211268,
+            "strain_weighted": 0.5128126343606297,
+            "aperture_deg": 69.36029965793443,
+            "shadowing": 1.0,
+            "resolution_major_m": 31.269464001792468,
+            "resolution_minor_m": 3.3856782836968815
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.5563380281690141,
+            "strain_weighted": 0.5514733936077979,
+            "aperture_deg": 67.5932184459831,
+            "shadowing": 1.0,
+            "resolution_major_m": 25.40589593693526,
+            "resolution_minor_m": 4.313966865656126
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.890625,
+          "median_error_m": 0.5799999999999949,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.4295774647887324,
+            "strain_weighted": 0.4217385866142265,
+            "aperture_deg": 97.08850718110693,
+            "shadowing": 1.0,
+            "resolution_major_m": 70.901780922279,
+            "resolution_minor_m": 2.6509766459807707
+          }
+        }
+      },
+      "false_tracks_per_minute": 3.0,
+      "compute_per_second_of_data": 0.5377044501474302
+    },
+    "H/seed1": {
+      "variant": "H",
+      "seed": 1,
+      "cable_m": 565.685424949238,
+      "channels": 142,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.48093658625643,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.5352112676056338,
+            "strain_weighted": 0.5541222803160184,
+            "aperture_deg": 137.06891634824947,
+            "shadowing": 1.0,
+            "resolution_major_m": 7.363291149412719,
+            "resolution_minor_m": 3.106221195544031
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.5070422535211268,
+            "strain_weighted": 0.5128126343606297,
+            "aperture_deg": 69.36029965793443,
+            "shadowing": 1.0,
+            "resolution_major_m": 31.269464001792468,
+            "resolution_minor_m": 3.3856782836968815
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.5563380281690141,
+            "strain_weighted": 0.5514733936077979,
+            "aperture_deg": 67.5932184459831,
+            "shadowing": 1.0,
+            "resolution_major_m": 25.40589593693526,
+            "resolution_minor_m": 4.313966865656126
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.921875,
+          "median_error_m": 0.5292447448959737,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.4295774647887324,
+            "strain_weighted": 0.4217385866142265,
+            "aperture_deg": 97.08850718110693,
+            "shadowing": 1.0,
+            "resolution_major_m": 70.901780922279,
+            "resolution_minor_m": 2.6509766459807707
+          }
+        }
+      },
+      "false_tracks_per_minute": 9.0,
+      "compute_per_second_of_data": 0.5437917620001826
+    },
+    "H/seed2": {
+      "variant": "H",
+      "seed": 2,
+      "cable_m": 565.685424949238,
+      "channels": 142,
+      "hydrophones": 0,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5269244247985141,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.5352112676056338,
+            "strain_weighted": 0.5541222803160184,
+            "aperture_deg": 137.06891634824947,
+            "shadowing": 1.0,
+            "resolution_major_m": 7.363291149412719,
+            "resolution_minor_m": 3.106221195544031
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 0.5070422535211268,
+            "strain_weighted": 0.5128126343606297,
+            "aperture_deg": 69.36029965793443,
+            "shadowing": 1.0,
+            "resolution_major_m": 31.269464001792468,
+            "resolution_minor_m": 3.3856782836968815
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.0,
+          "median_error_m": null,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 0.5563380281690141,
+            "strain_weighted": 0.5514733936077979,
+            "aperture_deg": 67.5932184459831,
+            "shadowing": 1.0,
+            "resolution_major_m": 25.40589593693526,
+            "resolution_minor_m": 4.313966865656126
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 0.890625,
+          "median_error_m": 0.4024922359499774,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 0.4295774647887324,
+            "strain_weighted": 0.4217385866142265,
+            "aperture_deg": 97.08850718110693,
+            "shadowing": 1.0,
+            "resolution_major_m": 70.901780922279,
+            "resolution_minor_m": 2.6509766459807707
+          }
+        }
+      },
+      "false_tracks_per_minute": 3.0,
+      "compute_per_second_of_data": 0.5399974965956063
+    },
+    "P/seed0": {
+      "variant": "P",
+      "seed": 0,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 4,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5064428936315432,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 356.7268459167666,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.28681141870055227,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 355.7002898789557,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.296875,
+          "median_error_m": 2.9545199131270663,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 356.25719205032664,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 1.0,
+          "median_error_m": 1.1714303554630177,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 358.0903174922556,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 0.0,
+      "compute_per_second_of_data": 44.674950541854926
+    },
+    "P/seed1": {
+      "variant": "P",
+      "seed": 1,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 4,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.5114391271531677,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 356.7268459167666,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.2451499259845647,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 355.7002898789557,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.65625,
+          "median_error_m": 2.952167796725681,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 356.25719205032664,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 1.0,
+          "median_error_m": 1.2667432407290895,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 358.0903174922556,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 0.0,
+      "compute_per_second_of_data": 44.73075714870574
+    },
+    "P/seed2": {
+      "variant": "P",
+      "seed": 2,
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 4,
+      "objects": {
+        "ferry": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.507288980009726,
+          "median_xy": [
+            160.00000000000003,
+            260.0
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 356.7268459167666,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "boat": {
+          "radiates": true,
+          "pd": 1.0,
+          "median_error_m": 0.25146551983678034,
+          "median_xy": [
+            171.19995760012725,
+            133.2499735000795
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 355.7002898789557,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "uuv1": {
+          "radiates": false,
+          "pd": 0.3125,
+          "median_error_m": 2.847723100380595,
+          "median_xy": [
+            310.03454241755117,
+            141.2111397802549
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 356.25719205032664,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        },
+        "wreck": {
+          "radiates": false,
+          "pd": 1.0,
+          "median_error_m": 1.2132974788045257,
+          "median_xy": [
+            200.0,
+            210.0
+          ],
+          "coverage": {
+            "strain_fraction": 1.0,
+            "strain_weighted": 1.0,
+            "aperture_deg": 358.0903174922556,
+            "shadowing": 1.0,
+            "resolution_major_m": 3.0550504633038935,
+            "resolution_minor_m": 3.0550504633038935
+          }
+        }
+      },
+      "false_tracks_per_minute": 0.0,
+      "compute_per_second_of_data": 44.548810999692066
+    }
+  },
+  "table": {
+    "A": {
+      "cable_m": 400.0,
+      "channels": 101,
+      "hydrophones": 0,
+      "objects": {
+        "boat": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "ferry": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.5508407459109281
+        },
+        "uuv1": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "wreck": {
+          "pd_mean": 0.359375,
+          "pd_min": 0.0625,
+          "pd_max": 0.515625,
+          "median_error_m": 0.19416487838947213
+        }
+      },
+      "false_tracks_per_minute": [
+        0.0,
+        3.0
+      ],
+      "compute": 0.43021992280628185
+    },
+    "B": {
+      "cable_m": 400.0,
+      "channels": 101,
+      "hydrophones": 4,
+      "objects": {
+        "boat": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "ferry": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.6532151682663991
+        },
+        "uuv1": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "wreck": {
+          "pd_mean": 0.1875,
+          "pd_min": 0.171875,
+          "pd_max": 0.21875,
+          "median_error_m": 0.8296987405076722
+        }
+      },
+      "false_tracks_per_minute": [
+        6.0,
+        9.0
+      ],
+      "compute": 0.4538971213900368
+    },
+    "C": {
+      "cable_m": 710.0,
+      "channels": 178,
+      "hydrophones": 0,
+      "objects": {
+        "boat": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "ferry": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.4826428007835645
+        },
+        "uuv1": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "wreck": {
+          "pd_mean": 0.11979166666666667,
+          "pd_min": 0.078125,
+          "pd_max": 0.15625,
+          "median_error_m": 0.21470910553583422
+        }
+      },
+      "false_tracks_per_minute": [
+        3.0,
+        9.0
+      ],
+      "compute": 0.6453772096443572
+    },
+    "D": {
+      "cable_m": 1110.0,
+      "channels": 278,
+      "hydrophones": 0,
+      "objects": {
+        "boat": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.31635744976260805
+        },
+        "ferry": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.6127801079655719
+        },
+        "uuv1": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "wreck": {
+          "pd_mean": 0.041666666666666664,
+          "pd_min": 0.0,
+          "pd_max": 0.109375,
+          "median_error_m": 0.481276265940893
+        }
+      },
+      "false_tracks_per_minute": [
+        0.0,
+        9.0
+      ],
+      "compute": 1.1815217708965065
+    },
+    "E": {
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 0,
+      "objects": {
+        "boat": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.28762415989020274
+        },
+        "ferry": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.5578081657551044
+        },
+        "uuv1": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "wreck": {
+          "pd_mean": 0.3072916666666667,
+          "pd_min": 0.078125,
+          "pd_max": 0.546875,
+          "median_error_m": 0.30016662039608377
+        }
+      },
+      "false_tracks_per_minute": [
+        0.0,
+        12.0
+      ],
+      "compute": 1.294769418604119
+    },
+    "F": {
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 4,
+      "objects": {
+        "boat": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.2871355346505051
+        },
+        "ferry": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.4640025085078585
+        },
+        "uuv1": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "wreck": {
+          "pd_mean": 0.265625,
+          "pd_min": 0.21875,
+          "pd_max": 0.296875,
+          "median_error_m": 0.23270031034670882
+        }
+      },
+      "false_tracks_per_minute": [
+        3.0,
+        6.0
+      ],
+      "compute": 1.3422747075943335
+    },
+    "G": {
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 8,
+      "objects": {
+        "boat": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.2623874029107077
+        },
+        "ferry": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.550817095452264
+        },
+        "uuv1": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "wreck": {
+          "pd_mean": 0.24479166666666666,
+          "pd_min": 0.203125,
+          "pd_max": 0.28125,
+          "median_error_m": 0.15524174696260368
+        }
+      },
+      "false_tracks_per_minute": [
+        6.0,
+        15.0
+      ],
+      "compute": 1.3568331957962072
+    },
+    "H": {
+      "cable_m": 565.685424949238,
+      "channels": 142,
+      "hydrophones": 0,
+      "objects": {
+        "boat": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "ferry": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.48093658625643
+        },
+        "uuv1": {
+          "pd_mean": 0.0,
+          "pd_min": 0.0,
+          "pd_max": 0.0,
+          "median_error_m": null
+        },
+        "wreck": {
+          "pd_mean": 0.9010416666666666,
+          "pd_min": 0.890625,
+          "pd_max": 0.921875,
+          "median_error_m": 0.5292447448959737
+        }
+      },
+      "false_tracks_per_minute": [
+        3.0,
+        9.0
+      ],
+      "compute": 0.5399974965956063
+    },
+    "P": {
+      "cable_m": 1176.0,
+      "channels": 295,
+      "hydrophones": 4,
+      "objects": {
+        "boat": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.25146551983678034
+        },
+        "ferry": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 0.507288980009726
+        },
+        "uuv1": {
+          "pd_mean": 0.421875,
+          "pd_min": 0.296875,
+          "pd_max": 0.65625,
+          "median_error_m": 2.952167796725681
+        },
+        "wreck": {
+          "pd_mean": 1.0,
+          "pd_min": 1.0,
+          "pd_max": 1.0,
+          "median_error_m": 1.2132974788045257
+        }
+      },
+      "false_tracks_per_minute": [
+        0.0,
+        0.0
+      ],
+      "compute": 44.674950541854926
+    }
+  },
+  "rank_correlation_with_pd": {
+    "all": {
+      "strain_fraction": {
+        "spearman": 0.5386628174051764,
+        "n": 108
+      },
+      "strain_weighted": {
+        "spearman": 0.5442274059872985,
+        "n": 108
+      },
+      "aperture_deg": {
+        "spearman": 0.3577991252009661,
+        "n": 108
+      },
+      "shadowing": {
+        "spearman": null,
+        "n": 108
+      },
+      "resolution_major_m": {
+        "spearman": -0.1420778167638559,
+        "n": 108
+      },
+      "resolution_minor_m": {
+        "spearman": -0.18528113454426437,
+        "n": 108
+      }
+    },
+    "radiating": {
+      "strain_fraction": {
+        "spearman": 0.44037575799700246,
+        "n": 54
+      },
+      "strain_weighted": {
+        "spearman": 0.44037575799700246,
+        "n": 54
+      },
+      "aperture_deg": {
+        "spearman": 0.5939454448551125,
+        "n": 54
+      },
+      "shadowing": {
+        "spearman": null,
+        "n": 54
+      },
+      "resolution_major_m": {
+        "spearman": -0.45134510744555273,
+        "n": 54
+      },
+      "resolution_minor_m": {
+        "spearman": -0.39824568304019364,
+        "n": 54
+      }
+    },
+    "silent": {
+      "strain_fraction": {
+        "spearman": 0.2465557368745903,
+        "n": 54
+      },
+      "strain_weighted": {
+        "spearman": 0.21233042661191026,
+        "n": 54
+      },
+      "aperture_deg": {
+        "spearman": 0.28023250040409436,
+        "n": 54
+      },
+      "shadowing": {
+        "spearman": null,
+        "n": 54
+      },
+      "resolution_major_m": {
+        "spearman": -0.16477983744051816,
+        "n": 54
+      },
+      "resolution_minor_m": {
+        "spearman": -0.08352894985464054,
+        "n": 54
+      }
+    }
+  }
+}

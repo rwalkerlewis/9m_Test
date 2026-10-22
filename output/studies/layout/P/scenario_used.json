@@ -1,0 +1,282 @@
+{
+  "environment": {
+    "dx": 1.0,
+    "c0": 1500.0,
+    "shallow_c_drop": 10.0,
+    "crop": null,
+    "kind": "simple",
+    "width": 500.0,
+    "height": 400.0,
+    "quay_width": 20.0
+  },
+  "fdtd": {
+    "fs": 3000.0,
+    "total_time": 20.0,
+    "fd_order": 4,
+    "damping_width": 40,
+    "damping_max": 0.15,
+    "background_absorption": 0.0001,
+    "shore_loss_width": 20.0,
+    "shore_loss_max": 0.15,
+    "use_cuda": true,
+    "precision": "float64",
+    "kernel": "auto",
+    "body_masks": "auto",
+    "boundary": "sponge",
+    "cpml_width": 15,
+    "cpml_order": 2,
+    "cpml_r0": 1e-06,
+    "cpml_alpha_max": 0.0,
+    "time_scheme": "kspace"
+  },
+  "cables": [
+    {
+      "name": "cable1",
+      "waypoints": [
+        [
+          80.0,
+          80.0
+        ],
+        [
+          420.0,
+          80.0
+        ],
+        [
+          420.0,
+          330.0
+        ],
+        [
+          80.0,
+          330.0
+        ],
+        [
+          80.0,
+          84.0
+        ]
+      ],
+      "channel_spacing": 4.0,
+      "das_mode": "pressure",
+      "gauge_length": 4.0
+    }
+  ],
+  "hydrophones": [
+    [
+      60.0,
+      60.0
+    ],
+    [
+      440.0,
+      60.0
+    ],
+    [
+      60.0,
+      350.0
+    ],
+    [
+      440.0,
+      350.0
+    ]
+  ],
+  "vessels": [
+    {
+      "id": "ferry",
+      "kind": "ship",
+      "waypoints": [
+        [
+          120.0,
+          260.0
+        ],
+        [
+          380.0,
+          260.0
+        ]
+      ],
+      "speed": 4.0,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 1.0,
+      "ais": true,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 11,
+      "body_length": 0.0,
+      "body_width": 0.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "boat",
+      "kind": "ship",
+      "waypoints": [
+        [
+          150.0,
+          120.0
+        ],
+        [
+          230.0,
+          170.0
+        ]
+      ],
+      "speed": 2.5,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.3,
+      "ais": false,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 13,
+      "body_length": 0.0,
+      "body_width": 0.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "uuv1",
+      "kind": "uuv",
+      "waypoints": [
+        [
+          320.0,
+          130.0
+        ],
+        [
+          280.0,
+          175.0
+        ]
+      ],
+      "speed": 1.5,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.0,
+      "ais": null,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 21,
+      "body_length": 6.0,
+      "body_width": 2.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "wreck",
+      "kind": "static",
+      "waypoints": [
+        [
+          200.0,
+          210.0
+        ]
+      ],
+      "speed": 0.0,
+      "t_start": 0.0,
+      "t_end": null,
+      "level_pa": 0.0,
+      "ais": null,
+      "wander_sigma": 0.0,
+      "wander_tau": 20.0,
+      "seed": 31,
+      "body_length": 4.0,
+      "body_width": 4.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "ellipse"
+    }
+  ],
+  "ais": {
+    "interval_moving": 5.0,
+    "interval_stationary": 20.0,
+    "stationary_speed": 0.5,
+    "pos_sigma": 8.0,
+    "sog_sigma": 0.2,
+    "cog_sigma": 0.035,
+    "time_jitter": 0.3,
+    "dropout_prob": 0.05,
+    "outage_prob": 0.01,
+    "outage_reports": [
+      3,
+      6
+    ]
+  },
+  "noise": {
+    "ambient_rms": 0.02,
+    "shipping_rms": 0.02,
+    "n_shipping": 3,
+    "shipping_azimuth_deg": [
+      200.0,
+      340.0
+    ],
+    "hydrophone_self_rms": 0.005,
+    "das_noise_rms": 0.05,
+    "das_common_mode_rms": 0.03,
+    "das_gain_sigma": 0.1,
+    "das_dead_fraction": 0.02,
+    "c": 1500.0,
+    "band_scale": 5.0,
+    "model": "default",
+    "harbor_v2": {
+      "shrimp": {
+        "enabled": false,
+        "rate_per_m": 0.3,
+        "sl_pp_db": 186.0,
+        "sl_pp_db_sd": 1.5,
+        "band_fraction_db": -40.0,
+        "edge_spacing_m": 5.0,
+        "click_samples": 1,
+        "transition_m": 5.0,
+        "latitude_deg": null,
+        "max_abs_latitude_deg": 40.0
+      },
+      "surface": {
+        "enabled": false,
+        "sea_state": 2,
+        "levels_1khz_db": [
+          44.5,
+          53.5,
+          58.8,
+          62.6,
+          65.5,
+          67.9,
+          69.9
+        ],
+        "slope": 1.7,
+        "knee_hz": 300.0,
+        "variation_db": 2.0,
+        "variation_s": 120.0
+      },
+      "machinery": {
+        "enabled": false,
+        "positions": [],
+        "level_pa": 0.1,
+        "line_hz": 50.0,
+        "n_lines": 8,
+        "broadband_db": -10.0
+      },
+      "fibre": {
+        "enabled": false,
+        "drift_rms": 0.02,
+        "drift_corner_hz": 0.1,
+        "drift_slope": 2.0,
+        "traffic_rms": 0.02,
+        "traffic_speed": 300.0,
+        "vehicle_speed": 15.0,
+        "vehicles_per_min": 2.0,
+        "corr_length_m": 150.0,
+        "traffic_band_hz": [
+          3.0,
+          30.0
+        ]
+      },
+      "interrogator": {
+        "enabled": false,
+        "floor_rms": 0.05,
+        "corner_hz": 50.0,
+        "slope": 1.0,
+        "fade_fraction": 0.1,
+        "fade_s": 2.0,
+        "fade_factor": 3.16
+      }
+    }
+  },
+  "seed": 0
+}

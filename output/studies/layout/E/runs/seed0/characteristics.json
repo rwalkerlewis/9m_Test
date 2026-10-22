@@ -1,0 +1,173 @@
+{
+  "recording": "layout_E_seed0",
+  "run": {
+    "git_commit": "690acd2a73f1c92874f251403f264f852e190609",
+    "git_dirty": false,
+    "processing_config": "/workspace/examples/configs/processing/simple.json",
+    "processing_config_sha256": "299dcf7f9021c39b3d54b709423c9fc0c25f0e2d6ed1d1894917a21c29b09656",
+    "processing_overrides": [],
+    "observation": "/workspace/output/studies/layout/E/dataset.observation.npz",
+    "observation_sha256": "df8a4a64bb7f7b9d18b89d57bb3c047354fcb8004f01bf340803f0835c3331eb",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 0,
+    "wall_s": 27.067727640998783,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "chunk_s": 0.25
+  },
+  "objects": [
+    {
+      "object": "ferry",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 1.0,
+      "true_size_m": null,
+      "true_speed": 4.0,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 34,
+        "both": 32
+      },
+      "median": {
+        "size_ratio_db": 2.1,
+        "strength_db": -0.7,
+        "along": 29.2,
+        "across": 18.8,
+        "source_level": 1.1868,
+        "width_major": 5.16,
+        "width_minor": 3.53,
+        "speed": 3.99,
+        "residual": 1.12
+      },
+      "size_ratio_per_frame": {
+        "5.0": 2.1,
+        "5.25": 2.1,
+        "5.5": 2.1,
+        "5.75": 2.1,
+        "6.0": 2.1,
+        "6.25": 2.1,
+        "6.5": 2.1,
+        "6.75": 2.1,
+        "7.0": 2.1,
+        "7.25": 2.1,
+        "7.5": 2.1,
+        "7.75": 2.1,
+        "8.0": 2.1,
+        "8.25": 2.1,
+        "8.5": 2.1,
+        "8.75": 2.1,
+        "9.0": 2.1,
+        "9.25": 2.1,
+        "9.5": 2.1,
+        "9.75": 2.1,
+        "10.0": 2.1,
+        "10.25": 2.1,
+        "10.5": 2.1,
+        "10.75": 2.1,
+        "11.0": 2.1,
+        "11.25": 2.1,
+        "11.5": 2.1,
+        "11.75": 2.1,
+        "12.0": 2.1,
+        "12.25": 2.1,
+        "12.5": 2.1,
+        "12.75": 2.1
+      }
+    },
+    {
+      "object": "boat",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 0.3,
+      "true_size_m": null,
+      "true_speed": 2.499999999999998,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 0.2939,
+        "width_major": 4.62,
+        "width_minor": 2.31,
+        "speed": 2.47,
+        "residual": 1.26
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "wreck",
+      "type": "static",
+      "radiates": false,
+      "true_level_pa": 0.0,
+      "true_size_m": [
+        4.0,
+        4.0
+      ],
+      "true_speed": 0.0,
+      "detected_frames": 35,
+      "seen": {
+        "echo": 35
+      },
+      "median": {
+        "size_ratio_db": -9.5,
+        "strength_db": -1.6,
+        "along": 3.7,
+        "across": 4.2,
+        "source_level": null,
+        "width_major": 4.62,
+        "width_minor": 2.31,
+        "speed": 0.44,
+        "residual": 1.52
+      },
+      "size_ratio_per_frame": {
+        "9.25": -7.6,
+        "9.5": -8.5,
+        "9.75": -8.5,
+        "10.0": -9.1,
+        "10.25": -9.3,
+        "10.5": -9.5,
+        "10.75": -10.0,
+        "11.0": -9.5,
+        "11.25": -10.0,
+        "11.5": -10.0,
+        "11.75": -10.0,
+        "12.0": -9.8,
+        "12.25": -9.8,
+        "12.5": -10.2,
+        "12.75": -9.8,
+        "13.0": -9.8,
+        "13.25": -9.8,
+        "13.5": -9.8,
+        "13.75": -9.6,
+        "14.0": -9.8,
+        "14.25": -9.8,
+        "14.5": -9.8,
+        "14.75": -9.6,
+        "15.0": -10.0,
+        "15.25": -8.1,
+        "15.5": -4.4,
+        "15.75": -4.4,
+        "16.0": -7.4,
+        "16.25": -4.9,
+        "16.5": -5.2,
+        "16.75": -3.7,
+        "17.0": -3.7,
+        "17.25": -3.7,
+        "17.5": -3.7,
+        "17.75": -3.7
+      }
+    }
+  ],
+  "size_order": null
+}

@@ -1,0 +1,76 @@
+{
+  "recording": "layout_D_seed0",
+  "run": {
+    "git_commit": "690acd2a73f1c92874f251403f264f852e190609",
+    "git_dirty": false,
+    "processing_config": "/workspace/examples/configs/processing/simple.json",
+    "processing_config_sha256": "299dcf7f9021c39b3d54b709423c9fc0c25f0e2d6ed1d1894917a21c29b09656",
+    "processing_overrides": [],
+    "observation": "/workspace/output/studies/layout/D/dataset.observation.npz",
+    "observation_sha256": "d435830d42b86f316aaf661ca8cc77b7b1b9dca9cd0957952bb2c0a8b14f3ad1",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 0,
+    "wall_s": 23.72668562499166,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "chunk_s": 0.25
+  },
+  "objects": [
+    {
+      "object": "ferry",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 1.0,
+      "true_size_m": null,
+      "true_speed": 4.0,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 1.19325,
+        "width_major": 11.364999999999998,
+        "width_minor": 5.0,
+        "speed": 3.935,
+        "residual": 1.12
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "boat",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 0.3,
+      "true_size_m": null,
+      "true_speed": 2.499999999999998,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 0.30655,
+        "width_major": 4.62,
+        "width_minor": 2.31,
+        "speed": 2.5,
+        "residual": 0.89
+      },
+      "size_ratio_per_frame": {}
+    }
+  ],
+  "size_order": null
+}

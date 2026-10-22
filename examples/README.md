@@ -75,6 +75,12 @@ One recording through the real-time chain, one figure per plot (`run_all.sh DATA
 | `08_geometry.py` | Step 8, the geometry behind the picture: where the chain thinks things are going, and which paths the sound takes. |
 | `run_all.sh` | All walkthrough figures for one recording: ./examples/harbor/06_walkthrough/run_all.sh multistatic |
 
+
+## Harbor 7: the sensor layout study (`harbor/07_layout_study/`)
+
+| Script | What it does |
+|---|---|
+| `run_layout_study.py` | The simple harbor with nine sensor layouts (`configs/layout/`): coverage maps, the system on each, the rank correlation of coverage with Pd (`docs/layout_study.md`). |
 ## History (`harbor/90_history/`)
 
 Scripts of earlier stages, not part of the system. They stay runnable because committed figures came from them;

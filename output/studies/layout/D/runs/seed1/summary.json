@@ -1,0 +1,295 @@
+{
+  "recording": "layout_D_seed1",
+  "record_s": 20.0,
+  "held_out": true,
+  "ais_used_in_processing": false,
+  "compute_per_second_of_data": {
+    "passive": 0.5660545286467823,
+    "echo": 0.49148919979925265,
+    "characteristics": 0.09739777405338827,
+    "total": 1.1549415024994232
+  },
+  "latency_s": {
+    "median": 2.337,
+    "max": 3.337
+  },
+  "objects": {
+    "ferry": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "pd": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      },
+      "frames": {
+        "radiator": 66,
+        "echo": 64,
+        "any": 66
+      },
+      "hits": {
+        "radiator": 66,
+        "echo": 0,
+        "any": 66
+      },
+      "median_error_m": {
+        "radiator": 0.6127801079655719,
+        "echo": null,
+        "any": 0.6127801079655719
+      },
+      "tracks": [
+        "r1"
+      ]
+    },
+    "boat": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": false,
+      "pd": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      },
+      "frames": {
+        "radiator": 66,
+        "echo": 64,
+        "any": 66
+      },
+      "hits": {
+        "radiator": 66,
+        "echo": 0,
+        "any": 66
+      },
+      "median_error_m": {
+        "radiator": 0.28007659986057476,
+        "echo": null,
+        "any": 0.28007659986057476
+      },
+      "tracks": [
+        "r2"
+      ]
+    },
+    "uuv1": {
+      "kind": "uuv",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      },
+      "frames": {
+        "radiator": 66,
+        "echo": 64,
+        "any": 66
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 0,
+        "any": 0
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": null,
+        "any": null
+      },
+      "tracks": []
+    },
+    "wreck": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.015625,
+        "any": 0.015151515151515152
+      },
+      "frames": {
+        "radiator": 66,
+        "echo": 64,
+        "any": 66
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 1,
+        "any": 1
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": 0.531507290636733,
+        "any": 0.531507290636733
+      },
+      "tracks": [
+        "e2"
+      ]
+    }
+  },
+  "tracks": [
+    {
+      "track": "r1",
+      "fixes": 66,
+      "first_t": 1.5,
+      "last_t": 17.75,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 1.2071067811865475,
+      "first_xy": [
+        125.0,
+        261.0
+      ],
+      "last_xy": [
+        191.0,
+        261.0
+      ],
+      "median_xy": [
+        158.0,
+        259.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r2",
+      "fixes": 59,
+      "first_t": 1.5,
+      "last_t": 17.75,
+      "true_object": "boat",
+      "false_track": false,
+      "nearest_object": "boat",
+      "median_error_m": 0.8626897645151185,
+      "first_xy": [
+        153.0,
+        121.0
+      ],
+      "last_xy": [
+        187.0,
+        143.0
+      ],
+      "median_xy": [
+        171.0,
+        133.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "e2",
+      "fixes": 1,
+      "first_t": 17.75,
+      "last_t": 17.75,
+      "true_object": "wreck",
+      "false_track": false,
+      "nearest_object": "wreck",
+      "median_error_m": 0.0,
+      "first_xy": [
+        200.0,
+        212.0
+      ],
+      "last_xy": [
+        200.0,
+        212.0
+      ],
+      "median_xy": [
+        200.0,
+        212.0
+      ],
+      "kind": "echo"
+    }
+  ],
+  "false_tracks": {
+    "count": 0,
+    "per_minute": 0.0,
+    "radiator": 0,
+    "echo": 0,
+    "tracks": []
+  },
+  "ellipse_coverage": {
+    "fixes": 126,
+    "inside": 126,
+    "fraction": 1.0
+  },
+  "held_as_echo": {},
+  "sidelobe_peaks": 199,
+  "definitions": {
+    "hit_radius_m": 5.0,
+    "assoc_radius_m": 10.0,
+    "confirm": {
+      "radiator": 6,
+      "echo": 8
+    }
+  },
+  "peaks": {
+    "passive": {
+      "frames": 72,
+      "objects": {
+        "ferry": {
+          "frames": 72,
+          "hit": 1.0,
+          "median_error_m": 1.2071067811865475
+        },
+        "boat": {
+          "frames": 72,
+          "hit": 0.8888888888888888,
+          "median_error_m": 0.8589000148821078
+        },
+        "uuv1": {
+          "frames": 72,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "wreck": {
+          "frames": 72,
+          "hit": 0.0,
+          "median_error_m": null
+        }
+      }
+    },
+    "echo": {
+      "frames": 71,
+      "objects": {
+        "ferry": {
+          "frames": 71,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "boat": {
+          "frames": 71,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "uuv1": {
+          "frames": 71,
+          "hit": 0.056338028169014086,
+          "median_error_m": 1.9899121382781508
+        },
+        "wreck": {
+          "frames": 71,
+          "hit": 0.2535211267605634,
+          "median_error_m": 2.8284271247461903
+        }
+      }
+    }
+  },
+  "run": {
+    "git_commit": "690acd2a73f1c92874f251403f264f852e190609",
+    "git_dirty": false,
+    "processing_config": "/workspace/examples/configs/processing/simple.json",
+    "processing_config_sha256": "299dcf7f9021c39b3d54b709423c9fc0c25f0e2d6ed1d1894917a21c29b09656",
+    "processing_overrides": [],
+    "observation": "/workspace/output/studies/layout/D/seed1/dataset.observation.npz",
+    "observation_sha256": "d1c093dbca4939505eb14d85776bc0c95ec5598fea46eb3b43af4e067daa6be1",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 1,
+    "wall_s": 23.197684494007262,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": true
+    },
+    "chunk_s": 0.25
+  }
+}

@@ -1,0 +1,13 @@
+[D] grid 501 x 401 at 1.0 m, fs 3000 Hz, band to 400 Hz, 278 channels (834 sample points), 60000 steps, 2 illuminators, 2 bodies
+[D] 4 gathers (ferry, ferry>bodies, boat, boat>bodies) in 352 s
+
+[D] band limited (100 to 380 Hz) rms at the sensors, whole run, live channels
+  component                          cable1  hydrophones     best DAS
+  direct:ferry                      0.06088          nan        0.131
+  scattered:ferry>bodies           0.009802          nan      0.03367
+  direct:boat                       0.01436          nan      0.03318
+  scattered:boat>bodies            0.001735          nan     0.003538
+  noise                             0.03154          nan       0.0369
+  ferry: echo_to_direct_db_median_das -15.9, echo_to_noise_db_median_das -10.2, echo_to_noise_db_best_das +0.6
+  boat: echo_to_direct_db_median_das -18.4, echo_to_noise_db_median_das -25.2, echo_to_noise_db_best_das -19.0
+wrote output/studies/layout/D

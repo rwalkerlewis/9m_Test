@@ -1,0 +1,46 @@
+{
+  "table": {
+    "direct:ferry": {
+      "cable1": 0.08154514618565036,
+      "hydrophones": 0.1950511549340855,
+      "best_das": 0.16043081748535387
+    },
+    "scattered:ferry>bodies": {
+      "cable1": 0.010222359517481329,
+      "hydrophones": 0.03264952002478194,
+      "best_das": 0.03632183087724104
+    },
+    "direct:boat": {
+      "cable1": 0.018320918745533862,
+      "hydrophones": 0.043524708501436644,
+      "best_das": 0.04208076030539287
+    },
+    "scattered:boat>bodies": {
+      "cable1": 0.0018644785483711984,
+      "hydrophones": 0.00747830485565017,
+      "best_das": 0.004518026242225916
+    },
+    "noise": {
+      "cable1": 0.03142836156651591,
+      "hydrophones": 0.02304506653263206,
+      "best_das": 0.037478822553227716
+    }
+  },
+  "summary": {
+    "ferry": {
+      "echo_to_direct_db_median_das": -18.036939294396714,
+      "echo_to_noise_db_median_das": -9.755411798525337,
+      "echo_to_noise_db_best_das": 1.2569198217500774
+    },
+    "boat": {
+      "echo_to_direct_db_median_das": -19.847797152290774,
+      "echo_to_noise_db_median_das": -24.535286996933863,
+      "echo_to_noise_db_best_das": -16.847459834132763
+    }
+  },
+  "f_max": 400.0,
+  "bodies": [
+    "uuv1",
+    "wreck"
+  ]
+}

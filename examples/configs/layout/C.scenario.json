@@ -1,0 +1,140 @@
+{
+  "environment": {
+    "kind": "simple",
+    "width": 500.0,
+    "height": 400.0,
+    "quay_width": 20.0,
+    "dx": 1.0,
+    "c0": 1500.0
+  },
+  "fdtd": {
+    "fs": 3000.0,
+    "total_time": 20.0,
+    "fd_order": 4,
+    "damping_width": 40,
+    "damping_max": 0.15,
+    "background_absorption": 0.0001,
+    "shore_loss_width": 20.0,
+    "shore_loss_max": 0.15,
+    "use_cuda": false,
+    "time_scheme": "kspace"
+  },
+  "cables": [
+    {
+      "name": "cable1",
+      "waypoints": [
+        [
+          50.0,
+          360.0
+        ],
+        [
+          450.0,
+          360.0
+        ],
+        [
+          450.0,
+          50.0
+        ]
+      ],
+      "channel_spacing": 4.0,
+      "das_mode": "strain",
+      "gauge_length": 2.0
+    }
+  ],
+  "hydrophones": [],
+  "vessels": [
+    {
+      "id": "ferry",
+      "kind": "ship",
+      "waypoints": [
+        [
+          120.0,
+          260.0
+        ],
+        [
+          380.0,
+          260.0
+        ]
+      ],
+      "speed": 4.0,
+      "level_pa": 1.0,
+      "ais": true,
+      "seed": 11
+    },
+    {
+      "id": "boat",
+      "kind": "ship",
+      "waypoints": [
+        [
+          150.0,
+          120.0
+        ],
+        [
+          230.0,
+          170.0
+        ]
+      ],
+      "speed": 2.5,
+      "level_pa": 0.3,
+      "ais": false,
+      "seed": 13
+    },
+    {
+      "id": "uuv1",
+      "kind": "uuv",
+      "waypoints": [
+        [
+          320.0,
+          130.0
+        ],
+        [
+          280.0,
+          175.0
+        ]
+      ],
+      "speed": 1.5,
+      "level_pa": 0.0,
+      "seed": 21,
+      "body_length": 6.0,
+      "body_width": 2.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "rect"
+    },
+    {
+      "id": "wreck",
+      "kind": "static",
+      "waypoints": [
+        [
+          200.0,
+          210.0
+        ]
+      ],
+      "speed": 0.0,
+      "level_pa": 0.0,
+      "seed": 31,
+      "body_length": 4.0,
+      "body_width": 4.0,
+      "body_kind": "soft",
+      "body_strength": 0.5,
+      "body_shape": "ellipse"
+    }
+  ],
+  "noise": {
+    "ambient_rms": 0.02,
+    "shipping_rms": 0.02,
+    "n_shipping": 3,
+    "shipping_azimuth_deg": [
+      200.0,
+      340.0
+    ],
+    "hydrophone_self_rms": 0.005,
+    "das_noise_rms": 0.05,
+    "das_common_mode_rms": 0.03,
+    "das_gain_sigma": 0.1,
+    "das_dead_fraction": 0.02,
+    "c": 1500.0,
+    "band_scale": 5.0
+  },
+  "seed": 0
+}
