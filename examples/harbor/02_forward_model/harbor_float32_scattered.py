@@ -15,9 +15,12 @@ bodies in it) has no scattered component, and its noise free sum is compared ins
 
 A float32 gather can rarely carry a disturbance from the GPU fault of ``output/studies/float32/gpu_determinism.md``,
 which does not repeat.  Rule, fixed before the run: a component over the limit is attributed to that fault only if its
-float32 gather, deleted from the cache and built again, gives different traces; the rebuilt gather is then compared
-and the number of rebuilt gathers is reported.  If the rebuilt gather gives the same traces, the difference is the
-precision's and the criterion fails.
+float32 gather, deleted from the cache and built again, gives different traces and is then within the limit; the
+rebuilt gather is then compared
+and the number of rebuilt gathers is reported.  If the rebuilt gather gives the same traces, or fails again, the
+difference is the precision's and the criterion fails.  (The words "and is then within the limit" and "or fails
+again" were added after the build, to state how the rule was applied when the rebuilt gathers diverged again; they
+make it stricter, and the result is the same either way: fail.)
 
     python examples/harbor/02_forward_model/harbor_float32_scattered.py --built64 <dir> --built32 output/recordings \\
         [--recordings simple bistatic multistatic multistatic_b harbor]
@@ -93,6 +96,11 @@ def main() -> None:
           for rows in res["recordings"].values() for k, r in rows.items() if k.startswith("scattered:")]
     res["max_scattered_rel_rms"] = float(max(sc, default=0.0))
     res["passed"] = bool(res["max_scattered_rel_rms"] <= CRITERION["scattered_rel_rms"])
+    for rows in res["recordings"].values():                # a diverged component is written as null, not NaN
+        for r in rows.values():
+            r.update({k: (v if np.isfinite(v) else None) for k, v in r.items()})
+    if not np.isfinite(res["max_scattered_rel_rms"]):
+        res["max_scattered_rel_rms"] = None
     path.write_text(json.dumps(res, indent=2))
     lines = ["| Recording | Component | rms difference over rms | worst channel |", "|---|---|---|---|"]
     for rec, rows in res["recordings"].items():

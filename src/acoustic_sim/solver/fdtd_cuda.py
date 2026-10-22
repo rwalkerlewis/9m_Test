@@ -242,6 +242,10 @@ def step_kernel_source(coeffs: np.ndarray, dtype, has_mask: bool, cpml: bool = F
 _MODULE_CACHE: dict[tuple, Any] = {}
 
 
+def _no_wait() -> None:
+    """The float64 k space step does not wait (see :meth:`FusedFDTD.step`)."""
+
+
 def compile_step(coeffs: np.ndarray, dtype, has_mask: bool, cpml: bool = False, d1: np.ndarray | None = None,
                  scheme: str = "leapfrog"):
     """``(step_kernel, sample_kernel, psi_kernel, lw4_kernel)`` compiled once per (stencil, dtype, mask, cpml, scheme)."""
@@ -399,9 +403,9 @@ class FusedFDTD:
             # 601 x 801 grids differed between processes on the Quadro (CUDA 12.9, cuFFT 11.4) in about one fresh
             # process in three, one in ten by a disturbance of up to 2e-2 of the trace's peak (once 1.4) that starts at
             # one point of the field; with them, 1 in 240 (output/studies/float32/gpu_determinism.md).  The cause was
-            # not found; float64 was never affected.
+            # not found; float64 was never affected (0 in 180), so the waits are for float32 only.
             xp = self.xp
-            wait = xp.cuda.Device().synchronize
+            wait = xp.cuda.Device().synchronize if self.dtype == np.float32 else _no_wait
             spec = xp.fft.rfft2(p, axes=(-2, -1))
             wait()
             prod = spec * self.k_kernel
@@ -419,14 +423,15 @@ class FusedFDTD:
              self.psix, self.psiy, self.zetax, self.zetay, *self.cp_prof, q,
              np.int32(n), np.int32(self.n_steps), np.int32(self.ny), np.int32(self.nx)),
         )
-        if self.scheme == "kspace":
+        waits = self.scheme == "kspace" and self.dtype == np.float32
+        if waits:
             self.xp.cuda.Device().synchronize()
         if col >= 0:
             self.sampled_to = n
             self._flush()
         for hook in self.post_hooks:
             hook(pp, n)
-        if self.scheme == "kspace" and self.post_hooks:
+        if waits and self.post_hooks:
             self.xp.cuda.Device().synchronize()
         return pp, p
 

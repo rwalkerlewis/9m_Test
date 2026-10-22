@@ -196,14 +196,14 @@ hydrophone, the traces agree within 1e-3 of each receiver's peak at the worst re
 **Time per step and memory per run on the Quadro** (`harbor_float32.py --bench`, `fdtd_gpu_bench.json`): one run of
 the first illuminator over 2 s on each recording's grid, warmed up, `solver.run()` timed alone; the memory is the peak
 of CuPy's pool (fields, FFT work area, masks, trace buffer; the desktop holds about 1.2 GB of the 8 GB card besides).
-With the waits described below in place.
+Float32 with the waits described below (float64 does not wait).
 
 | Recording | Grid | float64 [ms per step] | float32 [ms per step] | float64 with the bodies | float32 with the bodies | Pool, float64 / float32 [MB] |
 |---|---|---|---|---|---|---|
-| simple | 401 x 501 | 1.60 | 0.32 | 1.63 | 0.35 | 44 / 22 |
-| bistatic | 601 x 801 | 2.63 | 0.60 | 2.67 | 0.63 | 108 / 54 |
-| multistatic_b | 601 x 801 | 2.64 | 0.60 | 2.70 | 0.66 | 108 / 54 (112 / 58 with the bodies) |
-| harbor | 361 x 481 | 0.85 | 0.30 | 0.88 | 0.33 | 27 / 14 |
+| simple | 401 x 501 | 1.42 | 0.32 | 1.43 | 0.35 | 44 / 22 |
+| bistatic | 601 x 801 | 2.46 | 0.60 | 2.48 | 0.63 | 108 / 54 |
+| multistatic_b | 601 x 801 | 2.46 | 0.60 | 2.51 | 0.66 | 108 / 54 (112 / 58 with the bodies) |
+| harbor | 361 x 481 | 0.65 | 0.30 | 0.66 | 0.33 | 27 / 14 |
 
 The whole build of the recordings in float32 took 51, 110, 297, 104 and 898 s of FDTD (`simple`, `bistatic`,
 `multistatic`, `harbor`, `multistatic_b`) against 356, 691, 2026, 468 and 6079 s in float64
@@ -215,8 +215,9 @@ ten by a disturbance of up to 2e-2 of the trace's peak that starts at one point 
 length run). Float64 was never affected; nothing in the solver's set up was the cause; more contention for the GPU made
 it more frequent; making the GPU finish every operation before the next is queued (`CUDA_LAUNCH_BLOCKING=1`) removed
 most of it. The fused k space step now waits for the device after every operation (`FusedFDTD.step`), which brings
-the large differences to 1 run in 240 and costs about 40 % of the float32 step (bistatic 0.43 to 0.60 ms) and 4 % of the
-float64 step. The cause was not found (`output/studies/float32/gpu_determinism.md`, every condition tried and its
+the large differences to 1 run in 240 and costs about 40 % of the float32 step (bistatic 0.43 to 0.60 ms); float64,
+never affected (0 in 180 runs), does not wait. The array path (`FDTDSolver._scheme_term`, used when the fused kernel is
+switched off) has no waits. The cause was not found (`output/studies/float32/gpu_determinism.md`, every condition tried and its
 counts).
 
 **The scattered component: fail.** Criterion, fixed before the run: the scattered component within 1e-3 of its rms

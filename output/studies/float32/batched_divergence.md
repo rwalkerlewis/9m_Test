@@ -38,4 +38,5 @@ the divergence was not found.** Not tried: a float32 build with batches of one (
 only, not the 60 s of the recording), and the scheme's stability in float32 with the harbor's speed map and land mask.
 
 The float32 build's logs and build files are in `build32/<recording>/` (the build times: `build.json`,
-`fdtd_wall_s`); the recordings themselves were put back to the committed float64 build.
+`fdtd_wall_s`; for `multistatic_b`, `build_first.json` is the whole first build, 6 runs in 898 s, and `build.json` the
+rebuild of the boat's two gathers, 335 s); the recordings themselves were put back to the committed float64 build.

@@ -60,8 +60,8 @@
     },
     "multistatic_b": {
       "direct:boat": {
-        "rel_rms": NaN,
-        "worst_channel_rel_rms": NaN
+        "rel_rms": null,
+        "worst_channel_rel_rms": null
       },
       "direct:ferry": {
         "rel_rms": 5.95877355432993e-05,
@@ -72,8 +72,8 @@
         "worst_channel_rel_rms": 0.00040934296812421517
       },
       "scattered:boat>bodies": {
-        "rel_rms": NaN,
-        "worst_channel_rel_rms": NaN
+        "rel_rms": null,
+        "worst_channel_rel_rms": null
       },
       "scattered:ferry>bodies": {
         "rel_rms": 0.00015359698715812606,
@@ -91,6 +91,7 @@
       }
     }
   },
-  "max_scattered_rel_rms": Infinity,
-  "passed": false
+  "max_scattered_rel_rms": null,
+  "passed": false,
+  "note": "null: the component diverged (output/studies/float32/batched_divergence.md)"
 }
