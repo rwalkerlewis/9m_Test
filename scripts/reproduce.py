@@ -105,6 +105,12 @@ class Recording:
             return base
         return base.parent / f"seed{self.seed}" / "dataset"     # output/recordings/<x>/seed<n>/dataset
 
+    @property
+    def dataset_noise2(self) -> Path:
+        """The same gathers and noise seed mixed with ``harbor_v2``: ``output/recordings/<x>/noise2/[seed<n>/]dataset``."""
+        base = (ROOT / FAMILIES[self.family].dataset).parent / "noise2"
+        return (base / f"seed{self.seed}" / "dataset") if self.seed else base / "dataset"
+
 
 def recordings() -> list[Recording]:
     out = [Recording(f, f, f, 0, False) for f in ("simple", "bistatic", "multistatic", "harbor")]
@@ -136,15 +142,17 @@ def build_seed0(fam: Family) -> None:
     python(*fam.build)
 
 
-def build_seed(fam: Family, seed: int, path: Path) -> None:
-    """The seed 0 recording's gathers mixed with noise seed *seed* (no FDTD; the cache must hold every gather)."""
+def build_seed(fam: Family, seed: int, path: Path, noise2: bool = False) -> None:
+    """The seed 0 recording's gathers mixed with noise seed *seed* (no FDTD; the cache must hold every gather).  With
+    *noise2* the noise is the second model, ``harbor_v2`` at its documented levels (``docs/noise.md``; every component
+    on, the quay machinery on the simple harbor only, from its cached gather of the noise study)."""
     from acoustic_sim.contract import Truth, contract_paths
     from acoustic_sim.water import HarborScenarioConfig, assemble_dataset, build_environment, build_layout, build_track
     from acoustic_sim.water import fdtd_runner, render_vessel_gathers
 
     if contract_paths(path.with_suffix(".npz"))[0].exists():
         return
-    say(f"mixing {fam.name} seed {seed} from the cached gathers")
+    say(f"mixing {fam.name} seed {seed}{' with harbor_v2' if noise2 else ''} from the cached gathers")
     base = Truth.load(contract_paths(ROOT / f"{fam.dataset}.npz")[1])
     cfg = HarborScenarioConfig.from_dict(base.scenario)
     env = build_environment(cfg)
@@ -156,14 +164,24 @@ def build_seed(fam: Family, seed: int, path: Path) -> None:
 
     saved = fdtd_runner.HarborFDTDBatch.run, fdtd_runner.HarborFDTDSolver.run
     fdtd_runner.HarborFDTDBatch.run = fdtd_runner.HarborFDTDSolver.run = no_fdtd
+    mach = None
     try:
         gathers = render_vessel_gathers(cfg, env, layout, tracks, cache_dir=ROOT / fam.cache, combined_bodies=fam.combined)
+        if noise2:
+            import harbor_noise_model as hnm
+            from acoustic_sim.water.dataset import machinery_gather
+            from acoustic_sim.water.noise import HarborV2Config
+
+            cfg.noise.model = "harbor_v2"
+            cfg.noise.harbor_v2 = HarborV2Config.from_dict(hnm.v2_config(hnm.COMPONENTS, fam.name == "simple"))
+            if fam.name == "simple":
+                mach = machinery_gather(cfg, env, layout, cache_dir=ROOT / "output" / "studies" / "noise_model" / "simple" / "cache")
     finally:
         fdtd_runner.HarborFDTDBatch.run, fdtd_runner.HarborFDTDSolver.run = saved
     path.parent.mkdir(parents=True, exist_ok=True)
-    ds = assemble_dataset(cfg, layout, tracks, gathers, seed=seed, keep_clean=False, env=env)
+    ds = assemble_dataset(cfg, layout, tracks, gathers, seed=seed, keep_clean=False, env=env, machinery=mach)
     truth = ds.truth
-    truth.meta = dict(truth.meta, noise_seed=seed, mixed_from=fam.dataset,
+    truth.meta = dict(truth.meta, noise_seed=seed, mixed_from=fam.dataset, noise_model="harbor_v2" if noise2 else "default",
                       propagation_error_ms=base.meta.get("propagation_error_ms"))
     ds.observation.save(contract_paths(path.with_suffix(".npz"))[0])
     truth.save(contract_paths(path.with_suffix(".npz"))[1])
@@ -267,6 +285,8 @@ def flatten(d, prefix="") -> dict:
 def compare(new: dict, old: dict) -> list[tuple[str, object, object, str]]:
     """Every number of *old* against *new*: ``(key, old, new, "pass" | "FAIL" | "info")``."""
     a, b = flatten(old.get("recordings", {})), flatten(new.get("recordings", {}))
+    a.update(flatten(old.get("recordings_noise2", {}), "noise2"))     # the second noise model (harbor_v2), the same rules
+    b.update(flatten(new.get("recordings_noise2", {}), "noise2"))
     rows = []
     for k in sorted(set(a) | set(b)):
         x, y = a.get(k), b.get(k)
@@ -344,9 +364,11 @@ def tables(numbers: dict) -> str:
 def tables_by_name(numbers: dict) -> dict[str, str]:
     """The tables of ``docs/harbor.md`` (markdown, no heading) by the name their ``reproduce-table`` block uses."""
     rec = numbers["recordings"]
+    rec2 = numbers.get("recordings_noise2", {})
     out = {}
-    lines = ["| Recording | Split | Compute per s of data | Latency (median) | Pd per object | False tracks (per minute) |",
-             "|---|---|---|---|---|---|"]
+    lines = ["| Recording | Split | Compute per s of data | Latency (median) | Pd per object, old noise model | "
+             "Pd per object, harbor_v2 | False tracks (per minute), old / harbor_v2 |",
+             "|---|---|---|---|---|---|---|"]
     for fam in ("simple", "bistatic", "multistatic", "harbor", "multistatic_b"):
         names = [n for n, r in rec.items() if r["family"] == fam]
         for split in ("tuning", "test"):
@@ -354,15 +376,17 @@ def tables_by_name(numbers: dict) -> dict[str, str]:
             if not sel:
                 continue
             first = rec[sel[0]]
-            objs = []
+            objs, objs2 = [], []
             for oid, o in first["objects"].items():
                 kind = "radiator" if o["radiates"] else "echo"
                 if kind == "echo" and fam == "harbor":
                     continue
                 vals = [rec[n]["objects"][oid]["pd"].get(kind) for n in sel]
-                if all(v in (None, 0.0) for v in vals) and not o["radiates"]:
+                vals2 = [rec2[n]["objects"][oid]["pd"].get(kind) if n in rec2 else None for n in sel]
+                if all(v in (None, 0.0) for v in vals + vals2) and not o["radiates"]:
                     continue
                 objs.append(f"{oid} {' / '.join(_pct(v) for v in vals)}")
+                objs2.append(f"{oid} {' / '.join(_pct(v) for v in vals2)}")
             silent0 = [oid for oid, o in first["objects"].items() if not o["radiates"]
                        and all(rec[n]["objects"][oid]["pd"].get("echo") in (None, 0.0) for n in sel)]
             if silent0 and fam != "harbor":
@@ -370,8 +394,22 @@ def tables_by_name(numbers: dict) -> dict[str, str]:
             comp = " / ".join(f"{rec[n]['compute_per_second_of_data']['total']:.2f}" for n in sel)
             lat = " / ".join(f"{rec[n]['latency_s']['median']:.1f} s" for n in sel)
             ft = " / ".join(f"{rec[n]['false_tracks']['count']} ({rec[n]['false_tracks']['per_minute']:.1f})" for n in sel)
-            lines.append(f"| {fam} | {split} | {comp} | {lat} | {'; '.join(objs)} | {ft} |")
+            ft2 = " / ".join(f"{rec2[n]['false_tracks']['count']} ({rec2[n]['false_tracks']['per_minute']:.1f})" if n in rec2 else "-"
+                             for n in sel)
+            lines.append(f"| {fam} | {split} | {comp} | {lat} | {'; '.join(objs)} | {'; '.join(objs2)} | {ft}; harbor_v2 {ft2} |")
     out["realtime"] = "\n".join(lines) + "\n"
+    # The silent bodies under the two noise models: echo Pd, old model beside harbor_v2, every recording.
+    lines = ["| Recording | Silent body | Pd, old noise model | Pd, harbor_v2 |", "|---|---|---|---|"]
+    for name, r in rec.items():
+        if r["family"] == "harbor" or name not in rec2:
+            continue
+        for oid, o in r["objects"].items():
+            if o["radiates"]:
+                continue
+            x, y = o["pd"].get("echo"), rec2[name]["objects"][oid]["pd"].get("echo")
+            if (x or 0.0) > 0 or (y or 0.0) > 0:
+                lines.append(f"| {name} | {oid} | {_pct(x)} | {_pct(y)} |")
+    out["silent_noise"] = "\n".join(lines) + "\n"
     lines = ["| Criterion | Values | Result |", "|---|---|---|"]
     for c in numbers["criteria"]:
         vals = c.get("values")
@@ -443,7 +481,7 @@ def source_levels(numbers: dict) -> list[dict]:
 # Tables: <!-- reproduce-table:NAME --> ... <!-- /reproduce-table --> holds the table NAME of :func:`tables` (or, for
 # ``file:<path under output/>``, that generated markdown file) and is rewritten on every run.
 
-DOCS = [ROOT / "docs" / "harbor.md"]
+DOCS = [ROOT / "docs" / "harbor.md", ROOT / "docs" / "noise.md"]
 MARK = re.compile(r"<!-- reproduce:(?P<key>[^>]*?) -->(?P<text>.*?)<!-- /reproduce -->", re.S)
 TABLE = re.compile(r"(<!-- reproduce-table:(?P<name>[^>]*?) -->\n)(?P<text>.*?)(<!-- /reproduce-table -->)", re.S)
 
@@ -576,6 +614,7 @@ def main() -> int:
     ap.add_argument("--no-walkthrough", action="store_true")
     ap.add_argument("--no-video", action="store_true")
     ap.add_argument("--cpu", action="store_true")
+    ap.add_argument("--no-noise2", action="store_true", help="skip the run of every recording with the second noise model")
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     latest = OUT / "latest.json"
@@ -616,6 +655,18 @@ def main() -> int:
         s = hs.run_recording(r.name, CONFIGS / "processing" / f"{r.processing}.json", obs, contract_paths(r.dataset.with_suffix(".npz"))[1],
                              out, r.held_out, use_cuda=not a.cpu, seed=r.seed, video=not a.no_video)
         hs.report(s)
+    if not a.no_noise2:                                     # every recording again with the second noise model, harbor_v2
+        for r in recs:
+            build_seed(FAMILIES[r.family], r.seed, r.dataset_noise2, noise2=True)
+            out = OUT / "runs" / f"{r.name}_noise2"
+            if (out / "summary.json").exists() and not a.rerun:
+                continue
+            say(f"running the chain on {r.name} mixed with harbor_v2")
+            obs = contract_paths(r.dataset_noise2.with_suffix(".npz"))[0]
+            s = hs.run_recording(f"{r.name}_noise2", CONFIGS / "processing" / f"{r.processing}.json", obs,
+                                 contract_paths(r.dataset_noise2.with_suffix(".npz"))[1], out, r.held_out, use_cuda=not a.cpu,
+                                 seed=r.seed, video=False, figures=False)
+            hs.report(s)
     if not a.no_walkthrough:
         for fam in ("simple", "bistatic", "multistatic", "harbor"):
             if a.only is not None and fam not in a.only:
@@ -632,6 +683,9 @@ def main() -> int:
         p = OUT / "runs" / r.name / "summary.json"
         if p.exists():
             numbers["recordings"][r.name] = collect(r, json.loads(p.read_text()))
+        p = OUT / "runs" / f"{r.name}_noise2" / "summary.json"
+        if p.exists():
+            numbers.setdefault("recordings_noise2", {})[r.name] = collect(r, json.loads(p.read_text()))
     for name in ("multistatic", "multistatic_b", "simple", "simple_seed1", "bistatic", "bistatic_seed1"):
         numbers["characteristics"][name] = characteristics_rows(name)
     cal = json.loads((ROOT / "output" / "studies" / "level_calibration" / "calibration.json").read_text())
@@ -644,6 +698,9 @@ def main() -> int:
         numbers["criteria"] = criteria(numbers)
     else:
         numbers["criteria"] = []
+    rec2 = numbers.get("recordings_noise2", {})              # the criteria are evaluated on the old model, reported on both
+    if all(k in rec2 for k in ("multistatic_b", "multistatic") + tuple(f"simple_seed{s}" for s in TEST_SEEDS)):
+        numbers["criteria_noise2"] = criteria({"recordings": rec2})
     from acoustic_sim.contract import run_info
 
     numbers["run"] = run_info(wall_s=time.time() - t_start, use_cuda=not a.cpu)

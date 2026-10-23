@@ -56,6 +56,12 @@ output/studies/**/tracks.csv
 !output/studies/layout/H/maps/coverage_strain_fraction.png
 !output/studies/noise_model/spectrum_cable.png
 !output/studies/noise_model/spectrum_hydrophone.png
+!output/studies/noise_model/sweep/pd_multistatic_uuv1.png
+!output/studies/noise_model/sweep/pd_multistatic_uuv2.png
+!output/studies/noise_model/sweep/pd_multistatic_moored.png
+!output/studies/noise_model/sweep/pd_bistatic_uuv1.png
+!output/studies/noise_model/sweep/pd_simple_wreck.png
+!output/studies/noise_model/sweep/false_tracks_multistatic.png
 !output/walkthrough/multistatic/01_recording_chart.png
 !output/walkthrough/multistatic/02_passive_map_2.png
 !output/walkthrough/multistatic/03_tracks_tracks.png
