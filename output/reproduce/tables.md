@@ -4,22 +4,22 @@ Pd: fraction of frames, from the first frame the object could have been confirme
 
 | Recording | Split | Compute per s of data | Latency (median) | Pd per object | False tracks (per minute) |
 |---|---|---|---|---|---|
-| simple | tuning | 1.11 | 2.4 s | ferry 100 %; boat 100 %; uuv1 30 %; wreck 100 % | 0 (0.0) |
-| simple | test | 1.10 / 1.09 / 1.11 | 2.4 s / 2.4 s / 2.4 s | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 66 % / 31 % / 61 %; wreck 100 % / 100 % / 100 % | 0 (0.0) / 0 (0.0) / 1 (3.0) |
-| bistatic | tuning | 1.44 | 2.6 s | ferry 100 %; uuv1 70 % | 3 (9.0) |
-| bistatic | test | 1.48 / 1.50 / 1.52 | 2.6 s / 2.8 s / 2.8 s | ferry 100 % / 100 % / 100 %; uuv1 70 % / 59 % / 69 % | 1 (3.0) / 2 (6.0) / 3 (9.0) |
-| multistatic | tuning | 2.21 | 3.8 s | ferry 100 %; tug 100 %; boat 100 %; uuv1 83 %; uuv2 97 %; moored 83 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 2 (6.0) |
-| multistatic | test | 2.08 / 2.14 / 2.17 | 3.8 s / 3.7 s / 3.7 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 66 % / 62 % / 84 %; uuv2 95 % / 94 % / 94 %; moored 81 % / 80 % / 77 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 2 (6.0) / 2 (6.0) / 3 (9.0) |
-| harbor | tuning | 0.60 | 1.2 s | ferry 83 %; tug 4 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | 3 (1.5) |
-| harbor | test | 0.60 / 0.61 / 0.60 | 1.2 s / 1.2 s / 1.2 s | ferry 74 % / 83 % / 67 %; tug 6 % / 7 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | 4 (2.0) / 3 (1.5) / 4 (2.0) |
-| multistatic_b | test | 2.31 | 3.6 s | ferry 99 %; tug 100 %; boat 70 %; uuv1 60 %; uuv2 88 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6, moored | 7 (7.0) |
+| simple | tuning | 1.37 | 3.1 s | ferry 100 %; boat 100 %; uuv1 58 %; wreck 100 % | 1 (3.0) |
+| simple | test | 1.35 / 1.38 / 1.39 | 3.1 s / 3.2 s / 3.2 s | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 66 % / 64 % / 58 %; wreck 100 % / 100 % / 100 % | 0 (0.0) / 0 (0.0) / 1 (3.0) |
+| bistatic | tuning | 1.39 | 2.7 s | ferry 100 %; uuv1 70 % | 2 (6.0) |
+| bistatic | test | 1.30 / 1.58 / 1.56 | 2.7 s / 2.7 s / 2.7 s | ferry 100 % / 100 % / 100 %; uuv1 70 % / 59 % / 69 % | 1 (3.0) / 2 (6.0) / 4 (12.0) |
+| multistatic | tuning | 3.17 | 6.3 s | ferry 100 %; tug 100 %; boat 100 %; uuv1 84 %; uuv2 95 %; moored 83 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 2 (6.0) |
+| multistatic | test | 3.23 / 3.19 / 3.15 | 6.3 s / 6.3 s / 6.3 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 89 % / 80 % / 80 %; uuv2 94 % / 94 % / 91 %; moored 91 % / 83 % / 86 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 3 (9.0) / 2 (6.0) / 3 (9.0) |
+| harbor | tuning | 0.55 | 1.1 s | ferry 83 %; tug 4 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | 3 (1.5) |
+| harbor | test | 0.54 / 0.54 / 0.54 | 1.1 s / 1.1 s / 1.1 s | ferry 74 % / 83 % / 67 %; tug 6 % / 7 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | 4 (2.0) / 3 (1.5) / 4 (2.0) |
+| multistatic_b | test | 3.28 | 6.1 s | ferry 99 %; tug 100 %; boat 70 %; uuv1 60 %; uuv2 96 %; diver 74 %; not tracked: piling1, piling2, piling3, piling4, piling5, piling6, moored | 6 (6.0) |
 
 ### Criteria
 
 | Criterion | Values | Result |
 |---|---|---|
 | every ship (ferry, tug, boat) tracked with Pd >= 0.8 on multistatic_b (radiator tracks) | {'ferry': 0.99, 'tug': 1.0, 'boat': 0.7} | **fail** |
-| false tracks at most 2 per minute on every test recording | {'simple_seed1': 0.0, 'simple_seed2': 0.0, 'simple_seed3': 3.0, 'bistatic_seed1': 3.0, 'bistatic_seed2': 6.0, 'bistatic_seed3': 9.0, 'multistatic_seed1': 6.0, 'multistatic_seed2': 6.0, 'multistatic_seed3': 9.0, 'harbor_seed1': 2.0, 'harbor_seed2': 1.5, 'harbor_seed3': 2.0, 'multistatic_b': 7.0} | **fail** |
+| false tracks at most 2 per minute on every test recording | {'simple_seed1': 0.0, 'simple_seed2': 0.0, 'simple_seed3': 3.0, 'bistatic_seed1': 3.0, 'bistatic_seed2': 6.0, 'bistatic_seed3': 12.0, 'multistatic_seed1': 9.0, 'multistatic_seed2': 6.0, 'multistatic_seed3': 9.0, 'harbor_seed1': 2.0, 'harbor_seed2': 1.5, 'harbor_seed3': 2.0, 'multistatic_b': 6.0} | **fail** |
 | the wreck of the simple harbor found by its echo with Pd >= 0.9 on seeds 1 to 3 (echo tracks) | {'simple_seed1': 1.0, 'simple_seed2': 1.0, 'simple_seed3': 1.0} | pass |
 | on frames where the moored hull, a UUV and a piling are all measured, the size indicator puts the hull below the piling in at least 70 % of them (multistatic recordings, tuning and multistatic_b) | no frame had the hull, a UUV and a piling all measured: not testable | **not met: not testable** |
 
@@ -30,22 +30,23 @@ Pd: fraction of frames, from the first frame the object could have been confirme
 | multistatic | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.26 (1) | 9.2 x 2.3 | 4.0 (4.0) |
 | multistatic | tug | ship, - | own noise 66 | 66 | - | - | - | 0.83 (0.7) | 15.5 x 3.5 | 3.0 (3.0) |
 | multistatic | boat | ship, - | own noise 66 | 66 | - | - | - | 0.59 (0.3) | 46.9 x 6.2 | 4.9 (5.0) |
-| multistatic | uuv1 | uuv, 3 x 1 m | echo 53 | 53 | -4.9 | about a wavelength or larger | 4.3 / 4.0 | - | 4.6 x 2.3 | 2.0 (2.0) |
-| multistatic | uuv2 | uuv, 3 x 1 m | echo 62 | 62 | -2.4 | about a wavelength or larger | 5.2 / 3.8 | - | 6.9 x 2.3 | 1.4 (1.5) |
-| multistatic | moored | ship, 30 x 6 m | echo 53 | 53 | -0.8 | about a wavelength or larger | 7.9 / 7.2 | - | 11.6 x 2.3 | 0.9 (0.0) |
-| multistatic_b | ferry | ship, - | own noise 241, both 6 | 224 | -12.2 | about a wavelength or larger | 11.9 / 10.1 | 1.14 (1) | 14.1 x 3.7 | 3.5 (3.5) |
-| multistatic_b | tug | ship, - | own noise 222, both 4 | 226 | -16.8 | about a wavelength or larger | 4.4 / 4.8 | 0.73 (0.7) | 29.9 x 4.5 | 2.5 (2.5) |
-| multistatic_b | boat | ship, - | own noise 192 | 158 | - | - | - | 0.45 (0.3) | 27.3 x 4.5 | 4.5 (3.7) |
-| multistatic_b | uuv1 | uuv, 3 x 1 m | echo 194, both 4 | 135 | -8.8 | about a wavelength or larger | 5.5 / 5.3 | 0.79 (0) | 9.4 x 4.2 | 1.6 (1.7) |
-| multistatic_b | uuv2 | uuv, 3 x 1 m | echo 215 | 198 | -3.9 | about a wavelength or larger | 2.9 / 4.8 | - | 7.5 x 2.9 | 1.1 (1.2) |
+| multistatic | uuv1 | uuv, 3 x 1 m | echo 54 | 54 | -4.7 | about a wavelength or larger | 3.5 / 4.7 | - | 6.9 x 2.8 | 2.0 (2.0) |
+| multistatic | uuv2 | uuv, 3 x 1 m | echo 61 | 61 | -5.4 | about a wavelength or larger | 5.2 / 3.7 | - | 6.9 x 2.3 | 1.5 (1.5) |
+| multistatic | moored | ship, 30 x 6 m | echo 53 | 53 | -3.0 | about a wavelength or larger | 7.0 / 6.4 | - | 11.6 x 2.3 | 0.3 (0.0) |
+| multistatic_b | ferry | ship, - | own noise 243, both 4 | 224 | -6.9 | about a wavelength or larger | 21.9 / 13.2 | 1.14 (1) | 14.1 x 3.7 | 3.5 (3.5) |
+| multistatic_b | tug | ship, - | own noise 220, both 6 | 226 | -16.6 | about a wavelength or larger | 5.9 / 6.7 | 0.73 (0.7) | 29.9 x 4.5 | 2.5 (2.5) |
+| multistatic_b | boat | ship, - | own noise 175, both 17 | 158 | +10.8 | smaller than about a wavelength | 4.3 / 8.3 | 0.45 (0.3) | 27.3 x 4.5 | 4.5 (3.7) |
+| multistatic_b | uuv1 | uuv, 3 x 1 m | echo 202, both 6 | 134 | -8.3 | about a wavelength or larger | 5.9 / 6.7 | 0.71 (0) | 9.0 x 4.0 | 1.7 (1.7) |
+| multistatic_b | uuv2 | uuv, 3 x 1 m | echo 215 | 215 | -2.6 | about a wavelength or larger | 3.3 / 4.2 | - | 4.6 x 2.3 | 1.1 (1.2) |
+| multistatic_b | diver | diver, 1 x 0.5 m | echo 195 | 166 | -11.6 | about a wavelength or larger | 4.0 / 7.0 | - | 9.2 x 4.4 | 0.5 (0.6) |
 | simple | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.09 (1) | 5.2 x 3.5 | 4.0 (4.0) |
 | simple | boat | ship, - | own noise 66 | 66 | - | - | - | 0.28 (0.3) | 4.6 x 2.3 | 2.5 (2.5) |
-| simple | uuv1 | uuv, 6 x 2 m | echo 19 | 19 | -5.2 | about a wavelength or larger | 4.1 / 4.1 | - | 5.2 x 3.5 | 1.5 (1.5) |
-| simple | wreck | static, 4 x 4 m | echo 64 | 64 | -6.4 | about a wavelength or larger | 4.5 / 4.2 | - | 4.6 x 3.5 | 0.1 (0.0) |
+| simple | uuv1 | uuv, 6 x 2 m | echo 37 | 37 | -4.3 | about a wavelength or larger | 4.1 / 4.1 | - | 5.2 x 3.5 | 1.6 (1.5) |
+| simple | wreck | static, 4 x 4 m | echo 64 | 64 | -6.2 | about a wavelength or larger | 4.5 / 4.2 | - | 4.6 x 3.5 | 0.1 (0.0) |
 | simple_seed1 | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.07 (1) | 5.2 x 3.5 | 4.0 (4.0) |
 | simple_seed1 | boat | ship, - | own noise 66 | 66 | - | - | - | 0.28 (0.3) | 4.6 x 2.3 | 2.5 (2.5) |
-| simple_seed1 | uuv1 | uuv, 6 x 2 m | echo 42 | 42 | -3.3 | about a wavelength or larger | 4.0 / 4.1 | - | 5.2 x 3.4 | 1.6 (1.5) |
-| simple_seed1 | wreck | static, 4 x 4 m | echo 64 | 64 | -5.6 | about a wavelength or larger | 4.5 / 4.5 | - | 4.6 x 3.5 | 0.1 (0.0) |
+| simple_seed1 | uuv1 | uuv, 6 x 2 m | echo 42 | 42 | -3.5 | about a wavelength or larger | 4.0 / 4.2 | - | 5.2 x 3.5 | 1.5 (1.5) |
+| simple_seed1 | wreck | static, 4 x 4 m | echo 64 | 64 | -5.7 | about a wavelength or larger | 4.5 / 4.5 | - | 4.6 x 3.5 | 0.1 (0.0) |
 | bistatic | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.32 (1) | 6.9 x 2.3 | 4.0 (4.0) |
 | bistatic | uuv1 | uuv, 3 x 1 m | own noise 31, echo 45 | 59 | +1.8 | smaller than about a wavelength | 3.9 / 2.9 | 0.18 (0) | 8.7 x 2.9 | 1.8 (2.0) |
 | bistatic_seed1 | ferry | ship, - | own noise 66 | 66 | - | - | - | 1.36 (1) | 6.9 x 2.3 | 4.0 (4.0) |

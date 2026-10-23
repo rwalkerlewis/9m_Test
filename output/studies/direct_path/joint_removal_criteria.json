@@ -1,0 +1,222 @@
+{
+  "criteria": [
+    {
+      "id": "silent_bodies",
+      "text": "at least three of the six pilings and the diver tracked with Pd at least 0.3 on the multistatic seeds (three of the seven bodies on every seed)",
+      "values": {
+        "multistatic_seed1": {
+          "piling1": 0.0,
+          "piling2": 0.0,
+          "piling3": 0.0,
+          "piling4": 0.0,
+          "piling5": 0.0,
+          "piling6": 0.0,
+          "diver": 0.0
+        },
+        "multistatic_seed2": {
+          "piling1": 0.0,
+          "piling2": 0.0,
+          "piling3": 0.0,
+          "piling4": 0.0,
+          "piling5": 0.0,
+          "piling6": 0.0,
+          "diver": 0.0
+        },
+        "multistatic_seed3": {
+          "piling1": 0.0,
+          "piling2": 0.0,
+          "piling3": 0.0,
+          "piling4": 0.0,
+          "piling5": 0.0,
+          "piling6": 0.0,
+          "diver": 0.0
+        }
+      },
+      "at_0.3": {
+        "multistatic_seed1": 0,
+        "multistatic_seed2": 0,
+        "multistatic_seed3": 0
+      },
+      "passed": false,
+      "alternative_reading": {
+        "text": "three pilings and the diver, each at 0.3 or more, on every seed",
+        "values": {
+          "multistatic_seed1": false,
+          "multistatic_seed2": false,
+          "multistatic_seed3": false
+        },
+        "passed": false
+      }
+    },
+    {
+      "id": "no_fall",
+      "text": "the moored hull and both UUVs not down by more than 3 points (multistatic test recordings)",
+      "values": {
+        "multistatic_seed1/moored": {
+          "before": 0.8125,
+          "after": 0.90625
+        },
+        "multistatic_seed1/uuv1": {
+          "before": 0.65625,
+          "after": 0.890625
+        },
+        "multistatic_seed1/uuv2": {
+          "before": 0.953125,
+          "after": 0.9375
+        },
+        "multistatic_seed2/moored": {
+          "before": 0.796875,
+          "after": 0.828125
+        },
+        "multistatic_seed2/uuv1": {
+          "before": 0.625,
+          "after": 0.796875
+        },
+        "multistatic_seed2/uuv2": {
+          "before": 0.9375,
+          "after": 0.9375
+        },
+        "multistatic_seed3/moored": {
+          "before": 0.765625,
+          "after": 0.859375
+        },
+        "multistatic_seed3/uuv1": {
+          "before": 0.84375,
+          "after": 0.796875
+        },
+        "multistatic_seed3/uuv2": {
+          "before": 0.9375,
+          "after": 0.90625
+        },
+        "multistatic_b/moored": {
+          "before": 0.0,
+          "after": 0.0
+        },
+        "multistatic_b/uuv1": {
+          "before": 0.6026785714285714,
+          "after": 0.5982142857142857
+        },
+        "multistatic_b/uuv2": {
+          "before": 0.8839285714285714,
+          "after": 0.9598214285714286
+        }
+      },
+      "falls": {
+        "multistatic_seed3/uuv1": {
+          "before": 0.84375,
+          "after": 0.796875
+        },
+        "multistatic_seed3/uuv2": {
+          "before": 0.9375,
+          "after": 0.90625
+        }
+      },
+      "passed": false
+    },
+    {
+      "id": "compute",
+      "text": "compute per second of data not above its value before on any recording",
+      "values": {
+        "simple": {
+          "before": 1.1077244419990167,
+          "after": 1.3696743910015357
+        },
+        "bistatic": {
+          "before": 1.442290977207449,
+          "after": 1.388314654653368
+        },
+        "multistatic": {
+          "before": 2.2054404897033235,
+          "after": 3.1746034254989355
+        },
+        "harbor": {
+          "before": 0.5965568695667268,
+          "after": 0.5484870802587466
+        },
+        "simple_seed1": {
+          "before": 1.1020991431076255,
+          "after": 1.3497591245541116
+        },
+        "simple_seed2": {
+          "before": 1.0929202117513341,
+          "after": 1.378087618448626
+        },
+        "simple_seed3": {
+          "before": 1.1062082868476864,
+          "after": 1.385538107546381
+        },
+        "bistatic_seed1": {
+          "before": 1.4762625441464479,
+          "after": 1.300301717146067
+        },
+        "bistatic_seed2": {
+          "before": 1.5035375219515117,
+          "after": 1.5770808295033931
+        },
+        "bistatic_seed3": {
+          "before": 1.516759532897413,
+          "after": 1.5550619136469321
+        },
+        "multistatic_seed1": {
+          "before": 2.0763932591944467,
+          "after": 3.2273233168551085
+        },
+        "multistatic_seed2": {
+          "before": 2.139237445093022,
+          "after": 3.186436720997153
+        },
+        "multistatic_seed3": {
+          "before": 2.1749670710960345,
+          "after": 3.148890257654057
+        },
+        "harbor_seed1": {
+          "before": 0.5974867780989978,
+          "after": 0.5383173943747654
+        },
+        "harbor_seed2": {
+          "before": 0.61133968359912,
+          "after": 0.5376283095496547
+        },
+        "harbor_seed3": {
+          "before": 0.5982714979581942,
+          "after": 0.5371380287757347
+        },
+        "multistatic_b": {
+          "before": 2.3139723644861077,
+          "after": 3.2780618417176206
+        }
+      },
+      "passed": false
+    },
+    {
+      "id": "size_order",
+      "text": "the hull below a piling on the size indicator in at least 70 % of the frames where both are measured",
+      "values": {
+        "multistatic": {
+          "frames_both": 0,
+          "hull_below_piling": 0
+        },
+        "multistatic_seed1": {
+          "frames_both": 0,
+          "hull_below_piling": 0
+        },
+        "multistatic_seed2": {
+          "frames_both": 0,
+          "hull_below_piling": 0
+        },
+        "multistatic_seed3": {
+          "frames_both": 0,
+          "hull_below_piling": 0
+        },
+        "multistatic_b": {
+          "frames_both": 0,
+          "hull_below_piling": 0
+        }
+      },
+      "frames": 0,
+      "fraction": null,
+      "passed": null,
+      "note": "no frame had the hull and a piling both measured: not testable"
+    }
+  ]
+}

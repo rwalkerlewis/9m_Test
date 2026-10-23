@@ -4,14 +4,14 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.8184249762511172,
-    "echo": 0.5544173447487992,
-    "characteristics": 0.1034202231465315,
-    "total": 1.4762625441464479
+    "passive": 0.561449206999896,
+    "echo": 0.630840801848899,
+    "characteristics": 0.10801170829727198,
+    "total": 1.300301717146067
   },
   "latency_s": {
-    "median": 2.594,
-    "max": 3.932
+    "median": 2.713,
+    "max": 5.18
   },
   "objects": {
     "ferry": {
@@ -67,7 +67,7 @@
         "any": 1.6346490620283836
       },
       "tracks": [
-        "e19",
+        "e21",
         "r5"
       ]
     }
@@ -120,7 +120,7 @@
       "kind": "radiator"
     },
     {
-      "track": "e19",
+      "track": "e21",
       "fixes": 45,
       "first_t": 6.75,
       "last_t": 17.75,
@@ -143,7 +143,7 @@
       "kind": "echo"
     },
     {
-      "track": "e32",
+      "track": "e34",
       "fixes": 5,
       "first_t": 16.75,
       "last_t": 17.75,
@@ -173,7 +173,7 @@
     "echo": 1,
     "tracks": [
       {
-        "track": "e32",
+        "track": "e34",
         "fixes": 5,
         "first_t": 16.75,
         "last_t": 17.75,
@@ -245,10 +245,10 @@
     }
   },
   "run": {
-    "git_commit": "69c2891c6e8e2c851b223aaddecfd0f800bb4ef3",
+    "git_commit": "0b1cef65544d1d9f8e760ac478156845b98bdef2",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/bistatic.json",
-    "processing_config_sha256": "7a4b77fee449c0b854f4788f79e82a2f9003fd7c6dd52ed57760ac435bb091cd",
+    "processing_config_sha256": "7a1083b7beb6a1d4997fb0236002d7d774f478428c4dbefc9cd52cc3b34a3f62",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/bistatic/seed1/dataset.observation.npz",
     "observation_sha256": "b8f8bf4d169a76ca3c64498036f7eba2512db710daa541b54a3db7b9e0c439cd",
@@ -257,7 +257,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 1,
-    "wall_s": 29.60533771799237,
+    "wall_s": 26.086881288996665,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

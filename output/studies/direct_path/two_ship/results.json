@@ -1,0 +1,240 @@
+{
+  "criteria": {
+    "diagnosis": "if (b) the ferry first and (c) the tug first are each more than 6 dB below (a) alone for at least one ship, the sequential removal is the mechanism and the joint removal is built; if not, stop",
+    "diagnosis_db": 6.0,
+    "joint": "with removal_order joint, each ship's median depth within 3 dB of its depth alone (a)",
+    "joint_db": 3.0
+  },
+  "status": "done",
+  "provenance": {
+    "truth_inputs": [
+      "components"
+    ],
+    "simulator_knowledge": [],
+    "data": "forward_model",
+    "held_out": false
+  },
+  "rows": {
+    "alone_src_moving_200": {
+      "depth": {
+        "src_moving_200": {
+          "cable_median_db": 26.49949198551389,
+          "cable_p10_db": 21.14306823083197
+        }
+      },
+      "compute_s_per_s": 0.4115319298005488,
+      "position_error_median_m": {
+        "src_moving_200": 0.8151228441820185
+      }
+    },
+    "alone_tug": {
+      "depth": {
+        "tug": {
+          "cable_median_db": 27.510351709057925,
+          "cable_p10_db": 20.0617819434306
+        }
+      },
+      "compute_s_per_s": 0.3616212229993835,
+      "position_error_median_m": {
+        "tug": 0.4031077602523982
+      }
+    },
+    "sequential_ferry_first": {
+      "depth": {
+        "src_moving_200": {
+          "cable_median_db": 23.224520937381296,
+          "cable_p10_db": 20.22496965693299
+        },
+        "tug": {
+          "cable_median_db": 16.21431392577525,
+          "cable_p10_db": 14.54706909840436
+        }
+      },
+      "compute_s_per_s": 0.7246610753994901,
+      "position_error_median_m": {
+        "src_moving_200": 0.8151228441820185,
+        "tug": 0.4031077602523982
+      }
+    },
+    "sequential_tug_first": {
+      "depth": {
+        "src_moving_200": {
+          "cable_median_db": 15.815116544716266,
+          "cable_p10_db": 13.729520737378824
+        },
+        "tug": {
+          "cable_median_db": 24.082846509584247,
+          "cable_p10_db": 18.805931980096087
+        }
+      },
+      "compute_s_per_s": 0.7165921692001576,
+      "position_error_median_m": {
+        "src_moving_200": 0.8151228441820185,
+        "tug": 0.4031077602523982
+      }
+    },
+    "joint_passes0": {
+      "depth": {
+        "src_moving_200": {
+          "cable_median_db": 19.151596095634453,
+          "cable_p10_db": 16.05285757265995
+        },
+        "tug": {
+          "cable_median_db": 16.5470168581529,
+          "cable_p10_db": 13.185487036205034
+        }
+      },
+      "compute_s_per_s": 0.5866442507998727,
+      "position_error_median_m": {
+        "src_moving_200": 0.8151228441820185,
+        "tug": 0.4031077602523982
+      }
+    },
+    "joint_passes1": {
+      "depth": {
+        "src_moving_200": {
+          "cable_median_db": 23.2473511327551,
+          "cable_p10_db": 20.21395394595514
+        },
+        "tug": {
+          "cable_median_db": 20.990146883465698,
+          "cable_p10_db": 17.715405221720005
+        }
+      },
+      "compute_s_per_s": 1.2814617759002431,
+      "position_error_median_m": {
+        "src_moving_200": 0.8151228441820185,
+        "tug": 0.4031077602523982
+      }
+    },
+    "joint_passes2": {
+      "depth": {
+        "src_moving_200": {
+          "cable_median_db": 25.35472212684934,
+          "cable_p10_db": 21.516420275252557
+        },
+        "tug": {
+          "cable_median_db": 25.27972854461305,
+          "cable_p10_db": 19.42811137051964
+        }
+      },
+      "compute_s_per_s": 1.975175075900188,
+      "position_error_median_m": {
+        "src_moving_200": 0.8151228441820185,
+        "tug": 0.4031077602523982
+      }
+    },
+    "joint_passes3": {
+      "depth": {
+        "src_moving_200": {
+          "cable_median_db": 26.13357312244667,
+          "cable_p10_db": 21.89468174797467
+        },
+        "tug": {
+          "cable_median_db": 26.91931115286132,
+          "cable_p10_db": 19.984664024711307
+        }
+      },
+      "compute_s_per_s": 2.6743160168000033,
+      "position_error_median_m": {
+        "src_moving_200": 0.8151228441820185,
+        "tug": 0.4031077602523982
+      }
+    },
+    "joint_passes4": {
+      "depth": {
+        "src_moving_200": {
+          "cable_median_db": 26.543890088434022,
+          "cable_p10_db": 22.091851460497796
+        },
+        "tug": {
+          "cable_median_db": 27.416887231460272,
+          "cable_p10_db": 20.12010438986397
+        }
+      },
+      "compute_s_per_s": 3.3690561016002905,
+      "position_error_median_m": {
+        "src_moving_200": 0.8151228441820185,
+        "tug": 0.4031077602523982
+      }
+    }
+  },
+  "alone_median_db": {
+    "src_moving_200": 26.49949198551389,
+    "tug": 27.510351709057925
+  },
+  "drop_db": {
+    "sequential_ferry_first": {
+      "src_moving_200": 3.2749710481325955,
+      "tug": 11.296037783282674
+    },
+    "sequential_tug_first": {
+      "src_moving_200": 10.684375440797625,
+      "tug": 3.4275051994736785
+    },
+    "joint_passes0": {
+      "src_moving_200": 7.347895889879439,
+      "tug": 10.963334850905024
+    },
+    "joint_passes1": {
+      "src_moving_200": 3.2521408527587923,
+      "tug": 6.520204825592227
+    },
+    "joint_passes2": {
+      "src_moving_200": 1.144769858664553,
+      "tug": 2.230623164444875
+    },
+    "joint_passes3": {
+      "src_moving_200": 0.3659188630672219,
+      "tug": 0.5910405561966066
+    },
+    "joint_passes4": {
+      "src_moving_200": -0.044398102920130356,
+      "tug": 0.09346447759765297
+    }
+  },
+  "diagnosis_passed": false,
+  "diagnosis_passed_per_order": true,
+  "joint_within_3db": {
+    "joint_passes0": false,
+    "joint_passes1": false,
+    "joint_passes2": true,
+    "joint_passes3": true,
+    "joint_passes4": true
+  },
+  "band_hz": [
+    100.0,
+    760.0
+  ],
+  "simulated_time_s": 10.0,
+  "ships": {
+    "src_moving_200": {
+      "waypoints": [
+        [
+          85.0,
+          253.0
+        ],
+        [
+          125.0,
+          253.0
+        ]
+      ],
+      "speed": 4.0,
+      "level_pa": 1.0
+    },
+    "tug": {
+      "waypoints": [
+        [
+          159.0,
+          174.0
+        ],
+        [
+          159.0,
+          144.0
+        ]
+      ],
+      "speed": 3.0,
+      "level_pa": 0.7
+    }
+  }
+}

@@ -4,14 +4,14 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.5011463630529761,
-    "echo": 0.5017507426506199,
-    "characteristics": 0.0992020374040294,
-    "total": 1.1020991431076255
+    "passive": 0.41919046105540475,
+    "echo": 0.8272141057997942,
+    "characteristics": 0.10335455769891269,
+    "total": 1.3497591245541116
   },
   "latency_s": {
-    "median": 2.38,
-    "max": 3.374
+    "median": 3.103,
+    "max": 4.104
   },
   "objects": {
     "ferry": {
@@ -91,11 +91,11 @@
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 2.952167796725681,
-        "any": 2.952167796725681
+        "echo": 2.870213962171391,
+        "any": 2.870213962171391
       },
       "tracks": [
-        "e6"
+        "e7"
       ]
     },
     "wreck": {
@@ -119,8 +119,8 @@
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 1.2667432407290895,
-        "any": 1.2667432407290895
+        "echo": 1.2755557541658926,
+        "any": 1.2755557541658926
       },
       "tracks": [
         "e1"
@@ -198,14 +198,14 @@
       "kind": "echo"
     },
     {
-      "track": "e6",
-      "fixes": 32,
+      "track": "e7",
+      "fixes": 34,
       "first_t": 7.5,
       "last_t": 17.75,
       "true_object": "uuv1",
       "false_track": false,
       "nearest_object": "uuv1",
-      "median_error_m": 3.0033980457988143,
+      "median_error_m": 2.9277061564881475,
       "first_xy": [
         310.0,
         140.0
@@ -216,7 +216,7 @@
       ],
       "median_xy": [
         304.0,
-        147.0
+        146.0
       ],
       "kind": "echo"
     }
@@ -229,9 +229,9 @@
     "tracks": []
   },
   "ellipse_coverage": {
-    "fixes": 218,
-    "inside": 200,
-    "fraction": 0.9174311926605505
+    "fixes": 220,
+    "inside": 193,
+    "fraction": 0.8772727272727273
   },
   "held_as_echo": {},
   "sidelobe_peaks": 196,
@@ -284,8 +284,8 @@
         },
         "uuv1": {
           "frames": 71,
-          "hit": 0.5633802816901409,
-          "median_error_m": 2.8102402968662874
+          "hit": 0.6056338028169014,
+          "median_error_m": 2.706558586618159
         },
         "wreck": {
           "frames": 71,
@@ -296,10 +296,10 @@
     }
   },
   "run": {
-    "git_commit": "69c2891c6e8e2c851b223aaddecfd0f800bb4ef3",
+    "git_commit": "0b1cef65544d1d9f8e760ac478156845b98bdef2",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/simple.json",
-    "processing_config_sha256": "299dcf7f9021c39b3d54b709423c9fc0c25f0e2d6ed1d1894917a21c29b09656",
+    "processing_config_sha256": "02dabca8d1a539d731d3e359990a45a4ae956b445996e0cd3caf8532089cd8c0",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/simple/seed1/dataset.observation.npz",
     "observation_sha256": "cd4c1f8d54e11fad3cba95e3157ce04f3d2f2ec3b94871ce97227f29e4c6c3c9",
@@ -308,7 +308,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 1,
-    "wall_s": 22.152170786997885,
+    "wall_s": 27.148156586998084,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
