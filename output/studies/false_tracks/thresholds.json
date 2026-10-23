@@ -1,0 +1,301 @@
+{
+ "written": "2026-10-23 01:35",
+ "before_test_recordings": true,
+ "held_out": false,
+ "chosen": {
+  "explain_fraction": 0.42,
+  "echo_test": "ratio",
+  "echo_ratio": 0.15,
+  "drop_confirmed_s": 4.5
+ },
+ "why": {
+  "explain_fraction": "just above the largest predicted map ratio any true ship's fix showed on the 0.5 m and 1 m tuning recordings (0.41, the boat when ships pass close; 0.73 on the 5 m harbor is a second track of the ferry against the ferry's own drifted track), below every sidelobe near miss that started a track (0.44 to 0.49); the false 5 m harbor tracks (0.33 to 0.39) stay out of reach",
+  "echo_test": "coherence over the six fixes the test sees does not separate (debiased: radiators 0.013 to 0.129, the two echoes 0.106 and 0.191); the ratio does on the median over fixes (radiators at most 0.059, the echoes 0.091 and 0.224): AUC 0.86 against 0.81, two echo samples only",
+  "echo_ratio": "0.075 (the gap of the medians) held real ships at confirmation, when only one to three fixes are available (tug 100 to 96 %, uuv2 95 to 88 % on the multistatic tuning recording); 0.15 held the bistatic UUV's radiator track and changed nothing else on the tuning recordings; 0.2 held nothing",
+  "drop_confirmed_s": "spans the gaps of up to 4 s between the fixes of a ship stopped and quieter (the boat of multistatic_b, from its diagnosis); on a synthetic stop it holds the ship in 99 % of the frames after the stop against 51 % at 2 s; more process noise (0.3 m/s^2) made the coasting prediction drift off (49 %) and was not taken; no effect on the tuning recordings",
+  "held_tracks_explain": "a radiator track held as an echo explains its sidelobes like a confirmed one (without it a sidelobe of the held UUV echo confirmed as a false track on the bistatic tuning recording)"
+ },
+ "separation": {
+  "coherence": {
+   "silent_body_vs_radiator": 0.75,
+   "sidelobe_vs_radiator": 0.9375
+  },
+  "ratio": {
+   "silent_body_vs_radiator": 0.5555555555555556,
+   "sidelobe_vs_radiator": 1.0
+  },
+  "ratio_median": {
+   "silent_body_vs_radiator": 0.8611111111111112,
+   "sidelobe_vs_radiator": 0.9861111111111112
+  },
+  "ratio_max": {
+   "silent_body_vs_radiator": 0.6666666666666666,
+   "sidelobe_vs_radiator": 0.8055555555555556
+  },
+  "coherence_debiased": {
+   "silent_body_vs_radiator": 0.8125,
+   "sidelobe_vs_radiator": 0.9375
+  },
+  "width_major_m": {
+   "silent_body_vs_radiator": 0.3522727272727273,
+   "sidelobe_vs_radiator": 0.44176136363636365
+  },
+  "width_minor_m": {
+   "silent_body_vs_radiator": 0.26136363636363635,
+   "sidelobe_vs_radiator": 0.4431818181818182
+  },
+  "n_fixes": {
+   "silent_body_vs_radiator": 0.2159090909090909,
+   "sidelobe_vs_radiator": 0.1903409090909091
+  },
+  "duration_s": {
+   "silent_body_vs_radiator": 0.1590909090909091,
+   "sidelobe_vs_radiator": 0.17329545454545456
+  }
+ },
+ "sample": {
+  "radiator_starts": {
+   "radiator": 11,
+   "silent_body": 4,
+   "sidelobe_near_miss": 5,
+   "direct_path": 1,
+   "elsewhere": 27
+  },
+  "confirmed": {
+   "radiator": 9,
+   "silent_body": 1,
+   "sidelobe_near_miss": 0,
+   "direct_path": 0,
+   "elsewhere": 5
+  }
+ },
+ "tuning_runs": {
+  "config": [
+   "tracker.explain_fraction=0.42",
+   "tracker.echo_test=ratio",
+   "tracker.echo_ratio=0.15",
+   "tracker.drop_confirmed_s=4.5"
+  ],
+  "results": {
+   "simple": {
+    "pd": {
+     "ferry": [
+      1.0,
+      1.0
+     ],
+     "boat": [
+      1.0,
+      1.0
+     ],
+     "uuv1": [
+      0.578125,
+      0.578125
+     ],
+     "wreck": [
+      1.0,
+      1.0
+     ]
+    },
+    "false": [
+     1,
+     1
+    ],
+    "false_list": [
+     [
+      "e2",
+      [
+       184.0,
+       266.0
+      ]
+     ]
+    ],
+    "held": [],
+    "compute": 1.3800324992989772
+   },
+   "bistatic": {
+    "pd": {
+     "ferry": [
+      1.0,
+      1.0
+     ],
+     "uuv1": [
+      0.703125,
+      0.890625
+     ]
+    },
+    "false": [
+     2,
+     2
+    ],
+    "false_list": [
+     [
+      "r2",
+      [
+       130.0,
+       216.0
+      ]
+     ],
+     [
+      "e33",
+      [
+       118.0,
+       42.0
+      ]
+     ]
+    ],
+    "held": [
+     [
+      "r4",
+      {
+       "illuminator": "r1",
+       "test": "ratio",
+       "ratio": 0.24272467191312794,
+       "t": 2.25,
+       "nearest_object": null
+      }
+     ]
+    ],
+    "compute": 1.200224524148871
+   },
+   "multistatic": {
+    "pd": {
+     "ferry": [
+      1.0,
+      1.0
+     ],
+     "tug": [
+      1.0,
+      1.0
+     ],
+     "boat": [
+      1.0,
+      1.0
+     ],
+     "uuv1": [
+      0.84375,
+      0.84375
+     ],
+     "uuv2": [
+      0.953125,
+      0.953125
+     ],
+     "diver": [
+      0.0,
+      0.0
+     ],
+     "piling1": [
+      0.0,
+      0.0
+     ],
+     "piling2": [
+      0.0,
+      0.0
+     ],
+     "piling3": [
+      0.0,
+      0.0
+     ],
+     "piling4": [
+      0.0,
+      0.0
+     ],
+     "piling5": [
+      0.0,
+      0.0
+     ],
+     "piling6": [
+      0.0,
+      0.0
+     ],
+     "moored": [
+      0.828125,
+      0.828125
+     ]
+    },
+    "false": [
+     2,
+     2
+    ],
+    "false_list": [
+     [
+      "r4",
+      [
+       46.0,
+       126.0
+      ]
+     ],
+     [
+      "e17",
+      [
+       332.0,
+       206.0
+      ]
+     ]
+    ],
+    "held": [],
+    "compute": 3.168075779649371
+   },
+   "harbor": {
+    "pd": {
+     "ferry": [
+      0.8333333333333334,
+      0.8333333333333334
+     ],
+     "tug": [
+      0.037037037037037035,
+      0.037037037037037035
+     ],
+     "moored": [
+      0.0,
+      0.0
+     ],
+     "uuv1": [
+      0.0,
+      0.0
+     ],
+     "uuv2": [
+      0.0,
+      0.0
+     ],
+     "diver": [
+      0.0,
+      0.0
+     ],
+     "static_scatter": [
+      null,
+      null
+     ]
+    },
+    "false": [
+     3,
+     3
+    ],
+    "false_list": [
+     [
+      "r12",
+      [
+       1440.0,
+       695.0
+      ]
+     ],
+     [
+      "r13",
+      [
+       1385.0,
+       755.0
+      ]
+     ],
+     [
+      "r14",
+      [
+       1435.0,
+       720.0
+      ]
+     ]
+    ],
+    "held": [],
+    "compute": 0.546603774683111
+   }
+  }
+ }
+}

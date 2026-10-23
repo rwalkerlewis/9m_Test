@@ -231,7 +231,7 @@ class HarborPicture:
         self.n_in += samples.shape[1]
         t0 = time.perf_counter()
         t_now = self.n_in / self.fs
-        explain = {k: tr.predict(t_now) for k, tr in self.tracker.confirmed().items()}
+        explain = {k: tr.predict(t_now) for k, tr in self.tracker.tracks.items() if tr.confirmed or tr.held}
         new = self.passive.push(samples, explain=explain)
         self.seconds["passive"] += time.perf_counter() - t0
         for f in new:
@@ -271,33 +271,51 @@ class HarborPicture:
 
     def _hold_echo(self, tr, t: float) -> bool:
         """Whether the radiator track *tr*, about to confirm at *t*, is an echo of an illuminator and must not
-        confirm: its least squares source spectrum over its frames is coherent (``echo_coherence``, mean over the
-        band of the coherence across frames) with an illuminator's, and an echo map peak of that illuminator lies
-        within its gate.  Held (not yet confirmed) while the echo chain has not mapped its frames."""
+        confirm (``TrackerConfig.echo_test``): its least squares source spectrum over its frames is coherent
+        (``echo_coherence``) with an illuminator's, or that illuminator's predicted map explains at least
+        ``echo_ratio`` of the data map at its fixes; and an echo map peak of that illuminator lies within its gate.  Held (not yet confirmed) while the echo chain has not mapped its frames."""
         if tr.id in self.echo_held:
             return True
         if self.echo is None:
             return False
         cfg = self.tracker.cfg
-        frames = {round(ft, 6): (X, w) for ft, X, w in self.spec_buf}
-        fx = [f for f in tr.fixes if round(f[0], 6) in frames][-8:]
-        if len(fx) < 3:
-            return False
-        freqs = self.passive.freqs
         best = None
-        for k, il in self.tracker.illuminators(self._last_frame).items():
-            if k == tr.id:
-                continue
-            sc, si = [], []
-            for ft, xy, _ in fx:
-                X, w = frames[round(ft, 6)]
-                sc.append(source_spectrum(X, w, self.layout, xy, freqs, self.c))
-                si.append(source_spectrum(X, w, self.layout, il.predict(ft), freqs, self.c))
-            coh = spectral_coherence(np.array(sc), np.array(si))
-            if coh >= cfg.echo_coherence and (best is None or coh > best[1]):
-                best = (k, coh)
-        if best is None:
-            return False
+        if cfg.echo_test == "ratio":
+            # The illuminator's predicted map at the track's fixes over the data map there (median over the fixes, the
+            # frame being confirmed in included: against an illuminator confirming in the same frame it is the only one).
+            frame = self.tracker.frame
+            fx = tr.fixes[-8:]
+            for k, il in self.tracker.illuminators(frame).items():
+                if k == tr.id:
+                    continue
+                qs = list(tr.ratios.get(k, []))[-8:]
+                if frame is not None and tr.fixes[-1][0] == frame.t and (not qs or len(qs) < len(fx)):
+                    q = self.tracker.ratio(frame, il, tr.fixes[-1][1], tr.fixes[-1][2], frame.t)
+                    if q is not None:
+                        qs.append(q)
+                if qs and float(np.median(qs)) >= cfg.echo_ratio and (best is None or np.median(qs) > best[1]):
+                    best = (k, float(np.median(qs)))
+            if best is None:
+                return False
+        else:
+            frames = {round(ft, 6): (X, w) for ft, X, w in self.spec_buf}
+            fx = [f for f in tr.fixes if round(f[0], 6) in frames][-8:]
+            if len(fx) < 3:
+                return False
+            freqs = self.passive.freqs
+            for k, il in self.tracker.illuminators(self._last_frame).items():
+                if k == tr.id:
+                    continue
+                sc, si = [], []
+                for ft, xy, _ in fx:
+                    X, w = frames[round(ft, 6)]
+                    sc.append(source_spectrum(X, w, self.layout, xy, freqs, self.c))
+                    si.append(source_spectrum(X, w, self.layout, il.predict(ft), freqs, self.c))
+                coh = spectral_coherence(np.array(sc), np.array(si))
+                if coh >= cfg.echo_coherence and (best is None or coh > best[1]):
+                    best = (k, coh)
+            if best is None:
+                return False
         k, coh = best
         t0 = fx[0][0]
         mapped = [e for e in self.e_frames if e.t >= t0 and k in (e.ships or {})]
@@ -307,7 +325,7 @@ class HarborPicture:
         floor = cfg.meas_floor ** 2 * np.eye(2)
         on_peak = any(tr.innovation(e.t, p, floor) <= cfg.gate_chi2 for e in mapped for p in np.atleast_2d(e.xy))
         if on_peak:
-            self.echo_held[tr.id] = {"illuminator": k, "coherence": coh, "t": t}
+            self.echo_held[tr.id] = {"illuminator": k, "test": cfg.echo_test, ("ratio" if cfg.echo_test == "ratio" else "coherence"): coh, "t": t}
         return on_peak
 
 
