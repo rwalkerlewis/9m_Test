@@ -130,5 +130,24 @@
   "scoring": {
     "hit_radius_m": 5.0,
     "assoc_radius_m": 5.0
+  },
+  "budget": {
+    "note": "per frame budget of every stage on this tiny scenario on the CPU: twice the largest of three runs on the development machine (Xeon in the dev container), in milliseconds, for a machine whose reference workload (water.profile.reference_ms) takes reference_ms; tests/harbor/test_compute_budget.py scales it by the machine's own reference time",
+    "reference_ms": 22.0,
+    "ms_per_frame": {
+      "passive: spectra and whitening": 12.97,
+      "passive: interference projector": 0.03,
+      "passive: map": 1725.41,
+      "passive tracker: predicted maps": 15.05,
+      "passive tracker: gate and filters": 8.04,
+      "characteristics: radiators": 4.47,
+      "echo: buffer and weights": 0.45,
+      "echo: map": 1547.02,
+      "echo tracker": 6.33,
+      "characteristics: echoes": 7.98,
+      "picture records and AIS labels": 1.0,
+      "echo: reference estimation": 60.86,
+      "echo: ECA": 37.36
+    }
   }
 }

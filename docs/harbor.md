@@ -20,7 +20,7 @@ tracked in <!-- reproduce:range:recordings/simple_seed*/objects/wreck/pd/echo|pc
 pilings in at most <!-- reproduce:max:recordings/multistatic*/objects/piling*/pd/echo|pct -->0 %<!-- /reproduce --> of the frames of any multistatic recording. The criteria: the ships on `multistatic_b` (tug <!-- reproduce:criteria[0]/values/tug|frac2 -->1.00<!-- /reproduce -->, boat
 <!-- reproduce:criteria[0]/values/boat|f3 -->0.699<!-- /reproduce --> against 0.8), false tracks (<!-- reproduce:range:criteria[1]/values/*|f1 -->0.0 to 9.0<!-- /reproduce --> per minute on the test recordings against
 2), the wreck (<!-- reproduce:range:criteria[2]/values/*|frac2 -->1.00<!-- /reproduce --> against 0.9), the size order (not testable: no frame had the hull, a UUV and a piling
-all measured). The chain takes <!-- reproduce:range:recordings/[bm]*/compute_per_second_of_data/total|f2 -->1.20 to 3.15<!-- /reproduce --> s of compute per second of data on the 0.5 m recordings
+all measured). The chain takes <!-- reproduce:range:recordings/[bm]*/compute_per_second_of_data/total|f2 -->1.16 to 2.87<!-- /reproduce --> s of compute per second of data on the 0.5 m recordings
 on a Quadro RTX 4000 (real time is 1 s) (for the compute before stage 2 see the
 [history](harbor_history.md#findings-before-stage-2)). Numbers, with tuning beside test recordings, in
 [Numbers on recordings the parameters never saw](#numbers-on-recordings-the-parameters-never-saw).
@@ -109,15 +109,15 @@ Pd: fraction of frames, from the first frame the object could have been confirme
 <!-- reproduce-table:realtime -->
 | Recording | Split | Compute per s of data | Latency (median) | Pd per object | False tracks (per minute) |
 |---|---|---|---|---|---|
-| simple | tuning | 1.39 | 3.1 s | ferry 100 %; boat 100 %; uuv1 58 %; wreck 100 % | 1 (3.0) |
-| simple | test | 1.39 / 1.38 / 1.37 | 3.2 s / 3.2 s / 3.1 s | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 66 % / 64 % / 58 %; wreck 100 % / 100 % / 100 % | 0 (0.0) / 0 (0.0) / 1 (3.0) |
-| bistatic | tuning | 1.20 | 2.5 s | ferry 100 %; uuv1 89 % | 2 (6.0) |
-| bistatic | test | 1.28 / 1.63 / 1.43 | 2.7 s / 3.4 s / 2.7 s | ferry 100 % / 100 % / 100 %; uuv1 55 % / 6 % / 53 % | 1 (3.0) / 2 (6.0) / 2 (6.0) |
-| multistatic | tuning | 3.15 | 6.3 s | ferry 100 %; tug 100 %; boat 100 %; uuv1 84 %; uuv2 95 %; moored 83 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 2 (6.0) |
-| multistatic | test | 3.12 / 3.11 / 3.15 | 6.2 s / 6.3 s / 6.3 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 89 % / 80 % / 80 %; uuv2 94 % / 94 % / 91 %; moored 91 % / 83 % / 86 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 3 (9.0) / 2 (6.0) / 3 (9.0) |
-| harbor | tuning | 0.55 | 1.1 s | ferry 83 %; tug 4 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | 3 (1.5) |
-| harbor | test | 0.55 / 0.54 / 0.54 | 1.1 s / 1.1 s / 1.1 s | ferry 65 % / 83 % / 63 %; tug 6 % / 7 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | 4 (2.0) / 3 (1.5) / 3 (1.5) |
-| multistatic_b | test | 3.15 | 6.1 s | ferry 99 %; tug 100 %; boat 70 %; uuv1 59 %; uuv2 96 %; diver 81 %; not tracked: piling1, piling2, piling3, piling4, piling5, piling6, moored | 5 (5.0) |
+| simple | tuning | 1.25 | 2.9 s | ferry 100 %; boat 100 %; uuv1 58 %; wreck 100 % | 1 (3.0) |
+| simple | test | 1.22 / 1.21 / 1.20 | 2.8 s / 2.8 s / 2.8 s | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 66 % / 64 % / 58 %; wreck 100 % / 100 % / 100 % | 0 (0.0) / 0 (0.0) / 1 (3.0) |
+| bistatic | tuning | 1.16 | 2.4 s | ferry 100 %; uuv1 89 % | 2 (6.0) |
+| bistatic | test | 1.20 / 1.51 / 1.37 | 2.6 s / 3.1 s / 2.6 s | ferry 100 % / 100 % / 100 %; uuv1 55 % / 6 % / 53 % | 1 (3.0) / 2 (6.0) / 2 (6.0) |
+| multistatic | tuning | 2.87 | 5.6 s | ferry 100 %; tug 100 %; boat 100 %; uuv1 84 %; uuv2 95 %; moored 83 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 2 (6.0) |
+| multistatic | test | 2.83 / 2.81 / 2.85 | 5.6 s / 5.6 s / 5.7 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 89 % / 80 % / 80 %; uuv2 94 % / 94 % / 91 %; moored 91 % / 83 % / 86 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 3 (9.0) / 2 (6.0) / 3 (9.0) |
+| harbor | tuning | 0.54 | 1.1 s | ferry 83 %; tug 4 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | 3 (1.5) |
+| harbor | test | 0.54 / 0.54 / 0.54 | 1.1 s / 1.1 s / 1.1 s | ferry 65 % / 83 % / 63 %; tug 6 % / 7 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | 4 (2.0) / 3 (1.5) / 3 (1.5) |
+| multistatic_b | test | 2.85 | 5.4 s | ferry 99 %; tug 100 %; boat 70 %; uuv1 59 %; uuv2 96 %; diver 81 %; not tracked: piling1, piling2, piling3, piling4, piling5, piling6, moored | 5 (5.0) |
 <!-- /reproduce-table -->
 
 Per recording, `output/reproduce/runs/<recording>/`. What they say:
@@ -162,6 +162,80 @@ Fixed before the test recordings were built (`scripts/reproduce.py`, `CRITERIA`)
 
 The size criterion could not be evaluated: no echo track of the hull, a UUV and a piling was confirmed together on
 either multistatic recording, so there was no frame with all three measured.
+
+## Compute
+
+**Where the time goes.** Every stage of the harbor picture is timed per frame with `water.profile.PROFILE` (each
+stage between waits for the GPU, so the stages add up to a little more than an unprofiled run;
+`examples/harbor/05_detection/harbor_compute_profile.py`, output in `output/studies/compute/`). On the multistatic tuning
+recording, before this change, the chain took <!-- reproduce:@studies/compute/profile_before.json:multistatic/compute_per_second_of_data|f2 -->3.12<!-- /reproduce --> s of compute per
+second of data with a median latency of <!-- reproduce:@studies/compute/profile_before.json:multistatic/latency_median_s|f1 -->6.3<!-- /reproduce --> s; the three largest stages were the
+reference estimation of the direct path removal (<!-- reproduce:@studies/compute/profile_before.json:multistatic/stages/echo: reference estimation/per_second_of_data|f2 -->0.91<!-- /reproduce --> s per second of
+data), its joint least squares solve (<!-- reproduce:@studies/compute/profile_before.json:multistatic/stages/echo: ECA, joint solve/per_second_of_data|f2 -->0.59<!-- /reproduce -->) and the ECA fits of its
+passes (<!-- reproduce:@studies/compute/profile_before.json:multistatic/stages/echo: ECA/per_second_of_data|f2 -->0.42<!-- /reproduce -->), all three the removal of every illuminator in one solve; then the
+passive map (<!-- reproduce:@studies/compute/profile_before.json:multistatic/stages/passive: map/per_second_of_data|f2 -->0.26<!-- /reproduce -->), the echo characteristics
+(<!-- reproduce:@studies/compute/profile_before.json:multistatic/stages/characteristics: echoes/per_second_of_data|f2 -->0.24<!-- /reproduce -->) and the echo map (<!-- reproduce:@studies/compute/profile_before.json:multistatic/stages/echo: map/per_second_of_data|f2 -->0.21<!-- /reproduce -->). The GPU
+memory high water mark is <!-- reproduce:@studies/compute/profile_before.json:multistatic/gpu_memory_high_mb|f0 -->3273<!-- /reproduce --> MB; copies from host to device take
+<!-- reproduce:@studies/compute/profile_before.json:multistatic/transfer/h2d_per_second_of_data|f3 -->0.079<!-- /reproduce --> s per second of data (they are not the limit). On the bistatic
+tuning recording (<!-- reproduce:@studies/compute/profile_before.json:bistatic/compute_per_second_of_data|f2 -->1.17<!-- /reproduce --> s per second of data) the passive map and the echo map
+lead.
+
+![profile, multistatic](../output/studies/compute/profile_before_multistatic.png)
+
+Look at the three bars of the direct path removal at the top: half of the multistatic chain's time.
+
+![profile, bistatic](../output/studies/compute/profile_before_bistatic.png)
+
+Look at the two maps leading on a recording with one illuminator.
+
+**Reductions, each measured alone** (`reductions.json`, rules written before measuring in `criteria.md`): kept, the
+noise spectra of the reference estimate made on the GPU and the beam taken from the aligned channels the joint
+estimate needs anyway (the same sum, round off only; Pd and false tracks of the tuning recordings unchanged), from
+<!-- reproduce:@studies/compute/reductions.json:reductions[0]/reference_estimation_before|f2 -->0.91<!-- /reproduce --> to <!-- reproduce:@studies/compute/reductions.json:reductions[0]/reference_estimation_after|f2 -->0.64<!-- /reproduce --> s per
+second of data for the reference estimation. Rejected: the characteristics measured every fourth frame and held (saves
+<!-- reproduce:@studies/compute/reductions.json:reductions[1]/saved|f2 -->0.45<!-- /reproduce --> s per second of data, but the echo size ratio moves by several decibels on the tuning
+recordings, against 1 dB allowed), a larger ECA chunk (saves <!-- reproduce:@studies/compute/reductions.json:reductions[2]/saved|f2 -->0.14<!-- /reproduce -->, more memory), the mixed
+precision ECA (<!-- reproduce:@studies/compute/reductions.json:reductions[3]/compute_per_second_of_data|f2 -->11.20<!-- /reproduce --> s per second of data, slower on the Quadro as the
+float32 study found). Not applicable: sharing the STFT of the two chains (one transforms the raw traces, the other the
+cleaned ones), reusing the Gram of one illuminator for another (different waveforms), skipping the predicted maps when
+a track has not moved (they are between the block's peaks and the tracks, and the peaks change every block).
+
+![profile after, multistatic](../output/studies/compute/profile_after_multistatic.png)
+
+Look at the reference estimation bar, shorter by the noise spectra and the second resampling.
+
+![profile after, bistatic](../output/studies/compute/profile_after_bistatic.png)
+
+Look at how little moved on the bistatic recording: its time is in the two maps.
+
+**Criteria** (fixed before the change, `criteria.md`; `scripts/reproduce.py --update` after it):
+
+* Compute per second of data at most 1.0 on every 0.5 m and 1 m recording: **fail**,
+  <!-- reproduce:range:recordings/[bms][iu]*/compute_per_second_of_data/total|f2 -->1.16 to 2.87<!-- /reproduce --> (before
+  <!-- reproduce:range:@studies/compute/summary_before.json:recordings/[bms][iu]*/compute_per_second_of_data/total|f2 -->1.20 to 3.15<!-- /reproduce -->): the simple harbor
+  <!-- reproduce:range:recordings/simple*/compute_per_second_of_data/total|f2 -->1.20 to 1.25<!-- /reproduce -->, the bistatic recordings
+  <!-- reproduce:range:recordings/bistatic*/compute_per_second_of_data/total|f2 -->1.16 to 1.51<!-- /reproduce -->, the multistatic ones
+  <!-- reproduce:range:recordings/multistatic*/compute_per_second_of_data/total|f2 -->2.81 to 2.87<!-- /reproduce -->.
+* Median latency at most 2.0 s: **fail**, <!-- reproduce:range:recordings/[bms][iu]*/latency_s/median|f1 -->2.4 to 5.7<!-- /reproduce --> s.
+* `scripts/reproduce.py --check` with no number outside its tolerance: **pass** (Pd, median errors and false track
+  counts unchanged within the tolerance; compute and latency are informational to the check).
+* On the 5 m harbor compute does not rise: **pass**, <!-- reproduce:range:recordings/harbor*/compute_per_second_of_data/total|f2 -->0.54<!-- /reproduce -->
+  (before <!-- reproduce:range:@studies/compute/summary_before.json:recordings/harbor*/compute_per_second_of_data/total|f2 -->0.54 to 0.55<!-- /reproduce -->).
+
+**What remains and what it would take.** Per frame on the multistatic tuning recording after the change: the direct
+path removal (<!-- reproduce:@studies/compute/profile_after.json:multistatic/stages/echo: reference estimation/per_frame_ms|f0 -->177<!-- /reproduce --> ms
+for the references, <!-- reproduce:@studies/compute/profile_after.json:multistatic/stages/echo: ECA, joint solve/per_frame_ms|f0 -->164<!-- /reproduce --> ms
+for the joint solve, <!-- reproduce:@studies/compute/profile_after.json:multistatic/stages/echo: ECA/per_frame_ms|f0 -->118<!-- /reproduce --> ms for the
+fits of its passes), the passive map (<!-- reproduce:@studies/compute/profile_after.json:multistatic/stages/passive: map/per_frame_ms|f0 -->72<!-- /reproduce --> ms),
+the echo characteristics (<!-- reproduce:@studies/compute/profile_after.json:multistatic/stages/characteristics: echoes/per_frame_ms|f0 -->68<!-- /reproduce --> ms)
+and the echo map (<!-- reproduce:@studies/compute/profile_after.json:multistatic/stages/echo: map/per_frame_ms|f0 -->60<!-- /reproduce --> ms), against a
+budget of 250 ms per frame for real time. The direct path removal alone is over that budget; bringing it down needs an
+algorithm change, not an implementation change: fewer passes of the joint removal (each is a full removal of every
+ship), the noise power of each reference from the previous pass's residual instead of its own first ECA (the larger part
+of the reference estimation), or a joint solve that forms the cross terms of the normal equations from prefix sums as
+the single ECA does. On the bistatic recording, with one illuminator, the two maps and the interference projector are
+most of the time; batching the scan over frequency bins instead of one bin at a time is an implementation change that
+was not attempted here.
 
 ## Direct path removal
 

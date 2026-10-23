@@ -49,6 +49,7 @@ from acoustic_sim.water.characteristics import (
     tonal_lines,
 )
 from acoustic_sim.water.detection import ProcessingConfig
+from acoustic_sim.water.profile import PROFILE
 from acoustic_sim.water.propagation import FreeFieldPropagator
 from acoustic_sim.water.streaming import (
     EchoStreamConfig,
@@ -239,13 +240,15 @@ class HarborPicture:
             if f.spectrum is not None:
                 self.spec_buf.append((f.t, f.spectrum, f.weights))
                 self.spec_buf = self.spec_buf[-32:]
-            self.tracker.update(f)
+            with PROFILE.stage("passive tracker: gate and filters"):
+                self.tracker.update(f)
             f.patterns = None
             self._last_frame = f
             self.seconds["passive"] += time.perf_counter() - t1
             t1 = time.perf_counter()
-            self._measure_radiators(f)                         # the tracks as they stand after this frame
-            self.snaps.append((f.t, self._radiator_snapshot(f)))
+            with PROFILE.stage("characteristics: radiators"):
+                self._measure_radiators(f)                     # the tracks as they stand after this frame
+                self.snaps.append((f.t, self._radiator_snapshot(f)))
             self.seconds["characteristics"] += time.perf_counter() - t1
             if not self.keep_frames:
                 f.spectrum = f.weights = None
@@ -420,9 +423,11 @@ class HarborPicture:
         rad = [np.asarray(o["xy"]) for o in snap.values() if o["status"] in ("confirmed", "static")]
         keep = [i for i, p in enumerate(e.xy) if all(np.hypot(*(p - q)) >= self.bc.exclusion_radius for q in rad)] if e.ships else []
         fe = FrameResult(e.t, e.xy[keep].reshape(-1, 2), e.score[keep], e.ships, e.compute_s, e.latency_s, B=e.B)
-        self.echo_tracker.update(fe)
+        with PROFILE.stage("echo tracker"):
+            self.echo_tracker.update(fe)
         self.e_used.append(fe)
-        self._measure_echoes(e)
+        with PROFILE.stage("characteristics: echoes"):
+            self._measure_echoes(e)
         echo_snap = {}
         tracks = dict(self.echo_tracker.tracks)
         tracks.update(self.echo_tracker.lost)
@@ -468,6 +473,7 @@ class HarborPicture:
     # ------------------------------------------------------------------ records
 
     def _emit(self, t: float, latency: float, rad: dict, echo: dict | None, passive: bool, echo_out: bool) -> None:
+        PROFILE.begin("picture records and AIS labels")
         cc = self.cc
         objects = []
         used_e: set[str] = set()
@@ -496,6 +502,7 @@ class HarborPicture:
         rec = {"t": round(t, 4), "latency_s": round(latency, 3), "chains": {"passive": passive, "echo": echo_out},
                "objects": objects}
         self.records.append(rec)
+        PROFILE.end("picture records and AIS labels")
         if self.on_record is not None:
             self.on_record(rec)
 
@@ -635,8 +642,9 @@ def run(obs: Observation, cfg: ChainConfig, use_cuda: bool = True, chunk_s: floa
 
     def emit(rec: dict) -> None:
         if fh is not None:
-            fh.write(json.dumps(rec) + "\n")
-            fh.flush()
+            with PROFILE.stage("output: writing"):
+                fh.write(json.dumps(rec) + "\n")
+                fh.flush()
         if on_record is not None:
             on_record(rec)
 

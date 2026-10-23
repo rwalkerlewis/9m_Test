@@ -72,6 +72,10 @@ output/studies/**/tracks.csv
 !output/studies/false_tracks/boat/boat_peaks_before.png
 !output/studies/false_tracks/boat/boat_frames_before.png
 !output/studies/false_tracks/boat/boat_frames_after.png
+!output/studies/compute/profile_before_multistatic.png
+!output/studies/compute/profile_before_bistatic.png
+!output/studies/compute/profile_after_multistatic.png
+!output/studies/compute/profile_after_bistatic.png
 *.jpg
 *.jpeg
 *.mp4

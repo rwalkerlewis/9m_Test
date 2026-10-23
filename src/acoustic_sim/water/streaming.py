@@ -44,6 +44,7 @@ from acoustic_sim.water.detection import (
     remove_common_mode,
 )
 from acoustic_sim.water.device import get_device
+from acoustic_sim.water.profile import PROFILE
 from acoustic_sim.water.propagation import FreeFieldPropagator, green2d, green2d_bins, resolve
 from acoustic_sim.water.sensors import SensorLayout
 from acoustic_sim.water.suppression import SuppressionConfig, predict_ships, project_out_ships, refine_ships
@@ -154,6 +155,7 @@ class StreamingPassive:
 
     def _block(self, reports: AISReports) -> list[FrameResult]:
         t0 = time.perf_counter()
+        PROFILE.begin("passive: spectra and whitening")
         xp, dev, pc, sc, stc = self.dev.xp, self.dev, self.pc, self.sc, self.stc
         b = stc.block_frames
         starts = self.next_start + self.hop * np.arange(b)
@@ -174,6 +176,7 @@ class StreamingPassive:
         if times[-1] < stc.warmup_s:
             self.Xc += [self.X[-b + k] for k in range(b)]
             self.Xc = self.Xc[-self.H:]
+            PROFILE.end("passive: spectra and whitening")
             return []
 
         wd = xp.asarray(w, dtype=dev.fdtype)
@@ -209,6 +212,8 @@ class StreamingPassive:
         Zc = (Xch / sigma2[:, :, None]).astype(dev.cdtype)                          # (N, F, H)
         wc = Whitened(self.freqs, np.array(self.times), Zc, sigma2, w, self.scan_bins, dev)
 
+        PROFILE.end("passive: spectra and whitening")
+        PROFILE.begin("passive: interference projector")
         # Scan the block's frames.
         bins = [int(i) for i in self.scan_bins]
         if not self.U:
@@ -223,6 +228,8 @@ class StreamingPassive:
                     self.U[i] = new[i]
                 else:
                     self.U.pop(i, None)                                               # no interference above the floor now
+        PROFILE.end("passive: interference projector")
+        PROFILE.begin("passive: map")
         B = xp.zeros((len(self.grid), b), dtype=np.float32)
         pat_ids = list(getattr(self, "explain", {}) or {})
         pat_cells = [int(np.argmin(np.hypot(*(self.grid - np.asarray(self.explain[k], float)).T))) for k in pat_ids]
@@ -262,8 +269,11 @@ class StreamingPassive:
                     B[np.hypot(*(self.grid - est.refined[k, v]).T) < sc.exclusion_radius, k] = 0.0
                     ships[k][vid] = est.refined[k, v]
         peak_cells = [_nms(B[:, k], self.grid, stc.min_separation, stc.max_peaks, 0.0) for k in range(b)]
+        PROFILE.end("passive: map")
+        PROFILE.begin("passive tracker: predicted maps")
         pair_cells = np.unique(np.concatenate([np.asarray(g, int) for g in peak_cells] + [np.asarray(pat_cells, int)]))
         pair_R = self._pair_response(pair_cells, wc, wd, sigma2, bins) if len(pair_cells) else np.zeros((0, 0))
+        PROFILE.end("passive tracker: predicted maps")
         self.frames_done += b
         compute = time.perf_counter() - t0
         spectra = dev.asnumpy(spec).astype(np.complex64) if self.keep_spectra else None
@@ -1038,6 +1048,7 @@ class StreamingEcho:
         from acoustic_sim.water.bistatic import remove_direct_paths
 
         t0 = time.perf_counter()
+        PROFILE.begin("echo: buffer and weights")
         bc, stc = self.bc, self.stc
         b0, b1 = self.next_block, self.next_block + stc.step_blocks
         self.next_block = b1
@@ -1052,6 +1063,7 @@ class StreamingEcho:
         if self.source is not None:                         # one illuminator: it first, the others only removed
             live = ([self.source] if self.source in live else []) + [r for r in live if r != self.source] if self.remove_others else \
                 [r for r in live if r == self.source]
+        PROFILE.end("echo: buffer and weights")
         if not live or (self.source is not None and live[0] != self.source):
             for b in range(b0, b1):
                 self.clean[b] = self._raw(b * self.nb, (b + 1) * self.nb)
@@ -1101,6 +1113,7 @@ class StreamingEcho:
         reference covers the frame (each in units of the noise power), summed, with the cells near every
         radiator excluded."""
         xp, dev, bc, stc = self.dev.xp, self.dev, self.bc, self.stc
+        PROFILE.begin("echo: map")
         done = self.next_block * self.nb
         k1 = (done - self.nper) // self.hop
         ks = [k for k in range(self.next_frame, k1 + 1)]
@@ -1110,6 +1123,7 @@ class StreamingEcho:
             self.clean.pop(b)
             self.refd.pop(b)
         if not ks:
+            PROFILE.end("echo: map")
             return []
         times = (np.array(ks) * self.hop + self.nper / 2.0) / self.fs
         blocks = [list(range((k * self.hop) // self.nb, (k * self.hop + self.nper - 1) // self.nb + 1)) for k in ks]
@@ -1159,6 +1173,7 @@ class StreamingEcho:
                     if self._live(n, times[j]):
                         p = self._smoothed(times[j:j + 1], n)[0]
                         B[np.hypot(*(self.grid - p).T) < bc.exclusion_radius, j] = 0.0
+        PROFILE.end("echo: map")
         compute = time.perf_counter() - t0
         q_of = {j: q for q, j in enumerate(live)}
         out = []

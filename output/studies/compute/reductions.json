@@ -1,0 +1,56 @@
+{
+ "recording": "multistatic (tuning)",
+ "rules": "output/studies/compute/criteria.md",
+ "before": {
+  "compute_per_second_of_data": 3.119209524746111,
+  "latency_median_s": 6.273
+ },
+ "reductions": [
+  {
+   "name": "noise spectra on the device and the beam from the aligned channels",
+   "kept": true,
+   "compute_per_second_of_data": 3.0120943658977923,
+   "saved": 0.10711515884831879,
+   "reference_estimation_before": 0.9134949631501513,
+   "reference_estimation_after": 0.6400488847484667,
+   "numbers": "Pd and false tracks of the four tuning recordings unchanged (scratch runs), round off only"
+  },
+  {
+   "name": "characteristics measured every fourth frame and held",
+   "kept": false,
+   "compute_per_second_of_data": 2.5647456964492448,
+   "saved": 0.44734866944854756,
+   "numbers": "Pd unchanged, but the echo size ratio moved by up to 4.4 dB and the echo strength by 3.5 dB on the tuning recordings, against 1 dB allowed: reverted"
+  },
+  {
+   "name": "ECA chunk of 400 channels (from 200)",
+   "kept": false,
+   "compute_per_second_of_data": 2.868183594754373,
+   "saved": 0.14391077114341932,
+   "gpu_memory_high_mb": 4618.8251953125,
+   "numbers": "not run: no time saved"
+  },
+  {
+   "name": "mixed precision ECA",
+   "kept": false,
+   "compute_per_second_of_data": 11.195583819398598,
+   "saved": -8.183489453500805,
+   "numbers": "not run: 3.6 times slower on the Quadro"
+  }
+ ],
+ "not_applicable": {
+  "share the STFT between the passive and echo chains": "the passive chain transforms the raw traces, the echo chain the traces after the direct path removal: different inputs",
+  "reuse the reference estimate's Gram across illuminators": "each illuminator's reference is a different waveform, so each ECA has its own normal equations; the joint solve already forms one per channel and block for all of them",
+  "predicted sidelobe maps only when a track has moved": "the responses are between the block's peaks and the tracks (pair_R), and the peaks change every block"
+ },
+ "after": {
+  "multistatic": {
+   "compute_per_second_of_data": 2.850304203651831,
+   "latency_median_s": 5.649
+  },
+  "bistatic": {
+   "compute_per_second_of_data": 1.1294296780506556,
+   "latency_median_s": 2.355
+  }
+ }
+}
