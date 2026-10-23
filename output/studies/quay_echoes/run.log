@@ -1,0 +1,40 @@
+2026-10-23 17:30:58 measuring the false echo tracks of every recording against the quay images, the land and the static bodies
+2026-10-23 17:31:00 simple (old): 1 false echo tracks: e2 elsewhere
+2026-10-23 17:31:00 simple (harbor_v2): 2 false echo tracks: e3 elsewhere, e11 elsewhere
+2026-10-23 17:31:02 bistatic (old): 1 false echo tracks: e36 elsewhere
+2026-10-23 17:31:02 bistatic (harbor_v2): 0 false echo tracks: 
+2026-10-23 17:31:05 multistatic (old): 1 false echo tracks: e17 elsewhere
+2026-10-23 17:31:06 multistatic (harbor_v2): 2 false echo tracks: e27 elsewhere, e13 body
+2026-10-23 17:31:06 harbor (old): 0 false echo tracks: 
+2026-10-23 17:31:06 harbor (harbor_v2): 0 false echo tracks: 
+2026-10-23 17:31:06 simple_seed1 (old): 0 false echo tracks: 
+2026-10-23 17:31:06 simple_seed1 (harbor_v2): 1 false echo tracks: e1 elsewhere
+2026-10-23 17:31:06 simple_seed2 (old): 0 false echo tracks: 
+2026-10-23 17:31:06 simple_seed2 (harbor_v2): 2 false echo tracks: e3 elsewhere, e1 elsewhere
+2026-10-23 17:31:06 simple_seed3 (old): 0 false echo tracks: 
+2026-10-23 17:31:06 simple_seed3 (harbor_v2): 1 false echo tracks: e2 elsewhere
+2026-10-23 17:31:06 bistatic_seed1 (old): 1 false echo tracks: e34 elsewhere
+2026-10-23 17:31:06 bistatic_seed1 (harbor_v2): 0 false echo tracks: 
+2026-10-23 17:31:07 bistatic_seed2 (old): 1 false echo tracks: e33 elsewhere
+2026-10-23 17:31:07 bistatic_seed2 (harbor_v2): 0 false echo tracks: 
+2026-10-23 17:31:07 bistatic_seed3 (old): 2 false echo tracks: e8 elsewhere, e43 elsewhere
+2026-10-23 17:31:07 bistatic_seed3 (harbor_v2): 0 false echo tracks: 
+2026-10-23 17:31:07 multistatic_seed1 (old): 2 false echo tracks: e15 elsewhere, e14 elsewhere
+2026-10-23 17:31:07 multistatic_seed1 (harbor_v2): 1 false echo tracks: e28 elsewhere
+2026-10-23 17:31:07 multistatic_seed2 (old): 1 false echo tracks: e19 elsewhere
+2026-10-23 17:31:07 multistatic_seed2 (harbor_v2): 1 false echo tracks: e18 elsewhere
+2026-10-23 17:31:07 multistatic_seed3 (old): 2 false echo tracks: e6 elsewhere, e18 elsewhere
+2026-10-23 17:31:07 multistatic_seed3 (harbor_v2): 1 false echo tracks: e6 elsewhere
+2026-10-23 17:31:07 harbor_seed1 (old): 0 false echo tracks: 
+2026-10-23 17:31:07 harbor_seed1 (harbor_v2): 0 false echo tracks: 
+2026-10-23 17:31:07 harbor_seed2 (old): 0 false echo tracks: 
+2026-10-23 17:31:07 harbor_seed2 (harbor_v2): 0 false echo tracks: 
+2026-10-23 17:31:07 harbor_seed3 (old): 0 false echo tracks: 
+2026-10-23 17:31:07 harbor_seed3 (harbor_v2): 0 false echo tracks: 
+2026-10-23 17:31:18 multistatic_b (old): 4 false echo tracks: e1 elsewhere, e3 elsewhere, e42 elsewhere, e62 body
+2026-10-23 17:31:18 multistatic_b (harbor_v2): 1 false echo tracks: e108 body
+2026-10-23 17:31:18 simple: 422 quay images at the false tracks' fixes, 0.0 in water, 0.0 inside the echo scan grid
+2026-10-23 17:31:18 bistatic: 44 quay images at the false tracks' fixes, 0.0 in water, 0.0 inside the echo scan grid
+2026-10-23 17:31:18 multistatic: 1020 quay images at the false tracks' fixes, 0.0 in water, 0.0 inside the echo scan grid
+2026-10-23 17:31:18 multistatic_b: 254 quay images at the false tracks' fixes, 0.015748031496062992 in water, 0.0 inside the echo scan grid
+2026-10-23 17:31:21 28 false echo tracks; classes {'quay_image': 0, 'land_edge': 0, 'body': 3, 'elsewhere': 25}; decision: neither

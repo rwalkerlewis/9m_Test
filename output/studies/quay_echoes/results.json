@@ -1,0 +1,1000 @@
+{
+  "criteria": {
+    "classes": "quay_image: median distance to the nearest first order quay image of a tracked ship within 10 m; land_edge: median position within 10 m of land; body: within 20 m of a static body's outline; elsewhere; the first that applies",
+    "decision": "quay images account for the false echo tracks if at least half are quay_image; the land edge if at least half are quay_image or land_edge with land_edge the larger part; otherwise neither"
+  },
+  "radii_m": {
+    "image": 10.0,
+    "land": 10.0,
+    "body": 20.0
+  },
+  "provenance": {
+    "truth_inputs": [
+      "static body outlines (the class body only)"
+    ],
+    "simulator_knowledge": [],
+    "data": "forward_model",
+    "held_out": true
+  },
+  "note": "a measurement on the runs reproduce.py made, tuning and test recordings alike; it sets no parameter",
+  "clusters": {
+    "simple:c1": {
+      "first_xy": [
+        184.0,
+        266.0
+      ],
+      "n": 1,
+      "recordings": 1,
+      "members": [
+        "simple (old) e2"
+      ]
+    },
+    "simple:c2": {
+      "first_xy": [
+        250.0,
+        284.0
+      ],
+      "n": 4,
+      "recordings": 4,
+      "members": [
+        "simple (harbor_v2) e3",
+        "simple_seed1 (harbor_v2) e1",
+        "simple_seed2 (harbor_v2) e3",
+        "simple_seed3 (harbor_v2) e2"
+      ]
+    },
+    "simple:c3": {
+      "first_xy": [
+        232.0,
+        358.0
+      ],
+      "n": 1,
+      "recordings": 1,
+      "members": [
+        "simple (harbor_v2) e11"
+      ]
+    },
+    "simple:c4": {
+      "first_xy": [
+        266.0,
+        356.0
+      ],
+      "n": 1,
+      "recordings": 1,
+      "members": [
+        "simple_seed2 (harbor_v2) e1"
+      ]
+    },
+    "bistatic:c1": {
+      "first_xy": [
+        118.0,
+        42.0
+      ],
+      "n": 4,
+      "recordings": 4,
+      "members": [
+        "bistatic (old) e36",
+        "bistatic_seed1 (old) e34",
+        "bistatic_seed2 (old) e33",
+        "bistatic_seed3 (old) e43"
+      ]
+    },
+    "bistatic:c2": {
+      "first_xy": [
+        116.0,
+        187.0
+      ],
+      "n": 1,
+      "recordings": 1,
+      "members": [
+        "bistatic_seed3 (old) e8"
+      ]
+    },
+    "multistatic:c1": {
+      "first_xy": [
+        332.0,
+        206.0
+      ],
+      "n": 8,
+      "recordings": 8,
+      "members": [
+        "multistatic (old) e17",
+        "multistatic (harbor_v2) e27",
+        "multistatic_seed1 (old) e15",
+        "multistatic_seed1 (harbor_v2) e28",
+        "multistatic_seed2 (old) e19",
+        "multistatic_seed2 (harbor_v2) e18",
+        "multistatic_seed3 (old) e6",
+        "multistatic_seed3 (harbor_v2) e6"
+      ]
+    },
+    "multistatic:c2": {
+      "first_xy": [
+        248.0,
+        240.0
+      ],
+      "n": 3,
+      "recordings": 3,
+      "members": [
+        "multistatic (harbor_v2) e13",
+        "multistatic_seed1 (old) e14",
+        "multistatic_seed3 (old) e18"
+      ]
+    },
+    "multistatic_b:c1": {
+      "first_xy": [
+        272.0,
+        173.0
+      ],
+      "n": 2,
+      "recordings": 1,
+      "members": [
+        "multistatic_b (old) e1",
+        "multistatic_b (old) e3"
+      ]
+    },
+    "multistatic_b:c2": {
+      "first_xy": [
+        233.0,
+        246.0
+      ],
+      "n": 1,
+      "recordings": 1,
+      "members": [
+        "multistatic_b (old) e42"
+      ]
+    },
+    "multistatic_b:c3": {
+      "first_xy": [
+        56.0,
+        260.0
+      ],
+      "n": 2,
+      "recordings": 2,
+      "members": [
+        "multistatic_b (old) e62",
+        "multistatic_b (harbor_v2) e108"
+      ]
+    }
+  },
+  "images_where": {
+    "simple": {
+      "images": 422,
+      "in_water": 0.0,
+      "in_scan_grid": 0.0
+    },
+    "bistatic": {
+      "images": 44,
+      "in_water": 0.0,
+      "in_scan_grid": 0.0
+    },
+    "multistatic": {
+      "images": 1020,
+      "in_water": 0.0,
+      "in_scan_grid": 0.0
+    },
+    "multistatic_b": {
+      "images": 254,
+      "in_water": 0.015748031496062992,
+      "in_scan_grid": 0.0
+    }
+  },
+  "counts": {
+    "old": {
+      "quay_image": 0,
+      "land_edge": 0,
+      "body": 1,
+      "elsewhere": 15
+    },
+    "harbor_v2": {
+      "quay_image": 0,
+      "land_edge": 0,
+      "body": 2,
+      "elsewhere": 10
+    }
+  },
+  "counts_total": {
+    "quay_image": 0,
+    "land_edge": 0,
+    "body": 3,
+    "elsewhere": 25
+  },
+  "n": 28,
+  "overlaps": 0,
+  "decision": "neither",
+  "figures": [
+    "map_simple.png",
+    "map_bistatic.png",
+    "map_multistatic.png",
+    "map_multistatic_b.png"
+  ],
+  "tracks": [
+    {
+      "recording": "simple",
+      "noise_model": "old",
+      "held_out": false,
+      "track": "e2",
+      "median_xy": [
+        184.0,
+        266.0
+      ],
+      "fixes": 7,
+      "first_t": 5.0,
+      "last_t": 12.5,
+      "d_image_m": 237.29,
+      "d_land_m": 115.0,
+      "nearest_body": "wreck",
+      "d_body_m": 56.32,
+      "nearest_object": "ferry",
+      "median_error_m": 27.2,
+      "d_ship_m": 27.67,
+      "d_cable_m": 64.03,
+      "d_grid_edge_m": 94.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "simple:c1"
+    },
+    {
+      "recording": "simple",
+      "noise_model": "harbor_v2",
+      "held_out": false,
+      "track": "e3",
+      "median_xy": [
+        250.0,
+        284.0
+      ],
+      "fixes": 41,
+      "first_t": 3.0,
+      "last_t": 17.75,
+      "d_image_m": 234.52,
+      "d_land_m": 97.0,
+      "nearest_body": "wreck",
+      "d_body_m": 87.66,
+      "nearest_object": "wreck",
+      "median_error_m": 87.66,
+      "d_ship_m": 91.69,
+      "d_cable_m": 46.0,
+      "d_grid_edge_m": 76.0,
+      "d_machinery_m": 91.0,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "simple:c2"
+    },
+    {
+      "recording": "simple",
+      "noise_model": "harbor_v2",
+      "held_out": false,
+      "track": "e11",
+      "median_xy": [
+        232.0,
+        358.0
+      ],
+      "fixes": 11,
+      "first_t": 4.75,
+      "last_t": 16.0,
+      "d_image_m": 165.46,
+      "d_land_m": 23.0,
+      "nearest_body": "wreck",
+      "d_body_m": 149.47,
+      "nearest_object": "ferry",
+      "median_error_m": 119.63,
+      "d_ship_m": 119.92,
+      "d_cable_m": 28.07,
+      "d_grid_edge_m": 2.0,
+      "d_machinery_m": 24.76,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "simple:c3"
+    },
+    {
+      "recording": "bistatic",
+      "noise_model": "old",
+      "held_out": false,
+      "track": "e36",
+      "median_xy": [
+        118.0,
+        42.0
+      ],
+      "fixes": 7,
+      "first_t": 16.0,
+      "last_t": 17.5,
+      "d_image_m": 353.74,
+      "d_land_m": 232.0,
+      "nearest_body": null,
+      "d_body_m": null,
+      "nearest_object": "uuv1",
+      "median_error_m": 122.25,
+      "d_ship_m": 180.88,
+      "d_cable_m": 18.0,
+      "d_grid_edge_m": 2.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "bistatic:c1"
+    },
+    {
+      "recording": "multistatic",
+      "noise_model": "old",
+      "held_out": false,
+      "track": "e17",
+      "median_xy": [
+        332.0,
+        206.0
+      ],
+      "fixes": 20,
+      "first_t": 12.75,
+      "last_t": 17.75,
+      "d_image_m": 91.16,
+      "d_land_m": 18.0,
+      "nearest_body": "moored",
+      "d_body_m": 85.43,
+      "nearest_object": "tug",
+      "median_error_m": 54.99,
+      "d_ship_m": 55.02,
+      "d_cable_m": 48.17,
+      "d_grid_edge_m": 12.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c1"
+    },
+    {
+      "recording": "multistatic",
+      "noise_model": "harbor_v2",
+      "held_out": false,
+      "track": "e27",
+      "median_xy": [
+        332.0,
+        206.0
+      ],
+      "fixes": 17,
+      "first_t": 13.75,
+      "last_t": 17.75,
+      "d_image_m": 91.4,
+      "d_land_m": 18.0,
+      "nearest_body": "moored",
+      "d_body_m": 85.43,
+      "nearest_object": "tug",
+      "median_error_m": 55.69,
+      "d_ship_m": 55.74,
+      "d_cable_m": 48.17,
+      "d_grid_edge_m": 12.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c1"
+    },
+    {
+      "recording": "multistatic",
+      "noise_model": "harbor_v2",
+      "held_out": false,
+      "track": "e13",
+      "median_xy": [
+        248.0,
+        240.0
+      ],
+      "fixes": 2,
+      "first_t": 17.5,
+      "last_t": 17.75,
+      "d_image_m": 129.73,
+      "d_land_m": 48.81,
+      "nearest_body": "moored",
+      "d_body_m": 19.0,
+      "nearest_object": "moored",
+      "median_error_m": 19.0,
+      "d_ship_m": 40.51,
+      "d_cable_m": 87.2,
+      "d_grid_edge_m": 20.0,
+      "d_machinery_m": null,
+      "conditions_met": 1,
+      "class": "body",
+      "cluster": "multistatic:c2"
+    },
+    {
+      "recording": "simple_seed1",
+      "noise_model": "harbor_v2",
+      "held_out": true,
+      "track": "e1",
+      "median_xy": [
+        250.0,
+        284.0
+      ],
+      "fixes": 45,
+      "first_t": 3.0,
+      "last_t": 17.75,
+      "d_image_m": 235.6,
+      "d_land_m": 97.0,
+      "nearest_body": "wreck",
+      "d_body_m": 87.66,
+      "nearest_object": "wreck",
+      "median_error_m": 87.66,
+      "d_ship_m": 92.63,
+      "d_cable_m": 46.0,
+      "d_grid_edge_m": 76.0,
+      "d_machinery_m": 91.0,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "simple:c2"
+    },
+    {
+      "recording": "simple_seed2",
+      "noise_model": "harbor_v2",
+      "held_out": true,
+      "track": "e3",
+      "median_xy": [
+        250.0,
+        284.0
+      ],
+      "fixes": 45,
+      "first_t": 2.75,
+      "last_t": 17.75,
+      "d_image_m": 236.91,
+      "d_land_m": 97.0,
+      "nearest_body": "wreck",
+      "d_body_m": 87.66,
+      "nearest_object": "wreck",
+      "median_error_m": 87.66,
+      "d_ship_m": 93.63,
+      "d_cable_m": 46.0,
+      "d_grid_edge_m": 76.0,
+      "d_machinery_m": 91.0,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "simple:c2"
+    },
+    {
+      "recording": "simple_seed2",
+      "noise_model": "harbor_v2",
+      "held_out": true,
+      "track": "e1",
+      "median_xy": [
+        266.0,
+        356.0
+      ],
+      "fixes": 21,
+      "first_t": 5.25,
+      "last_t": 17.75,
+      "d_image_m": 178.91,
+      "d_land_m": 25.0,
+      "nearest_body": "wreck",
+      "d_body_m": 158.4,
+      "nearest_object": "ferry",
+      "median_error_m": 140.8,
+      "d_ship_m": 141.17,
+      "d_cable_m": 26.0,
+      "d_grid_edge_m": 4.0,
+      "d_machinery_m": 24.84,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "simple:c4"
+    },
+    {
+      "recording": "simple_seed3",
+      "noise_model": "harbor_v2",
+      "held_out": true,
+      "track": "e2",
+      "median_xy": [
+        250.0,
+        284.0
+      ],
+      "fixes": 41,
+      "first_t": 2.75,
+      "last_t": 17.75,
+      "d_image_m": 234.67,
+      "d_land_m": 97.0,
+      "nearest_body": "wreck",
+      "d_body_m": 87.66,
+      "nearest_object": "wreck",
+      "median_error_m": 87.66,
+      "d_ship_m": 93.63,
+      "d_cable_m": 46.0,
+      "d_grid_edge_m": 76.0,
+      "d_machinery_m": 91.0,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "simple:c2"
+    },
+    {
+      "recording": "bistatic_seed1",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e34",
+      "median_xy": [
+        112.0,
+        42.0
+      ],
+      "fixes": 5,
+      "first_t": 16.75,
+      "last_t": 17.75,
+      "d_image_m": 355.65,
+      "d_land_m": 238.0,
+      "nearest_body": null,
+      "d_body_m": null,
+      "nearest_object": "uuv1",
+      "median_error_m": 126.66,
+      "d_ship_m": 185.69,
+      "d_cable_m": 18.0,
+      "d_grid_edge_m": 2.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "bistatic:c1"
+    },
+    {
+      "recording": "bistatic_seed2",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e33",
+      "median_xy": [
+        115.0,
+        42.0
+      ],
+      "fixes": 2,
+      "first_t": 17.0,
+      "last_t": 17.5,
+      "d_image_m": 354.64,
+      "d_land_m": 235.0,
+      "nearest_body": null,
+      "d_body_m": null,
+      "nearest_object": "uuv1",
+      "median_error_m": 124.45,
+      "d_ship_m": 183.7,
+      "d_cable_m": 18.03,
+      "d_grid_edge_m": 2.24,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "bistatic:c1"
+    },
+    {
+      "recording": "bistatic_seed3",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e8",
+      "median_xy": [
+        116.0,
+        187.0
+      ],
+      "fixes": 4,
+      "first_t": 3.75,
+      "last_t": 17.75,
+      "d_image_m": 214.77,
+      "d_land_m": 111.54,
+      "nearest_body": null,
+      "d_body_m": null,
+      "nearest_object": "ferry",
+      "median_error_m": 89.96,
+      "d_ship_m": 89.46,
+      "d_cable_m": 127.0,
+      "d_grid_edge_m": 73.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "bistatic:c2"
+    },
+    {
+      "recording": "bistatic_seed3",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e43",
+      "median_xy": [
+        113.0,
+        42.0
+      ],
+      "fixes": 2,
+      "first_t": 17.25,
+      "last_t": 17.5,
+      "d_image_m": 355.26,
+      "d_land_m": 237.0,
+      "nearest_body": null,
+      "d_body_m": null,
+      "nearest_object": "uuv1",
+      "median_error_m": 125.94,
+      "d_ship_m": 184.92,
+      "d_cable_m": 18.03,
+      "d_grid_edge_m": 2.24,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "bistatic:c1"
+    },
+    {
+      "recording": "multistatic_seed1",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e15",
+      "median_xy": [
+        332.0,
+        205.0
+      ],
+      "fixes": 22,
+      "first_t": 12.5,
+      "last_t": 17.75,
+      "d_image_m": 90.75,
+      "d_land_m": 18.0,
+      "nearest_body": "moored",
+      "d_body_m": 86.05,
+      "nearest_object": "tug",
+      "median_error_m": 54.99,
+      "d_ship_m": 55.02,
+      "d_cable_m": 47.42,
+      "d_grid_edge_m": 12.04,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c1"
+    },
+    {
+      "recording": "multistatic_seed1",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e14",
+      "median_xy": [
+        252.0,
+        234.0
+      ],
+      "fixes": 1,
+      "first_t": 17.75,
+      "last_t": 17.75,
+      "d_image_m": 134.4,
+      "d_land_m": 54.52,
+      "nearest_body": "moored",
+      "d_body_m": 25.0,
+      "nearest_object": "moored",
+      "median_error_m": 25.0,
+      "d_ship_m": 33.17,
+      "d_cable_m": 80.0,
+      "d_grid_edge_m": 26.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c2"
+    },
+    {
+      "recording": "multistatic_seed1",
+      "noise_model": "harbor_v2",
+      "held_out": true,
+      "track": "e28",
+      "median_xy": [
+        332.0,
+        206.0
+      ],
+      "fixes": 20,
+      "first_t": 13.0,
+      "last_t": 17.75,
+      "d_image_m": 91.06,
+      "d_land_m": 18.0,
+      "nearest_body": "moored",
+      "d_body_m": 85.43,
+      "nearest_object": "tug",
+      "median_error_m": 55.46,
+      "d_ship_m": 55.46,
+      "d_cable_m": 48.17,
+      "d_grid_edge_m": 12.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c1"
+    },
+    {
+      "recording": "multistatic_seed2",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e19",
+      "median_xy": [
+        332.0,
+        206.0
+      ],
+      "fixes": 20,
+      "first_t": 13.0,
+      "last_t": 17.75,
+      "d_image_m": 91.13,
+      "d_land_m": 18.0,
+      "nearest_body": "moored",
+      "d_body_m": 85.43,
+      "nearest_object": "tug",
+      "median_error_m": 54.99,
+      "d_ship_m": 55.03,
+      "d_cable_m": 48.17,
+      "d_grid_edge_m": 12.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c1"
+    },
+    {
+      "recording": "multistatic_seed2",
+      "noise_model": "harbor_v2",
+      "held_out": true,
+      "track": "e18",
+      "median_xy": [
+        332.0,
+        204.0
+      ],
+      "fixes": 23,
+      "first_t": 12.25,
+      "last_t": 17.75,
+      "d_image_m": 90.63,
+      "d_land_m": 18.0,
+      "nearest_body": "moored",
+      "d_body_m": 86.68,
+      "nearest_object": "tug",
+      "median_error_m": 54.76,
+      "d_ship_m": 54.82,
+      "d_cable_m": 46.69,
+      "d_grid_edge_m": 12.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c1"
+    },
+    {
+      "recording": "multistatic_seed3",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e6",
+      "median_xy": [
+        332.0,
+        206.0
+      ],
+      "fixes": 21,
+      "first_t": 12.75,
+      "last_t": 17.75,
+      "d_image_m": 90.89,
+      "d_land_m": 18.0,
+      "nearest_body": "moored",
+      "d_body_m": 85.43,
+      "nearest_object": "tug",
+      "median_error_m": 54.76,
+      "d_ship_m": 54.83,
+      "d_cable_m": 48.17,
+      "d_grid_edge_m": 12.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c1"
+    },
+    {
+      "recording": "multistatic_seed3",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e18",
+      "median_xy": [
+        252.0,
+        234.0
+      ],
+      "fixes": 1,
+      "first_t": 17.75,
+      "last_t": 17.75,
+      "d_image_m": 134.45,
+      "d_land_m": 54.52,
+      "nearest_body": "moored",
+      "d_body_m": 25.0,
+      "nearest_object": "moored",
+      "median_error_m": 25.0,
+      "d_ship_m": 33.13,
+      "d_cable_m": 80.0,
+      "d_grid_edge_m": 26.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c2"
+    },
+    {
+      "recording": "multistatic_seed3",
+      "noise_model": "harbor_v2",
+      "held_out": true,
+      "track": "e6",
+      "median_xy": [
+        332.0,
+        204.0
+      ],
+      "fixes": 23,
+      "first_t": 12.25,
+      "last_t": 17.75,
+      "d_image_m": 90.59,
+      "d_land_m": 18.0,
+      "nearest_body": "moored",
+      "d_body_m": 86.68,
+      "nearest_object": "tug",
+      "median_error_m": 54.6,
+      "d_ship_m": 54.71,
+      "d_cable_m": 46.69,
+      "d_grid_edge_m": 12.0,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic:c1"
+    },
+    {
+      "recording": "multistatic_b",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e1",
+      "median_xy": [
+        272.0,
+        173.0
+      ],
+      "fixes": 2,
+      "first_t": 2.5,
+      "last_t": 3.0,
+      "d_image_m": 113.51,
+      "d_land_m": 78.0,
+      "nearest_body": "moored",
+      "d_body_m": 168.32,
+      "nearest_object": "uuv2",
+      "median_error_m": 54.22,
+      "d_ship_m": 43.93,
+      "d_cable_m": 28.16,
+      "d_grid_edge_m": 72.01,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic_b:c1"
+    },
+    {
+      "recording": "multistatic_b",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e3",
+      "median_xy": [
+        274.0,
+        173.0
+      ],
+      "fixes": 2,
+      "first_t": 2.5,
+      "last_t": 3.0,
+      "d_image_m": 111.24,
+      "d_land_m": 76.0,
+      "nearest_body": "moored",
+      "d_body_m": 170.07,
+      "nearest_object": "uuv2",
+      "median_error_m": 49.95,
+      "d_ship_m": 57.75,
+      "d_cable_m": 26.17,
+      "d_grid_edge_m": 70.01,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic_b:c1"
+    },
+    {
+      "recording": "multistatic_b",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e42",
+      "median_xy": [
+        233.0,
+        246.0
+      ],
+      "fixes": 12,
+      "first_t": 41.25,
+      "last_t": 49.5,
+      "d_image_m": 203.24,
+      "d_land_m": 44.0,
+      "nearest_body": "moored",
+      "d_body_m": 108.37,
+      "nearest_object": "boat",
+      "median_error_m": 31.63,
+      "d_ship_m": 113.06,
+      "d_cable_m": 101.32,
+      "d_grid_edge_m": 14.04,
+      "d_machinery_m": null,
+      "conditions_met": 0,
+      "class": "elsewhere",
+      "cluster": "multistatic_b:c2"
+    },
+    {
+      "recording": "multistatic_b",
+      "noise_model": "old",
+      "held_out": true,
+      "track": "e62",
+      "median_xy": [
+        56.0,
+        260.0
+      ],
+      "fixes": 23,
+      "first_t": 49.75,
+      "last_t": 56.5,
+      "d_image_m": 189.72,
+      "d_land_m": 30.7,
+      "nearest_body": "piling6",
+      "d_body_m": 15.04,
+      "nearest_object": "piling6",
+      "median_error_m": 15.04,
+      "d_ship_m": 118.47,
+      "d_cable_m": 200.0,
+      "d_grid_edge_m": 0.0,
+      "d_machinery_m": null,
+      "conditions_met": 1,
+      "class": "body",
+      "cluster": "multistatic_b:c3"
+    },
+    {
+      "recording": "multistatic_b",
+      "noise_model": "harbor_v2",
+      "held_out": true,
+      "track": "e108",
+      "median_xy": [
+        56.0,
+        260.0
+      ],
+      "fixes": 3,
+      "first_t": 50.0,
+      "last_t": 50.5,
+      "d_image_m": 188.95,
+      "d_land_m": 30.7,
+      "nearest_body": "piling6",
+      "d_body_m": 15.04,
+      "nearest_object": "piling6",
+      "median_error_m": 15.04,
+      "d_ship_m": 118.63,
+      "d_cable_m": 200.0,
+      "d_grid_edge_m": 0.0,
+      "d_machinery_m": null,
+      "conditions_met": 1,
+      "class": "body",
+      "cluster": "multistatic_b:c3"
+    }
+  ],
+  "after_the_counts": {
+    "note": "diagnostics added after the class counts were seen; no threshold is set on them",
+    "grid_edge_within_5m": 8,
+    "harbor_v2_only_clusters": [
+      "simple:c2",
+      "simple:c3",
+      "simple:c4"
+    ],
+    "repeated_clusters": {
+      "simple:c2": {
+        "first_xy": [
+          250.0,
+          284.0
+        ],
+        "recordings": 4,
+        "of_runs_with_false_echo_tracks_in_family": 5,
+        "median_d_grid_edge_m": 76.0,
+        "median_d_land_m": 97.0,
+        "median_d_ship_m": 93.13,
+        "first_t_median": 2.875
+      },
+      "bistatic:c1": {
+        "first_xy": [
+          118.0,
+          42.0
+        ],
+        "recordings": 4,
+        "of_runs_with_false_echo_tracks_in_family": 4,
+        "median_d_grid_edge_m": 2.12,
+        "median_d_land_m": 236.0,
+        "median_d_ship_m": 184.31,
+        "first_t_median": 16.875
+      },
+      "multistatic:c1": {
+        "first_xy": [
+          332.0,
+          206.0
+        ],
+        "recordings": 8,
+        "of_runs_with_false_echo_tracks_in_family": 8,
+        "median_d_grid_edge_m": 12.0,
+        "median_d_land_m": 18.0,
+        "median_d_ship_m": 55.02,
+        "first_t_median": 12.75
+      },
+      "multistatic:c2": {
+        "first_xy": [
+          248.0,
+          240.0
+        ],
+        "recordings": 3,
+        "of_runs_with_false_echo_tracks_in_family": 8,
+        "median_d_grid_edge_m": 26.0,
+        "median_d_land_m": 54.52,
+        "median_d_ship_m": 33.17,
+        "first_t_median": 17.75
+      }
+    }
+  }
+}

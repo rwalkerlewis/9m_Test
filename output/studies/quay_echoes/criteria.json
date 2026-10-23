@@ -1,0 +1,115 @@
+{
+ "criteria": [
+  {
+   "id": "false_tracks",
+   "text": "false tracks at most 2 per minute on multistatic_b and at most 3 per minute on every 20 s test recording, old noise model",
+   "limits": {
+    "simple_seed1": 3.0,
+    "simple_seed2": 3.0,
+    "simple_seed3": 3.0,
+    "bistatic_seed1": 3.0,
+    "bistatic_seed2": 3.0,
+    "bistatic_seed3": 3.0,
+    "multistatic_seed1": 3.0,
+    "multistatic_seed2": 3.0,
+    "multistatic_seed3": 3.0,
+    "multistatic_b": 2.0
+   },
+   "before": {
+    "simple_seed1": 0.0,
+    "simple_seed2": 0.0,
+    "simple_seed3": 3.0,
+    "bistatic_seed1": 3.0,
+    "bistatic_seed2": 6.0,
+    "bistatic_seed3": 12.0,
+    "multistatic_seed1": 9.0,
+    "multistatic_seed2": 6.0,
+    "multistatic_seed3": 9.0,
+    "multistatic_b": 6.0
+   },
+   "values": null,
+   "passed": null
+  },
+  {
+   "id": "no_fall",
+   "text": "no object's Pd falls by more than 3 points on either noise model (test recordings)",
+   "values": null,
+   "passed": null
+  },
+  {
+   "id": "compute",
+   "text": "compute per second of data not up by more than 10 percent (every recording, old noise model)",
+   "values": {
+    "simple": {
+     "before": 1.2085121790536504,
+     "after": null
+    },
+    "bistatic": {
+     "before": 1.2982940829439031,
+     "after": null
+    },
+    "multistatic": {
+     "before": 2.8549964033503783,
+     "after": null
+    },
+    "harbor": {
+     "before": 0.5443001928242059,
+     "after": null
+    },
+    "simple_seed1": {
+     "before": 1.207525343438465,
+     "after": null
+    },
+    "simple_seed2": {
+     "before": 1.2258384031010792,
+     "after": null
+    },
+    "simple_seed3": {
+     "before": 1.2112663849482488,
+     "after": null
+    },
+    "bistatic_seed1": {
+     "before": 1.2017379510507453,
+     "after": null
+    },
+    "bistatic_seed2": {
+     "before": 1.4500636395037874,
+     "after": null
+    },
+    "bistatic_seed3": {
+     "before": 1.4856034995478695,
+     "after": null
+    },
+    "multistatic_seed1": {
+     "before": 2.927737630442425,
+     "after": null
+    },
+    "multistatic_seed2": {
+     "before": 2.902285703692178,
+     "after": null
+    },
+    "multistatic_seed3": {
+     "before": 2.9034593050499096,
+     "after": null
+    },
+    "harbor_seed1": {
+     "before": 0.5478320997490906,
+     "after": null
+    },
+    "harbor_seed2": {
+     "before": 0.5353029149993138,
+     "after": null
+    },
+    "harbor_seed3": {
+     "before": 0.5407717830339,
+     "after": null
+    },
+    "multistatic_b": {
+     "before": 2.9628340065493832,
+     "after": null
+    }
+   },
+   "passed": null
+  }
+ ]
+}
