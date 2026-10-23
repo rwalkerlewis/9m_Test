@@ -284,3 +284,104 @@
 2026-10-23 17:09:06 walkthrough figures of bistatic
 2026-10-23 17:10:14 walkthrough figures of multistatic
 2026-10-23 17:12:06 walkthrough figures of harbor
+2026-10-23 19:41:00 mixing simple seed 4 from the cached gathers
+2026-10-23 19:41:08 mixing simple seed 5 from the cached gathers
+2026-10-23 19:41:16 mixing simple seed 6 from the cached gathers
+2026-10-23 19:41:24 mixing simple seed 7 from the cached gathers
+2026-10-23 19:41:32 mixing simple seed 8 from the cached gathers
+2026-10-23 19:41:40 mixing simple seed 9 from the cached gathers
+2026-10-23 19:41:48 mixing bistatic seed 4 from the cached gathers
+2026-10-23 19:41:57 mixing bistatic seed 5 from the cached gathers
+2026-10-23 19:42:06 mixing bistatic seed 6 from the cached gathers
+2026-10-23 19:42:15 mixing bistatic seed 7 from the cached gathers
+2026-10-23 19:42:23 mixing bistatic seed 8 from the cached gathers
+2026-10-23 19:42:32 mixing bistatic seed 9 from the cached gathers
+2026-10-23 19:42:41 mixing multistatic seed 4 from the cached gathers
+2026-10-23 19:42:54 mixing multistatic seed 5 from the cached gathers
+2026-10-23 19:43:07 mixing multistatic seed 6 from the cached gathers
+2026-10-23 19:43:20 mixing multistatic seed 7 from the cached gathers
+2026-10-23 19:43:33 mixing multistatic seed 8 from the cached gathers
+2026-10-23 19:43:46 mixing multistatic seed 9 from the cached gathers
+2026-10-23 19:43:59 mixing multistatic_b seed 4 from the cached gathers
+2026-10-23 19:44:37 mixing multistatic_b seed 5 from the cached gathers
+2026-10-23 19:45:16 mixing multistatic_b seed 6 from the cached gathers
+2026-10-23 19:45:53 mixing multistatic_b seed 7 from the cached gathers
+2026-10-23 19:46:31 mixing multistatic_b seed 8 from the cached gathers
+2026-10-23 19:47:08 mixing multistatic_b seed 9 from the cached gathers
+2026-10-23 19:48:10 running the chain on simple_tune4 (tuning recording)
+2026-10-23 19:48:35 running the chain on simple_tune5 (tuning recording)
+2026-10-23 19:49:00 running the chain on simple_tune6 (tuning recording)
+2026-10-23 19:49:24 running the chain on simple_tune7 (tuning recording)
+2026-10-23 19:49:49 running the chain on simple_tune8 (tuning recording)
+2026-10-23 19:50:13 running the chain on simple_tune9 (tuning recording)
+2026-10-23 19:50:38 running the chain on bistatic_tune4 (tuning recording)
+2026-10-23 19:51:02 running the chain on bistatic_tune5 (tuning recording)
+2026-10-23 19:51:27 running the chain on bistatic_tune6 (tuning recording)
+2026-10-23 19:51:53 running the chain on bistatic_tune7 (tuning recording)
+2026-10-23 19:52:28 running the chain on bistatic_tune8 (tuning recording)
+2026-10-23 19:52:54 running the chain on bistatic_tune9 (tuning recording)
+2026-10-23 19:53:22 running the chain on multistatic_tune4 (tuning recording)
+2026-10-23 19:54:20 running the chain on multistatic_tune5 (tuning recording)
+2026-10-23 19:55:18 running the chain on multistatic_tune6 (tuning recording)
+2026-10-23 19:56:15 running the chain on multistatic_tune7 (tuning recording)
+2026-10-23 19:57:14 running the chain on multistatic_tune8 (tuning recording)
+2026-10-23 19:58:11 running the chain on multistatic_tune9 (tuning recording)
+2026-10-23 19:59:09 running the chain on multistatic_b_tune4 (tuning recording)
+2026-10-23 20:02:06 running the chain on multistatic_b_tune5 (tuning recording)
+2026-10-23 20:05:05 running the chain on multistatic_b_tune6 (tuning recording)
+2026-10-23 20:08:00 running the chain on multistatic_b_tune7 (tuning recording)
+2026-10-23 20:11:06 running the chain on multistatic_b_tune8 (tuning recording)
+2026-10-23 20:14:02 running the chain on multistatic_b_tune9 (tuning recording)
+2026-10-23 20:16:59 mixing simple seed 4 with harbor_v2 from the cached gathers
+2026-10-23 20:17:10 running the chain on simple_tune4 mixed with harbor_v2
+2026-10-23 20:17:35 mixing simple seed 5 with harbor_v2 from the cached gathers
+2026-10-23 20:17:45 running the chain on simple_tune5 mixed with harbor_v2
+2026-10-23 20:18:10 mixing simple seed 6 with harbor_v2 from the cached gathers
+2026-10-23 20:18:21 running the chain on simple_tune6 mixed with harbor_v2
+2026-10-23 20:18:46 mixing simple seed 7 with harbor_v2 from the cached gathers
+2026-10-23 20:18:57 running the chain on simple_tune7 mixed with harbor_v2
+2026-10-23 20:19:22 mixing simple seed 8 with harbor_v2 from the cached gathers
+2026-10-23 20:19:32 running the chain on simple_tune8 mixed with harbor_v2
+2026-10-23 20:19:57 mixing simple seed 9 with harbor_v2 from the cached gathers
+2026-10-23 20:20:08 running the chain on simple_tune9 mixed with harbor_v2
+2026-10-23 20:20:33 mixing bistatic seed 4 with harbor_v2 from the cached gathers
+2026-10-23 20:20:47 running the chain on bistatic_tune4 mixed with harbor_v2
+2026-10-23 20:21:08 mixing bistatic seed 5 with harbor_v2 from the cached gathers
+2026-10-23 20:21:21 running the chain on bistatic_tune5 mixed with harbor_v2
+2026-10-23 20:21:43 mixing bistatic seed 6 with harbor_v2 from the cached gathers
+2026-10-23 20:21:57 running the chain on bistatic_tune6 mixed with harbor_v2
+2026-10-23 20:22:18 mixing bistatic seed 7 with harbor_v2 from the cached gathers
+2026-10-23 20:22:32 running the chain on bistatic_tune7 mixed with harbor_v2
+2026-10-23 20:22:55 mixing bistatic seed 8 with harbor_v2 from the cached gathers
+2026-10-23 20:23:08 running the chain on bistatic_tune8 mixed with harbor_v2
+2026-10-23 20:23:31 mixing bistatic seed 9 with harbor_v2 from the cached gathers
+2026-10-23 20:23:45 running the chain on bistatic_tune9 mixed with harbor_v2
+2026-10-23 20:24:07 mixing multistatic seed 4 with harbor_v2 from the cached gathers
+2026-10-23 20:24:24 running the chain on multistatic_tune4 mixed with harbor_v2
+2026-10-23 20:25:20 mixing multistatic seed 5 with harbor_v2 from the cached gathers
+2026-10-23 20:25:38 running the chain on multistatic_tune5 mixed with harbor_v2
+2026-10-23 20:26:35 mixing multistatic seed 6 with harbor_v2 from the cached gathers
+2026-10-23 20:26:53 running the chain on multistatic_tune6 mixed with harbor_v2
+2026-10-23 20:27:48 mixing multistatic seed 7 with harbor_v2 from the cached gathers
+2026-10-23 20:28:07 running the chain on multistatic_tune7 mixed with harbor_v2
+2026-10-23 20:29:01 mixing multistatic seed 8 with harbor_v2 from the cached gathers
+2026-10-23 20:29:19 running the chain on multistatic_tune8 mixed with harbor_v2
+2026-10-23 20:30:14 mixing multistatic seed 9 with harbor_v2 from the cached gathers
+2026-10-23 20:30:32 running the chain on multistatic_tune9 mixed with harbor_v2
+2026-10-23 20:31:29 mixing multistatic_b seed 4 with harbor_v2 from the cached gathers
+2026-10-23 20:32:24 running the chain on multistatic_b_tune4 mixed with harbor_v2
+2026-10-23 20:35:07 mixing multistatic_b seed 5 with harbor_v2 from the cached gathers
+2026-10-23 20:36:00 running the chain on multistatic_b_tune5 mixed with harbor_v2
+2026-10-23 20:38:44 mixing multistatic_b seed 6 with harbor_v2 from the cached gathers
+2026-10-23 20:39:37 running the chain on multistatic_b_tune6 mixed with harbor_v2
+2026-10-23 20:42:22 mixing multistatic_b seed 7 with harbor_v2 from the cached gathers
+2026-10-23 20:43:17 running the chain on multistatic_b_tune7 mixed with harbor_v2
+2026-10-23 20:46:06 mixing multistatic_b seed 8 with harbor_v2 from the cached gathers
+2026-10-23 20:47:01 running the chain on multistatic_b_tune8 mixed with harbor_v2
+2026-10-23 20:49:44 mixing multistatic_b seed 9 with harbor_v2 from the cached gathers
+2026-10-23 20:50:37 running the chain on multistatic_b_tune9 mixed with harbor_v2
+2026-10-23 20:53:21 walkthrough figures of simple
+2026-10-23 20:55:19 walkthrough figures of simple
+2026-10-23 20:56:24 walkthrough figures of bistatic
+2026-10-23 20:57:31 walkthrough figures of multistatic
+2026-10-23 20:59:22 walkthrough figures of harbor

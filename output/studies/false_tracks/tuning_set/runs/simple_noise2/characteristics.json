@@ -1,0 +1,208 @@
+{
+  "recording": "simple_noise2",
+  "run": {
+    "git_commit": "cc88d51167dfbcaf91f8d996b37a576e434cb3d5",
+    "git_dirty": true,
+    "processing_config": "/workspace/examples/configs/processing/simple.json",
+    "processing_config_sha256": "02dabca8d1a539d731d3e359990a45a4ae956b445996e0cd3caf8532089cd8c0",
+    "processing_overrides": [],
+    "observation": "/workspace/output/recordings/simple/noise2/dataset.observation.npz",
+    "observation_sha256": "540e6f74cb6197c39888704880ac062d4b99d472c9f53a503811aecb89f23062",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 0,
+    "wall_s": 24.613092446001247,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "chunk_s": 0.25
+  },
+  "objects": [
+    {
+      "object": "ferry",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 1.0,
+      "true_size_m": null,
+      "true_speed": 4.0,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 1.0908,
+        "width_major": 5.16,
+        "width_minor": 3.53,
+        "speed": 3.99,
+        "residual": 1.12
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "boat",
+      "type": "ship",
+      "radiates": true,
+      "true_level_pa": 0.3,
+      "true_size_m": null,
+      "true_speed": 2.499999999999998,
+      "detected_frames": 66,
+      "seen": {
+        "own noise": 66
+      },
+      "median": {
+        "size_ratio_db": null,
+        "strength_db": null,
+        "along": null,
+        "across": null,
+        "source_level": 0.28295000000000003,
+        "width_major": 4.62,
+        "width_minor": 2.31,
+        "speed": 2.48,
+        "residual": 0.76
+      },
+      "size_ratio_per_frame": {}
+    },
+    {
+      "object": "uuv1",
+      "type": "uuv",
+      "radiates": false,
+      "true_level_pa": 0.0,
+      "true_size_m": [
+        6.0,
+        2.0
+      ],
+      "true_speed": 1.5000000000000082,
+      "detected_frames": 13,
+      "seen": {
+        "echo": 13
+      },
+      "median": {
+        "size_ratio_db": -4.1,
+        "strength_db": -2.8,
+        "along": 4.1,
+        "across": 4.2,
+        "source_level": null,
+        "width_major": 5.16,
+        "width_minor": 3.53,
+        "speed": 1.52,
+        "residual": 1.14
+      },
+      "size_ratio_per_frame": {
+        "14.75": -10.2,
+        "15.0": -10.2,
+        "15.25": -4.1,
+        "15.5": -4.1,
+        "15.75": -4.1,
+        "16.0": -4.1,
+        "16.25": -4.1,
+        "16.5": -1.1,
+        "16.75": 2.0,
+        "17.0": 2.0,
+        "17.25": 2.0,
+        "17.5": 1.9,
+        "17.75": 1.9
+      }
+    },
+    {
+      "object": "wreck",
+      "type": "static",
+      "radiates": false,
+      "true_level_pa": 0.0,
+      "true_size_m": [
+        4.0,
+        4.0
+      ],
+      "true_speed": 0.0,
+      "detected_frames": 63,
+      "seen": {
+        "echo": 63
+      },
+      "median": {
+        "size_ratio_db": -5.5,
+        "strength_db": -5.9,
+        "along": 4.2,
+        "across": 3.9,
+        "source_level": null,
+        "width_major": 4.62,
+        "width_minor": 3.53,
+        "speed": 0.12,
+        "residual": 0.67
+      },
+      "size_ratio_per_frame": {
+        "2.25": -10.3,
+        "2.5": -8.1,
+        "2.75": -5.9,
+        "3.0": -5.5,
+        "3.25": -5.2,
+        "3.5": -5.5,
+        "3.75": -5.9,
+        "4.0": -5.5,
+        "4.25": -4.2,
+        "4.5": -4.2,
+        "4.75": -5.6,
+        "5.0": -4.6,
+        "5.25": -4.6,
+        "5.5": -4.6,
+        "5.75": -5.0,
+        "6.0": -5.0,
+        "6.25": -6.9,
+        "6.5": -6.9,
+        "6.75": -5.0,
+        "7.0": -6.1,
+        "7.25": -6.3,
+        "7.5": -5.8,
+        "7.75": -5.8,
+        "8.0": -5.8,
+        "8.25": -5.8,
+        "8.5": -5.5,
+        "8.75": -5.8,
+        "9.0": -8.6,
+        "9.25": -8.3,
+        "9.5": -8.2,
+        "9.75": -4.9,
+        "10.0": -5.2,
+        "10.25": -4.8,
+        "10.5": -5.2,
+        "10.75": -4.8,
+        "11.0": -4.5,
+        "11.25": -4.4,
+        "11.5": -3.9,
+        "11.75": -2.4,
+        "12.0": -2.4,
+        "12.25": -3.6,
+        "12.5": -3.6,
+        "12.75": -3.6,
+        "13.0": -3.6,
+        "13.25": -4.8,
+        "13.5": -6.4,
+        "13.75": -6.4,
+        "14.0": -6.8,
+        "14.25": -8.4,
+        "14.5": -9.3,
+        "14.75": -8.4,
+        "15.0": -8.4,
+        "15.25": -9.3,
+        "15.5": -8.1,
+        "15.75": -9.4,
+        "16.0": -8.5,
+        "16.25": -5.6,
+        "16.5": -2.7,
+        "16.75": -2.5,
+        "17.0": -2.5,
+        "17.25": -1.1,
+        "17.5": -1.1,
+        "17.75": -1.1
+      }
+    }
+  ],
+  "size_order": null
+}

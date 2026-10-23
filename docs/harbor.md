@@ -131,6 +131,12 @@ The tuning set has, besides noise seed 0, noise seeds 4 to 9 of `simple`, `bista
 recording with its noise seed 0; its seeds 4 to 9 are tuning recordings.
 
 <!-- reproduce-table:tuning_seeds -->
+| Recording | Seeds | Pd per object, old noise model | Pd per object, harbor_v2 | False tracks per recording, old / harbor_v2 |
+|---|---|---|---|---|
+| simple | 4, 5, 6, 7, 8, 9 | ferry 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; uuv1 64 % / 34 % / 61 % / 39 % / 61 % / 58 %; wreck 98 % / 98 % / 100 % / 100 % / 100 % / 100 % | ferry 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; uuv1 0 % / 0 % / 25 % / 0 % / 25 % / 25 %; wreck 98 % / 98 % / 100 % / 100 % / 98 % / 98 % | 1 / 1 / 2 / 1 / 0 / 1; harbor_v2 1 / 1 / 2 / 1 / 1 / 1 |
+| bistatic | 4, 5, 6, 7, 8, 9 | ferry 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; uuv1 69 % / 69 % / 61 % / 22 % / 61 % / 58 % | ferry 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; uuv1 86 % / 84 % / 75 % / 50 % / 62 % / 84 % | 1 / 1 / 0 / 2 / 1 / 3; harbor_v2 0 / 0 / 0 / 1 / 1 / 0 |
+| multistatic | 4, 5, 6, 7, 8, 9 | ferry 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; uuv1 91 % / 70 % / 58 % / 84 % / 77 % / 88 %; uuv2 97 % / 97 % / 89 % / 95 % / 95 % / 95 %; moored 75 % / 89 % / 83 % / 83 % / 84 % / 86 % | ferry 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; uuv1 80 % / 22 % / 0 % / 0 % / 0 % / 62 %; uuv2 91 % / 88 % / 83 % / 86 % / 91 % / 92 %; moored 69 % / 80 % / 64 % / 47 % / 59 % / 73 % | 2 / 3 / 2 / 2 / 3 / 2; harbor_v2 1 / 2 / 2 / 1 / 1 / 2 |
+| multistatic_b | 4, 5, 6, 7, 8, 9 | ferry 95 % / 99 % / 99 % / 99 % / 99 % / 99 %; tug 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; boat 69 % / 73 % / 69 % / 80 % / 74 % / 69 %; uuv1 62 % / 64 % / 60 % / 65 % / 61 % / 60 %; uuv2 88 % / 84 % / 88 % / 90 % / 96 % / 96 % | ferry 99 % / 99 % / 99 % / 99 % / 99 % / 99 %; tug 100 % / 100 % / 100 % / 100 % / 100 % / 100 %; boat 57 % / 57 % / 57 % / 57 % / 57 % / 57 %; uuv1 53 % / 57 % / 52 % / 41 % / 49 % / 58 %; uuv2 75 % / 82 % / 88 % / 83 % / 83 % / 84 % | 6 / 6 / 6 / 5 / 6 / 4; harbor_v2 4 / 4 / 4 / 4 / 4 / 4 |
 <!-- /reproduce-table -->
 
 Per recording, `output/reproduce/runs/<recording>/`. What they say:
@@ -644,6 +650,31 @@ What neither reaches: the false radiator tracks of the tuning recordings confirm
 ship, before any predicted map exists; the false tracks of the 5 m harbor sit at ratios below the fraction a true
 ship's fix allows; and the false echo tracks (one at the same place on every bistatic seed, one near
 the tug on every multistatic seed) are the echo chain's, which no threshold of the radiator tracker touches.
+
+### The same measurement on the enlarged tuning set
+
+The thresholds above rested on two echo samples because the tuning set had one noise seed per recording.
+`harbor_false_tracks.py --tuning-set` (output in `output/studies/false_tracks/tuning_set/`) repeats the measurement on
+the whole tuning set: noise seed 0 of the four families and noise seeds 4 to 9 of `simple`, `bistatic`, `multistatic`
+and `multistatic_b`, each with both noise models. It sets no threshold and changes no setting. Criterion, fixed before
+it ran: at least 20 echo samples (starts of class silent body). **Met**: <!-- reproduce:@studies/false_tracks/tuning_set/results.json:criterion/value -->40<!-- /reproduce --> echo samples
+(<!-- reproduce:@studies/false_tracks/tuning_set/results.json:counts_by_model/old/silent_body -->26<!-- /reproduce --> on the old noise model, <!-- reproduce:@studies/false_tracks/tuning_set/results.json:counts_by_model/harbor_v2/silent_body -->14<!-- /reproduce --> on
+harbor_v2), of <!-- reproduce:sum:@studies/false_tracks/tuning_set/results.json:counts/* -->963<!-- /reproduce --> starts: <!-- reproduce:@studies/false_tracks/tuning_set/results.json:counts/radiator -->185<!-- /reproduce --> at a radiator, <!-- reproduce:@studies/false_tracks/tuning_set/results.json:counts/sidelobe_near_miss -->318<!-- /reproduce --> near
+misses of the sidelobe test, <!-- reproduce:@studies/false_tracks/tuning_set/results.json:counts/direct_path -->16<!-- /reproduce --> on a direct path and <!-- reproduce:@studies/false_tracks/tuning_set/results.json:counts/elsewhere -->404<!-- /reproduce --> elsewhere. Of the
+echo samples <!-- reproduce:@studies/false_tracks/tuning_set/results.json:confirmed_counts/silent_body -->7<!-- /reproduce --> confirmed (all on the old noise model). The separation of echoes from
+radiators with these counts (area under the ROC curve; 0.5 none): the predicted map ratio, median over the track's fixes,
+<!-- reproduce:@studies/false_tracks/tuning_set/results.json:separation/ratio_median/silent_body_vs_radiator|f2 -->0.92<!-- /reproduce --> (on the two samples
+<!-- reproduce:@studies/false_tracks/results.json:separation/ratio_median/silent_body_vs_radiator|f2 -->0.86<!-- /reproduce -->); the coherence with the
+illuminator, its bias removed, <!-- reproduce:@studies/false_tracks/tuning_set/results.json:separation/coherence_debiased/silent_body_vs_radiator|f2 -->0.91<!-- /reproduce -->; the ratio at the first
+fix <!-- reproduce:@studies/false_tracks/tuning_set/results.json:separation/ratio/silent_body_vs_radiator|f2 -->0.80<!-- /reproduce -->; the half maximum widths
+<!-- reproduce:@studies/false_tracks/tuning_set/results.json:separation/width_major_m/silent_body_vs_radiator|f2 -->0.59<!-- /reproduce --> and <!-- reproduce:@studies/false_tracks/tuning_set/results.json:separation/width_minor_m/silent_body_vs_radiator|f2 -->0.68<!-- /reproduce -->,
+next to nothing; persistence <!-- reproduce:@studies/false_tracks/tuning_set/results.json:separation/n_fixes/silent_body_vs_radiator|f2 -->0.13<!-- /reproduce -->, the wrong way for a test made at
+confirmation. The sidelobe near misses and the starts elsewhere are separated from radiators by the median ratio at
+<!-- reproduce:@studies/false_tracks/tuning_set/results.json:separation/ratio_median/sidelobe_vs_radiator|f2 -->0.99<!-- /reproduce -->.
+
+![ratio per class, tuning set](../output/studies/false_tracks/tuning_set/distribution_ratio_median.png)
+
+Look at the silent body column against the radiator column: the echoes start where most radiators end, but the radiators' upper tail reaches into them.
 
 ### The boat on `multistatic_b`
 

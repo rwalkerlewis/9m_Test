@@ -323,8 +323,8 @@ def main() -> None:
                 "n_fixes": "fixes of the track", "duration_s": "first to last fix [s]"}[q]
         ax.set_xlabel("class of the peak that started a radiator track (from the truth, a diagnostic)")
         ax.set_ylabel(unit)
-        ax.set_title(f"tuning recordings ({'the tuning set: seeds 0 and 4 to 9, both noise models' if a.tuning_set else ', '.join(a.recordings)}): "
-                     f"{unit} per class")
+        ax.set_title((f"the tuning set (seeds 0 and 4 to 9, both noise models):\n{unit} per class" if a.tuning_set else
+                      f"tuning recordings ({', '.join(a.recordings)}): {unit} per class"))
         save_figure(fig, out / f"distribution_{q}.png", recording=None)
     res.update(res0)
     if a.tuning_set:

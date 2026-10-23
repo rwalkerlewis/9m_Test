@@ -386,7 +386,7 @@
     ]
   },
   "run": {
-    "git_commit": "66201ad4813bb80a6acbaff0d515d3ca404728d5",
+    "git_commit": "cc88d51167dfbcaf91f8d996b37a576e434cb3d5",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/harbor.json",
     "processing_config_sha256": "de4dd5c768d41d4cad773db58ba450656a9fca9a37edc9408b4c435b2fe5863f",
@@ -398,7 +398,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": null,
-    "wall_s": 64.13274933501089,
+    "wall_s": 64.03160308400402,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
