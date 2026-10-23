@@ -28,6 +28,15 @@ and quantity the distribution and, for radiator against silent body, the separat
 the ROC curve), one figure per quantity, ``run.log``.
 
     python examples/harbor/05_detection/harbor_false_tracks.py [--recordings simple bistatic multistatic harbor]
+    python examples/harbor/05_detection/harbor_false_tracks.py --tuning-set      # run_all_3, task 4
+
+``--tuning-set`` (prompt ``run_all_3``, task 4) runs the same measurement on the whole tuning set as
+``scripts/reproduce.py`` defines it: noise seed 0 of the four families and noise seeds 4 to 9 of ``simple``,
+``bistatic``, ``multistatic`` and ``multistatic_b``, each with both noise models (the old one and harbor_v2), into
+``output/studies/false_tracks/tuning_set/``; it sets no threshold and changes no setting.  Criterion, fixed before
+it ran: at least 20 echo samples (radiator track starts of class ``silent_body``) in the tuning set, both noise models
+together; ``results.json`` gives the counts per class, per noise model and the separation of each quantity with
+those counts.
 """
 
 from __future__ import annotations
@@ -112,10 +121,13 @@ def auc(pos: list[float], neg: list[float]) -> float | None:
     return float(np.mean((p > n) + 0.5 * (p == n)))
 
 
-def record(rec: str, out: Path, use_cuda: bool, log) -> list[dict]:
+def record(rec: str, out: Path, use_cuda: bool, log, obs_path: Path | None = None, processing: str | None = None,
+           seed: int = 0) -> list[dict]:
     """Run the chain on *rec* with the radiator tracker wrapped; one row per radiator track and per confirmed false
-    track."""
-    obs_path = ROOT / "output" / "recordings" / rec / "dataset.observation.npz"
+    track.  *obs_path* (default ``output/recordings/<rec>/dataset.observation.npz``) and *processing* (default
+    ``PROCESSING[rec]``) for the recordings of the tuning set."""
+    obs_path = obs_path or ROOT / "output" / "recordings" / rec / "dataset.observation.npz"
+    processing = processing or PROCESSING[rec]
     truth_path = contract_paths(obs_path)[1]
     truth = Truth.load(truth_path)
     rows: dict[str, dict] = {}
@@ -177,8 +189,8 @@ def record(rec: str, out: Path, use_cuda: bool, log) -> list[dict]:
 
     S.HarborPicture.__init__, SM.RadiatorTracker.update = init, update
     try:
-        s = hs.run_recording(rec, CONFIGS / f"{PROCESSING[rec]}.json", obs_path, truth_path, out / "runs" / rec, False,
-                             use_cuda=use_cuda, seed=0, video=False, figures=False)
+        s = hs.run_recording(rec, CONFIGS / f"{processing}.json", obs_path, truth_path, out / "runs" / rec, False,
+                             use_cuda=use_cuda, seed=seed, video=False, figures=False)
     finally:
         S.HarborPicture.__init__, SM.RadiatorTracker.update = orig_init, orig_update
     from acoustic_sim.contract import Observation
@@ -223,7 +235,22 @@ def main() -> None:
     ap.add_argument("--out", default="output/studies/false_tracks")
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--plot-only", action="store_true", help="redraw from peaks.json")
+    ap.add_argument("--tuning-set", action="store_true", help="the whole tuning set of reproduce.py, both noise models")
     a = ap.parse_args()
+    jobs = [(r, None, None, 0) for r in a.recordings]
+    if a.tuning_set:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import reproduce as R
+
+        if a.out == "output/studies/false_tracks":
+            a.out = "output/studies/false_tracks/tuning_set"
+        jobs = []
+        for r in R.recordings():
+            if r.held_out:
+                continue
+            jobs.append((r.name, contract_paths(r.dataset.with_suffix(".npz"))[0], r.processing, r.seed))
+            jobs.append((f"{r.name}_noise2", contract_paths(r.dataset_noise2.with_suffix(".npz"))[0], r.processing, r.seed))
+        a.recordings = [j[0] for j in jobs]
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     logf = open(out / "run.log", "a")
@@ -237,8 +264,8 @@ def main() -> None:
         rows = json.loads((out / "peaks.json").read_text())
     else:
         rows = []
-        for rec in a.recordings:
-            rows += record(rec, out, not a.cpu, log)
+        for rec, obs_path, proc, seed in jobs:
+            rows += record(rec, out, not a.cpu, log, obs_path, proc, seed)
         (out / "peaks.json").write_text(json.dumps(rows, indent=1, default=float))
 
     starts = [r for r in rows if r["kind"] == "radiator_start"]
@@ -253,22 +280,24 @@ def main() -> None:
         "n_fixes": lambda r: r.get("n_fixes"),
         "duration_s": lambda r: r.get("duration_s"),
     }
-    per_fix = [x for r in starts if r["class"] == "radiator" and r["recording"] != "harbor" for x in r.get("ratio_list", [])]
+    per_fix = [x for r in starts if r["class"] == "radiator" and not r["recording"].startswith("harbor") for x in r.get("ratio_list", [])]
     res0 = {"radiator_fix_ratio_max_fine": float(np.max(per_fix)) if per_fix else None,
             "radiator_fix_ratio_n_fine": len(per_fix)}
     res = {"recordings": a.recordings, "tuning_only": True, "classes": list(CLASSES), "distributions": {}, "separation": {},
+           "provenance": {"truth_inputs": ["object positions (the classes, a diagnostic)"], "simulator_knowledge": [],
+                          "data": "forward_model", "held_out": False},
            "counts": {c: sum(r["class"] == c for r in starts) for c in CLASSES},
            "confirmed_counts": {c: sum(r["class"] == c and r.get("confirmed") for r in starts) for c in CLASSES},
            "false_tracks": [{k: r[k] for k in ("recording", "track", "kind", "class", "object", "xy", "coherence", "ratio")}
                             for r in rows if r["false"]]}
     for q, f in quantities.items():
         per = {c: [f(r) for r in starts if r["class"] == c and f(r) is not None] for c in CLASSES}
-        fine = {c: [f(r) for r in starts if r["class"] == c and f(r) is not None and r["recording"] != "harbor"] for c in CLASSES}
+        fine = {c: [f(r) for r in starts if r["class"] == c and f(r) is not None and not r["recording"].startswith("harbor")] for c in CLASSES}
         res.setdefault("distributions_fine", {})[q] = {c: {"n": len(v), "min": float(np.min(v)) if v else None,
                                                            "max": float(np.max(v)) if v else None,
                                                            "values": [float(x) for x in v]} for c, v in fine.items()}
         conf = {c: [f(r) for r in starts if r["class"] == c and f(r) is not None and r.get("confirmed")
-                    and r["recording"] != "harbor"] for c in CLASSES}
+                    and not r["recording"].startswith("harbor")] for c in CLASSES}
         res.setdefault("confirmed_fine", {})[q] = {c: {"n": len(v), "min": float(np.min(v)) if v else None,
                                                        "max": float(np.max(v)) if v else None} for c, v in conf.items()}
         res["distributions"][q] = {c: {"n": len(v), "median": float(np.median(v)) if v else None,
@@ -294,9 +323,19 @@ def main() -> None:
                 "n_fixes": "fixes of the track", "duration_s": "first to last fix [s]"}[q]
         ax.set_xlabel("class of the peak that started a radiator track (from the truth, a diagnostic)")
         ax.set_ylabel(unit)
-        ax.set_title(f"tuning recordings ({', '.join(a.recordings)}): {unit} per class")
+        ax.set_title(f"tuning recordings ({'the tuning set: seeds 0 and 4 to 9, both noise models' if a.tuning_set else ', '.join(a.recordings)}): "
+                     f"{unit} per class")
         save_figure(fig, out / f"distribution_{q}.png", recording=None)
     res.update(res0)
+    if a.tuning_set:
+        n_echo = res["counts"]["silent_body"]
+        res["criterion"] = {"text": "at least 20 echo samples (radiator track starts of class silent_body) in the tuning set, "
+                                    "both noise models together", "value": n_echo, "passed": n_echo >= 20}
+        res["counts_by_model"] = {m: {c: sum(r["class"] == c for r in starts if r["recording"].endswith("_noise2") == (m == "harbor_v2"))
+                                      for c in CLASSES} for m in ("old", "harbor_v2")}
+        res["confirmed_counts_by_model"] = {m: {c: sum(r["class"] == c and bool(r.get("confirmed")) for r in starts
+                                                       if r["recording"].endswith("_noise2") == (m == "harbor_v2"))
+                                                for c in CLASSES} for m in ("old", "harbor_v2")}
     (out / "results.json").write_text(json.dumps(res, indent=1))
     log(f"counts {res['counts']}; confirmed {res['confirmed_counts']}")
     for q, sep in res["separation"].items():
