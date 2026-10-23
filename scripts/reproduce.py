@@ -704,6 +704,13 @@ def main() -> int:
                                  seed=r.seed, video=False, figures=False)
             hs.report(s)
     if not a.no_walkthrough:
+        try:                                                # the walkthrough is another process: give it the GPU memory
+            import cupy
+
+            cupy.get_default_memory_pool().free_all_blocks()
+            cupy.get_default_pinned_memory_pool().free_all_blocks()
+        except Exception:
+            pass
         for fam in ("simple", "bistatic", "multistatic", "harbor"):
             if a.only is not None and fam not in a.only:
                 continue
