@@ -1,0 +1,23 @@
+2026-10-23 22:14:36 band simple: references 1 % to 99 % of their power 10 to 300 Hz; removal band [10.0, 380.0]; decimation 3
+2026-10-23 22:15:02 band bistatic: references 1 % to 99 % of their power 78 to 762 Hz; removal band [78.0, 762.0]; decimation 3
+2026-10-23 22:16:00 band multistatic: references 1 % to 99 % of their power 120 to 758 Hz; removal band [100.0, 760.0]; decimation 3
+2026-10-23 22:16:29 current on simple: compute 1.21 s/s, latency 2.8 s, silent {'uuv1': 0.578125, 'wreck': 1.0}
+2026-10-23 22:16:57 current on bistatic: compute 1.28 s/s, latency 2.6 s, silent {'uuv1': 0.703125}
+2026-10-23 22:19:04 current on multistatic: compute 2.84 s/s, latency 5.6 s, silent {'uuv1': 0.84375, 'uuv2': 0.953125, 'diver': 0.0, 'piling1': 0.0, 'piling2': 0.0, 'piling3': 0.0, 'piling4': 0.0, 'piling5': 0.0, 'piling6': 0.0, 'moored': 0.828125}, depth {'ferry': 20.253480215375212, 'tug': 21.103683514707704, 'boat': 18.338776978597267}
+2026-10-23 22:19:26 passes1 on simple: compute 0.98 s/s, latency 2.3 s, silent {'uuv1': 0.578125, 'wreck': 1.0}
+2026-10-23 22:19:53 passes1 on bistatic: compute 1.20 s/s, latency 2.4 s, silent {'uuv1': 0.703125}
+2026-10-23 22:21:39 passes1 on multistatic: compute 2.31 s/s, latency 4.4 s, silent {'uuv1': 0.796875, 'uuv2': 0.953125, 'diver': 0.0, 'piling1': 0.0, 'piling2': 0.0, 'piling3': 0.0, 'piling4': 0.0, 'piling5': 0.0, 'piling6': 0.0, 'moored': 0.8125}, depth {'ferry': 19.320866368712675, 'tug': 18.935036021610877, 'boat': 17.120133804645562}
+2026-10-23 22:22:02 previous on simple: compute 1.05 s/s, latency 2.6 s, silent {'uuv1': 0.578125, 'wreck': 1.0}
+2026-10-23 22:22:29 previous on bistatic: compute 1.21 s/s, latency 2.4 s, silent {'uuv1': 0.703125}
+2026-10-23 22:24:22 previous on multistatic: compute 2.49 s/s, latency 4.7 s, silent {'uuv1': 0.828125, 'uuv2': 0.921875, 'diver': 0.0, 'piling1': 0.0, 'piling2': 0.0, 'piling3': 0.0, 'piling4': 0.0, 'piling5': 0.0, 'piling6': 0.0, 'moored': 0.828125}, depth {'ferry': 20.200749005880077, 'tug': 20.819234436577972, 'boat': 18.21045740075727}
+2026-10-23 22:24:50 prefix on simple: compute 1.27 s/s, latency 3.1 s, silent {'uuv1': 0.578125, 'wreck': 1.0}
+2026-10-23 22:25:19 prefix on bistatic: compute 1.30 s/s, latency 2.6 s, silent {'uuv1': 0.703125}
+2026-10-23 22:27:31 prefix on multistatic: compute 2.95 s/s, latency 5.8 s, silent {'uuv1': 0.84375, 'uuv2': 0.953125, 'diver': 0.0, 'piling1': 0.0, 'piling2': 0.0, 'piling3': 0.0, 'piling4': 0.0, 'piling5': 0.0, 'piling6': 0.0, 'moored': 0.828125}, depth {'ferry': 20.25348022019328, 'tug': 21.103683526985186, 'boat': 18.33877698242199}
+2026-10-23 22:27:56 hop on simple: compute 1.15 s/s, latency 2.7 s, silent {'uuv1': 0.6363636363636364, 'wreck': 1.0}
+2026-10-23 22:28:23 hop on bistatic: compute 1.25 s/s, latency 2.3 s, silent {'uuv1': 0.696969696969697}
+2026-10-23 22:30:26 hop on multistatic: compute 2.73 s/s, latency 5.6 s, silent {'uuv1': 0.9090909090909091, 'uuv2': 0.9393939393939394, 'diver': 0.0, 'piling1': 0.0, 'piling2': 0.0, 'piling3': 0.0, 'piling4': 0.0, 'piling5': 0.0, 'piling6': 0.0, 'moored': 0.8181818181818182}, depth {'ferry': 20.253480218865366, 'tug': 21.103683517501594, 'boat': 18.338776973156996}
+2026-10-23 22:30:49 band on simple: compute 1.05 s/s, latency 2.5 s, silent {'uuv1': 0.578125, 'wreck': 1.0}
+2026-10-23 22:31:14 band on bistatic: compute 1.12 s/s, latency 2.3 s, silent {'uuv1': 0.703125}
+2026-10-23 22:32:35 band on multistatic: compute 1.75 s/s, latency 3.1 s, silent {'uuv1': 0.84375, 'uuv2': 0.953125, 'diver': 0.0, 'piling1': 0.0, 'piling2': 0.0, 'piling3': 0.0, 'piling4': 0.0, 'piling5': 0.0, 'piling6': 0.0, 'moored': 0.828125}, depth {'ferry': 20.20700931773922, 'tug': 21.09443063764346, 'boat': 18.32477510498748}
+2026-10-23 22:32:35 qualify: {'passes1': False, 'previous': False, 'prefix': False, 'hop': True, 'band': True}
+2026-10-23 22:34:38 combination ['hop', 'band']: multistatic compute 1.60, depth {'ferry': 20.207009317713606, 'tug': 21.09443063776799, 'boat': 18.324775105504003}, rule met

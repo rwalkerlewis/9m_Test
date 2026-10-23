@@ -1,0 +1,59 @@
+{
+  "simple": {
+    "fs": 3000.0,
+    "f_1pct_hz": 10.0,
+    "f_99pct_hz": 300.0,
+    "processing_band_hz": [
+      100.0,
+      380.0
+    ],
+    "band_hz": [
+      10.0,
+      380.0
+    ],
+    "decimation": 3,
+    "illuminators": [
+      "r1",
+      "r2"
+    ]
+  },
+  "bistatic": {
+    "fs": 6000.0,
+    "f_1pct_hz": 78.0,
+    "f_99pct_hz": 762.0,
+    "processing_band_hz": [
+      100.0,
+      760.0
+    ],
+    "band_hz": [
+      78.0,
+      762.0
+    ],
+    "decimation": 3,
+    "illuminators": [
+      "r1",
+      "r2",
+      "r4"
+    ]
+  },
+  "multistatic": {
+    "fs": 6000.0,
+    "f_1pct_hz": 120.0,
+    "f_99pct_hz": 758.0,
+    "processing_band_hz": [
+      100.0,
+      760.0
+    ],
+    "band_hz": [
+      100.0,
+      760.0
+    ],
+    "decimation": 3,
+    "illuminators": [
+      "r1",
+      "r2",
+      "r3",
+      "r4"
+    ]
+  }
+}
