@@ -4,14 +4,14 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.5802859516486933,
-    "echo": 1.8432145554463204,
-    "characteristics": 0.3398144969971327,
-    "total": 2.7633150040921466
+    "passive": 0.574178038003447,
+    "echo": 1.8345516002482327,
+    "characteristics": 0.33344040120209684,
+    "total": 2.7421700394537765
   },
   "latency_s": {
     "median": 5.415,
-    "max": 6.449
+    "max": 6.414
   },
   "objects": {
     "ferry": {
@@ -40,7 +40,12 @@
       },
       "tracks": [
         "r1"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      }
     },
     "tug": {
       "kind": "ship",
@@ -68,7 +73,12 @@
       },
       "tracks": [
         "r3"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      }
     },
     "boat": {
       "kind": "ship",
@@ -96,7 +106,12 @@
       },
       "tracks": [
         "r2"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      }
     },
     "uuv1": {
       "kind": "uuv",
@@ -124,7 +139,12 @@
       },
       "tracks": [
         "e6"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.140625,
+        "any": 0.13636363636363635
+      }
     },
     "uuv2": {
       "kind": "uuv",
@@ -152,7 +172,12 @@
       },
       "tracks": [
         "e4"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.921875,
+        "any": 0.8939393939393939
+      }
     },
     "diver": {
       "kind": "diver",
@@ -178,7 +203,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling1": {
       "kind": "static",
@@ -204,7 +234,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling2": {
       "kind": "static",
@@ -230,7 +265,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling3": {
       "kind": "static",
@@ -256,7 +296,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling4": {
       "kind": "static",
@@ -282,7 +327,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling5": {
       "kind": "static",
@@ -308,7 +358,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling6": {
       "kind": "static",
@@ -334,7 +389,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "moored": {
       "kind": "ship",
@@ -362,7 +422,12 @@
       },
       "tracks": [
         "e8"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.71875,
+        "any": 0.696969696969697
+      }
     }
   },
   "tracks": [
@@ -717,10 +782,10 @@
     }
   },
   "run": {
-    "git_commit": "66201ad4813bb80a6acbaff0d515d3ca404728d5",
+    "git_commit": "0ab3b416faaf69eb153f0ba1b96d8c77fbfc6c4f",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/multistatic.json",
-    "processing_config_sha256": "faab58a8cd180abaf39f66f5610a0238219a78f6c972d0d51193c6c2b28c0e77",
+    "processing_config_sha256": "1823b906f941f881e9a2d7b14247d0fa9b722f11a28c33a74874de43f6c7342e",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/multistatic/noise2/seed2/dataset.observation.npz",
     "observation_sha256": "b45a376d73b2e04b105a3dc25cdcaab16e160145d66bab88612bdfdcb45d3ba3",
@@ -729,7 +794,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 2,
-    "wall_s": 55.482687316995,
+    "wall_s": 55.06399002399121,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

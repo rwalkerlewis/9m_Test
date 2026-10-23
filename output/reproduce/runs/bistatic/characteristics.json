@@ -1,10 +1,10 @@
 {
   "recording": "bistatic",
   "run": {
-    "git_commit": "e7666a29431925803d4863ed999c64a46a863a52",
+    "git_commit": "96b07d40e40f3d49fb5e63312a7e4f9f6e4e5f80",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/bistatic.json",
-    "processing_config_sha256": "7a1083b7beb6a1d4997fb0236002d7d774f478428c4dbefc9cd52cc3b34a3f62",
+    "processing_config_sha256": "827bf53874f0aad59d4fc9f69dbcc9bbe104d2f692fe3bde5af573cb769bbceb",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/bistatic/dataset.observation.npz",
     "observation_sha256": "31f9b505e5132187d90e9b5fee2b55205a8f5c358ada9bb1fbbf3ddfbde601c1",
@@ -13,7 +13,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 0,
-    "wall_s": 26.040954983007396,
+    "wall_s": 26.322015083002043,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
@@ -59,7 +59,7 @@
       "true_speed": 2.000000000000001,
       "detected_frames": 59,
       "seen": {
-        "own noise": 31,
+        "own noise": 66,
         "echo": 45
       },
       "median": {
@@ -68,10 +68,10 @@
         "along": 3.9,
         "across": 2.9,
         "source_level": 0.1782,
-        "width_major": 8.675,
-        "width_minor": 2.85,
-        "speed": 1.8250000000000002,
-        "residual": 1.77
+        "width_major": 45.89,
+        "width_minor": 5.85,
+        "speed": 1.46,
+        "residual": 2.75
       },
       "size_ratio_per_frame": {
         "6.75": 4.1,

@@ -35,7 +35,12 @@
       },
       "tracks": [
         "r1"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      }
     },
     "tug": {
       "kind": "ship",
@@ -63,7 +68,12 @@
       },
       "tracks": [
         "r3"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      }
     },
     "boat": {
       "kind": "ship",
@@ -91,7 +101,12 @@
       },
       "tracks": [
         "r2"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      }
     },
     "uuv1": {
       "kind": "uuv",
@@ -119,7 +134,12 @@
       },
       "tracks": [
         "e10"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.84375,
+        "any": 0.8181818181818182
+      }
     },
     "uuv2": {
       "kind": "uuv",
@@ -147,7 +167,12 @@
       },
       "tracks": [
         "e6"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.953125,
+        "any": 0.9242424242424242
+      }
     },
     "diver": {
       "kind": "diver",
@@ -173,7 +198,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling1": {
       "kind": "static",
@@ -199,7 +229,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling2": {
       "kind": "static",
@@ -225,7 +260,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling3": {
       "kind": "static",
@@ -251,7 +291,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling4": {
       "kind": "static",
@@ -277,7 +322,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling5": {
       "kind": "static",
@@ -303,7 +353,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "piling6": {
       "kind": "static",
@@ -329,7 +384,12 @@
         "echo": null,
         "any": null
       },
-      "tracks": []
+      "tracks": [],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      }
     },
     "moored": {
       "kind": "ship",
@@ -357,7 +417,12 @@
       },
       "tracks": [
         "e12"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.828125,
+        "any": 0.803030303030303
+      }
     }
   },
   "tracks": [
@@ -601,10 +666,10 @@
     ]
   },
   "run": {
-    "git_commit": "66201ad4813bb80a6acbaff0d515d3ca404728d5",
+    "git_commit": "0ab3b416faaf69eb153f0ba1b96d8c77fbfc6c4f",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/multistatic.json",
-    "processing_config_sha256": "faab58a8cd180abaf39f66f5610a0238219a78f6c972d0d51193c6c2b28c0e77",
+    "processing_config_sha256": "1823b906f941f881e9a2d7b14247d0fa9b722f11a28c33a74874de43f6c7342e",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/multistatic/dataset.observation.npz",
     "observation_sha256": "155d1549a955c96bd19583164646e828c1ef91b50430d5c82323f397f039d5ba",
@@ -613,7 +678,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": null,
-    "wall_s": 57.704631586006144,
+    "wall_s": 57.73509798900341,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
