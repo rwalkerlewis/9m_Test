@@ -385,3 +385,89 @@
 2026-10-23 20:56:24 walkthrough figures of bistatic
 2026-10-23 20:57:31 walkthrough figures of multistatic
 2026-10-23 20:59:22 walkthrough figures of harbor
+2026-10-23 22:35:48 running the chain on simple (tuning recording)
+2026-10-23 22:36:15 running the chain on bistatic (tuning recording)
+2026-10-23 22:36:42 running the chain on multistatic (tuning recording)
+2026-10-23 22:37:21 running the chain on harbor (tuning recording)
+2026-10-23 22:38:27 running the chain on simple_seed1 (test recording)
+2026-10-23 22:38:50 running the chain on simple_seed2 (test recording)
+2026-10-23 22:39:14 running the chain on simple_seed3 (test recording)
+2026-10-23 22:39:38 running the chain on bistatic_seed1 (test recording)
+2026-10-23 22:40:04 running the chain on bistatic_seed2 (test recording)
+2026-10-23 22:40:31 running the chain on bistatic_seed3 (test recording)
+2026-10-23 22:40:59 running the chain on multistatic_seed1 (test recording)
+2026-10-23 22:41:36 running the chain on multistatic_seed2 (test recording)
+2026-10-23 22:42:12 running the chain on multistatic_seed3 (test recording)
+2026-10-23 22:42:48 running the chain on harbor_seed1 (test recording)
+2026-10-23 22:43:54 running the chain on harbor_seed2 (test recording)
+2026-10-23 22:45:00 running the chain on harbor_seed3 (test recording)
+2026-10-23 22:46:07 running the chain on multistatic_b (test recording)
+2026-10-23 22:48:13 running the chain on simple_tune4 (tuning recording)
+2026-10-23 22:48:34 running the chain on simple_tune5 (tuning recording)
+2026-10-23 22:48:55 running the chain on simple_tune6 (tuning recording)
+2026-10-23 22:49:15 running the chain on simple_tune7 (tuning recording)
+2026-10-23 22:49:36 running the chain on simple_tune8 (tuning recording)
+2026-10-23 22:49:57 running the chain on simple_tune9 (tuning recording)
+2026-10-23 22:50:17 running the chain on bistatic_tune4 (tuning recording)
+2026-10-23 22:50:39 running the chain on bistatic_tune5 (tuning recording)
+2026-10-23 22:51:01 running the chain on bistatic_tune6 (tuning recording)
+2026-10-23 22:51:23 running the chain on bistatic_tune7 (tuning recording)
+2026-10-23 22:51:48 running the chain on bistatic_tune8 (tuning recording)
+2026-10-23 22:52:11 running the chain on bistatic_tune9 (tuning recording)
+2026-10-23 22:52:34 running the chain on multistatic_tune4 (tuning recording)
+2026-10-23 22:53:07 running the chain on multistatic_tune5 (tuning recording)
+2026-10-23 22:53:41 running the chain on multistatic_tune6 (tuning recording)
+2026-10-23 22:54:14 running the chain on multistatic_tune7 (tuning recording)
+2026-10-23 22:54:47 running the chain on multistatic_tune8 (tuning recording)
+2026-10-23 22:55:21 running the chain on multistatic_tune9 (tuning recording)
+2026-10-23 22:55:53 running the chain on multistatic_b_tune4 (tuning recording)
+2026-10-23 22:57:34 running the chain on multistatic_b_tune5 (tuning recording)
+2026-10-23 22:59:14 running the chain on multistatic_b_tune6 (tuning recording)
+2026-10-23 23:00:53 running the chain on multistatic_b_tune7 (tuning recording)
+2026-10-23 23:02:36 running the chain on multistatic_b_tune8 (tuning recording)
+2026-10-23 23:04:19 running the chain on multistatic_b_tune9 (tuning recording)
+2026-10-23 23:06:01 running the chain on simple mixed with harbor_v2
+2026-10-23 23:06:21 running the chain on bistatic mixed with harbor_v2
+2026-10-23 23:06:41 running the chain on multistatic mixed with harbor_v2
+2026-10-23 23:07:13 running the chain on harbor mixed with harbor_v2
+2026-10-23 23:08:18 running the chain on simple_seed1 mixed with harbor_v2
+2026-10-23 23:08:39 running the chain on simple_seed2 mixed with harbor_v2
+2026-10-23 23:09:00 running the chain on simple_seed3 mixed with harbor_v2
+2026-10-23 23:09:20 running the chain on bistatic_seed1 mixed with harbor_v2
+2026-10-23 23:09:40 running the chain on bistatic_seed2 mixed with harbor_v2
+2026-10-23 23:10:00 running the chain on bistatic_seed3 mixed with harbor_v2
+2026-10-23 23:10:20 running the chain on multistatic_seed1 mixed with harbor_v2
+2026-10-23 23:10:51 running the chain on multistatic_seed2 mixed with harbor_v2
+2026-10-23 23:11:23 running the chain on multistatic_seed3 mixed with harbor_v2
+2026-10-23 23:11:53 running the chain on harbor_seed1 mixed with harbor_v2
+2026-10-23 23:12:58 running the chain on harbor_seed2 mixed with harbor_v2
+2026-10-23 23:14:03 running the chain on harbor_seed3 mixed with harbor_v2
+2026-10-23 23:15:07 running the chain on multistatic_b mixed with harbor_v2
+2026-10-23 23:16:44 running the chain on simple_tune4 mixed with harbor_v2
+2026-10-23 23:17:04 running the chain on simple_tune5 mixed with harbor_v2
+2026-10-23 23:17:24 running the chain on simple_tune6 mixed with harbor_v2
+2026-10-23 23:17:45 running the chain on simple_tune7 mixed with harbor_v2
+2026-10-23 23:18:05 running the chain on simple_tune8 mixed with harbor_v2
+2026-10-23 23:18:25 running the chain on simple_tune9 mixed with harbor_v2
+2026-10-23 23:18:45 running the chain on bistatic_tune4 mixed with harbor_v2
+2026-10-23 23:19:05 running the chain on bistatic_tune5 mixed with harbor_v2
+2026-10-23 23:19:25 running the chain on bistatic_tune6 mixed with harbor_v2
+2026-10-23 23:19:45 running the chain on bistatic_tune7 mixed with harbor_v2
+2026-10-23 23:20:05 running the chain on bistatic_tune8 mixed with harbor_v2
+2026-10-23 23:20:26 running the chain on bistatic_tune9 mixed with harbor_v2
+2026-10-23 23:20:46 running the chain on multistatic_tune4 mixed with harbor_v2
+2026-10-23 23:21:18 running the chain on multistatic_tune5 mixed with harbor_v2
+2026-10-23 23:21:50 running the chain on multistatic_tune6 mixed with harbor_v2
+2026-10-23 23:22:21 running the chain on multistatic_tune7 mixed with harbor_v2
+2026-10-23 23:22:52 running the chain on multistatic_tune8 mixed with harbor_v2
+2026-10-23 23:23:23 running the chain on multistatic_tune9 mixed with harbor_v2
+2026-10-23 23:23:56 running the chain on multistatic_b_tune4 mixed with harbor_v2
+2026-10-23 23:25:32 running the chain on multistatic_b_tune5 mixed with harbor_v2
+2026-10-23 23:27:08 running the chain on multistatic_b_tune6 mixed with harbor_v2
+2026-10-23 23:28:45 running the chain on multistatic_b_tune7 mixed with harbor_v2
+2026-10-23 23:30:22 running the chain on multistatic_b_tune8 mixed with harbor_v2
+2026-10-23 23:31:58 running the chain on multistatic_b_tune9 mixed with harbor_v2
+2026-10-23 23:33:33 walkthrough figures of simple
+2026-10-23 23:34:35 walkthrough figures of bistatic
+2026-10-23 23:35:39 walkthrough figures of multistatic
+2026-10-23 23:37:06 walkthrough figures of harbor

@@ -21,3 +21,12 @@
 2026-10-23 22:32:35 band on multistatic: compute 1.75 s/s, latency 3.1 s, silent {'uuv1': 0.84375, 'uuv2': 0.953125, 'diver': 0.0, 'piling1': 0.0, 'piling2': 0.0, 'piling3': 0.0, 'piling4': 0.0, 'piling5': 0.0, 'piling6': 0.0, 'moored': 0.828125}, depth {'ferry': 20.20700931773922, 'tug': 21.09443063764346, 'boat': 18.32477510498748}
 2026-10-23 22:32:35 qualify: {'passes1': False, 'previous': False, 'prefix': False, 'hop': True, 'band': True}
 2026-10-23 22:34:38 combination ['hop', 'band']: multistatic compute 1.60, depth {'ferry': 20.207009317713606, 'tug': 21.09443063776799, 'boat': 18.324775105504003}, rule met
+2026-10-23 23:39:49 depth on multistatic: {'ferry': 20.207009317739214, 'tug': 21.09443063764346, 'boat': 18.32477510498748}
+2026-10-23 23:41:58 depth on multistatic_seed1: {'ferry': 19.95158926653216, 'tug': 20.932505279897608, 'boat': 19.16712211838115}
+2026-10-23 23:43:12 depth on multistatic_seed2: {'ferry': 19.994275271457226, 'tug': 23.79900183034303, 'boat': 17.66289012193558}
+2026-10-23 23:44:26 depth on multistatic_seed3: {'ferry': 20.176476066271434, 'tug': 21.107841874928752, 'boat': 18.24110831733877}
+2026-10-23 23:48:19 depth on multistatic_b: {'ferry': 19.55100760953193, 'tug': 19.451057005555157, 'boat': 15.848874264693567}
+2026-10-23 23:48:21 FAIL: compute per second of data at most 1.5 on every 0.5 m recording
+2026-10-23 23:48:21 FAIL: median latency at most 3 s on every 0.5 m recording
+2026-10-23 23:48:21 FAIL: the removal depth of every ship on the multistatic recordings at least 18 dB
+2026-10-23 23:48:21 FAIL: no silent body's Pd down by more than 3 points on either noise model (test recordings)

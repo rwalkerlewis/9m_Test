@@ -42,7 +42,8 @@ Criteria, fixed in the prompt before any measurement (``--criteria BEFORE AFTER`
    recordings and ``multistatic_b``, tuning and test, old noise model);
 2. ``latency``: median latency at most 3 s on the same recordings;
 3. ``depth``: the removal depth (median over the live cable channels) of every ship on the multistatic recordings
-   (``multistatic`` noise seeds 0 to 3 and ``multistatic_b``, ``--depth``) at least 18 dB;
+   (``multistatic`` noise seeds 0 to 3 and ``multistatic_b``, ``--depth``; a mixed seed's direct components are its
+   seed 0 recording's, the same gathers) at least 18 dB;
 4. ``no_fall``: no silent body's Pd (echo tracks) down by more than 3 points on either noise model on the test
    recordings.
 
@@ -185,8 +186,13 @@ def run_one(name: str, overrides: list[str], use_cuda: bool, depth: bool = False
            "ships_pd": {o: v["pd"].get("radiator") for o, v in sc["objects"].items() if v["radiates"]},
            "false_tracks": sc["false_tracks"]["count"]}
     if depth:
-        gain = np.asarray(truth.gain, dtype=np.float64)[:, None]
-        comps = {k: gain * np.asarray(v, dtype=np.float64) for k, v in truth.components.items() if k.startswith("direct:")}
+        src = truth
+        if truth.components is None:                       # a mixed seed: the same gathers as the seed 0 recording
+            import reproduce as R
+
+            src = Truth.load(contract_paths(ROOT / f"{R.FAMILIES[r.family].dataset}.npz")[1])
+        gain = np.asarray(src.gain, dtype=np.float64)[:, None]
+        comps = {k: gain * np.asarray(v, dtype=np.float64) for k, v in src.components.items() if k.startswith("direct:")}
         rd = run(obs, cfg, use_cuda=use_cuda, provenance=Provenance(data="forward_model", truth_inputs=["components"]),
                  observation_path=obs_p, components=comps)
         live = np.ones(obs.geometry.n_receivers, bool)
@@ -299,6 +305,26 @@ def criteria(before: dict, after: dict, depth: dict) -> list[dict]:
     return out
 
 
+def options_table() -> str:
+    """``options.md``: per option (and the combination) the multistatic compute and latency, the depth per ship and the
+    silent bodies' Pd on the tuning recordings."""
+    res = json.loads((OUT / "options.json").read_text())
+    comb = json.loads((OUT / "combination.json").read_text())
+    rows = {k: v for k, v in res.items() if not k.startswith("_")}
+    if comb.get("tried"):
+        rows[" + ".join(comb["tried"][-1]["options"])] = comb["tried"][-1]["result"]
+    lines = ["| Option | Compute per s of data: simple / bistatic / multistatic | Latency, multistatic [s] | Depth on multistatic: "
+             "ferry / tug / boat [dB] | Silent bodies by echo (tuning recordings) | Qualifies |", "|---|---|---|---|---|---|"]
+    for k, v in rows.items():
+        d = v["multistatic"]["depth_db"]
+        sil = "; ".join(f"{f} {o} {100 * x:.0f} %" for f in TUNING for o, x in v[f]["silent_pd"].items() if x)
+        q = res.get("_qualifies", {}).get(k)
+        lines.append(f"| {k} | {' / '.join(f'{v[f]['compute_per_second_of_data']:.2f}' for f in TUNING)} | "
+                     f"{v['multistatic']['latency_median_s']:.1f} | {d.get('ferry', 0):.1f} / {d.get('tug', 0):.1f} / {d.get('boat', 0):.1f} | "
+                     f"{sil} | {'-' if q is None else 'yes' if q else 'no'} |")
+    return "\n".join(lines) + "\n"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--measure-band", action="store_true")
@@ -320,6 +346,8 @@ def main() -> None:
         measure_combination(cuda)
     if a.depth is not None:
         measure_depth(a.depth or ["multistatic", "multistatic_seed1", "multistatic_seed2", "multistatic_seed3", "multistatic_b"], cuda)
+    if (OUT / "options.json").exists() and (OUT / "combination.json").exists():
+        (OUT / "options.md").write_text(options_table())
     if a.criteria:
         before, after = (json.loads(Path(p).read_text()) for p in a.criteria)
         res = criteria(before, after, json.loads((OUT / "depth.json").read_text()))

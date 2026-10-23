@@ -1,0 +1,106 @@
+{
+ "criteria": [
+  {
+   "id": "compute",
+   "text": "compute per second of data at most 1.5 on every 0.5 m recording",
+   "values": {
+    "bistatic": 1.037075864700455,
+    "multistatic": 1.5677809651497228,
+    "bistatic_seed1": 1.0537033938053355,
+    "bistatic_seed2": 1.1143638705027115,
+    "bistatic_seed3": 1.1343428091109673,
+    "multistatic_seed1": 1.6211273071072356,
+    "multistatic_seed2": 1.5449121220983215,
+    "multistatic_seed3": 1.5753390636964468,
+    "multistatic_b": 1.8098256902647942
+   },
+   "before": {
+    "bistatic": 1.2982940829439031,
+    "multistatic": 2.8549964033503783,
+    "bistatic_seed1": 1.2017379510507453,
+    "bistatic_seed2": 1.4500636395037874,
+    "bistatic_seed3": 1.4856034995478695,
+    "multistatic_seed1": 2.927737630442425,
+    "multistatic_seed2": 2.902285703692178,
+    "multistatic_seed3": 2.9034593050499096,
+    "multistatic_b": 2.9628340065493832
+   },
+   "passed": false
+  },
+  {
+   "id": "latency",
+   "text": "median latency at most 3 s on every 0.5 m recording",
+   "values": {
+    "bistatic": 2.2175000000000002,
+    "multistatic": 2.9345,
+    "bistatic_seed1": 2.2725,
+    "bistatic_seed2": 2.275,
+    "bistatic_seed3": 2.2765,
+    "multistatic_seed1": 3.0140000000000002,
+    "multistatic_seed2": 2.9130000000000003,
+    "multistatic_seed3": 2.9405,
+    "multistatic_b": 2.9865000000000004
+   },
+   "passed": false
+  },
+  {
+   "id": "depth",
+   "text": "the removal depth of every ship on the multistatic recordings at least 18 dB",
+   "values": {
+    "multistatic": {
+     "ferry": 20.207009317739214,
+     "tug": 21.09443063764346,
+     "boat": 18.32477510498748
+    },
+    "multistatic_seed1": {
+     "ferry": 19.95158926653216,
+     "tug": 20.932505279897608,
+     "boat": 19.16712211838115
+    },
+    "multistatic_seed2": {
+     "ferry": 19.994275271457226,
+     "tug": 23.79900183034303,
+     "boat": 17.66289012193558
+    },
+    "multistatic_seed3": {
+     "ferry": 20.176476066271434,
+     "tug": 21.107841874928752,
+     "boat": 18.24110831733877
+    },
+    "multistatic_b": {
+     "ferry": 19.55100760953193,
+     "tug": 19.451057005555157,
+     "boat": 15.848874264693567
+    }
+   },
+   "passed": false
+  },
+  {
+   "id": "no_fall",
+   "text": "no silent body's Pd down by more than 3 points on either noise model (test recordings)",
+   "values": {
+    "recordings/multistatic_seed2/moored": {
+     "before": 0.828125,
+     "after": 0.6666666666666666
+    },
+    "recordings/multistatic_b/diver": {
+     "before": 0.7410714285714286,
+     "after": 0.6637168141592921
+    },
+    "recordings_noise2/bistatic_seed1/uuv1": {
+     "before": 0.78125,
+     "after": 0.6363636363636364
+    },
+    "recordings_noise2/multistatic_seed3/moored": {
+     "before": 0.625,
+     "after": 0.3939393939393939
+    },
+    "recordings_noise2/multistatic_b/uuv2": {
+     "before": 0.8169642857142857,
+     "after": 0.7168141592920354
+    }
+   },
+   "passed": false
+  }
+ ]
+}
