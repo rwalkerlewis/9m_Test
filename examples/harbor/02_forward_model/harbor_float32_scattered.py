@@ -20,7 +20,8 @@ rebuilt gather is then compared
 and the number of rebuilt gathers is reported.  If the rebuilt gather gives the same traces, or fails again, the
 difference is the precision's and the criterion fails.  (The words "and is then within the limit" and "or fails
 again" were added after the build, to state how the rule was applied when the rebuilt gathers diverged again; they
-make it stricter, and the result is the same either way: fail.)
+make it stricter, and the result is the same either way: fail.)  In the float32 build with the float32 k space runs one at a time
+(``runs_alone``, 2026-10-22 evening) no component was over the limit and the rule was not used.
 
     python examples/harbor/02_forward_model/harbor_float32_scattered.py --built64 <dir> --built32 output/recordings \\
         [--recordings simple bistatic multistatic multistatic_b harbor]
@@ -81,7 +82,7 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     path = out / "scattered.json"
     res = {"criterion": CRITERION, "measure": "rms of (float32 - float64) over the rms of float64, every channel and sample",
-           "recordings": {}}
+           "built64": a.built64, "built32": a.built32, "recordings": {}}
     for rec in a.recordings:
         p64 = Path(a.built64) / rec / "dataset.npz"
         p32 = Path(a.built32) / rec / "dataset.npz"
@@ -89,6 +90,9 @@ def main() -> None:
         if t32.scenario["fdtd"].get("precision") != "float32" or t64.scenario["fdtd"].get("precision", "float64") != "float64":
             raise SystemExit(f"{rec}: the two builds are not float64 and float32")
         rows = compare(t64, t32)
+        build = Path(a.built32) / rec / "build.json"
+        if build.exists():
+            res.setdefault("built32_commit", {})[rec] = json.loads(build.read_text()).get("run", {}).get("git_commit")
         res["recordings"][rec] = rows
         for k, r in rows.items():
             print(f"{rec} {k}: {r['rel_rms']:.2e} (worst channel {r['worst_channel_rel_rms']:.2e})", flush=True)

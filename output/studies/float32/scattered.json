@@ -3,6 +3,8 @@
     "scattered_rel_rms": 0.001
   },
   "measure": "rms of (float32 - float64) over the rms of float64, every channel and sample",
+  "built64": "output/recordings",
+  "built32": "scratch/f32/build32a",
   "recordings": {
     "simple": {
       "direct:boat": {
@@ -90,6 +92,13 @@
         "worst_channel_rel_rms": 6.4905642043906655e-06
       }
     }
+  },
+  "built32_commit": {
+    "simple": "a1ded29c5623b495e768d9ed73943f400889a4db",
+    "bistatic": "a1ded29c5623b495e768d9ed73943f400889a4db",
+    "multistatic": "a1ded29c5623b495e768d9ed73943f400889a4db",
+    "multistatic_b": "a1ded29c5623b495e768d9ed73943f400889a4db",
+    "harbor": "a1ded29c5623b495e768d9ed73943f400889a4db"
   },
   "max_scattered_rel_rms": 0.00022858435693458087,
   "passed": true

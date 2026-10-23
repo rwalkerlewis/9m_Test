@@ -47,7 +47,8 @@ over 100 m from the grid's edge. A plain CuPy k space loop with two identical me
 no land, 100 000 steps, stayed stable, but its members also differed by about 1e-5 from the first steps on: cuFFT's
 batched single precision transform on these sizes does not give identical members identical results. **The cause of
 the divergence was not found.** Not tried: a float32 build with batches of one (the single runs were tested to 30 s
-only, not the 60 s of the recording), and the scheme's stability in float32 with the harbor's speed map and land mask.
+only, not the 60 s of the recording), and the scheme's stability in float32 with the harbor's speed map and land mask. (Both were done in the follow up
+below, which found the mechanism.)
 
 The float32 build's logs and build files are in `build32/<recording>/` (the build times: `build.json`,
 `fdtd_wall_s`; for `multistatic_b`, `build_first.json` is the whole first build, 6 runs in 898 s, and `build.json` the
