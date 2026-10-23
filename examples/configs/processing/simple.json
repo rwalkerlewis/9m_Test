@@ -52,7 +52,8 @@
     "shape_radius": 20,
     "explain_fraction": 0.5,
     "illuminator_margin_db": 10.0,
-    "echo_coherence": 0.7
+    "echo_coherence": 0.7,
+    "last_heard_s": 30.0
   },
   "echo": {
     "stream": {
