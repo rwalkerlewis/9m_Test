@@ -208,6 +208,8 @@ Float32 with the waits described below (float64 does not wait).
 The whole build of the recordings in float32 took 51, 110, 297, 104 and 898 s of FDTD (`simple`, `bistatic`,
 `multistatic`, `harbor`, `multistatic_b`) against 356, 691, 2026, 468 and 6079 s in float64
 (`output/studies/float32/build32/`; the `multistatic_b` float32 build is the one whose boat runs diverged, below).
+Built again with the float32 k space runs one at a time (`runs_alone`, below): 92, 155, 485, 290 and 1473 s
+(`output/studies/float32/build32a/`), 2495 s for all five against 1460 s batched in float32 and 9620 s in float64.
 
 **Runs that differ between processes.** On the 601 x 801 grids the float32 k space runs on the GPU did not always give
 the same traces: in about one fresh process in three a run differed from the same run in another process, in one in
@@ -220,18 +222,30 @@ never affected (0 in 180 runs), does not wait. The array path (`FDTDSolver._sche
 switched off) has no waits. The cause was not found (`output/studies/float32/gpu_determinism.md`, every condition tried and its
 counts).
 
-**The scattered component: fail.** Criterion, fixed before the run: the scattered component within 1e-3 of its rms
-(the rms of the float32 less float64 difference over the rms of the float64 component, every channel and sample, as
-the performance work measured it), from the recordings built in both precisions
-(`harbor_float32_scattered.py`, `scattered.md`). On `simple`, `bistatic` and `multistatic` every scattered component
-is within 3.8e-5 to 3.3e-4 and every direct component within 1.6e-5 to 6.2e-5; the 5 m `harbor` stores no components
-and its noise free sum agrees within 4.1e-6; on `multistatic_b` the ferry's and the tug's scattered components are
-within 1.5e-4 and 1.7e-4. The boat's two runs on `multistatic_b`, run together as one batch, diverged (the field grew
-without bound after 15 to 25 s), in the build, when built again, and in every further batched run, with or without
-the bodies and with `CUDA_LAUNCH_BLOCKING=1`; the same run alone did not diverge (to 30 s), and float64 never did. The
-cause was not found (`output/studies/float32/batched_divergence.md`). So the criterion fails and float64 stays the
-default in every scenario file: the recordings were put back to their float64 build, `scripts/reproduce.py` was not
-run again and no number of `docs/harbor.md` moved (`--check`: 0 fail).
+**The scattered component: fail in the first build, pass with the runs alone.** Criterion, fixed before the run: the
+scattered component within 1e-3 of its rms (the rms of the float32 less float64 difference over the rms of the float64
+component, every channel and sample, as the performance work measured it), from the recordings built in both
+precisions (`harbor_float32_scattered.py`, `scattered.md`). In the first float32 build every component of `simple`,
+`bistatic`, `multistatic` and `harbor` and the ferry's and the tug's of `multistatic_b` were within 3.3e-4, but the
+boat's two runs on `multistatic_b`, run together as one batch, diverged (the field grew without bound after 15 to
+25 s) in the build, when built again and in every further batched run: **fail**.
+
+The cause of that divergence is the batched float32 inverse FFT (`output/studies/float32/batched_divergence.md`): on
+the Quadro, `irfft2` over a batch of fields sometimes returns a corrupted field (19 in 100 000 calls of the k space
+pair on the 601 x 801 grid; none in float64 and none on a 2D field), in cuFFT 11.4 and in the cuFFT of CUDA 13 alike.
+Each corrupted step changes the whole field at once; the scheme damps the jump, and repeated jumps carried the boat's
+runs to 1e16. Why the batched transform fails on this card was not found. The scheme itself is as stable in float32
+as in float64 with the harbor's speed map and land mask: a broadband burst decays at the float64 rate in float32. So
+`simulate_sources` now runs float32 k space jobs one at a time (`runs_alone` in `water/fdtd_runner.py`; float64 and
+the leapfrog still batch). Run alone, the boat's runs stayed within 3.0e-5 of float64 over the full 60 s, and the five
+recordings built again that way **pass**: every scattered component within 2.9e-5 to 2.29e-4 (the boat's on
+`multistatic_b` 1.22e-4), every direct component within 1.6e-5 to 5.8e-5, the `harbor` noise free sum within 4.0e-6.
+The runs alone still carry the rarer fault of the runs that differ between processes (above): a burst left to decay
+in float32 met it three and four times in 20 s, as jumps of up to 4e-5 of the burst, while the four 60 s boat runs
+alone met it not once; a float32 recording is therefore still compared with float64. The criterion now passes on
+every component, which is what a switch of the default needs; the switch was not made: `precision` stays float64 in
+every scenario file, the recordings were left at their float64 build, `scripts/reproduce.py` was not run and no number
+of `docs/harbor.md` moved. Whether to switch is Moyshe's decision.
 
 **Section 2, the ECA in mixed precision: pass.** The ECA in mixed precision against double on the stage 0a cases
 (`harbor_cancellation_depth.py --eca-precision`, the gathers of `output/studies/direct_path/cache/`, the processing
@@ -280,7 +294,8 @@ frames, `eca_gpu_<precision>.json`). The echo chain's time per second of data, d
 | multistatic | direct path of boat | 13.992 | 13.992 | -0.0000 |
 | multistatic | echo loss, boat>bodies | 1.367 | 1.367 | -0.0000 |
 
-What stays: `precision` is float64 in every scenario file (the scattered criterion failed) and `eca_precision` is
+What stays: `precision` is float64 in every scenario file (the scattered criterion passes with the runs alone, but
+the switch is left to Moyshe) and `eca_precision` is
 `float64` in every processing config (the prompt leaves processing parameters unchanged; `"mixed"` is available).
 
 ### CFL stability condition
