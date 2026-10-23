@@ -64,6 +64,14 @@ output/studies/**/tracks.csv
 !output/walkthrough/multistatic/08_geometry_ray_paths.png
 !output/walkthrough/simple/05_direct_path_removal_channels.png
 !output/walkthrough/simple/06_echo_map_full_record.png
+!output/studies/false_tracks/distribution_coherence_debiased.png
+!output/studies/false_tracks/distribution_ratio_median.png
+!output/studies/false_tracks/distribution_width_major_m.png
+!output/studies/false_tracks/distribution_width_minor_m.png
+!output/studies/false_tracks/distribution_n_fixes.png
+!output/studies/false_tracks/boat/boat_peaks_before.png
+!output/studies/false_tracks/boat/boat_frames_before.png
+!output/studies/false_tracks/boat/boat_frames_after.png
 *.jpg
 *.jpeg
 *.mp4

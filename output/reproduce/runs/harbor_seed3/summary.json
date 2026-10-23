@@ -4,13 +4,13 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.5333641074004845,
+    "passive": 0.5399752539167821,
     "echo": 0.0,
-    "characteristics": 0.003773921375250211,
-    "total": 0.5371380287757347
+    "characteristics": 0.003904759083404012,
+    "total": 0.5438800130001861
   },
   "latency_s": {
-    "median": 1.108,
+    "median": 1.1195,
     "max": 1.278
   },
   "objects": {
@@ -19,23 +19,24 @@
       "radiates": true,
       "ais": true,
       "pd": {
-        "radiator": 0.6666666666666666,
-        "any": 0.6666666666666666
+        "radiator": 0.6296296296296297,
+        "any": 0.6296296296296297
       },
       "frames": {
         "radiator": 54,
         "any": 54
       },
       "hits": {
-        "radiator": 36,
-        "any": 36
+        "radiator": 34,
+        "any": 34
       },
       "median_error_m": {
-        "radiator": 3.0240052435751847,
-        "any": 3.0240052435751847
+        "radiator": 2.4065514270369315,
+        "any": 2.4065514270369315
       },
       "tracks": [
-        "r13",
+        "r15",
+        "r7",
         "r8"
       ]
     },
@@ -60,7 +61,7 @@
         "any": 1.4535524287453017
       },
       "tracks": [
-        "r18"
+        "r20"
       ]
     },
     "moored": {
@@ -177,62 +178,16 @@
   "tracks": [
     {
       "track": "r7",
-      "fixes": 7,
-      "first_t": 14.0,
-      "last_t": 32.0,
-      "true_object": null,
-      "false_track": true,
-      "nearest_object": "ferry",
-      "median_error_m": 21.213203435596505,
-      "first_xy": [
-        1395.0,
-        330.0
-      ],
-      "last_xy": [
-        1395.0,
-        435.0
-      ],
-      "median_xy": [
-        1395.0,
-        375.0
-      ],
-      "kind": "radiator"
-    },
-    {
-      "track": "r9",
-      "fixes": 3,
-      "first_t": 14.0,
-      "last_t": 18.0,
-      "true_object": null,
-      "false_track": true,
-      "nearest_object": "ferry",
-      "median_error_m": 39.44616584663209,
-      "first_xy": [
-        1400.0,
-        310.0
-      ],
-      "last_xy": [
-        1400.0,
-        335.0
-      ],
-      "median_xy": [
-        1400.0,
-        320.0
-      ],
-      "kind": "radiator"
-    },
-    {
-      "track": "r8",
-      "fixes": 31,
+      "fixes": 32,
       "first_t": 14.0,
       "last_t": 80.0,
       "true_object": "ferry",
       "false_track": false,
       "nearest_object": "ferry",
-      "median_error_m": 1.001517381303623,
+      "median_error_m": 2.0,
       "first_xy": [
-        1380.0,
-        345.0
+        1395.0,
+        330.0
       ],
       "last_xy": [
         1390.0,
@@ -240,12 +195,58 @@
       ],
       "median_xy": [
         1380.0,
-        560.0
+        552.5
       ],
       "kind": "radiator"
     },
     {
-      "track": "r13",
+      "track": "r9",
+      "fixes": 9,
+      "first_t": 14.0,
+      "last_t": 30.0,
+      "true_object": null,
+      "false_track": true,
+      "nearest_object": "ferry",
+      "median_error_m": 39.44616584663214,
+      "first_xy": [
+        1400.0,
+        310.0
+      ],
+      "last_xy": [
+        1395.0,
+        425.0
+      ],
+      "median_xy": [
+        1400.0,
+        355.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r8",
+      "fixes": 1,
+      "first_t": 14.0,
+      "last_t": 14.0,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 0.9999999999999432,
+      "first_xy": [
+        1380.0,
+        345.0
+      ],
+      "last_xy": [
+        1380.0,
+        345.0
+      ],
+      "median_xy": [
+        1380.0,
+        345.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r15",
       "fixes": 20,
       "first_t": 80.0,
       "last_t": 118.0,
@@ -268,7 +269,7 @@
       "kind": "radiator"
     },
     {
-      "track": "r14",
+      "track": "r16",
       "fixes": 1,
       "first_t": 80.0,
       "last_t": 80.0,
@@ -291,7 +292,7 @@
       "kind": "radiator"
     },
     {
-      "track": "r15",
+      "track": "r17",
       "fixes": 1,
       "first_t": 80.0,
       "last_t": 80.0,
@@ -314,7 +315,7 @@
       "kind": "radiator"
     },
     {
-      "track": "r18",
+      "track": "r20",
       "fixes": 2,
       "first_t": 114.0,
       "last_t": 116.0,
@@ -338,59 +339,36 @@
     }
   ],
   "false_tracks": {
-    "count": 4,
-    "per_minute": 2.0,
-    "radiator": 4,
+    "count": 3,
+    "per_minute": 1.5,
+    "radiator": 3,
     "echo": 0,
     "tracks": [
       {
-        "track": "r7",
-        "fixes": 7,
-        "first_t": 14.0,
-        "last_t": 32.0,
-        "true_object": null,
-        "false_track": true,
-        "nearest_object": "ferry",
-        "median_error_m": 21.213203435596505,
-        "first_xy": [
-          1395.0,
-          330.0
-        ],
-        "last_xy": [
-          1395.0,
-          435.0
-        ],
-        "median_xy": [
-          1395.0,
-          375.0
-        ],
-        "kind": "radiator"
-      },
-      {
         "track": "r9",
-        "fixes": 3,
+        "fixes": 9,
         "first_t": 14.0,
-        "last_t": 18.0,
+        "last_t": 30.0,
         "true_object": null,
         "false_track": true,
         "nearest_object": "ferry",
-        "median_error_m": 39.44616584663209,
+        "median_error_m": 39.44616584663214,
         "first_xy": [
           1400.0,
           310.0
         ],
         "last_xy": [
-          1400.0,
-          335.0
+          1395.0,
+          425.0
         ],
         "median_xy": [
           1400.0,
-          320.0
+          355.0
         ],
         "kind": "radiator"
       },
       {
-        "track": "r14",
+        "track": "r16",
         "fixes": 1,
         "first_t": 80.0,
         "last_t": 80.0,
@@ -413,7 +391,7 @@
         "kind": "radiator"
       },
       {
-        "track": "r15",
+        "track": "r17",
         "fixes": 1,
         "first_t": 80.0,
         "last_t": 80.0,
@@ -438,12 +416,12 @@
     ]
   },
   "ellipse_coverage": {
-    "fixes": 52,
-    "inside": 41,
-    "fraction": 0.7884615384615384
+    "fixes": 54,
+    "inside": 35,
+    "fraction": 0.6481481481481481
   },
   "held_as_echo": {},
-  "sidelobe_peaks": 186,
+  "sidelobe_peaks": 182,
   "definitions": {
     "hit_radius_m": 5.0,
     "assoc_radius_m": 20.0,
@@ -495,10 +473,10 @@
     "echo": null
   },
   "run": {
-    "git_commit": "0b1cef65544d1d9f8e760ac478156845b98bdef2",
+    "git_commit": "79c972383f2a3acc8256623e665fdb0244d0694a",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/harbor.json",
-    "processing_config_sha256": "de4dd5c768d41d4cad773db58ba450656a9fca9a37edc9408b4c435b2fe5863f",
+    "processing_config_sha256": "10c8a881fe13c612ed43e06608a479b9b69990bfd4fbb2753ff1f7e2cc83938f",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/harbor/seed3/dataset.observation.npz",
     "observation_sha256": "36fcc00ec105c731372e426f3c25db4fde260787dbd976f06fbe608784a5f1e2",
@@ -507,7 +485,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 3,
-    "wall_s": 64.5855452600008,
+    "wall_s": 65.38986090900289,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

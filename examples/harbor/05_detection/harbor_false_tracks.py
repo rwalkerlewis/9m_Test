@@ -15,6 +15,10 @@ radiator track, from the frame of its first fix:
   illuminator's at that illuminator's prediction (``stream.spectral_coherence``, the quantity of ``echo_coherence``);
 * ``persistence``: its number of fixes and the time from its first to its last fix; whether it confirmed.
 
+``results.json`` also gives every distribution over the 0.5 m and 1 m recordings alone (``distributions_fine``, and of
+the confirmed tracks ``confirmed_fine``) and the largest ratio at any fix of a true ship there
+(``radiator_fix_ratio_max_fine``): the 5 m harbor's grid and false tracks are of another kind.
+
 Classes (the first that applies, at the first fix): ``radiator`` (within 5 m of a radiating object), ``silent_body``
 (within 5 m of a silent body: an echo located passively), ``sidelobe_near_miss`` (``ratio`` between 0.3 and 0.5),
 ``direct_path`` (within 5 m of the straight line from a ship to its nearest cable channel), ``elsewhere``.  The
@@ -249,6 +253,9 @@ def main() -> None:
         "n_fixes": lambda r: r.get("n_fixes"),
         "duration_s": lambda r: r.get("duration_s"),
     }
+    per_fix = [x for r in starts if r["class"] == "radiator" and r["recording"] != "harbor" for x in r.get("ratio_list", [])]
+    res0 = {"radiator_fix_ratio_max_fine": float(np.max(per_fix)) if per_fix else None,
+            "radiator_fix_ratio_n_fine": len(per_fix)}
     res = {"recordings": a.recordings, "tuning_only": True, "classes": list(CLASSES), "distributions": {}, "separation": {},
            "counts": {c: sum(r["class"] == c for r in starts) for c in CLASSES},
            "confirmed_counts": {c: sum(r["class"] == c and r.get("confirmed") for r in starts) for c in CLASSES},
@@ -256,6 +263,14 @@ def main() -> None:
                             for r in rows if r["false"]]}
     for q, f in quantities.items():
         per = {c: [f(r) for r in starts if r["class"] == c and f(r) is not None] for c in CLASSES}
+        fine = {c: [f(r) for r in starts if r["class"] == c and f(r) is not None and r["recording"] != "harbor"] for c in CLASSES}
+        res.setdefault("distributions_fine", {})[q] = {c: {"n": len(v), "min": float(np.min(v)) if v else None,
+                                                           "max": float(np.max(v)) if v else None,
+                                                           "values": [float(x) for x in v]} for c, v in fine.items()}
+        conf = {c: [f(r) for r in starts if r["class"] == c and f(r) is not None and r.get("confirmed")
+                    and r["recording"] != "harbor"] for c in CLASSES}
+        res.setdefault("confirmed_fine", {})[q] = {c: {"n": len(v), "min": float(np.min(v)) if v else None,
+                                                       "max": float(np.max(v)) if v else None} for c, v in conf.items()}
         res["distributions"][q] = {c: {"n": len(v), "median": float(np.median(v)) if v else None,
                                        "p10": float(np.percentile(v, 10)) if v else None,
                                        "p90": float(np.percentile(v, 90)) if v else None,
@@ -281,6 +296,7 @@ def main() -> None:
         ax.set_ylabel(unit)
         ax.set_title(f"tuning recordings ({', '.join(a.recordings)}): {unit} per class")
         save_figure(fig, out / f"distribution_{q}.png", recording=None)
+    res.update(res0)
     (out / "results.json").write_text(json.dumps(res, indent=1))
     log(f"counts {res['counts']}; confirmed {res['confirmed_counts']}")
     for q, sep in res["separation"].items():

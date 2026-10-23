@@ -1,0 +1,169 @@
+{
+ "criteria": [
+  {
+   "id": "false_tracks",
+   "text": "false tracks at most 2 per minute on multistatic_b and at most 3 on every 20 s test recording",
+   "values": {
+    "simple_seed1": 0.0,
+    "simple_seed2": 0.0,
+    "simple_seed3": 3.0,
+    "bistatic_seed1": 3.0,
+    "bistatic_seed2": 6.0,
+    "bistatic_seed3": 6.0,
+    "multistatic_seed1": 9.0,
+    "multistatic_seed2": 6.0,
+    "multistatic_seed3": 9.0,
+    "multistatic_b": 5.0
+   },
+   "before": {
+    "simple_seed1": 0.0,
+    "simple_seed2": 0.0,
+    "simple_seed3": 3.0,
+    "bistatic_seed1": 3.0,
+    "bistatic_seed2": 6.0,
+    "bistatic_seed3": 12.0,
+    "multistatic_seed1": 9.0,
+    "multistatic_seed2": 6.0,
+    "multistatic_seed3": 9.0,
+    "multistatic_b": 6.0
+   },
+   "limits": {
+    "simple_seed1": 3.0,
+    "simple_seed2": 3.0,
+    "simple_seed3": 3.0,
+    "bistatic_seed1": 3.0,
+    "bistatic_seed2": 3.0,
+    "bistatic_seed3": 3.0,
+    "multistatic_seed1": 3.0,
+    "multistatic_seed2": 3.0,
+    "multistatic_seed3": 3.0,
+    "multistatic_b": 2.0
+   },
+   "passed": false
+  },
+  {
+   "id": "uuv_echo_only",
+   "text": "the bistatic UUV seen by echo only in at least 90 % of its frames",
+   "values": {
+    "bistatic_seed1": 0.47297297297297297,
+    "bistatic_seed2": 0.05714285714285714,
+    "bistatic_seed3": 0.3090909090909091
+   },
+   "before": {
+    "bistatic_seed1": 0.5921052631578947,
+    "bistatic_seed2": 0.5,
+    "bistatic_seed3": 0.5789473684210527
+   },
+   "passed": false
+  },
+  {
+   "id": "boat",
+   "text": "the boat on multistatic_b at least 0.8",
+   "before": 0.6991150442477876,
+   "values": 0.6991150442477876,
+   "passed": false
+  },
+  {
+   "id": "no_fall",
+   "text": "no Pd falls by more than 3 percentage points (test recordings)",
+   "values": {
+    "bistatic_seed1/uuv1": {
+     "before": 0.703125,
+     "after": 0.546875
+    },
+    "bistatic_seed2/uuv1": {
+     "before": 0.59375,
+     "after": 0.0625
+    },
+    "bistatic_seed3/uuv1": {
+     "before": 0.6875,
+     "after": 0.53125
+    },
+    "harbor_seed1/ferry": {
+     "before": 0.7407407407407407,
+     "after": 0.6481481481481481
+    },
+    "harbor_seed3/ferry": {
+     "before": 0.6666666666666666,
+     "after": 0.6296296296296297
+    }
+   },
+   "passed": false
+  },
+  {
+   "id": "compute",
+   "text": "compute per second of data not above its value before on any recording",
+   "values": {
+    "simple": {
+     "before": 1.3696743910015357,
+     "after": 1.3862329592971947
+    },
+    "bistatic": {
+     "before": 1.388314654653368,
+     "after": 1.2017020121002133
+    },
+    "multistatic": {
+     "before": 3.1746034254989355,
+     "after": 3.147042078652157
+    },
+    "harbor": {
+     "before": 0.5484870802587466,
+     "after": 0.5489816933917003
+    },
+    "simple_seed1": {
+     "before": 1.3497591245541116,
+     "after": 1.3884359741517982
+    },
+    "simple_seed2": {
+     "before": 1.378087618448626,
+     "after": 1.3834994926975923
+    },
+    "simple_seed3": {
+     "before": 1.385538107546381,
+     "after": 1.3700867606024985
+    },
+    "bistatic_seed1": {
+     "before": 1.300301717146067,
+     "after": 1.2838760821497999
+    },
+    "bistatic_seed2": {
+     "before": 1.5770808295033931,
+     "after": 1.6340694456008351
+    },
+    "bistatic_seed3": {
+     "before": 1.5550619136469321,
+     "after": 1.4341763073480251
+    },
+    "multistatic_seed1": {
+     "before": 3.2273233168551085,
+     "after": 3.1163910660492546
+    },
+    "multistatic_seed2": {
+     "before": 3.186436720997153,
+     "after": 3.1138769748522463
+    },
+    "multistatic_seed3": {
+     "before": 3.148890257654057,
+     "after": 3.1493271794952307
+    },
+    "harbor_seed1": {
+     "before": 0.5383173943747654,
+     "after": 0.5492474706494855
+    },
+    "harbor_seed2": {
+     "before": 0.5376283095496547,
+     "after": 0.5421372912759277
+    },
+    "harbor_seed3": {
+     "before": 0.5371380287757347,
+     "after": 0.5438800130001861
+    },
+    "multistatic_b": {
+     "before": 3.2780618417176206,
+     "after": 3.152876493368846
+    }
+   },
+   "passed": false
+  }
+ ]
+}
