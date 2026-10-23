@@ -1,0 +1,34 @@
+2026-10-23 17:46:15 simple: tracker.last_heard_s=0
+2026-10-23 17:47:24 simple: tracker.last_heard_s=0
+2026-10-23 17:48:08   false tracks 1; ferry 1.0/1.0; boat 1.0/1.0; uuv1 0.578125/0.578125; wreck 1.0/1.0
+2026-10-23 17:48:08 bistatic: tracker.last_heard_s=0
+2026-10-23 17:48:51   false tracks 2; ferry 1.0/1.0; uuv1 0.703125/0.703125
+2026-10-23 17:48:51 multistatic: tracker.last_heard_s=0
+2026-10-23 17:50:24   false tracks 2; ferry 1.0/1.0; tug 1.0/1.0; boat 1.0/1.0; uuv1 0.84375/0.84375; uuv2 0.953125/0.953125; diver 0.0/0.0; piling1 0.0/0.0; piling2 0.0/0.0; piling3 0.0/0.0; piling4 0.0/0.0; piling5 0.0/0.0; piling6 0.0/0.0; moored 0.828125/0.828125
+2026-10-23 17:50:24 harbor: tracker.last_heard_s=0
+2026-10-23 17:51:42   false tracks 3; ferry 0.8333333333333334/0.8333333333333334; tug 0.037037037037037035/0.037037037037037035; moored 0.0/0.0; uuv1 0.0/0.0; uuv2 0.0/0.0; diver 0.0/0.0; static_scatter None/None
+2026-10-23 17:51:42 simple: tracker.last_heard_s=10
+2026-10-23 17:52:25   false tracks 1; ferry 1.0/1.0; boat 1.0/1.0; uuv1 0.578125/0.578125; wreck 1.0/1.0
+2026-10-23 17:52:25 bistatic: tracker.last_heard_s=10
+2026-10-23 17:53:13   false tracks 2; ferry 1.0/1.0; uuv1 0.703125/0.703125
+2026-10-23 17:53:13 multistatic: tracker.last_heard_s=10
+2026-10-23 17:54:49   false tracks 2; ferry 1.0/1.0; tug 1.0/1.0; boat 1.0/1.0; uuv1 0.84375/0.84375; uuv2 0.953125/0.953125; diver 0.0/0.0; piling1 0.0/0.0; piling2 0.0/0.0; piling3 0.0/0.0; piling4 0.0/0.0; piling5 0.0/0.0; piling6 0.0/0.0; moored 0.828125/0.828125
+2026-10-23 17:54:49 harbor: tracker.last_heard_s=10
+2026-10-23 17:56:08   false tracks 3; ferry 0.8333333333333334/0.8333333333333334; tug 0.037037037037037035/0.037037037037037035; moored 0.0/0.0; uuv1 0.0/0.0; uuv2 0.0/0.0; diver 0.0/0.0; static_scatter None/None
+2026-10-23 17:56:08 simple: tracker.last_heard_s=30
+2026-10-23 17:56:55   false tracks 1; ferry 1.0/1.0; boat 1.0/1.0; uuv1 0.578125/0.578125; wreck 1.0/1.0
+2026-10-23 17:56:55 bistatic: tracker.last_heard_s=30
+2026-10-23 17:57:44   false tracks 2; ferry 1.0/1.0; uuv1 0.703125/0.703125
+2026-10-23 17:57:44 multistatic: tracker.last_heard_s=30
+2026-10-23 17:59:23   false tracks 2; ferry 1.0/1.0; tug 1.0/1.0; boat 1.0/1.0; uuv1 0.84375/0.84375; uuv2 0.953125/0.953125; diver 0.0/0.0; piling1 0.0/0.0; piling2 0.0/0.0; piling3 0.0/0.0; piling4 0.0/0.0; piling5 0.0/0.0; piling6 0.0/0.0; moored 0.828125/0.828125
+2026-10-23 17:59:23 harbor: tracker.last_heard_s=30
+2026-10-23 18:00:43   false tracks 3; ferry 0.8333333333333334/0.8333333333333334; tug 0.037037037037037035/0.037037037037037035; moored 0.0/0.0; uuv1 0.0/0.0; uuv2 0.0/0.0; diver 0.0/0.0; static_scatter None/None
+2026-10-23 18:00:43 simple: tracker.last_heard_s=60
+2026-10-23 18:01:29   false tracks 1; ferry 1.0/1.0; boat 1.0/1.0; uuv1 0.578125/0.578125; wreck 1.0/1.0
+2026-10-23 18:01:29 bistatic: tracker.last_heard_s=60
+2026-10-23 18:02:17   false tracks 2; ferry 1.0/1.0; uuv1 0.703125/0.703125
+2026-10-23 18:02:17 multistatic: tracker.last_heard_s=60
+2026-10-23 18:03:49   false tracks 2; ferry 1.0/1.0; tug 1.0/1.0; boat 1.0/1.0; uuv1 0.84375/0.84375; uuv2 0.953125/0.953125; diver 0.0/0.0; piling1 0.0/0.0; piling2 0.0/0.0; piling3 0.0/0.0; piling4 0.0/0.0; piling5 0.0/0.0; piling6 0.0/0.0; moored 0.828125/0.828125
+2026-10-23 18:03:49 harbor: tracker.last_heard_s=60
+2026-10-23 18:05:10   false tracks 3; ferry 0.8333333333333334/0.8333333333333334; tug 0.037037037037037035/0.037037037037037035; moored 0.0/0.0; uuv1 0.0/0.0; uuv2 0.0/0.0; diver 0.0/0.0; static_scatter None/None
+2026-10-23 18:05:10 last_heard_s taken: 30 s

@@ -454,7 +454,7 @@ The link-budget script is analytic and quick; the FDTD dataset is the expensive 
 separate fine-grid scenario file and writes under `output/recordings/bistatic/`.
 
 ```bash
-python examples/harbor/90_history/harbor_bistatic_budget.py --out output/studies/history/harbor_bistatic_budget
+python examples/harbor/05_detection/harbor_echo_budget.py
 
 # --coarse uses dx=1 m instead of 0.5 m to reduce runtime.
 python examples/harbor/01_datasets/harbor_bistatic_dataset.py --coarse --workers 2

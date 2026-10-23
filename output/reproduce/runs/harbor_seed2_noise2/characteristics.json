@@ -1,10 +1,10 @@
 {
   "recording": "harbor_seed2_noise2",
   "run": {
-    "git_commit": "66201ad4813bb80a6acbaff0d515d3ca404728d5",
+    "git_commit": "0ab3b416faaf69eb153f0ba1b96d8c77fbfc6c4f",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/harbor.json",
-    "processing_config_sha256": "de4dd5c768d41d4cad773db58ba450656a9fca9a37edc9408b4c435b2fe5863f",
+    "processing_config_sha256": "7a903d00129774497cf9ccb8bcfed9f2bbc1f40956b4717edcd1c736fe4a0ea3",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/harbor/noise2/seed2/dataset.observation.npz",
     "observation_sha256": "07f72e3cee6b52ce07bbdd98c4df568a90c134a4c0ae5caed95a9a0173d4589d",
@@ -13,7 +13,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 2,
-    "wall_s": 64.12026701899595,
+    "wall_s": 64.55805591100943,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
@@ -32,7 +32,7 @@
       "true_speed": 5.999999999999886,
       "detected_frames": 44,
       "seen": {
-        "own noise": 78
+        "own noise": 110
       },
       "median": {
         "size_ratio_db": null,
@@ -40,10 +40,10 @@
         "along": null,
         "across": null,
         "source_level": 5.1067,
-        "width_major": 42.83,
-        "width_minor": 22.84,
-        "speed": 5.8,
-        "residual": 1.18
+        "width_major": 42.79,
+        "width_minor": 23.66,
+        "speed": 5.46,
+        "residual": 1.67
       },
       "size_ratio_per_frame": {}
     }

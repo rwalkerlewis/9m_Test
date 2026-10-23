@@ -6,14 +6,14 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.4245696255027724,
-        "echo": 0.6810451780525909,
-        "characteristics": 0.10289737549828715,
-        "total": 1.2085121790536504
+        "passive": 0.4285711821052246,
+        "echo": 0.6931655275962839,
+        "characteristics": 0.10556493015392335,
+        "total": 1.227301639855432
       },
       "latency_s": {
-        "median": 2.792,
-        "max": 3.791
+        "median": 2.81,
+        "max": 3.81
       },
       "false_tracks": {
         "count": 1,
@@ -48,7 +48,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -65,7 +70,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -82,7 +92,12 @@
           },
           "tracks": [
             "e7"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          }
         },
         "wreck": {
           "kind": "static",
@@ -99,7 +114,12 @@
           },
           "tracks": [
             "e1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
         }
       },
       "peaks": {
@@ -129,14 +149,14 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5689318940501835,
-        "echo": 0.6241976889010402,
-        "characteristics": 0.10516449999267934,
-        "total": 1.2982940829439031
+        "passive": 0.5721661705996667,
+        "echo": 0.6343683936516754,
+        "characteristics": 0.10504983814680599,
+        "total": 1.311584402398148
       },
       "latency_s": {
-        "median": 2.573,
-        "max": 5.871
+        "median": 2.598,
+        "max": 5.945
       },
       "false_tracks": {
         "count": 2,
@@ -180,7 +200,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -198,7 +223,12 @@
           "tracks": [
             "e24",
             "r4"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
+          }
         }
       },
       "peaks": {
@@ -224,14 +254,14 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5843033985489455,
-        "echo": 1.8756226599944057,
-        "characteristics": 0.39507034480702713,
-        "total": 2.8549964033503783
+        "passive": 0.5952605605431017,
+        "echo": 1.920233518548048,
+        "characteristics": 0.40967832719907166,
+        "total": 2.9251724062902213
       },
       "latency_s": {
-        "median": 5.609,
-        "max": 7.023
+        "median": 5.681,
+        "max": 7.099
       },
       "false_tracks": {
         "count": 2,
@@ -275,7 +305,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "tug": {
           "kind": "ship",
@@ -292,7 +327,12 @@
           },
           "tracks": [
             "r3"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -309,7 +349,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -326,7 +371,12 @@
           },
           "tracks": [
             "e10"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.84375,
+            "any": 0.8181818181818182
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -343,7 +393,12 @@
           },
           "tracks": [
             "e6"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.953125,
+            "any": 0.9242424242424242
+          }
         },
         "diver": {
           "kind": "diver",
@@ -358,7 +413,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling1": {
           "kind": "static",
@@ -373,7 +433,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -388,7 +453,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -403,7 +473,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -418,7 +493,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -433,7 +513,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -448,7 +533,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -465,7 +555,12 @@
           },
           "tracks": [
             "e12"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
         }
       },
       "peaks": {
@@ -518,14 +613,14 @@
       "held_out": false,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5408702883253379,
+        "passive": 0.5332547690752107,
         "echo": 0.0,
-        "characteristics": 0.0034299044988680785,
-        "total": 0.5443001928242059
+        "characteristics": 0.0034786066924425542,
+        "total": 0.5367333757676533
       },
       "latency_s": {
-        "median": 1.1055000000000001,
-        "max": 2.29
+        "median": 1.109,
+        "max": 1.3
       },
       "false_tracks": {
         "count": 3,
@@ -577,7 +672,11 @@
           "tracks": [
             "r11",
             "r5"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          }
         },
         "tug": {
           "kind": "ship",
@@ -592,7 +691,11 @@
           },
           "tracks": [
             "r16"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          }
         },
         "moored": {
           "kind": "ship",
@@ -605,7 +708,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -618,7 +725,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -631,7 +742,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "diver": {
           "kind": "diver",
@@ -644,7 +759,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "static_scatter": {
           "kind": "uuv",
@@ -657,7 +776,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -690,14 +813,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.4166637667447503,
-        "echo": 0.6857724975976452,
-        "characteristics": 0.10508907909606932,
-        "total": 1.207525343438465
+        "passive": 0.4172427082579816,
+        "echo": 0.685932582798705,
+        "characteristics": 0.10361570000095525,
+        "total": 1.2067909910576418
       },
       "latency_s": {
-        "median": 2.79,
-        "max": 3.792
+        "median": 2.786,
+        "max": 3.787
       },
       "false_tracks": {
         "count": 0,
@@ -722,7 +845,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -739,7 +867,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -756,7 +889,12 @@
           },
           "tracks": [
             "e7"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.65625,
+            "any": 0.6363636363636364
+          }
         },
         "wreck": {
           "kind": "static",
@@ -773,7 +911,12 @@
           },
           "tracks": [
             "e1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
         }
       },
       "peaks": {
@@ -803,14 +946,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.4210850512994512,
-        "echo": 0.6942804462516505,
-        "characteristics": 0.11047290554997743,
-        "total": 1.2258384031010792
+        "passive": 0.41825657789959225,
+        "echo": 0.6850109112514474,
+        "characteristics": 0.10343042949971278,
+        "total": 1.2066979186507525
       },
       "latency_s": {
-        "median": 2.837,
-        "max": 3.833
+        "median": 2.784,
+        "max": 3.778
       },
       "false_tracks": {
         "count": 0,
@@ -835,7 +978,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -852,7 +1000,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -869,7 +1022,12 @@
           },
           "tracks": [
             "e7"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.640625,
+            "any": 0.6212121212121212
+          }
         },
         "wreck": {
           "kind": "static",
@@ -886,7 +1044,12 @@
           },
           "tracks": [
             "e1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
         }
       },
       "peaks": {
@@ -916,14 +1079,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.41772809499889263,
-        "echo": 0.6888037491989962,
-        "characteristics": 0.10473454075035989,
-        "total": 1.2112663849482488
+        "passive": 0.42176943035883596,
+        "echo": 0.6830216738504532,
+        "characteristics": 0.10411085749874474,
+        "total": 1.2089019617080339
       },
       "latency_s": {
-        "median": 2.79,
-        "max": 3.79
+        "median": 2.78,
+        "max": 3.781
       },
       "false_tracks": {
         "count": 1,
@@ -958,7 +1121,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -975,7 +1143,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -992,7 +1165,12 @@
           },
           "tracks": [
             "e8"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          }
         },
         "wreck": {
           "kind": "static",
@@ -1009,7 +1187,12 @@
           },
           "tracks": [
             "e1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
         }
       },
       "peaks": {
@@ -1039,14 +1222,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5520374106003146,
-        "echo": 0.5457607952514081,
-        "characteristics": 0.10393974519902258,
-        "total": 1.2017379510507453
+        "passive": 0.5580731357047626,
+        "echo": 0.5529670421507035,
+        "characteristics": 0.10432572554782382,
+        "total": 1.2153659034032898
       },
       "latency_s": {
-        "median": 2.581,
-        "max": 4.734
+        "median": 2.59,
+        "max": 4.807
       },
       "false_tracks": {
         "count": 1,
@@ -1081,7 +1264,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -1099,7 +1287,12 @@
           "tracks": [
             "e21",
             "r5"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.22727272727272727,
+            "echo": 0.703125,
+            "any": 0.9090909090909091
+          }
         }
       },
       "peaks": {
@@ -1125,33 +1318,24 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5649308111525897,
-        "echo": 0.7820399030984845,
-        "characteristics": 0.10309292525271303,
-        "total": 1.4500636395037874
+        "passive": 0.5699416638512048,
+        "echo": 0.972978120100015,
+        "characteristics": 0.09304756550045568,
+        "total": 1.6359673494516755
       },
       "latency_s": {
-        "median": 2.618,
-        "max": 6.345
+        "median": 3.234,
+        "max": 6.585
       },
       "false_tracks": {
-        "count": 2,
-        "per_minute": 6.0,
-        "radiator": 1,
+        "count": 1,
+        "per_minute": 3.0,
+        "radiator": 0,
         "echo": 1
       },
       "false_track_list": [
         {
-          "track": "r6",
-          "median_xy": [
-            226.0,
-            98.0
-          ],
-          "nearest_object": "uuv1",
-          "median_error_m": 11.58281754688175
-        },
-        {
-          "track": "e33",
+          "track": "e37",
           "median_xy": [
             115.0,
             42.0
@@ -1176,25 +1360,36 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
           "radiates": false,
           "pd": {
-            "radiator": 0.3181818181818182,
-            "echo": 0.59375,
-            "any": 0.8939393939393939
+            "radiator": 0.48484848484848486,
+            "echo": 0.21875,
+            "any": 0.696969696969697
           },
           "median_error_m": {
-            "radiator": 3.200361695756362,
-            "echo": 2.1683991166750207,
-            "any": 2.3740171335628646
+            "radiator": 3.2325240415126903,
+            "echo": 2.5912336688074635,
+            "any": 2.8349743695835494
           },
           "tracks": [
-            "e9",
-            "r3"
-          ]
+            "e38",
+            "r3",
+            "r6"
+          ],
+          "pd_last_heard": {
+            "radiator": 0.5909090909090909,
+            "echo": 0.21875,
+            "any": 0.803030303030303
+          }
         }
       },
       "peaks": {
@@ -1204,14 +1399,14 @@
         },
         "echo": {
           "ferry": 0.0,
-          "uuv1": 0.6197183098591549
+          "uuv1": 0.36619718309859156
         }
       },
       "gpu": "Quadro RTX 4000",
       "ellipse_coverage": {
-        "fixes": 113,
-        "inside": 92,
-        "fraction": 0.8141592920353983
+        "fixes": 94,
+        "inside": 89,
+        "fraction": 0.9468085106382979
       }
     },
     "bistatic_seed3": {
@@ -1220,19 +1415,19 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5900533872489178,
-        "echo": 0.775261630750174,
-        "characteristics": 0.12028848154877778,
-        "total": 1.4856034995478695
+        "passive": 0.5864537543500774,
+        "echo": 0.9283111045027909,
+        "characteristics": 0.10537016404778114,
+        "total": 1.6201350229006493
       },
       "latency_s": {
-        "median": 2.612,
-        "max": 7.052
+        "median": 2.997,
+        "max": 7.037
       },
       "false_tracks": {
-        "count": 4,
-        "per_minute": 12.0,
-        "radiator": 2,
+        "count": 3,
+        "per_minute": 9.0,
+        "radiator": 1,
         "echo": 2
       },
       "false_track_list": [
@@ -1246,25 +1441,16 @@
           "median_error_m": 21.26029162546928
         },
         {
-          "track": "r5",
-          "median_xy": [
-            226.0,
-            98.0
-          ],
-          "nearest_object": "uuv1",
-          "median_error_m": 11.58281754688175
-        },
-        {
           "track": "e8",
           "median_xy": [
-            116.0,
-            187.0
+            108.0,
+            168.0
           ],
           "nearest_object": "ferry",
-          "median_error_m": 89.95534492939234
+          "median_error_m": 76.96752561957547
         },
         {
-          "track": "e43",
+          "track": "e45",
           "median_xy": [
             113.0,
             42.0
@@ -1289,25 +1475,36 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
           "radiates": false,
           "pd": {
-            "radiator": 0.22727272727272727,
-            "echo": 0.6875,
-            "any": 0.8939393939393939
+            "radiator": 0.4696969696969697,
+            "echo": 0.46875,
+            "any": 0.8484848484848485
           },
           "median_error_m": {
-            "radiator": 3.1885055516311,
-            "echo": 1.5710268807202452,
-            "any": 1.6635587763458115
+            "radiator": 3.156456047033506,
+            "echo": 2.263155461147833,
+            "any": 2.58205137778144
           },
           "tracks": [
             "e2",
-            "r2"
-          ]
+            "r2",
+            "r5"
+          ],
+          "pd_last_heard": {
+            "radiator": 0.6060606060606061,
+            "echo": 0.46875,
+            "any": 0.8939393939393939
+          }
         }
       },
       "peaks": {
@@ -1317,14 +1514,14 @@
         },
         "echo": {
           "ferry": 0.0,
-          "uuv1": 0.7183098591549296
+          "uuv1": 0.4225352112676056
         }
       },
       "gpu": "Quadro RTX 4000",
       "ellipse_coverage": {
-        "fixes": 116,
-        "inside": 115,
-        "fraction": 0.9913793103448276
+        "fixes": 100,
+        "inside": 98,
+        "fraction": 0.98
       }
     },
     "multistatic_seed1": {
@@ -1333,14 +1530,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.602963597899361,
-        "echo": 1.9052522401005263,
-        "characteristics": 0.41952179244253784,
-        "total": 2.927737630442425
+        "passive": 0.5943149909966451,
+        "echo": 1.8950559122007689,
+        "characteristics": 0.3931685413488594,
+        "total": 2.8825394445462735
       },
       "latency_s": {
-        "median": 5.667,
-        "max": 7.117
+        "median": 5.649,
+        "max": 7.046
       },
       "false_tracks": {
         "count": 3,
@@ -1393,7 +1590,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "tug": {
           "kind": "ship",
@@ -1410,7 +1612,12 @@
           },
           "tracks": [
             "r3"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -1427,7 +1634,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -1444,7 +1656,12 @@
           },
           "tracks": [
             "e5"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.890625,
+            "any": 0.8636363636363636
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -1461,7 +1678,12 @@
           },
           "tracks": [
             "e7"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.9375,
+            "any": 0.9090909090909091
+          }
         },
         "diver": {
           "kind": "diver",
@@ -1476,7 +1698,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling1": {
           "kind": "static",
@@ -1491,7 +1718,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -1506,7 +1738,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -1521,7 +1758,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -1536,7 +1778,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -1551,7 +1798,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -1566,7 +1818,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -1583,7 +1840,12 @@
           },
           "tracks": [
             "e8"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.90625,
+            "any": 0.8787878787878788
+          }
         }
       },
       "peaks": {
@@ -1636,14 +1898,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5996256961996551,
-        "echo": 1.905535514400981,
-        "characteristics": 0.3971244930915418,
-        "total": 2.902285703692178
+        "passive": 0.5975239288927696,
+        "echo": 1.892655187098717,
+        "characteristics": 0.38078924545043263,
+        "total": 2.870968361441919
       },
       "latency_s": {
-        "median": 5.668,
-        "max": 7.067
+        "median": 5.63,
+        "max": 7.038
       },
       "false_tracks": {
         "count": 2,
@@ -1687,7 +1949,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "tug": {
           "kind": "ship",
@@ -1704,7 +1971,12 @@
           },
           "tracks": [
             "r3"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -1721,7 +1993,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -1738,7 +2015,12 @@
           },
           "tracks": [
             "e5"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.796875,
+            "any": 0.7727272727272727
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -1755,7 +2037,12 @@
           },
           "tracks": [
             "e6"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.9375,
+            "any": 0.9090909090909091
+          }
         },
         "diver": {
           "kind": "diver",
@@ -1770,7 +2057,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling1": {
           "kind": "static",
@@ -1785,7 +2077,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -1800,7 +2097,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -1815,7 +2117,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -1830,7 +2137,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -1845,7 +2157,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -1860,7 +2177,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -1877,7 +2199,12 @@
           },
           "tracks": [
             "e8"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
         }
       },
       "peaks": {
@@ -1930,14 +2257,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5971789738003281,
-        "echo": 1.9117759181492147,
-        "characteristics": 0.39450441310036694,
-        "total": 2.9034593050499096
+        "passive": 0.5946295575522527,
+        "echo": 1.9102717138972367,
+        "characteristics": 0.3838910018937895,
+        "total": 2.8887922733432787
       },
       "latency_s": {
-        "median": 5.669,
-        "max": 7.08
+        "median": 5.671,
+        "max": 7.104
       },
       "false_tracks": {
         "count": 3,
@@ -1990,7 +2317,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "tug": {
           "kind": "ship",
@@ -2007,7 +2339,12 @@
           },
           "tracks": [
             "r3"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -2024,7 +2361,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -2041,7 +2383,12 @@
           },
           "tracks": [
             "e10"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.796875,
+            "any": 0.7727272727272727
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -2058,7 +2405,12 @@
           },
           "tracks": [
             "e8"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.90625,
+            "any": 0.8787878787878788
+          }
         },
         "diver": {
           "kind": "diver",
@@ -2073,7 +2425,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling1": {
           "kind": "static",
@@ -2088,7 +2445,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -2103,7 +2465,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -2118,7 +2485,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -2133,7 +2505,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -2148,7 +2525,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -2163,7 +2545,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -2180,7 +2567,12 @@
           },
           "tracks": [
             "e13"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.859375,
+            "any": 0.8333333333333334
+          }
         }
       },
       "peaks": {
@@ -2233,14 +2625,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5439717215661707,
+        "passive": 0.5357469612402687,
         "echo": 0.0,
-        "characteristics": 0.003860378182920006,
-        "total": 0.5478320997490906
+        "characteristics": 0.004045958299927103,
+        "total": 0.5397929195401957
       },
       "latency_s": {
-        "median": 1.11,
-        "max": 2.297
+        "median": 1.1135000000000002,
+        "max": 1.263
       },
       "false_tracks": {
         "count": 4,
@@ -2301,7 +2693,11 @@
           "tracks": [
             "r13",
             "r8"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.7407407407407407,
+            "any": 0.7407407407407407
+          }
         },
         "tug": {
           "kind": "ship",
@@ -2317,7 +2713,11 @@
           "tracks": [
             "r1",
             "r18"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.09259259259259259,
+            "any": 0.09259259259259259
+          }
         },
         "moored": {
           "kind": "ship",
@@ -2330,7 +2730,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -2343,7 +2747,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -2356,7 +2764,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "diver": {
           "kind": "diver",
@@ -2369,7 +2781,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "static_scatter": {
           "kind": "uuv",
@@ -2382,7 +2798,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -2415,14 +2835,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5316991460495046,
+        "passive": 0.5367492324069948,
         "echo": 0.0,
-        "characteristics": 0.0036037689498092124,
-        "total": 0.5353029149993138
+        "characteristics": 0.0038039323581566956,
+        "total": 0.5405531647651515
       },
       "latency_s": {
-        "median": 1.1075,
-        "max": 1.202
+        "median": 1.1155,
+        "max": 1.212
       },
       "false_tracks": {
         "count": 3,
@@ -2474,7 +2894,11 @@
           "tracks": [
             "r10",
             "r5"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          }
         },
         "tug": {
           "kind": "ship",
@@ -2490,7 +2914,11 @@
           "tracks": [
             "r1",
             "r15"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.09259259259259259,
+            "any": 0.09259259259259259
+          }
         },
         "moored": {
           "kind": "ship",
@@ -2503,7 +2931,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -2516,7 +2948,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -2529,7 +2965,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "diver": {
           "kind": "diver",
@@ -2542,7 +2982,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "static_scatter": {
           "kind": "uuv",
@@ -2555,7 +2999,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -2588,14 +3036,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5368553663254716,
+        "passive": 0.5616983439833955,
         "echo": 0.0,
-        "characteristics": 0.00391641670842849,
-        "total": 0.5407717830339
+        "characteristics": 0.005295820691753761,
+        "total": 0.5669941646751492
       },
       "latency_s": {
-        "median": 1.115,
-        "max": 1.212
+        "median": 1.129,
+        "max": 1.391
       },
       "false_tracks": {
         "count": 4,
@@ -2656,7 +3104,11 @@
           "tracks": [
             "r13",
             "r8"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.6666666666666666,
+            "any": 0.6666666666666666
+          }
         },
         "tug": {
           "kind": "ship",
@@ -2671,7 +3123,11 @@
           },
           "tracks": [
             "r18"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.05555555555555555,
+            "any": 0.05555555555555555
+          }
         },
         "moored": {
           "kind": "ship",
@@ -2684,7 +3140,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -2697,7 +3157,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -2710,7 +3174,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "diver": {
           "kind": "diver",
@@ -2723,7 +3191,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "static_scatter": {
           "kind": "uuv",
@@ -2736,7 +3208,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -2769,20 +3245,20 @@
       "held_out": true,
       "record_s": 60.0,
       "compute_per_second_of_data": {
-        "passive": 0.6253148975835453,
-        "echo": 1.949675602184046,
-        "characteristics": 0.3878435067817918,
-        "total": 2.9628340065493832
+        "passive": 0.7047254849814635,
+        "echo": 2.296214074319141,
+        "characteristics": 0.5455477315003615,
+        "total": 3.5464872908009664
       },
       "latency_s": {
-        "median": 5.465,
-        "max": 7.707
+        "median": 6.251,
+        "max": 9.14
       },
       "false_tracks": {
-        "count": 6,
-        "per_minute": 6.0,
+        "count": 5,
+        "per_minute": 5.0,
         "radiator": 2,
-        "echo": 4
+        "echo": 3
       },
       "false_track_list": [
         {
@@ -2813,15 +3289,6 @@
           "median_error_m": 49.94662359813423
         },
         {
-          "track": "e42",
-          "median_xy": [
-            233.0,
-            246.0
-          ],
-          "nearest_object": "boat",
-          "median_error_m": 31.625541500734272
-        },
-        {
           "track": "r22",
           "median_xy": [
             181.0,
@@ -2831,7 +3298,7 @@
           "median_error_m": 19.59780926148706
         },
         {
-          "track": "e62",
+          "track": "e64",
           "median_xy": [
             56.0,
             260.0
@@ -2856,8 +3323,13 @@
           },
           "tracks": [
             "r2",
-            "r28"
-          ]
+            "r26"
+          ],
+          "pd_last_heard": {
+            "radiator": 0.9911504424778761,
+            "echo": 0.0,
+            "any": 0.9911504424778761
+          }
         },
         "tug": {
           "kind": "ship",
@@ -2874,25 +3346,34 @@
           },
           "tracks": [
             "r4"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
           "radiates": true,
           "pd": {
-            "radiator": 0.6991150442477876,
+            "radiator": 0.7300884955752213,
             "echo": 0.0,
-            "any": 0.6991150442477876
+            "any": 0.7300884955752213
           },
           "median_error_m": {
-            "radiator": 0.22476920285819246,
+            "radiator": 0.3275296878580829,
             "echo": null,
-            "any": 0.22476920285819246
+            "any": 0.3275296878580829
           },
           "tracks": [
-            "r1",
-            "r25"
-          ]
+            "r1"
+          ],
+          "pd_last_heard": {
+            "radiator": 0.7300884955752213,
+            "echo": 0.0,
+            "any": 0.7300884955752213
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -2909,8 +3390,13 @@
           },
           "tracks": [
             "e5",
-            "e68"
-          ]
+            "e70"
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.5982142857142857,
+            "any": 0.5929203539823009
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -2922,29 +3408,39 @@
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.0902209740190305,
-            "any": 1.0902209740190305
+            "echo": 1.129589284957634,
+            "any": 1.129589284957634
           },
           "tracks": [
             "e6"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.9598214285714286,
+            "any": 0.9513274336283186
+          }
         },
         "diver": {
           "kind": "diver",
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.7410714285714286,
-            "any": 0.7345132743362832
+            "echo": 0.6696428571428571,
+            "any": 0.6637168141592921
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.39321189373278,
-            "any": 1.39321189373278
+            "echo": 1.3762728103424964,
+            "any": 1.3762728103424964
           },
           "tracks": [
             "e8"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.6696428571428571,
+            "any": 0.6637168141592921
+          }
         },
         "piling1": {
           "kind": "static",
@@ -2959,7 +3455,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -2974,7 +3475,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -2989,7 +3495,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -3004,7 +3515,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -3019,7 +3535,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -3034,7 +3555,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -3049,7 +3575,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -3071,24 +3602,24 @@
         "echo": {
           "ferry": 0.0,
           "tug": 0.0,
-          "boat": 0.05627705627705628,
+          "boat": 0.012987012987012988,
           "uuv1": 0.5541125541125541,
-          "uuv2": 0.683982683982684,
+          "uuv2": 0.696969696969697,
           "diver": 0.1471861471861472,
-          "piling1": 0.008658008658008658,
+          "piling1": 0.004329004329004329,
           "piling2": 0.0,
           "piling3": 0.0,
           "piling4": 0.0,
-          "piling5": 0.0,
+          "piling5": 0.004329004329004329,
           "piling6": 0.0,
           "moored": 0.0
         }
       },
       "gpu": "Quadro RTX 4000",
       "ellipse_coverage": {
-        "fixes": 911,
-        "inside": 850,
-        "fraction": 0.9330406147091108
+        "fixes": 928,
+        "inside": 861,
+        "fraction": 0.927801724137931
       },
       "size_order": {
         "frames_all_three": 0,
@@ -3434,7 +3965,7 @@
         "true_speed": 3.4999999999999596,
         "detected_frames": 224,
         "seen": {
-          "own noise": 243,
+          "own noise": 264,
           "both": 4
         },
         "median": {
@@ -3442,11 +3973,11 @@
           "strength_db": -2.2,
           "along": 21.9,
           "across": 13.2,
-          "source_level": 1.1373,
-          "width_major": 14.05,
-          "width_minor": 3.74,
-          "speed": 3.5,
-          "residual": 1.35
+          "source_level": 1.1246,
+          "width_major": 14.385,
+          "width_minor": 3.89,
+          "speed": 3.49,
+          "residual": 1.33
         },
         "size_ratio_per_frame": {
           "10.25": -6.9,
@@ -3464,14 +3995,14 @@
         "true_speed": 2.499999999999996,
         "detected_frames": 226,
         "seen": {
-          "own noise": 220,
-          "both": 6
+          "own noise": 217,
+          "both": 9
         },
         "median": {
           "size_ratio_db": -16.6,
           "strength_db": -9.7,
-          "along": 5.9,
-          "across": 6.7,
+          "along": 6.2,
+          "across": 7.5,
           "source_level": 0.7281,
           "width_major": 29.92,
           "width_minor": 4.49,
@@ -3479,12 +4010,15 @@
           "residual": 1.45
         },
         "size_ratio_per_frame": {
+          "49.0": -16.6,
           "49.25": -16.6,
           "49.5": -16.6,
           "49.75": -16.6,
           "50.0": -16.6,
           "50.25": -16.6,
-          "50.5": -16.6
+          "50.5": -16.6,
+          "50.75": -16.6,
+          "51.0": -16.6
         }
       },
       {
@@ -3494,41 +4028,22 @@
         "true_level_pa": 0.3,
         "true_size_m": null,
         "true_speed": 3.7092207735249043,
-        "detected_frames": 158,
+        "detected_frames": 165,
         "seen": {
-          "own noise": 175,
-          "both": 17
+          "own noise": 226
         },
         "median": {
-          "size_ratio_db": 10.8,
-          "strength_db": 5.1,
-          "along": 4.3,
-          "across": 8.3,
-          "source_level": 0.4521,
-          "width_major": 27.27,
-          "width_minor": 4.48,
-          "speed": 4.45,
-          "residual": 1.24
+          "size_ratio_db": null,
+          "strength_db": null,
+          "along": null,
+          "across": null,
+          "source_level": 0.437,
+          "width_major": 29.09,
+          "width_minor": 4.470000000000001,
+          "speed": 4.43,
+          "residual": 1.22
         },
-        "size_ratio_per_frame": {
-          "53.5": 10.8,
-          "53.75": 10.8,
-          "54.0": 10.8,
-          "54.25": 10.8,
-          "54.5": 10.8,
-          "54.75": 10.8,
-          "55.0": 10.8,
-          "55.25": 10.8,
-          "55.5": 10.8,
-          "55.75": 10.8,
-          "56.0": 10.8,
-          "56.25": 10.8,
-          "56.5": 10.8,
-          "56.75": 10.8,
-          "57.0": 10.8,
-          "57.25": 10.8,
-          "57.5": 10.8
-        }
+        "size_ratio_per_frame": {}
       },
       {
         "object": "uuv1",
@@ -3543,18 +4058,18 @@
         "detected_frames": 134,
         "seen": {
           "echo": 202,
-          "both": 6
+          "both": 9
         },
         "median": {
-          "size_ratio_db": -8.3,
+          "size_ratio_db": -8.9,
           "strength_db": -6.9,
-          "along": 5.9,
-          "across": 6.7,
+          "along": 6.2,
+          "across": 6.1,
           "source_level": 0.711,
-          "width_major": 9.03,
-          "width_minor": 4.04,
-          "speed": 1.66,
-          "residual": 1.79
+          "width_major": 9.93,
+          "width_minor": 4.09,
+          "speed": 1.67,
+          "residual": 1.77
         },
         "size_ratio_per_frame": {
           "5.25": -6.4,
@@ -3705,7 +4220,7 @@
           "41.5": -16.6,
           "41.75": -16.6,
           "42.0": -16.6,
-          "42.25": -16.6,
+          "42.25": -16.9,
           "42.5": -16.6,
           "42.75": -16.6,
           "43.0": -16.6,
@@ -3756,15 +4271,18 @@
           "54.25": -16.6,
           "54.5": -16.6,
           "54.75": -16.6,
-          "55.75": -6.9,
-          "56.0": -7.0,
-          "56.25": -7.0,
-          "56.5": -7.8,
-          "56.75": -7.0,
-          "57.0": -7.0,
-          "57.25": -7.0,
-          "57.5": -7.8,
-          "57.75": -7.0
+          "55.0": -16.6,
+          "55.25": -16.6,
+          "55.5": -20.5,
+          "55.75": -11.9,
+          "56.0": -6.5,
+          "56.25": -8.4,
+          "56.5": -9.4,
+          "56.75": -8.0,
+          "57.0": -8.0,
+          "57.25": -8.0,
+          "57.5": -9.4,
+          "57.75": -8.0
         }
       },
       {
@@ -3782,14 +4300,14 @@
           "echo": 215
         },
         "median": {
-          "size_ratio_db": -2.6,
-          "strength_db": -6.3,
+          "size_ratio_db": -2.7,
+          "strength_db": -4.5,
           "along": 3.3,
           "across": 4.2,
           "source_level": null,
           "width_major": 4.62,
           "width_minor": 2.31,
-          "speed": 1.11,
+          "speed": 1.12,
           "residual": 1.45
         },
         "size_ratio_per_frame": {
@@ -3938,76 +4456,76 @@
           "39.75": -3.3,
           "40.0": -4.8,
           "40.25": -4.8,
-          "40.5": -6.4,
-          "40.75": -6.4,
-          "41.0": -6.4,
-          "41.25": -7.4,
-          "41.5": -7.5,
-          "41.75": -7.6,
-          "42.0": -7.6,
-          "42.25": -7.6,
-          "42.5": -7.0,
-          "42.75": -7.0,
-          "43.0": -6.3,
-          "43.25": -3.8,
+          "40.5": -6.7,
+          "40.75": -7.3,
+          "41.0": -7.6,
+          "41.25": -7.7,
+          "41.5": -7.7,
+          "41.75": -7.7,
+          "42.0": -8.3,
+          "42.25": -7.7,
+          "42.5": -7.6,
+          "42.75": -7.6,
+          "43.0": -6.5,
+          "43.25": -3.9,
           "43.5": -2.6,
           "43.75": -2.6,
           "44.0": -2.6,
           "44.25": -2.6,
           "44.5": -2.6,
-          "44.75": -2.6,
-          "45.0": -2.6,
-          "45.25": -2.6,
-          "45.5": -2.6,
-          "45.75": -2.6,
-          "46.0": -2.6,
-          "46.25": -2.6,
-          "46.5": -2.6,
-          "46.75": -2.6,
-          "47.0": -2.6,
-          "47.25": -2.6,
-          "47.5": -2.6,
-          "47.75": -2.6,
-          "48.0": -2.6,
-          "48.25": -2.6,
-          "48.5": -2.6,
-          "48.75": -2.6,
-          "49.0": -2.6,
-          "49.25": -2.6,
-          "49.5": -2.6,
-          "49.75": -2.6,
-          "50.0": -2.6,
-          "50.25": -2.6,
-          "50.5": -2.6,
-          "50.75": -2.6,
-          "51.0": -2.6,
-          "51.25": -2.4,
-          "51.5": -2.4,
-          "51.75": -2.4,
-          "52.0": -2.4,
-          "52.25": -2.4,
-          "52.5": -2.4,
-          "52.75": -2.4,
-          "53.0": -2.4,
-          "53.25": -2.4,
-          "53.5": -2.4,
-          "53.75": -2.4,
-          "54.0": -2.4,
-          "54.25": -2.4,
-          "54.5": -2.4,
-          "54.75": -2.4,
-          "55.0": -2.4,
-          "55.25": -2.4,
-          "55.5": -2.4,
-          "55.75": -2.4,
-          "56.0": -2.4,
-          "56.25": -2.4,
-          "56.5": -2.4,
-          "56.75": -2.4,
-          "57.0": -2.4,
-          "57.25": -2.4,
-          "57.5": -2.4,
-          "57.75": -2.4
+          "44.75": -1.0,
+          "45.0": -1.0,
+          "45.25": -1.0,
+          "45.5": -1.0,
+          "45.75": -1.0,
+          "46.0": -1.0,
+          "46.25": -1.0,
+          "46.5": -1.0,
+          "46.75": -1.0,
+          "47.0": -1.0,
+          "47.25": -1.0,
+          "47.5": -1.0,
+          "47.75": -1.0,
+          "48.0": -1.0,
+          "48.25": -1.0,
+          "48.5": -1.0,
+          "48.75": -1.0,
+          "49.0": -1.0,
+          "49.25": -1.0,
+          "49.5": -1.0,
+          "49.75": -1.0,
+          "50.0": -1.0,
+          "50.25": -1.0,
+          "50.5": -1.0,
+          "50.75": -1.0,
+          "51.0": -1.0,
+          "51.25": -2.0,
+          "51.5": -2.0,
+          "51.75": -2.0,
+          "52.0": -2.0,
+          "52.25": -2.0,
+          "52.5": -2.0,
+          "52.75": -2.0,
+          "53.0": -2.0,
+          "53.25": -2.0,
+          "53.5": -2.0,
+          "53.75": -2.0,
+          "54.0": -2.0,
+          "54.25": -2.0,
+          "54.5": -2.0,
+          "54.75": -2.7,
+          "55.0": -2.7,
+          "55.25": -2.7,
+          "55.5": -2.7,
+          "55.75": -2.7,
+          "56.0": -2.7,
+          "56.25": -2.7,
+          "56.5": -2.7,
+          "56.75": -2.7,
+          "57.0": -2.7,
+          "57.25": -2.7,
+          "57.5": -2.7,
+          "57.75": -2.7
         }
       },
       {
@@ -4020,20 +4538,20 @@
           0.5
         ],
         "true_speed": 0.6012007360769875,
-        "detected_frames": 166,
+        "detected_frames": 150,
         "seen": {
-          "echo": 195
+          "echo": 210
         },
         "median": {
-          "size_ratio_db": -11.6,
-          "strength_db": -2.5,
-          "along": 4.0,
-          "across": 7.0,
+          "size_ratio_db": -10.8,
+          "strength_db": -0.2,
+          "along": 4.7,
+          "across": 6.9,
           "source_level": null,
-          "width_major": 9.24,
+          "width_major": 9.29,
           "width_minor": 4.42,
-          "speed": 0.51,
-          "residual": 1.69
+          "speed": 0.68,
+          "residual": 2.91
         },
         "size_ratio_per_frame": {
           "5.5": -20.5,
@@ -4176,61 +4694,76 @@
           "39.75": -10.4,
           "40.0": -10.4,
           "40.25": -10.4,
-          "40.5": -10.4,
-          "40.75": -10.4,
-          "41.0": -10.4,
-          "41.25": -10.4,
-          "41.5": -10.4,
-          "41.75": -8.3,
-          "42.0": -8.3,
-          "42.25": -8.3,
-          "42.5": -8.3,
-          "42.75": -8.3,
-          "43.0": -8.3,
-          "43.25": -8.3,
-          "43.5": -8.3,
-          "43.75": -8.3,
-          "44.0": -8.3,
-          "44.25": -8.3,
-          "44.5": -8.3,
-          "44.75": -8.3,
-          "45.0": -8.3,
-          "45.25": -8.3,
-          "45.5": -8.3,
-          "45.75": -8.3,
-          "46.0": -8.3,
-          "46.25": -8.3,
-          "46.5": -8.3,
-          "46.75": -8.3,
-          "47.0": -8.3,
-          "47.25": -8.3,
-          "47.5": -8.3,
-          "47.75": -8.3,
-          "48.0": -8.3,
-          "48.25": -8.3,
-          "48.5": -8.3,
-          "48.75": -8.3,
-          "49.0": -8.3,
-          "49.25": -8.3,
-          "49.5": -8.3,
-          "49.75": -8.3,
-          "50.0": -8.3,
-          "50.25": -8.3,
-          "50.5": -8.3,
-          "50.75": -8.3,
-          "51.0": -8.3,
-          "51.25": -8.3,
-          "51.5": -8.3,
-          "51.75": -8.3,
-          "52.0": -8.3,
-          "52.25": -8.3,
-          "52.5": -8.3,
-          "52.75": -8.3,
-          "53.0": -8.3,
-          "53.25": -8.3,
-          "53.5": -8.3,
-          "53.75": -8.3,
-          "54.0": -8.3
+          "40.5": -10.1,
+          "40.75": -10.1,
+          "41.0": -10.1,
+          "41.25": -10.1,
+          "41.5": -10.1,
+          "41.75": -10.1,
+          "42.0": -10.1,
+          "42.25": -10.1,
+          "42.5": -10.1,
+          "42.75": -10.1,
+          "43.0": -10.1,
+          "43.25": -10.1,
+          "43.5": -10.1,
+          "43.75": -10.1,
+          "44.0": -10.1,
+          "44.25": -10.1,
+          "44.5": -10.1,
+          "44.75": -10.1,
+          "45.0": -10.1,
+          "45.25": -10.1,
+          "45.5": -10.1,
+          "45.75": -10.1,
+          "46.0": -9.4,
+          "46.25": -9.4,
+          "46.5": -9.4,
+          "46.75": -10.8,
+          "47.0": -10.8,
+          "47.25": -10.8,
+          "47.5": -10.8,
+          "47.75": -10.8,
+          "48.0": -10.8,
+          "48.25": -10.8,
+          "48.5": -10.8,
+          "48.75": -10.8,
+          "49.0": -10.8,
+          "49.25": -10.8,
+          "49.5": -10.8,
+          "49.75": -10.8,
+          "50.0": -10.8,
+          "50.25": -10.8,
+          "50.5": -10.8,
+          "50.75": -10.8,
+          "51.0": -10.8,
+          "51.25": -10.8,
+          "51.5": -10.8,
+          "51.75": -10.8,
+          "52.0": -10.8,
+          "52.25": -10.8,
+          "52.5": -10.8,
+          "52.75": -10.8,
+          "53.0": -10.8,
+          "53.25": -10.8,
+          "53.5": -10.8,
+          "53.75": -10.8,
+          "54.0": -10.8,
+          "54.25": -10.8,
+          "54.5": -10.8,
+          "54.75": -10.8,
+          "55.0": -10.8,
+          "55.25": -10.8,
+          "55.5": -10.8,
+          "55.75": -10.8,
+          "56.0": -10.8,
+          "56.25": -10.8,
+          "56.5": -10.8,
+          "56.75": -10.8,
+          "57.0": -10.8,
+          "57.25": -10.8,
+          "57.5": -10.8,
+          "57.75": -10.8
         }
       }
     ],
@@ -4690,7 +5223,7 @@
         "true_speed": 2.000000000000001,
         "detected_frames": 59,
         "seen": {
-          "own noise": 31,
+          "own noise": 66,
           "echo": 45
         },
         "median": {
@@ -4699,10 +5232,10 @@
           "along": 3.9,
           "across": 2.9,
           "source_level": 0.1782,
-          "width_major": 8.675,
-          "width_minor": 2.85,
-          "speed": 1.8250000000000002,
-          "residual": 1.77
+          "width_major": 45.89,
+          "width_minor": 5.85,
+          "speed": 1.46,
+          "residual": 2.75
         },
         "size_ratio_per_frame": {
           "6.75": 4.1,
@@ -4790,7 +5323,7 @@
         "true_speed": 2.000000000000001,
         "detected_frames": 59,
         "seen": {
-          "own noise": 31,
+          "own noise": 66,
           "echo": 45
         },
         "median": {
@@ -4799,10 +5332,10 @@
           "along": 3.9,
           "across": 2.9,
           "source_level": 0.1789,
-          "width_major": 9.785,
-          "width_minor": 2.85,
-          "speed": 1.9649999999999999,
-          "residual": 1.61
+          "width_major": 44.12,
+          "width_minor": 5.51,
+          "speed": 1.6,
+          "residual": 3.97
         },
         "size_ratio_per_frame": {
           "6.75": 7.7,
@@ -4861,14 +5394,14 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.41868640305110605,
-        "echo": 0.6794503791497846,
-        "characteristics": 0.11245876159882755,
-        "total": 1.2105955437997182
+        "passive": 0.4277146795509907,
+        "echo": 0.695057520094997,
+        "characteristics": 0.1164177360071335,
+        "total": 1.2391899356531213
       },
       "latency_s": {
-        "median": 2.775,
-        "max": 3.768
+        "median": 2.817,
+        "max": 3.813
       },
       "false_tracks": {
         "count": 2,
@@ -4912,7 +5445,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -4929,7 +5467,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -4946,7 +5489,12 @@
           },
           "tracks": [
             "e15"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.203125,
+            "any": 0.19696969696969696
+          }
         },
         "wreck": {
           "kind": "static",
@@ -4963,7 +5511,12 @@
           },
           "tracks": [
             "e1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.984375,
+            "any": 0.9545454545454546
+          }
         }
       },
       "peaks": {
@@ -4993,14 +5546,14 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5381548835001013,
-        "echo": 0.38668495170204553,
-        "characteristics": 0.0935495345525851,
-        "total": 1.018389369754732
+        "passive": 0.5433516914999927,
+        "echo": 0.39773269135330336,
+        "characteristics": 0.09695432875378174,
+        "total": 1.038038711607078
       },
       "latency_s": {
-        "median": 2.103,
-        "max": 3.102
+        "median": 2.163,
+        "max": 3.165
       },
       "false_tracks": {
         "count": 0,
@@ -5025,7 +5578,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -5042,7 +5600,12 @@
           },
           "tracks": [
             "e10"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.53125,
+            "any": 0.5151515151515151
+          }
         }
       },
       "peaks": {
@@ -5068,14 +5631,14 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.570119774750492,
-        "echo": 1.8381264964016737,
-        "characteristics": 0.29334490629989884,
-        "total": 2.7015911774520647
+        "passive": 0.5758708020992345,
+        "echo": 1.8487568816999556,
+        "characteristics": 0.28470794844979536,
+        "total": 2.7093356322489854
       },
       "latency_s": {
-        "median": 5.454,
-        "max": 6.47
+        "median": 5.435,
+        "max": 6.458
       },
       "false_tracks": {
         "count": 2,
@@ -5119,7 +5682,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "tug": {
           "kind": "ship",
@@ -5136,7 +5704,12 @@
           },
           "tracks": [
             "r3"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -5153,7 +5726,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -5168,7 +5746,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -5185,7 +5768,12 @@
           },
           "tracks": [
             "e4"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.875,
+            "any": 0.8484848484848485
+          }
         },
         "diver": {
           "kind": "diver",
@@ -5200,7 +5788,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling1": {
           "kind": "static",
@@ -5215,7 +5808,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -5230,7 +5828,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -5245,7 +5848,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -5260,7 +5868,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -5275,7 +5888,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -5290,7 +5908,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -5307,7 +5930,12 @@
           },
           "tracks": [
             "e6"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.625,
+            "any": 0.6060606060606061
+          }
         }
       },
       "peaks": {
@@ -5360,14 +5988,14 @@
       "held_out": false,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5325198641066284,
+        "passive": 0.5325980621343963,
         "echo": 0.0,
-        "characteristics": 0.003463521508092526,
-        "total": 0.5359833856147209
+        "characteristics": 0.003438737591689763,
+        "total": 0.5360367997260861
       },
       "latency_s": {
-        "median": 1.104,
-        "max": 1.191
+        "median": 1.109,
+        "max": 1.201
       },
       "false_tracks": {
         "count": 2,
@@ -5410,7 +6038,11 @@
           "tracks": [
             "r10",
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.9259259259259259,
+            "any": 0.9259259259259259
+          }
         },
         "tug": {
           "kind": "ship",
@@ -5425,7 +6057,11 @@
           },
           "tracks": [
             "r19"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          }
         },
         "moored": {
           "kind": "ship",
@@ -5438,7 +6074,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -5451,7 +6091,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -5464,7 +6108,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "diver": {
           "kind": "diver",
@@ -5477,7 +6125,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "static_scatter": {
           "kind": "uuv",
@@ -5490,7 +6142,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -5523,14 +6179,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.4182214476932131,
-        "echo": 0.6942859150032745,
-        "characteristics": 0.10953322240238776,
-        "total": 1.2220405850988754
+        "passive": 0.4228829268999107,
+        "echo": 0.6953035566482868,
+        "characteristics": 0.10953152970105293,
+        "total": 1.2277180132492505
       },
       "latency_s": {
-        "median": 2.804,
-        "max": 3.797
+        "median": 2.805,
+        "max": 3.804
       },
       "false_tracks": {
         "count": 1,
@@ -5565,7 +6221,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -5582,7 +6243,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -5597,7 +6263,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "wreck": {
           "kind": "static",
@@ -5614,7 +6285,12 @@
           },
           "tracks": [
             "e6"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.96875,
+            "any": 0.9393939393939394
+          }
         }
       },
       "peaks": {
@@ -5644,14 +6320,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.41700475375328094,
-        "echo": 0.6889333594546769,
-        "characteristics": 0.11880261420446914,
-        "total": 1.2247407274124271
+        "passive": 0.5020294347988965,
+        "echo": 0.6939650578024157,
+        "characteristics": 0.11856281400032458,
+        "total": 1.3145573066016367
       },
       "latency_s": {
         "median": 2.81,
-        "max": 3.804
+        "max": 3.81
       },
       "false_tracks": {
         "count": 2,
@@ -5695,7 +6371,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -5712,7 +6393,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -5727,7 +6413,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "wreck": {
           "kind": "static",
@@ -5744,7 +6435,12 @@
           },
           "tracks": [
             "e2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.984375,
+            "any": 0.9545454545454546
+          }
         }
       },
       "peaks": {
@@ -5774,14 +6470,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.4163936080483836,
-        "echo": 0.688301682700694,
-        "characteristics": 0.11051387115003308,
-        "total": 1.2152091618991108
+        "passive": 0.4213153743541625,
+        "echo": 0.6926421011499769,
+        "characteristics": 0.11016765009990195,
+        "total": 1.2241251256040413
       },
       "latency_s": {
-        "median": 2.789,
-        "max": 3.789
+        "median": 2.8,
+        "max": 3.795
       },
       "false_tracks": {
         "count": 1,
@@ -5816,7 +6512,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -5833,7 +6534,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -5850,7 +6556,12 @@
           },
           "tracks": [
             "e13"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.25,
+            "any": 0.24242424242424243
+          }
         },
         "wreck": {
           "kind": "static",
@@ -5867,7 +6578,12 @@
           },
           "tracks": [
             "e3"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.984375,
+            "any": 0.9545454545454546
+          }
         }
       },
       "peaks": {
@@ -5897,14 +6613,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5526152361970162,
-        "echo": 0.404299414401612,
-        "characteristics": 0.10485774534754455,
-        "total": 1.0617723959461727
+        "passive": 0.5458701159004704,
+        "echo": 0.3952131397978519,
+        "characteristics": 0.1016955404455075,
+        "total": 1.0427787961438297
       },
       "latency_s": {
-        "median": 2.167,
-        "max": 3.166
+        "median": 2.133,
+        "max": 3.132
       },
       "false_tracks": {
         "count": 0,
@@ -5929,7 +6645,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -5946,7 +6667,12 @@
           },
           "tracks": [
             "e11"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.78125,
+            "any": 0.7575757575757576
+          }
         }
       },
       "peaks": {
@@ -5972,14 +6698,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5401014986397058,
-        "echo": 0.39099919950167533,
-        "characteristics": 0.10729784619470592,
-        "total": 1.038398544336087
+        "passive": 0.5439415958026075,
+        "echo": 0.39518678360327614,
+        "characteristics": 0.1048983072018018,
+        "total": 1.0440266866076855
       },
       "latency_s": {
-        "median": 2.121,
-        "max": 3.121
+        "median": 2.133,
+        "max": 3.133
       },
       "false_tracks": {
         "count": 0,
@@ -6004,7 +6730,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -6021,7 +6752,12 @@
           },
           "tracks": [
             "e10"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.796875,
+            "any": 0.7727272727272727
+          }
         }
       },
       "peaks": {
@@ -6047,14 +6783,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5510067481969599,
-        "echo": 0.4786314244513051,
-        "characteristics": 0.10880502259969944,
-        "total": 1.1384431952479646
+        "passive": 0.5524181176500861,
+        "echo": 0.47239095575059764,
+        "characteristics": 0.10329336930590216,
+        "total": 1.1281024427065858
       },
       "latency_s": {
-        "median": 2.363,
-        "max": 4.43
+        "median": 2.365,
+        "max": 4.369
       },
       "false_tracks": {
         "count": 1,
@@ -6089,7 +6825,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -6106,7 +6847,12 @@
           },
           "tracks": [
             "e2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.796875,
+            "any": 0.7727272727272727
+          }
         }
       },
       "peaks": {
@@ -6132,13 +6878,13 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5765489009507292,
-        "echo": 1.84666975099899,
-        "characteristics": 0.3266993152959913,
-        "total": 2.74991796724571
+        "passive": 0.5762893058432382,
+        "echo": 1.8478768250475697,
+        "characteristics": 0.31624142575165026,
+        "total": 2.740407556642458
       },
       "latency_s": {
-        "median": 5.419,
+        "median": 5.427,
         "max": 6.423
       },
       "false_tracks": {
@@ -6174,7 +6920,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "tug": {
           "kind": "ship",
@@ -6191,7 +6942,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -6208,7 +6964,12 @@
           },
           "tracks": [
             "r3"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -6223,7 +6984,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -6240,7 +7006,12 @@
           },
           "tracks": [
             "e4"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.90625,
+            "any": 0.8787878787878788
+          }
         },
         "diver": {
           "kind": "diver",
@@ -6255,7 +7026,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling1": {
           "kind": "static",
@@ -6270,7 +7046,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -6285,7 +7066,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -6300,7 +7086,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -6315,7 +7106,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -6330,7 +7126,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -6345,7 +7146,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -6362,7 +7168,12 @@
           },
           "tracks": [
             "e18"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.625,
+            "any": 0.6060606060606061
+          }
         }
       },
       "peaks": {
@@ -6415,14 +7226,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5802859516486933,
-        "echo": 1.8432145554463204,
-        "characteristics": 0.3398144969971327,
-        "total": 2.7633150040921466
+        "passive": 0.574178038003447,
+        "echo": 1.8345516002482327,
+        "characteristics": 0.33344040120209684,
+        "total": 2.7421700394537765
       },
       "latency_s": {
         "median": 5.415,
-        "max": 6.449
+        "max": 6.414
       },
       "false_tracks": {
         "count": 1,
@@ -6457,7 +7268,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "tug": {
           "kind": "ship",
@@ -6474,7 +7290,12 @@
           },
           "tracks": [
             "r3"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -6491,7 +7312,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -6508,7 +7334,12 @@
           },
           "tracks": [
             "e6"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.140625,
+            "any": 0.13636363636363635
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -6525,7 +7356,12 @@
           },
           "tracks": [
             "e4"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.921875,
+            "any": 0.8939393939393939
+          }
         },
         "diver": {
           "kind": "diver",
@@ -6540,7 +7376,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling1": {
           "kind": "static",
@@ -6555,7 +7396,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -6570,7 +7416,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -6585,7 +7436,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -6600,7 +7456,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -6615,7 +7476,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -6630,7 +7496,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -6647,7 +7518,12 @@
           },
           "tracks": [
             "e8"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.71875,
+            "any": 0.696969696969697
+          }
         }
       },
       "peaks": {
@@ -6700,14 +7576,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5747407444512647,
-        "echo": 1.842489945198031,
-        "characteristics": 0.3026021980462247,
-        "total": 2.71983288769552
+        "passive": 0.5724449594461476,
+        "echo": 1.833600253101031,
+        "characteristics": 0.2930371858019498,
+        "total": 2.699082398349128
       },
       "latency_s": {
-        "median": 5.424,
-        "max": 6.503
+        "median": 5.387,
+        "max": 6.419
       },
       "false_tracks": {
         "count": 1,
@@ -6742,7 +7618,12 @@
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "tug": {
           "kind": "ship",
@@ -6759,7 +7640,12 @@
           },
           "tracks": [
             "r2"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
@@ -6776,7 +7662,12 @@
           },
           "tracks": [
             "r3"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -6791,7 +7682,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -6808,7 +7704,12 @@
           },
           "tracks": [
             "e4"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
         },
         "diver": {
           "kind": "diver",
@@ -6823,7 +7724,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling1": {
           "kind": "static",
@@ -6838,7 +7744,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -6853,7 +7764,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -6868,7 +7784,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -6883,7 +7804,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -6898,7 +7824,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -6913,7 +7844,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -6930,7 +7866,12 @@
           },
           "tracks": [
             "e21"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.625,
+            "any": 0.6060606060606061
+          }
         }
       },
       "peaks": {
@@ -6983,14 +7924,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.532043191609652,
+        "passive": 0.5340748794492053,
         "echo": 0.0,
-        "characteristics": 0.003802161858281276,
-        "total": 0.5358453534679332
+        "characteristics": 0.0038375267255711756,
+        "total": 0.5379124061747764
       },
       "latency_s": {
-        "median": 1.102,
-        "max": 1.209
+        "median": 1.1085,
+        "max": 1.2
       },
       "false_tracks": {
         "count": 3,
@@ -7043,7 +7984,11 @@
             "r18",
             "r2",
             "r21"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.6851851851851852,
+            "any": 0.6851851851851852
+          }
         },
         "tug": {
           "kind": "ship",
@@ -7058,7 +8003,11 @@
           },
           "tracks": [
             "r24"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.05555555555555555,
+            "any": 0.05555555555555555
+          }
         },
         "moored": {
           "kind": "ship",
@@ -7071,7 +8020,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -7084,7 +8037,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -7097,7 +8054,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "diver": {
           "kind": "diver",
@@ -7110,7 +8071,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "static_scatter": {
           "kind": "uuv",
@@ -7123,7 +8088,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -7156,14 +8125,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5297907441063823,
+        "passive": 0.532919826650929,
         "echo": 0.0,
-        "characteristics": 0.003578950233956372,
-        "total": 0.5333696943403387
+        "characteristics": 0.0036666195249078254,
+        "total": 0.5365864461758368
       },
       "latency_s": {
-        "median": 1.1035,
-        "max": 1.185
+        "median": 1.1105,
+        "max": 1.193
       },
       "false_tracks": {
         "count": 2,
@@ -7208,7 +8177,11 @@
             "r10",
             "r13",
             "r5"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.8148148148148148,
+            "any": 0.8148148148148148
+          }
         },
         "tug": {
           "kind": "ship",
@@ -7223,7 +8196,11 @@
           },
           "tracks": [
             "r16"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.05555555555555555,
+            "any": 0.05555555555555555
+          }
         },
         "moored": {
           "kind": "ship",
@@ -7236,7 +8213,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -7249,7 +8230,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -7262,7 +8247,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "diver": {
           "kind": "diver",
@@ -7275,7 +8264,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "static_scatter": {
           "kind": "uuv",
@@ -7288,7 +8281,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -7321,14 +8318,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5307343773604468,
+        "passive": 0.5328176460578107,
         "echo": 0.0,
-        "characteristics": 0.0035803901502125274,
-        "total": 0.5343147675106593
+        "characteristics": 0.003558951041607846,
+        "total": 0.5363765970994184
       },
       "latency_s": {
-        "median": 1.104,
-        "max": 1.188
+        "median": 1.1065,
+        "max": 1.192
       },
       "false_tracks": {
         "count": 0,
@@ -7355,7 +8352,11 @@
             "r17",
             "r18",
             "r4"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.8148148148148148,
+            "any": 0.8148148148148148
+          }
         },
         "tug": {
           "kind": "ship",
@@ -7370,7 +8371,11 @@
           },
           "tracks": [
             "r19"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.05555555555555555,
+            "any": 0.05555555555555555
+          }
         },
         "moored": {
           "kind": "ship",
@@ -7383,7 +8388,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv1": {
           "kind": "uuv",
@@ -7396,7 +8405,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -7409,7 +8422,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "diver": {
           "kind": "diver",
@@ -7422,7 +8439,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         },
         "static_scatter": {
           "kind": "uuv",
@@ -7435,7 +8456,11 @@
             "radiator": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -7468,14 +8493,14 @@
       "held_out": true,
       "record_s": 60.0,
       "compute_per_second_of_data": {
-        "passive": 0.6152770128494012,
-        "echo": 1.8488781226684903,
-        "characteristics": 0.26531195201459923,
-        "total": 2.7294670875324907
+        "passive": 0.6150676484816359,
+        "echo": 1.919614050481808,
+        "characteristics": 0.25570667459760443,
+        "total": 2.7903883735610484
       },
       "latency_s": {
-        "median": 5.158,
-        "max": 8.068
+        "median": 5.372,
+        "max": 8.088
       },
       "false_tracks": {
         "count": 4,
@@ -7503,7 +8528,7 @@
           "median_error_m": 21.75439674746957
         },
         {
-          "track": "r38",
+          "track": "r37",
           "median_xy": [
             180.0,
             124.0
@@ -7512,7 +8537,7 @@
           "median_error_m": 19.164943263087885
         },
         {
-          "track": "e108",
+          "track": "e107",
           "median_xy": [
             56.0,
             260.0
@@ -7537,8 +8562,13 @@
           },
           "tracks": [
             "r2",
-            "r39"
-          ]
+            "r38"
+          ],
+          "pd_last_heard": {
+            "radiator": 0.9911504424778761,
+            "echo": 0.0,
+            "any": 0.9911504424778761
+          }
         },
         "tug": {
           "kind": "ship",
@@ -7555,41 +8585,56 @@
           },
           "tracks": [
             "r4"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          }
         },
         "boat": {
           "kind": "ship",
           "radiates": true,
           "pd": {
-            "radiator": 0.5619469026548672,
+            "radiator": 0.6194690265486725,
             "echo": 0.0,
-            "any": 0.5619469026548672
+            "any": 0.6194690265486725
           },
           "median_error_m": {
-            "radiator": 0.26545422475669406,
+            "radiator": 0.2855428152786489,
             "echo": null,
-            "any": 0.26545422475669406
+            "any": 0.2855428152786489
           },
           "tracks": [
             "r1"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.9646017699115044,
+            "echo": 0.0,
+            "any": 0.9646017699115044
+          }
         },
         "uuv1": {
           "kind": "uuv",
           "radiates": false,
           "pd": {
             "radiator": 0.0,
-            "echo": 0.45982142857142855,
-            "any": 0.4557522123893805
+            "echo": 0.45089285714285715,
+            "any": 0.4469026548672566
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.4116883205001702,
-            "any": 1.4116883205001702
+            "echo": 1.4013259506905866,
+            "any": 1.4013259506905866
           },
           "tracks": [
             "e6"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.45089285714285715,
+            "any": 0.4469026548672566
+          }
         },
         "uuv2": {
           "kind": "uuv",
@@ -7601,12 +8646,17 @@
           },
           "median_error_m": {
             "radiator": null,
-            "echo": 1.6079497853721658,
-            "any": 1.6079497853721658
+            "echo": 1.6855031394715974,
+            "any": 1.6855031394715974
           },
           "tracks": [
             "e7"
-          ]
+          ],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.8169642857142857,
+            "any": 0.8097345132743363
+          }
         },
         "diver": {
           "kind": "diver",
@@ -7621,7 +8671,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling1": {
           "kind": "static",
@@ -7636,7 +8691,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling2": {
           "kind": "static",
@@ -7651,7 +8711,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling3": {
           "kind": "static",
@@ -7666,7 +8731,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling4": {
           "kind": "static",
@@ -7681,7 +8751,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling5": {
           "kind": "static",
@@ -7696,7 +8771,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "piling6": {
           "kind": "static",
@@ -7711,7 +8791,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         },
         "moored": {
           "kind": "ship",
@@ -7726,7 +8811,12 @@
             "echo": null,
             "any": null
           },
-          "tracks": []
+          "tracks": [],
+          "pd_last_heard": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          }
         }
       },
       "peaks": {
@@ -7748,9 +8838,9 @@
         "echo": {
           "ferry": 0.0,
           "tug": 0.0,
-          "boat": 0.025974025974025976,
+          "boat": 0.021645021645021644,
           "uuv1": 0.354978354978355,
-          "uuv2": 0.39826839826839827,
+          "uuv2": 0.3852813852813853,
           "diver": 0.021645021645021644,
           "piling1": 0.0,
           "piling2": 0.0,
@@ -7763,9 +8853,9 @@
       },
       "gpu": "Quadro RTX 4000",
       "ellipse_coverage": {
-        "fixes": 707,
+        "fixes": 708,
         "inside": 676,
-        "fraction": 0.9561527581329562
+        "fraction": 0.9548022598870056
       },
       "size_order": {
         "frames_all_three": 0,
@@ -7823,8 +8913,8 @@
       "recording": "harbor",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 5.0401,
-      "error_db": 14.048783066280937
+      "estimate_pa": 4.8952,
+      "error_db": 13.795408803771847
     },
     {
       "recording": "simple_seed1",
@@ -7956,29 +9046,29 @@
       "recording": "harbor_seed1",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 5.0017499999999995,
-      "error_db": 13.98243961620706
+      "estimate_pa": 4.8496,
+      "error_db": 13.714118380470941
     },
     {
       "recording": "harbor_seed2",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 5.01895,
-      "error_db": 14.012257383128055
+      "estimate_pa": 4.8398,
+      "error_db": 13.696548304412897
     },
     {
       "recording": "harbor_seed3",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 4.9225,
-      "error_db": 13.843714496203116
+      "estimate_pa": 4.7897,
+      "error_db": 13.606166249816308
     },
     {
       "recording": "multistatic_b",
       "object": "ferry",
       "true_pa": 1.0,
-      "estimate_pa": 1.1373,
-      "error_db": 1.1175007829219405
+      "estimate_pa": 1.1246,
+      "error_db": 1.0199615834676818
     },
     {
       "recording": "multistatic_b",
@@ -7991,8 +9081,8 @@
       "recording": "multistatic_b",
       "object": "boat",
       "true_pa": 0.3,
-      "estimate_pa": 0.4521,
-      "error_db": 3.562265046292637
+      "estimate_pa": 0.437,
+      "error_db": 3.2672036450151887
     }
   ],
   "propagation_error_ms": {
@@ -8364,7 +9454,7 @@
       "values": {
         "ferry": 0.9911504424778761,
         "tug": 1.0,
-        "boat": 0.6991150442477876
+        "boat": 0.7300884955752213
       },
       "passed": false
     },
@@ -8376,15 +9466,15 @@
         "simple_seed2": 0.0,
         "simple_seed3": 3.0,
         "bistatic_seed1": 3.0,
-        "bistatic_seed2": 6.0,
-        "bistatic_seed3": 12.0,
+        "bistatic_seed2": 3.0,
+        "bistatic_seed3": 9.0,
         "multistatic_seed1": 9.0,
         "multistatic_seed2": 6.0,
         "multistatic_seed3": 9.0,
         "harbor_seed1": 2.0,
         "harbor_seed2": 1.5,
         "harbor_seed3": 2.0,
-        "multistatic_b": 6.0
+        "multistatic_b": 5.0
       },
       "passed": false
     },
@@ -8426,7 +9516,7 @@
       "values": {
         "ferry": 0.9911504424778761,
         "tug": 1.0,
-        "boat": 0.5619469026548672
+        "boat": 0.6194690265486725
       },
       "passed": false
     },
@@ -8482,7 +9572,7 @@
     }
   ],
   "run": {
-    "git_commit": "66201ad4813bb80a6acbaff0d515d3ca404728d5",
+    "git_commit": "0ab3b416faaf69eb153f0ba1b96d8c77fbfc6c4f",
     "git_dirty": true,
     "processing_config": null,
     "processing_config_sha256": null,
@@ -8494,7 +9584,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": null,
-    "wall_s": 26.072249174118042,
+    "wall_s": 355.1946039199829,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

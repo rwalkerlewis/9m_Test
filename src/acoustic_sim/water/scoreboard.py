@@ -391,6 +391,8 @@ def _full_hit(run: ChainMaps, tru: Truth, oid: str, threshold: Threshold, detect
 #   ``hit_radius`` of it.  The first frame it could have been confirmed: the first frame in which the chain feeding
 #   that tracker (passive for radiator tracks, echo for echo tracks) has an output and the object is active, plus
 #   ``confirm - 1`` frames of that chain (``confirm`` of the tracker's ``TrackerConfig``).
+# * ``pd_last_heard`` (beside it, not instead): the same, counting also the frames in which no confirmed track is a hit
+#   but a last heard track matched to the object (``TrackerConfig.last_heard_s``) holds it inside its 95 % ellipse.
 
 FIRM = ("confirmed", "static")
 
@@ -473,7 +475,7 @@ def picture_tracks(records: list[dict]) -> dict[str, dict]:
         for o in rec["objects"]:
             for kind, tid in o.get("tracks", {}).items():
                 st = o.get("track_state", {}).get(tid)
-                if st is None or st["status"] not in FIRM + ("lost",):
+                if st is None or st["status"] not in FIRM + ("lost", "last_heard"):
                     continue
                 d = out.setdefault(tid, {"kind": kind, "fixes": {}, "first_t": rec["t"]})
                 d["fixes"][st["fix_t"]] = st["fix_xy"]
@@ -511,22 +513,34 @@ def score_picture(records: list[dict], truth: Truth, record_s: float, confirm: d
                 continue
             frames = [k for k in range(k0, len(records)) if act[k]]
             errs = []
+            n_heard = 0                                  # frames held only by a last heard track whose ellipse holds the object
             for k in frames:
                 best = None
+                heard = False
                 for o in records[k]["objects"]:
                     for tk, tid in o.get("tracks", {}).items():
                         st = o.get("track_state", {}).get(tid)
-                        if st is None or st["status"] not in FIRM or (kind != "any" and tk != kind):
+                        if st is None or (kind != "any" and tk != kind):
                             continue
                         if matches.get(tid, {}).get("true_object") != oid:
+                            continue
+                        if st["status"] == "last_heard":
+                            if st.get("cov") is not None:
+                                dv = dist.nearest_point(oid, records[k]["t"], st["xy"]) - np.asarray(st["xy"], float)
+                                heard = heard or float(dv @ np.linalg.solve(np.asarray(st["cov"], float), dv)) <= ELLIPSE95_CHI2
+                            continue
+                        if st["status"] not in FIRM:
                             continue
                         d = dist(oid, records[k]["t"], st["xy"])
                         best = d if best is None else min(best, d)
                 if best is not None and best <= hit_radius:
                     errs.append(best)
+                elif heard:
+                    n_heard += 1
             row["frames"][kind] = len(frames)
             row["hits"][kind] = len(errs)
             row["pd"][kind] = len(errs) / len(frames) if frames else None
+            row.setdefault("pd_last_heard", {})[kind] = (len(errs) + n_heard) / len(frames) if frames else None
             row["median_error_m"][kind] = float(np.median(errs)) if errs else None
         per[oid] = row
     false = [m for m in matches.values() if m["false_track"]]

@@ -639,7 +639,7 @@ deliberately not started.
 | `examples/harbor/90_history/harbor_mfp_domain.py` | The same analytic chain in the domain of `output/recordings/harbor/dataset.npz` (land, cable + hydrophones, 120 s tracks, AIS, signatures, band, noise and DAS gains from the dataset; analytic propagation with opaque land). Adds AIS-ship gain calibration, re-whitening on the cleaned residual, DAS common-mode and distant-shipping plane-wave projection. Figures and `results.json` in `output/harbor_domain/` at commit `fd12458` (now written to `output/studies/history/harbor_mfp_domain/`) | ~1 h on 16 CPU cores (`--pd-windows 0`: ~20 min) |
 | `examples/harbor/02_forward_model/harbor_m1_uuv.py` | Single Ricker pulse with and without a stationary finite-size UUV; plots the difference as the scattered field | one FDTD pair |
 | `examples/harbor/02_forward_model/harbor_m1_uuv_video.py` | Animate the pulse and predicted UUV echo on the cable | one FDTD pair |
-| `examples/harbor/90_history/harbor_bistatic_budget.py` | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
+| `examples/harbor/90_history/harbor_bistatic_budget.py` (in git at `34661ed`; replaced by `examples/harbor/05_detection/harbor_echo_budget.py`) | Analytic 2-D bistatic link budget with idealized soft/rigid cylinder models; no FDTD | quick |
 | `examples/harbor/01_datasets/harbor_bistatic_dataset.py` | Fine-grid FDTD scenario; caches direct and body-scattered components separately | expensive; `--coarse` is faster but under-resolves the hull |
 | `examples/harbor/90_history/harbor_bistatic_demo.py` | Coherent bistatic localization figures given the truth (direct path removed exactly, true waveform, exact track) and error summary from a saved dataset | processing run |
 | `examples/harbor/90_history/harbor_cancellation_depth.py` (now `05_detection/`, the reference estimators) | Stage 0a: ECA cancellation depth of the ferry signature alone against range, stationary and moving, three references; `--doppler`, `--smooth`, `--gate` and `--propagator` (free field by default, `_freefield` suffix; `simulator` for the dispersion corrected replicas) variants write suffixed outputs | 6 cached FDTD runs (12 min on the GPU) + about 40 min of processing |
@@ -674,7 +674,7 @@ Check each script's `--help` for current flags.
 For the cropped strain-DAS bistatic setup:
 
 ```bash
-python examples/harbor/90_history/harbor_bistatic_budget.py --out output/studies/history/harbor_bistatic_budget
+python examples/harbor/05_detection/harbor_echo_budget.py      # the history budget is in git at 34661ed
 python examples/harbor/01_datasets/harbor_bistatic_dataset.py --coarse
 python examples/harbor/90_history/harbor_bistatic_demo.py \
     --dataset output/recordings/bistatic/coarse/dataset.npz \

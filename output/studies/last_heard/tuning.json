@@ -1,0 +1,1122 @@
+{
+  "rule": "the largest of 10, 30, 60 s with no more false tracks than at 0 on any tuning recording and no pd down more than 3 points; 30 s if it qualifies with another; off if none qualifies",
+  "values": [
+    0.0,
+    10.0,
+    30.0,
+    60.0
+  ],
+  "taken_s": 30.0,
+  "provenance": {
+    "truth_inputs": [],
+    "simulator_knowledge": [],
+    "data": "forward_model",
+    "held_out": false
+  },
+  "runs": {
+    "0": {
+      "simple": {
+        "false_tracks": 1,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          },
+          "wreck": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          },
+          "wreck": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
+        }
+      },
+      "bistatic": {
+        "false_tracks": 2,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
+          }
+        }
+      },
+      "multistatic": {
+        "false_tracks": 2,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "tug": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.84375,
+            "any": 0.8181818181818182
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "echo": 0.953125,
+            "any": 0.9242424242424242
+          },
+          "diver": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling1": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling2": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling3": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling4": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling5": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling6": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "moored": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "tug": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.84375,
+            "any": 0.8181818181818182
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "echo": 0.953125,
+            "any": 0.9242424242424242
+          },
+          "diver": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling1": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling2": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling3": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling4": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling5": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling6": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "moored": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
+        }
+      },
+      "harbor": {
+        "false_tracks": 3,
+        "pd": {
+          "ferry": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          },
+          "tug": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          },
+          "moored": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "diver": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "static_scatter": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          },
+          "tug": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          },
+          "moored": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "diver": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "static_scatter": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
+        }
+      }
+    },
+    "10": {
+      "simple": {
+        "false_tracks": 1,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          },
+          "wreck": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          },
+          "wreck": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
+        }
+      },
+      "bistatic": {
+        "false_tracks": 2,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
+          }
+        }
+      },
+      "multistatic": {
+        "false_tracks": 2,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "tug": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.84375,
+            "any": 0.8181818181818182
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "echo": 0.953125,
+            "any": 0.9242424242424242
+          },
+          "diver": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling1": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling2": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling3": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling4": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling5": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling6": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "moored": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "tug": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.84375,
+            "any": 0.8181818181818182
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "echo": 0.953125,
+            "any": 0.9242424242424242
+          },
+          "diver": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling1": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling2": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling3": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling4": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling5": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling6": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "moored": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
+        }
+      },
+      "harbor": {
+        "false_tracks": 3,
+        "pd": {
+          "ferry": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          },
+          "tug": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          },
+          "moored": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "diver": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "static_scatter": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          },
+          "tug": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          },
+          "moored": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "diver": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "static_scatter": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
+        }
+      }
+    },
+    "30": {
+      "simple": {
+        "false_tracks": 1,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          },
+          "wreck": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          },
+          "wreck": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
+        }
+      },
+      "bistatic": {
+        "false_tracks": 2,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
+          }
+        }
+      },
+      "multistatic": {
+        "false_tracks": 2,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "tug": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.84375,
+            "any": 0.8181818181818182
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "echo": 0.953125,
+            "any": 0.9242424242424242
+          },
+          "diver": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling1": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling2": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling3": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling4": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling5": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling6": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "moored": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "tug": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.84375,
+            "any": 0.8181818181818182
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "echo": 0.953125,
+            "any": 0.9242424242424242
+          },
+          "diver": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling1": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling2": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling3": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling4": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling5": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling6": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "moored": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
+        }
+      },
+      "harbor": {
+        "false_tracks": 3,
+        "pd": {
+          "ferry": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          },
+          "tug": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          },
+          "moored": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "diver": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "static_scatter": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          },
+          "tug": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          },
+          "moored": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "diver": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "static_scatter": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
+        }
+      }
+    },
+    "60": {
+      "simple": {
+        "false_tracks": 1,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          },
+          "wreck": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.578125,
+            "any": 0.5606060606060606
+          },
+          "wreck": {
+            "radiator": 0.0,
+            "echo": 1.0,
+            "any": 0.9696969696969697
+          }
+        }
+      },
+      "bistatic": {
+        "false_tracks": 2,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.21212121212121213,
+            "echo": 0.703125,
+            "any": 0.8939393939393939
+          }
+        }
+      },
+      "multistatic": {
+        "false_tracks": 2,
+        "pd": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "tug": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.84375,
+            "any": 0.8181818181818182
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "echo": 0.953125,
+            "any": 0.9242424242424242
+          },
+          "diver": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling1": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling2": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling3": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling4": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling5": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling6": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "moored": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "tug": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "boat": {
+            "radiator": 1.0,
+            "echo": 0.0,
+            "any": 1.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "echo": 0.84375,
+            "any": 0.8181818181818182
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "echo": 0.953125,
+            "any": 0.9242424242424242
+          },
+          "diver": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling1": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling2": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling3": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling4": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling5": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "piling6": {
+            "radiator": 0.0,
+            "echo": 0.0,
+            "any": 0.0
+          },
+          "moored": {
+            "radiator": 0.0,
+            "echo": 0.828125,
+            "any": 0.803030303030303
+          }
+        }
+      },
+      "harbor": {
+        "false_tracks": 3,
+        "pd": {
+          "ferry": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          },
+          "tug": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          },
+          "moored": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "diver": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "static_scatter": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
+        },
+        "pd_last_heard": {
+          "ferry": {
+            "radiator": 0.8333333333333334,
+            "any": 0.8333333333333334
+          },
+          "tug": {
+            "radiator": 0.037037037037037035,
+            "any": 0.037037037037037035
+          },
+          "moored": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv1": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "uuv2": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "diver": {
+            "radiator": 0.0,
+            "any": 0.0
+          },
+          "static_scatter": {
+            "radiator": 0.0,
+            "any": 0.0
+          }
+        }
+      }
+    }
+  }
+}

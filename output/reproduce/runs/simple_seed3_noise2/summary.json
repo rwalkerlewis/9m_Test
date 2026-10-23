@@ -4,14 +4,14 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.4163936080483836,
-    "echo": 0.688301682700694,
-    "characteristics": 0.11051387115003308,
-    "total": 1.2152091618991108
+    "passive": 0.4213153743541625,
+    "echo": 0.6926421011499769,
+    "characteristics": 0.11016765009990195,
+    "total": 1.2241251256040413
   },
   "latency_s": {
-    "median": 2.789,
-    "max": 3.789
+    "median": 2.8,
+    "max": 3.795
   },
   "objects": {
     "ferry": {
@@ -40,7 +40,12 @@
       },
       "tracks": [
         "r1"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      }
     },
     "boat": {
       "kind": "ship",
@@ -68,7 +73,12 @@
       },
       "tracks": [
         "r2"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      }
     },
     "uuv1": {
       "kind": "uuv",
@@ -96,7 +106,12 @@
       },
       "tracks": [
         "e13"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.25,
+        "any": 0.24242424242424243
+      }
     },
     "wreck": {
       "kind": "static",
@@ -124,7 +139,12 @@
       },
       "tracks": [
         "e3"
-      ]
+      ],
+      "pd_last_heard": {
+        "radiator": 0.0,
+        "echo": 0.984375,
+        "any": 0.9545454545454546
+      }
     }
   },
   "tracks": [
@@ -343,10 +363,10 @@
     }
   },
   "run": {
-    "git_commit": "66201ad4813bb80a6acbaff0d515d3ca404728d5",
+    "git_commit": "0ab3b416faaf69eb153f0ba1b96d8c77fbfc6c4f",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/simple.json",
-    "processing_config_sha256": "02dabca8d1a539d731d3e359990a45a4ae956b445996e0cd3caf8532089cd8c0",
+    "processing_config_sha256": "bdd9ed563f02360bc5cceccd85d092d236ae5bfbc6c915667ce49ebeffec762e",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/simple/noise2/seed3/dataset.observation.npz",
     "observation_sha256": "a8c5788cc357ab51b3577a2ad8b862d701322edb227475dcf3fd73e51c4997fc",
@@ -355,7 +375,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 3,
-    "wall_s": 24.425144997992902,
+    "wall_s": 24.607121366003412,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
