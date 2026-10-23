@@ -1,10 +1,10 @@
 {
   "recording": "bistatic_seed3_noise2",
   "run": {
-    "git_commit": "1b53266edf3f63d5e3e1d035a5078edaf99e785c",
+    "git_commit": "66201ad4813bb80a6acbaff0d515d3ca404728d5",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/bistatic.json",
-    "processing_config_sha256": "dba8ddce987aea8e4526173e99b6942a42f7640448b4326d3be25f7fa745bf18",
+    "processing_config_sha256": "7a1083b7beb6a1d4997fb0236002d7d774f478428c4dbefc9cd52cc3b34a3f62",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/bistatic/noise2/seed3/dataset.observation.npz",
     "observation_sha256": "3c7cc8e5a4f061e54a6cfe5aef144ae63ff72533fde2232b7c09dfcb0424fa93",
@@ -13,7 +13,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 3,
-    "wall_s": 22.662409242999274,
+    "wall_s": 22.865801241001463,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

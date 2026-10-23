@@ -353,6 +353,7 @@ HEADINGS = {
                        "are tracked by their echo)",
     "source_levels": "### Source level estimates against the truth (radiator tracks)",
     "propagation_error": "### Propagation error of the forward model (stationary pulse, arrival minus range over the chart speed)",
+    "silent_noise": "### Silent bodies by their echo, old noise model beside harbor_v2 (every recording with an echo chain)",
 }
 
 
