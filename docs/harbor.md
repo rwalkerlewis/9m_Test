@@ -699,6 +699,66 @@ radiator track alive for longer. The echo peaks near a confirmed radiator track 
 taken for its residual direct path and dropped, so the UUV's echo track formed late. Both changes chosen on the tuning
 recordings worked against the UUV on the test recordings; the two echo samples the threshold was set on were not enough.
 
+### The false echo tracks against the chart
+
+`examples/harbor/05_detection/harbor_quay_echoes.py` (output in `output/studies/quay_echoes/`) takes every confirmed
+false echo track of every recording with an echo chain, on both noise models, from the runs of `scripts/reproduce.py`,
+and measures its median position against three things: the first order quay images of every ship tracked at the time
+of each fix (`bistatic.clutter_images`, what `eca_images` would fit), the land of the chart, and the outline of the
+nearest static body (a diagnostic from the truth). Classes and the decision rule were fixed before the tracks were
+measured: within 10 m of a quay image, within 10 m of land, within 20 m of a static body, elsewhere; the quay images
+account for the tracks if at least half are at one, the land edge if at least half are at the land edge or an image with
+the land edge the larger part. Of <!-- reproduce:@studies/quay_echoes/results.json:n -->28<!-- /reproduce --> false echo tracks
+(<!-- reproduce:sum:@studies/quay_echoes/results.json:counts/old/* -->16<!-- /reproduce --> on the old noise model,
+<!-- reproduce:sum:@studies/quay_echoes/results.json:counts/harbor_v2/* -->12<!-- /reproduce --> on harbor_v2),
+<!-- reproduce:@studies/quay_echoes/results.json:counts_total/quay_image -->0<!-- /reproduce --> are at a quay image,
+<!-- reproduce:@studies/quay_echoes/results.json:counts_total/land_edge -->0<!-- /reproduce --> at the land edge,
+<!-- reproduce:@studies/quay_echoes/results.json:counts_total/body -->3<!-- /reproduce --> near a static body and
+<!-- reproduce:@studies/quay_echoes/results.json:counts_total/elsewhere -->25<!-- /reproduce --> elsewhere: **neither the quay images nor the land
+account for them**, so nothing was changed in the chain. The quay images cannot account for any of them as positions:
+every image the tracked ships had at those fixes lies on land beyond a quay, none inside the echo chain's scan grid
+(<!-- reproduce:@studies/quay_echoes/results.json:images_where/multistatic/images -->1020<!-- /reproduce --> images on the multistatic recordings, a
+fraction <!-- reproduce:@studies/quay_echoes/results.json:images_where/multistatic/in_scan_grid|f1 -->0.0<!-- /reproduce --> in the grid). Where a
+reflected arrival lands in the echo map is not the image position; for the tug's image in the multistatic pier the best
+fit of the bistatic delay over the channels (a check made by hand, not in the script) misses by more than a wavelength
+and lands at the grid's edge far from the place below, so that reflection does not explain it either.
+
+What does, from diagnostics added after the counts were seen (no threshold set on them):
+
+* **The edge of the scan grid.** <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/grid_edge_within_5m -->8<!-- /reproduce --> of the
+  tracks lie within 5 m of the grid's boundary, among them the bistatic place south of the cable
+  (on <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/bistatic:c1/recordings -->4<!-- /reproduce --> of the
+  <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/bistatic:c1/of_runs_with_false_echo_tracks_in_family -->4<!-- /reproduce --> bistatic runs with a
+  false echo track, every one on the old noise model, in the last few seconds) and the `multistatic_b` place at the northern edge. A
+  peak on the boundary is energy from outside the scanned area put at the nearest cell it may go to.
+* **One fixed place on the multistatic recordings**, <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/multistatic:c1/median_d_grid_edge_m|f0 -->12<!-- /reproduce --> m inside the grid's eastern edge and <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/multistatic:c1/median_d_land_m|f0 -->18<!-- /reproduce --> m from the pier, on
+  <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/multistatic:c1/recordings -->8<!-- /reproduce --> of the
+  <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/multistatic:c1/of_runs_with_false_echo_tracks_in_family -->8<!-- /reproduce --> multistatic runs, both noise models, from about
+  <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/multistatic:c1/first_t_median|f0 -->13<!-- /reproduce --> s on, about
+  <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/multistatic:c1/median_d_ship_m|f0 -->55<!-- /reproduce --> m from the tug. What puts it
+  there was not found.
+* **The quay machinery of harbor_v2** on the simple harbor: the place directly south of the pump, on
+  <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/simple:c2/recordings -->4<!-- /reproduce --> runs, all with harbor_v2, and two
+  tracks at the grid's northern edge <!-- reproduce:range:@studies/quay_echoes/results.json:tracks[cluster=simple:c3,simple:c4]/d_machinery_m|f0 -->25<!-- /reproduce --> m from the pump. The old noise model has no fixed source there.
+* **Near the moored hull**, <!-- reproduce:range:@studies/quay_echoes/results.json:tracks[cluster=multistatic:c2]/d_body_m|f0 -->19 to 25<!-- /reproduce --> m from its outline on <!-- reproduce:@studies/quay_echoes/results.json:after_the_counts/repeated_clusters/multistatic:c2/recordings -->3<!-- /reproduce --> multistatic runs: echoes of the hull further from its
+  outline than the 10 m the scoring associates.
+
+![false echo tracks, simple](../output/studies/quay_echoes/map_simple.png)
+
+Look at the crosses: every harbor_v2 false track lies on the line south of the pump or at the grid's edge near it.
+
+![false echo tracks, bistatic](../output/studies/quay_echoes/map_bistatic.png)
+
+Look at the southern edge of the grid: one place, south of the cable, on every old model seed.
+
+![false echo tracks, multistatic](../output/studies/quay_echoes/map_multistatic.png)
+
+Look west of the pier: the same place on every seed and both noise models.
+
+![false echo tracks, multistatic_b](../output/studies/quay_echoes/map_multistatic_b.png)
+
+Look at the northern edge of the grid near the pilings: both noise models put a track there.
+
 ### Before and after
 
 `scripts/reproduce.py --update` on every recording with the tracker changed and nothing else; before:

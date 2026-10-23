@@ -23,6 +23,12 @@ a cluster's first member), with the number of recordings each cluster appears on
 seed); and of every quay image used, the fraction in water and the fraction inside the echo chain's scan grid (an
 image on land is never scanned, so ``quay_image`` cannot fire for it).
 
+Added after the class counts were seen (the decision was "neither", and the prompt then asks what does account for
+them; diagnostics, no threshold is set on them): ``d_grid_edge_m``, the distance of the median position to the
+nearest boundary cell of the echo chain's scan grid (a peak there is energy from outside the scanned area); and on the
+simple harbor under harbor_v2, ``d_machinery_m``, the distance to the quay machinery of that noise model
+(``harbor_noise_model.MACHINE``, a fixed source the old model does not have).
+
 Classes, fixed before any track was measured, the first that applies: ``quay_image`` (``d_image_m`` within 10 m),
 ``land_edge`` (``d_land_m`` within 10 m), ``body`` (``d_body_m`` within 20 m: an echo of a static body more than the
 association radius of 10 m away from its outline, a scoring miss), ``elsewhere``.  ``overlaps`` counts the tracks that
@@ -65,6 +71,7 @@ IMAGE_M = 10.0
 LAND_M = 10.0
 BODY_M = 20.0
 CLUSTER_M = 15.0
+MACHINE = [(250.0, 375.0)]   # the quay machinery of harbor_v2 on the simple harbor (harbor_noise_model.MACHINE)
 CLASSES = ("quay_image", "land_edge", "body", "elsewhere")
 CRITERIA = {
     "classes": f"quay_image: median distance to the nearest first order quay image of a tracked ship within {IMAGE_M:g} m; "
@@ -129,7 +136,7 @@ def image_distance(env, ships: dict[float, list[np.ndarray]], fixes: list) -> tu
 
 def ship_distance(ships: dict[float, list[np.ndarray]], fixes: list) -> float | None:
     """Median over *fixes* of the distance to the nearest tracked ship at that time."""
-    ds = [float(min(np.hypot(*(np.asarray(xy, float) - s))) for s in ships[round(t, 6)]))
+    ds = [min(float(np.hypot(*(np.asarray(xy, float) - s))) for s in ships[round(t, 6)])
           for t, xy in fixes if ships.get(round(t, 6))]
     return float(np.median(ds)) if ds else None
 
@@ -151,7 +158,18 @@ def clusters(rows: list[dict]) -> dict[str, dict]:
             for k, c in out.items()}
 
 
-def measure(name: str, model: str, run_dir: Path, env, truth: Truth, dist: ObjectDistance, layout=None) -> list[dict]:
+def grid_edge(grid: np.ndarray) -> np.ndarray:
+    """The boundary cells of a scan grid (fewer than four neighbours one grid step away)."""
+    from scipy.spatial import cKDTree
+
+    dx = float(np.min(np.diff(np.unique(grid[:, 0])))) if len(grid) > 1 else 1.0
+    tree = cKDTree(grid)
+    n = np.array([len(v) - 1 for v in tree.query_ball_point(grid, dx * 1.01)])
+    return grid[n < 4]
+
+
+def measure(name: str, model: str, run_dir: Path, env, truth: Truth, dist: ObjectDistance, layout=None,
+            edge: np.ndarray | None = None, machinery: list | None = None) -> list[dict]:
     s = json.loads((run_dir / "summary.json").read_text())
     false = [m for m in s["false_tracks"].get("tracks", []) if m.get("kind") == "echo"]
     if not false:
@@ -171,6 +189,8 @@ def measure(name: str, model: str, run_dir: Path, env, truth: Truth, dist: Objec
         d_body = db[body] if body else None
         d_ship = ship_distance(ships, fixes)
         d_cable = float(np.min(np.hypot(*(layout.das_positions - xy[None, :]).T))) if layout is not None and len(layout.das_positions) else None
+        d_edge = float(np.min(np.hypot(*(edge - xy[None, :]).T))) if edge is not None and len(edge) else None
+        d_mach = float(min(np.hypot(*(xy - np.asarray(m, float))) for m in machinery)) if machinery else None
         conds = [d_img is not None and d_img <= IMAGE_M, d_land <= LAND_M, d_body is not None and d_body <= BODY_M]
         rows.append({"recording": name, "noise_model": model, "held_out": s["held_out"], "track": m["track"],
                      "median_xy": xy.round(1).tolist(), "fixes": len(fixes), "first_t": fixes[0][0], "last_t": fixes[-1][0],
@@ -179,12 +199,15 @@ def measure(name: str, model: str, run_dir: Path, env, truth: Truth, dist: Objec
                      "nearest_object": m.get("nearest_object"), "median_error_m": round(m["median_error_m"], 2),
                      "d_ship_m": None if d_ship is None else round(d_ship, 2),
                      "d_cable_m": None if d_cable is None else round(d_cable, 2),
+                     "d_grid_edge_m": None if d_edge is None else round(d_edge, 2),
+                     "d_machinery_m": None if d_mach is None else round(d_mach, 2),
                      "conditions_met": int(sum(conds)), "class": classify(d_img, d_land, d_body),
                      "_images": np.vstack(used) if used else np.empty((0, 2))})
     return rows
 
 
-def figure(name: str, rows: list[dict], obs, dist: ObjectDistance, path: Path) -> None:
+def figure(name: str, rows: list[dict], obs, dist: ObjectDistance, path: Path, grid: np.ndarray | None = None,
+           machinery: list | None = None) -> None:
     env = obs.environment
     fig, ax = new_figure((12.0, 10.0))
     x0, x1, y0, y1 = env.extent
@@ -205,13 +228,20 @@ def figure(name: str, rows: list[dict], obs, dist: ObjectDistance, path: Path) -
             p = np.array([r["median_xy"] for r in sel])
             ax.plot(p[:, 0], p[:, 1], mk, color=col, ms=11, mew=2, mfc="none", ls="none",
                     label=f"false echo tracks, {model} noise model ({len(sel)})")
-    allp = np.array([r["median_xy"] for r in rows] + ([im.min(0), im.max(0)] if len(im) else []))
-    ax.set_xlim(max(x0, allp[:, 0].min() - 60), min(x1, allp[:, 0].max() + 60))
-    ax.set_ylim(max(y0, allp[:, 1].min() - 60), min(y1, allp[:, 1].max() + 60))
+    if grid is not None and len(grid):
+        gx0, gx1, gy0, gy1 = grid[:, 0].min(), grid[:, 0].max(), grid[:, 1].min(), grid[:, 1].max()
+        ax.plot([gx0, gx1, gx1, gx0, gx0], [gy0, gy0, gy1, gy1, gy0], "--", color="tab:blue", lw=1.5,
+                label="bounds of the echo chain's scan grid")
+    if machinery:
+        mp = np.asarray(machinery, float)
+        ax.plot(mp[:, 0], mp[:, 1], "*", color="k", ms=16, ls="none", label="quay machinery (harbor_v2 only)")
+    ax.set_xlim(x0, x1)
+    ax.set_ylim(y0, y1)
     ax.set_aspect("equal")
     ax.set_xlabel("x (east) [m]")
     ax.set_ylabel("y (north) [m]")
-    ax.set_title(f"{name}: false echo tracks (median positions, every seed) against the quay images and the land")
+    ax.set_title(f"{name}: false echo tracks (median positions, every seed) against the quay images and the land"
+                 + ("\n(the quay images lie on land beyond the chart's edge where off the axes)" if len(im) else ""))
     ax.legend(loc="best", fontsize=11)
     save_figure(fig, path, recording=name)
 
@@ -233,9 +263,13 @@ def main() -> None:
             if r.family not in ctx:
                 obs_p, truth_p = contract_paths(r.dataset.with_suffix(".npz"))
                 obs, truth = Observation.load(obs_p), Truth.load(truth_p)
-                ctx[r.family] = (obs, truth, ObjectDistance(truth))
-            obs, truth, dist = ctx[r.family]
-            got = measure(r.name, model, run, obs.environment, truth, dist, obs.geometry)
+                proc = load_processing(ROOT / "examples" / "configs" / "processing" /
+                                       f"{'multistatic' if r.family == 'multistatic_b' else r.family}.json")
+                grid = build_grid(obs.environment, proc.bistatic(obs.environment, False)) if proc.has_echo else None
+                ctx[r.family] = (obs, truth, ObjectDistance(truth), grid)
+            obs, truth, dist, grid = ctx[r.family]
+            mach = MACHINE if (model == "harbor_v2" and r.family == "simple") else None
+            got = measure(r.name, model, run, obs.environment, truth, dist, obs.geometry, grid_edge(grid) if grid is not None else None, mach)
             rows += got
             by_family.setdefault(r.family, []).extend(got)
             say(f"{r.name} ({model}): {len(got)} false echo tracks: " + ", ".join(f"{g['track']} {g['class']}" for g in got))
@@ -245,10 +279,8 @@ def main() -> None:
         if not rr:
             continue
         cl.update(clusters(rr))
-        obs = ctx[fam][0]
+        obs, grid = ctx[fam][0], ctx[fam][3]
         env = obs.environment
-        proc = "multistatic" if fam == "multistatic_b" else fam
-        grid = build_grid(env, load_processing(ROOT / "examples" / "configs" / "processing" / f"{proc}.json").bistatic(env, False))
         im = np.vstack([x["_images"] for x in rr if len(x["_images"])]) if any(len(x["_images"]) for x in rr) else np.empty((0, 2))
         g_dx = float(np.min(np.diff(np.unique(grid[:, 0])))) if len(grid) > 1 else 1.0
         in_grid = (np.array([np.min(np.hypot(*(grid - p[None, :]).T)) <= g_dx for p in im]) if len(im) else np.zeros(0, bool))
@@ -259,9 +291,9 @@ def main() -> None:
     figs = []
     for fam, rr in by_family.items():
         if rr:
-            obs, _, dist = ctx[fam]
+            obs, _, dist, grid = ctx[fam]
             p = OUT / f"map_{fam}.png"
-            figure(fam, rr, obs, dist, p)
+            figure(fam, rr, obs, dist, p, grid, MACHINE if fam == "simple" else None)
             figs.append(p.name)
     counts = {m: {c: sum(1 for x in rows if x["noise_model"] == m and x["class"] == c) for c in CLASSES} for m in ("old", "harbor_v2")}
     total = {c: counts["old"][c] + counts["harbor_v2"][c] for c in CLASSES}
@@ -274,6 +306,21 @@ def main() -> None:
            "overlaps": sum(1 for x in rows if x["conditions_met"] > 1),
            "decision": decide(total), "figures": figs,
            "tracks": [{k: v for k, v in x.items() if not k.startswith("_")} for x in rows]}
+    recs_of = {}
+    for x in rows:
+        recs_of.setdefault(x["recording"].split("_seed")[0], set()).add((x["recording"], x["noise_model"]))
+    res["after_the_counts"] = {
+        "note": "diagnostics added after the class counts were seen; no threshold is set on them",
+        "grid_edge_within_5m": sum(1 for x in rows if x["d_grid_edge_m"] is not None and x["d_grid_edge_m"] <= 5.0),
+        "harbor_v2_only_clusters": [k for k, c in cl.items() if all("(harbor_v2)" in m for m in c["members"])],
+        "repeated_clusters": {k: {"first_xy": c["first_xy"], "recordings": c["recordings"],
+                                  "of_runs_with_false_echo_tracks_in_family": len(recs_of[k.split(":")[0]]),
+                                  "median_d_grid_edge_m": float(np.median([x["d_grid_edge_m"] for x in rows if x["cluster"] == k])),
+                                  "median_d_land_m": float(np.median([x["d_land_m"] for x in rows if x["cluster"] == k])),
+                                  "median_d_ship_m": float(np.median([x["d_ship_m"] for x in rows if x["cluster"] == k and x["d_ship_m"] is not None])),
+                                  "first_t_median": float(np.median([x["first_t"] for x in rows if x["cluster"] == k]))}
+                              for k, c in cl.items() if c["recordings"] >= 3},
+    }
     (OUT / "results.json").write_text(json.dumps(res, indent=2))
     say(f"{len(rows)} false echo tracks; classes {total}; decision: {res['decision']}")
 
