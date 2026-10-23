@@ -125,6 +125,14 @@ evaluated on the old model, as they were fixed; on `harbor_v2` the same criteria
 | multistatic_b | test | 2.96 | 5.5 s | ferry 99 %; tug 100 %; boat 70 %; uuv1 60 %; uuv2 96 %; diver 74 %; not tracked: piling1, piling2, piling3, piling4, piling5, piling6, moored | ferry 99 %; tug 100 %; boat 56 %; uuv1 46 %; uuv2 82 %; diver 0 % | 6 (6.0); harbor_v2 4 (4.0) |
 <!-- /reproduce-table -->
 
+The tuning set has, besides noise seed 0, noise seeds 4 to 9 of `simple`, `bistatic`, `multistatic` and `multistatic_b`
+(`<family>_tune<n>`, mixed from the same cached gathers with both noise models; `summary.json` keeps them apart, under
+`recordings_tuning`, so that none of the test seeds' numbers below moves with them). `multistatic_b` stays a test
+recording with its noise seed 0; its seeds 4 to 9 are tuning recordings.
+
+<!-- reproduce-table:tuning_seeds -->
+<!-- /reproduce-table -->
+
 Per recording, `output/reproduce/runs/<recording>/`. What they say:
 
 * **Tuning to test.** The noise seeds do not move the ships: on every seed of the simple, bistatic and multistatic

@@ -16,7 +16,7 @@ A forward side that generates synthetic acoustic data by solving the wave equati
 ## Measurement rules
 
 - Every experiment has its pass or fail criterion written into the script docstring and `results.json` before it runs. Criteria are never changed after a result is seen.
-- Parameters are chosen on the tuning recordings (noise seed 0 of each dataset) and never changed after a test recording (seeds 1 to 3, `multistatic_b`) has been seen. Set `held_out` correctly in every provenance block.
+- Parameters are chosen on the tuning recordings (noise seed 0 of each dataset, and noise seeds 4 to 9 of `simple`, `bistatic`, `multistatic` and `multistatic_b`, mixed from the cached gathers with both noise models: `<family>_tune<n>` in `scripts/reproduce.py`) and never changed after a test recording (seeds 1 to 3, `multistatic_b` with its noise seed 0) has been seen. Set `held_out` correctly in every provenance block.
 - Every result says what it was given beyond the observation (`Provenance`: `truth_inputs`, `simulator_knowledge`). A table with a row given true information carries the row with everything estimated from the traces beside it.
 - `scripts/reproduce.py` regenerates every number quoted in `docs/harbor.md`, in tables and in prose: a number in prose is written through a `<!-- reproduce:<key> -->` marker that the script fills, never typed by hand. A change that moves a number runs `--update` and says so in the pull request. Prose that interprets numbers is reread after every `--update` and corrected where the numbers no longer support it.
 - `pytest tests` passes before a pull request is opened. New functions get tests on inputs with known answers.
