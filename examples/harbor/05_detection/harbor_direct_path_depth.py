@@ -57,6 +57,8 @@ def main() -> None:
     ap.add_argument("--precision", default=None, choices=("float64", "mixed"), help="echo.bistatic.eca_precision of every run")
     ap.add_argument("--scattered", action="store_true", help="also pass the scattered components (the echo loss)")
     ap.add_argument("--name", default="recording_depth", help="stem of the output files")
+    ap.add_argument("--set", nargs="*", default=[], help="further processing overrides (KEY=VALUE) of every run")
+    ap.add_argument("--label", default=None, help="column name of the runs (default: the mode)")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -72,7 +74,7 @@ def main() -> None:
                  if k.startswith("direct:") or (a.scattered and k.startswith("scattered:"))}
         for mode in a.modes:
             cfg = load_processing(cfg_path, [f"echo.bistatic.ref_mode={mode}"]
-                                  + ([f"echo.bistatic.eca_precision={a.precision}"] if a.precision else []))
+                                  + ([f"echo.bistatic.eca_precision={a.precision}"] if a.precision else []) + a.set)
             r = run(obs, cfg, use_cuda=not a.cpu, provenance=Provenance(data="forward_model", truth_inputs=["components"]),
                     observation_path=obs_path, components=comps)
             echo = r.picture.echo
@@ -80,19 +82,21 @@ def main() -> None:
             if truth.dead is not None:
                 live &= ~np.asarray(truth.dead, bool)
             cable = obs.geometry.slices[obs.geometry.cables[0].name]
-            res.setdefault(rec, {})[mode] = {"ships": depth_per_ship(echo.component_energy, live, cable),
+            key = a.label or mode
+            res.setdefault(rec, {})[key] = {"ships": depth_per_ship(echo.component_energy, live, cable),
                                              "compute_per_second_of_data": r.compute_per_second, "run": r.run,
                                              "echo_peaks": [[f.t, np.asarray(f.xy).tolist()] for f in r.picture.e_frames]}
-            print(rec, mode, {k: round(v["cable_median_db"], 1) for k, v in res[rec][mode]["ships"].items()},
+            print(rec, key, {k: round(v["cable_median_db"], 1) for k, v in res[rec][key]["ships"].items()},
                   f"compute {r.compute_per_second['total']:.2f} s/s", flush=True)
             path.write_text(json.dumps(res, indent=2, default=str))
-    lines = ["| Recording | Ship | " + " | ".join(f"{m}: median / p10 [dB]" for m in a.modes) + " |",
-             "|---|---|" + "---|" * len(a.modes)]
+    cols = sorted({m for r in res.values() for m in r}, key=lambda m: (m not in ("beam", "joint"), m))
+    lines = ["| Recording | Ship | " + " | ".join(f"{m}: median / p10 [dB]" for m in cols) + " |",
+             "|---|---|" + "---|" * len(cols)]
     for rec in res:
         ships = sorted({s for m in res[rec].values() for s in m["ships"]})
         for s in ships:
             cells = [f"{res[rec][m]['ships'][s]['cable_median_db']:.1f} / {res[rec][m]['ships'][s]['cable_p10_db']:.1f}"
-                     if m in res[rec] and s in res[rec][m]["ships"] else "-" for m in a.modes]
+                     if m in res[rec] and s in res[rec][m]["ships"] else "-" for m in cols]
             lines.append(f"| {rec} | {s} | " + " | ".join(cells) + " |")
     (out / f"{a.name}.md").write_text("\n".join(lines) + "\n")
 

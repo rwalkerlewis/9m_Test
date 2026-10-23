@@ -82,6 +82,8 @@
       "track_smooth_s": 4.0,
       "ref_channels": "all",
       "ref_mode": "joint",
+      "removal_order": "joint",
+      "joint_passes": 2,
       "patch_half": 1.0,
       "svd_rtol": 0.05,
       "adaptive_rank": 2,
