@@ -245,7 +245,7 @@ in float32 met it three and four times in 20 s, as jumps of up to 4e-5 of the bu
 alone met it not once; a float32 recording is therefore still compared with float64. The criterion now passes on
 every component, which is what a switch of the default needs; the switch was not made: `precision` stays float64 in
 every scenario file, the recordings were left at their float64 build, `scripts/reproduce.py` was not run and no number
-of `docs/harbor.md` moved. Whether to switch is Moyshe's decision.
+of `docs/harbor.md` moved. Whether to switch is the repository owner's decision.
 
 **Section 2, the ECA in mixed precision: pass.** The ECA in mixed precision against double on the stage 0a cases
 (`harbor_cancellation_depth.py --eca-precision`, the gathers of `output/studies/direct_path/cache/`, the processing
@@ -295,8 +295,10 @@ frames, `eca_gpu_<precision>.json`). The echo chain's time per second of data, d
 | multistatic | echo loss, boat>bodies | 1.367 | 1.367 | -0.0000 |
 
 What stays: `precision` is float64 in every scenario file (the scattered criterion passes with the runs alone, but
-the switch is left to Moyshe) and `eca_precision` is
+the switch is left to the repository owner) and `eca_precision` is
 `float64` in every processing config (the prompt leaves processing parameters unchanged; `"mixed"` is available).
+
+The figures of the float32 study (`output/studies/float32/`) are not shown on this page and are no longer committed; they are in git history at commit `1164bb4`, and the study's JSON and write ups stay.
 
 ### CFL stability condition
 

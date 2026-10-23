@@ -8,7 +8,7 @@ the batched boat runs to 1e16. Run one at a time (now the default for float32 k 
 `water/fdtd_runner.py`) the same runs stay within 3e-5 of float64 over the full 60 s, and the float32 build of the five
 recordings built that way **passes** the scattered component criterion (section "A float32 build with the runs
 alone" below). Why cuFFT's batched transform fails on this card was not found. Float64 stays the default in every
-scenario file; switching is Moyshe's decision.
+scenario file; switching is the repository owner's decision.
 
 ## The first build (task 6)
 
@@ -181,7 +181,7 @@ build): **pass**, the largest 2.29e-4 (`bistatic`). Every direct component is wi
 has every row and the worst channel of each). No component was over the limit, so the rebuild rule was not needed and
 no gather was built twice. The criterion passing on every component is what the prompt set for a switch of the
 default; the switch was not made: every scenario file keeps `precision: "float64"`, the recordings stay the float64
-build, `reproduce.py` was not run and no number of `docs/harbor.md` moved. Moyshe decides.
+build, `reproduce.py` was not run and no number of `docs/harbor.md` moved. The repository owner decides.
 
 Time of the FDTD for `multistatic_b` (6 runs of 60 s, `build.json`, `fdtd_wall_s`): 1473 s with the runs alone in
 float32, 898 s batched in float32 (the build whose boat runs diverged), 6079 s batched in float64; per run per

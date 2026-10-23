@@ -1,4 +1,0 @@
-track,fixes,first_t,last_t,true_object,false_track,nearest_object,median_error_m,first_xy,last_xy,median_xy,kind
-r1,66,1.5,17.75,ferry,False,ferry,1.2071067811865475,"[125.0, 259.0]","[191.0, 261.0]","[158.0, 259.0]",radiator
-r4,1,1.5,1.5,,True,ferry,54.129474410897444,"[73.0, 249.0]","[73.0, 249.0]","[73.0, 249.0]",radiator
-e7,42,3.75,17.75,wreck,False,wreck,0.0,"[198.0, 210.0]","[200.0, 212.0]","[200.0, 212.0]",echo
