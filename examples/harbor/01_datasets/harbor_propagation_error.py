@@ -94,7 +94,8 @@ def straight_path_time(env, a: np.ndarray, b: np.ndarray, step: float | None = N
 
 
 def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | None = None, scheme: str | None = None,
-            uniform_speed: bool = False, dx: float | None = None, save: bool = True) -> dict:
+            uniform_speed: bool = False, dx: float | None = None, save: bool = True, precision: str | None = None,
+            use_cache: bool = True, keep_traces: bool = False) -> dict:
     """The propagation error of *dataset*'s forward model.  *scheme* overrides the scenario's ``time_scheme``,
     *uniform_speed* sets ``shallow_c_drop = 0`` (the water everywhere at ``c0``, the chart's speed too) and *dx* runs the
     same scenario on another grid spacing (the sample rate scaled with it, the sponge kept in metres); with any of them the
@@ -106,6 +107,8 @@ def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | No
     cfg.fdtd.use_cuda = use_cuda
     if scheme is not None:
         cfg.fdtd.time_scheme = scheme
+    if precision is not None:
+        cfg.fdtd.precision = precision
     if uniform_speed:
         cfg.environment.shallow_c_drop = 0.0
     if dx is not None:
@@ -127,7 +130,7 @@ def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | No
     fs, n = cfg.fdtd.fs, cfg.fdtd.n_steps
     sig = make_wavelet_ricker(n, 1.0 / fs, 0.5 * (f_lo + f_hi))
     g = simulate_source(env, layout, cfg.fdtd, sig, position=(float(pos[0]), float(pos[1])),
-                        cache_dir=dataset.parent / "cache" if (dataset.parent / "cache").exists() else None)
+                        cache_dir=dataset.parent / "cache" if use_cache and (dataset.parent / "cache").exists() else None)
     c = env.public().c_nominal
     rows = layout.slices["hydrophones"]
     sos = butter(4, (f_lo, f_hi), btype="bandpass", fs=fs, output="sos")
@@ -155,7 +158,10 @@ def measure(dataset: Path, use_cuda: bool = True, band: tuple[float, float] | No
     lim = criterion_ms(cfg)
     res["criterion_ms"] = lim
     res["passed"] = None if lim is None else bool(max(abs(x) for x in e) <= lim)
-    if save and scheme is None and not uniform_speed and dx is None:
+    res["precision"] = cfg.fdtd.precision
+    if keep_traces:
+        res["_traces"] = g.traces
+    if save and scheme is None and not uniform_speed and dx is None and precision is None:
         truth.meta["propagation_error_ms"] = res
         truth.save(truth_p)
     return res

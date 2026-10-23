@@ -1,0 +1,36 @@
+{
+  "fdtd_wall_s": 104.21958351135254,
+  "fdtd_runs": 12,
+  "gathers": 12,
+  "fdtd_wall_s_per_run_per_simulated_s": 0.07237471077177259,
+  "grid": [
+    481,
+    361
+  ],
+  "dx": 5.0,
+  "fs": 600.0,
+  "total_time": 120.0,
+  "n_steps": 72000,
+  "time_scheme": "kspace",
+  "run": {
+    "git_commit": "e037d19e73438e236df92d71698fce240372494f",
+    "git_dirty": true,
+    "processing_config": null,
+    "processing_config_sha256": null,
+    "processing_overrides": [],
+    "observation": null,
+    "observation_sha256": null,
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": null,
+    "wall_s": null,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    }
+  }
+}

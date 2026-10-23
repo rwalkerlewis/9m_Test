@@ -92,6 +92,7 @@
       "map_scale": "none",
       "eca_gram": "prefix",
       "eca_chunk": 200,
+      "eca_precision": "float64",
       "mvdr_loading": 0.05,
       "music_rank": 3,
       "min_separation": 20.0,

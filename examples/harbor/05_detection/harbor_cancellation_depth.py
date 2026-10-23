@@ -131,10 +131,13 @@ def main() -> None:
     ap.add_argument("--time", type=float, default=10.0, help="simulated duration [s]")
     ap.add_argument("--cpu", action="store_true", help="FDTD and processing on the CPU")
     ap.add_argument("--modes", nargs="*", default=list(REF_MODES) + list(TRUTH_ROWS))
+    ap.add_argument("--eca-precision", default=None, choices=("float64", "mixed"),
+                    help="BistaticConfig.eca_precision of every row (default: the processing config's)")
+    ap.add_argument("--cache", default=None, help="the FDTD gathers (default: <out>/cache)")
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    cache = out / "cache"
+    cache = Path(args.cache) if args.cache else out / "cache"
 
     cfg = HarborScenarioConfig.load(args.config)
     cfg.fdtd.total_time = args.time
@@ -145,6 +148,8 @@ def main() -> None:
     f_max = f_max_for_grid(env.dx)
     proc = load_processing(Path(args.processing))
     bc0 = proc.bistatic(env.public(), use_cuda=not args.cpu)
+    if args.eca_precision:
+        bc0 = replace(bc0, eca_precision=args.eca_precision)
     band = (bc0.f_lo, bc0.f_hi)
     ferry = next(v for v in cfg.vessels if v.kind == "ship")
     path_len = SPEED * args.time

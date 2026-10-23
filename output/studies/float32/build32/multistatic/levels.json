@@ -1,0 +1,99 @@
+{
+  "table": {
+    "direct:ferry": {
+      "cable1": 0.1591991537248511,
+      "hydrophones": 0.13751501460344528,
+      "best_das": 0.30354634672272585
+    },
+    "scattered:ferry>bodies": {
+      "cable1": 0.06110111275530493,
+      "hydrophones": 0.030221038890008798,
+      "best_das": 0.15289329962663364
+    },
+    "direct:tug": {
+      "cable1": 0.16452156705365223,
+      "hydrophones": 0.06190282332615668,
+      "best_das": 0.3908146840386284
+    },
+    "scattered:tug>bodies": {
+      "cable1": 0.030834345024743137,
+      "hydrophones": 0.023248140899937642,
+      "best_das": 0.05950782773934632
+    },
+    "direct:boat": {
+      "cable1": 0.06673474647213816,
+      "hydrophones": 0.05656008630106231,
+      "best_das": 0.12138541094503136
+    },
+    "scattered:boat>bodies": {
+      "cable1": 0.01877296696153703,
+      "hydrophones": 0.00976283505421438,
+      "best_das": 0.034067418934011405
+    },
+    "noise": {
+      "cable1": 0.03130909780860933,
+      "hydrophones": 0.023255485739455184,
+      "best_das": 0.036852786902770836
+    }
+  },
+  "summary": {
+    "ferry": {
+      "echo_to_direct_db_median_das": -8.317832704337699,
+      "echo_to_noise_db_median_das": 5.807571324573127,
+      "echo_to_noise_db_best_das": 13.774358000884288
+    },
+    "tug": {
+      "echo_to_direct_db_median_das": -14.543762195718198,
+      "echo_to_noise_db_median_das": -0.13271651279506308,
+      "echo_to_noise_db_best_das": 5.578070876719311
+    },
+    "boat": {
+      "echo_to_direct_db_median_das": -11.016381981329282,
+      "echo_to_noise_db_median_das": -4.442752749778858,
+      "echo_to_noise_db_best_das": 0.7333735565577605
+    }
+  },
+  "f_max": 800.0,
+  "bodies": [
+    "uuv1",
+    "uuv2",
+    "diver",
+    "piling1",
+    "piling2",
+    "piling3",
+    "piling4",
+    "piling5",
+    "piling6",
+    "moored"
+  ],
+  "ferry_only_truth_check_db": {
+    "uuv1": 6.566633356735389,
+    "uuv2": 8.728245407518164,
+    "diver": 7.157186756882961,
+    "piling1": 7.1246530109641295,
+    "piling2": 6.530843721361064,
+    "piling3": 7.554473655801084,
+    "piling4": 6.839242531584517,
+    "piling5": 8.295295575716858,
+    "piling6": 6.2954536493124555,
+    "moored": 14.190394877776937
+  },
+  "ferry_only_truth_inputs": [
+    "direct path removed with the truth component",
+    "true ferry waveform",
+    "exact ferry track"
+  ],
+  "ferry_only_provenance": {
+    "truth_inputs": [
+      "direct_removal",
+      "components",
+      "waveform",
+      "track"
+    ],
+    "simulator_knowledge": [
+      "band"
+    ],
+    "data": "forward_model",
+    "held_out": false
+  }
+}

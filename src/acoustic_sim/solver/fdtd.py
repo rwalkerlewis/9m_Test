@@ -741,7 +741,9 @@ class FDTDSolver:
         kk = np.hypot(ky[:, None], kx[None, :])
         kernel = -4.0 * np.sin(0.5 * c_max * kk * self.dt) ** 2
         ratio = (c_local / c_max) ** 2
-        return {"name": "kspace", "kernel": xp.asarray(kernel), "ratio": xp.asarray(ratio.astype(self._dtype)), "c0": c_max}
+        # The kernel in the fields' precision: with float32 fields the FFTs and the product stay in single precision.
+        return {"name": "kspace", "kernel": xp.asarray(kernel.astype(self._dtype)), "ratio": xp.asarray(ratio.astype(self._dtype)),
+                "c0": c_max}
 
     def _stencil_laplacian(self, f, rs, re, cs, ce):
         """Interior Laplacian of *f* with the stencil (reference order of operations)."""

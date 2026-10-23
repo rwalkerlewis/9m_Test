@@ -1,0 +1,666 @@
+{
+  "criterion": {
+    "arrival_change_ms": 0.02,
+    "worst_relative": 0.001,
+    "median_relative": 0.0001
+  },
+  "device": "cpu",
+  "recordings": {
+    "simple": {
+      "arrival_change_ms": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max_arrival_change_ms": 0.0,
+      "worst_relative": 1.818734603274874e-05,
+      "median_relative": 6.568768643135409e-06,
+      "receivers": 299,
+      "per_step_s": {
+        "float64": 0.016667928878861166,
+        "float32": 0.01260274450347043
+      },
+      "steps": 1007,
+      "passed": true,
+      "float64": {
+        "source_xy": [
+          160.00000000000003,
+          260.0
+        ],
+        "source": "ferry",
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "c_chart": 1500.0,
+        "time_scheme": "kspace",
+        "uniform_speed": false,
+        "dx": 1.0,
+        "fs": 3000.0,
+        "hydrophones": [
+          {
+            "hydrophone": 0,
+            "xy": [
+              60.0,
+              60.0
+            ],
+            "range_m": 223.606797749979,
+            "direction_deg": 206.565051177078,
+            "error_ms": 0.0,
+            "phase_error_ms": 1.0416666666666667,
+            "straight_path_ms": 2.7755575615628914e-14
+          },
+          {
+            "hydrophone": 1,
+            "xy": [
+              440.0,
+              60.0
+            ],
+            "range_m": 344.0930106817051,
+            "direction_deg": 125.53767779197437,
+            "error_ms": 0.0,
+            "phase_error_ms": 1.0208333333333333,
+            "straight_path_ms": 0.0
+          },
+          {
+            "hydrophone": 2,
+            "xy": [
+              60.0,
+              350.0
+            ],
+            "range_m": 134.5362404707371,
+            "direction_deg": 311.98721249581666,
+            "error_ms": 0.0,
+            "phase_error_ms": 1.0416666666666667,
+            "straight_path_ms": 0.0
+          },
+          {
+            "hydrophone": 3,
+            "xy": [
+              440.0,
+              350.0
+            ],
+            "range_m": 294.10882339705483,
+            "direction_deg": 72.18111108547723,
+            "error_ms": 0.020833333333333332,
+            "phase_error_ms": 1.0208333333333333,
+            "straight_path_ms": 8.326672684688674e-14
+          }
+        ],
+        "median_ms": 0.0,
+        "min_ms": 0.0,
+        "max_ms": 0.020833333333333332,
+        "criterion_ms": 0.1,
+        "passed": true,
+        "precision": "float64",
+        "wall_s": 16.784604381013196
+      },
+      "float32": {
+        "source_xy": [
+          160.00000000000003,
+          260.0
+        ],
+        "source": "ferry",
+        "band_hz": [
+          100.0,
+          380.0
+        ],
+        "c_chart": 1500.0,
+        "time_scheme": "kspace",
+        "uniform_speed": false,
+        "dx": 1.0,
+        "fs": 3000.0,
+        "hydrophones": [
+          {
+            "hydrophone": 0,
+            "xy": [
+              60.0,
+              60.0
+            ],
+            "range_m": 223.606797749979,
+            "direction_deg": 206.565051177078,
+            "error_ms": 0.0,
+            "phase_error_ms": 1.0416666666666667,
+            "straight_path_ms": 2.7755575615628914e-14
+          },
+          {
+            "hydrophone": 1,
+            "xy": [
+              440.0,
+              60.0
+            ],
+            "range_m": 344.0930106817051,
+            "direction_deg": 125.53767779197437,
+            "error_ms": 0.0,
+            "phase_error_ms": 1.0208333333333333,
+            "straight_path_ms": 0.0
+          },
+          {
+            "hydrophone": 2,
+            "xy": [
+              60.0,
+              350.0
+            ],
+            "range_m": 134.5362404707371,
+            "direction_deg": 311.98721249581666,
+            "error_ms": 0.0,
+            "phase_error_ms": 1.0416666666666667,
+            "straight_path_ms": 0.0
+          },
+          {
+            "hydrophone": 3,
+            "xy": [
+              440.0,
+              350.0
+            ],
+            "range_m": 294.10882339705483,
+            "direction_deg": 72.18111108547723,
+            "error_ms": 0.020833333333333332,
+            "phase_error_ms": 1.0208333333333333,
+            "straight_path_ms": 8.326672684688674e-14
+          }
+        ],
+        "median_ms": 0.0,
+        "min_ms": 0.0,
+        "max_ms": 0.020833333333333332,
+        "criterion_ms": 0.1,
+        "passed": true,
+        "precision": "float32",
+        "wall_s": 12.690963714994723
+      }
+    },
+    "bistatic": {
+      "arrival_change_ms": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max_arrival_change_ms": 0.0,
+      "worst_relative": 0.00024023394503989298,
+      "median_relative": 1.1539934070899e-05,
+      "receivers": 200,
+      "per_step_s": {
+        "float64": 0.02759068746193698,
+        "float32": 0.022767907437619347
+      },
+      "steps": 1563,
+      "passed": true,
+      "float64": {
+        "source_xy": [
+          180.0,
+          200.00000000000003
+        ],
+        "source": "ferry",
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "c_chart": 1493.682028872403,
+        "time_scheme": "kspace",
+        "uniform_speed": false,
+        "dx": 0.5,
+        "fs": 6000.0,
+        "hydrophones": [
+          {
+            "hydrophone": 0,
+            "xy": [
+              30.0,
+              30.0
+            ],
+            "range_m": 226.7156809750927,
+            "direction_deg": 221.42366562500263,
+            "error_ms": -0.20833333333333334,
+            "phase_error_ms": 0.34375,
+            "straight_path_ms": -0.22975006233338924
+          },
+          {
+            "hydrophone": 1,
+            "xy": [
+              330.0,
+              20.0
+            ],
+            "range_m": 234.30749027719966,
+            "direction_deg": 140.19442890773482,
+            "error_ms": -0.03125,
+            "phase_error_ms": 0.5104166666666666,
+            "straight_path_ms": 0.0037466633322214005
+          },
+          {
+            "hydrophone": 2,
+            "xy": [
+              30.0,
+              250.0
+            ],
+            "range_m": 158.11388300841895,
+            "direction_deg": 288.434948822922,
+            "error_ms": 0.052083333333333336,
+            "phase_error_ms": 0.6041666666666667,
+            "straight_path_ms": 0.03139839655490195
+          },
+          {
+            "hydrophone": 3,
+            "xy": [
+              200.0,
+              20.0
+            ],
+            "range_m": 181.10770276274837,
+            "direction_deg": 173.6598082540901,
+            "error_ms": -0.10416666666666667,
+            "phase_error_ms": 0.4479166666666667,
+            "straight_path_ms": -0.11766546258684674
+          }
+        ],
+        "median_ms": -0.06770833333333334,
+        "min_ms": -0.20833333333333334,
+        "max_ms": 0.052083333333333336,
+        "criterion_ms": 0.2,
+        "passed": false,
+        "precision": "float64",
+        "wall_s": 43.1242445030075
+      },
+      "float32": {
+        "source_xy": [
+          180.0,
+          200.00000000000003
+        ],
+        "source": "ferry",
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "c_chart": 1493.682028872403,
+        "time_scheme": "kspace",
+        "uniform_speed": false,
+        "dx": 0.5,
+        "fs": 6000.0,
+        "hydrophones": [
+          {
+            "hydrophone": 0,
+            "xy": [
+              30.0,
+              30.0
+            ],
+            "range_m": 226.7156809750927,
+            "direction_deg": 221.42366562500263,
+            "error_ms": -0.20833333333333334,
+            "phase_error_ms": 0.34375,
+            "straight_path_ms": -0.22975006233338924
+          },
+          {
+            "hydrophone": 1,
+            "xy": [
+              330.0,
+              20.0
+            ],
+            "range_m": 234.30749027719966,
+            "direction_deg": 140.19442890773482,
+            "error_ms": -0.03125,
+            "phase_error_ms": 0.5104166666666666,
+            "straight_path_ms": 0.0037466633322214005
+          },
+          {
+            "hydrophone": 2,
+            "xy": [
+              30.0,
+              250.0
+            ],
+            "range_m": 158.11388300841895,
+            "direction_deg": 288.434948822922,
+            "error_ms": 0.052083333333333336,
+            "phase_error_ms": 0.6041666666666667,
+            "straight_path_ms": 0.03139839655490195
+          },
+          {
+            "hydrophone": 3,
+            "xy": [
+              200.0,
+              20.0
+            ],
+            "range_m": 181.10770276274837,
+            "direction_deg": 173.6598082540901,
+            "error_ms": -0.10416666666666667,
+            "phase_error_ms": 0.4479166666666667,
+            "straight_path_ms": -0.11766546258684674
+          }
+        ],
+        "median_ms": -0.06770833333333334,
+        "min_ms": -0.20833333333333334,
+        "max_ms": 0.052083333333333336,
+        "criterion_ms": 0.2,
+        "passed": false,
+        "precision": "float32",
+        "wall_s": 35.58623932499904
+      }
+    },
+    "multistatic_b": {
+      "arrival_change_ms": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max_arrival_change_ms": 0.0,
+      "worst_relative": 0.0001761174545303032,
+      "median_relative": 1.1355944837850539e-05,
+      "receivers": 200,
+      "per_step_s": {
+        "float64": 0.03926503789556518,
+        "float32": 0.030892658244349634
+      },
+      "steps": 1551,
+      "passed": true,
+      "float64": {
+        "source_xy": [
+          166.08514494500886,
+          183.04257247250445
+        ],
+        "source": "ferry",
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "c_chart": 1493.682028872403,
+        "time_scheme": "kspace",
+        "uniform_speed": false,
+        "dx": 0.5,
+        "fs": 6000.0,
+        "hydrophones": [
+          {
+            "hydrophone": 0,
+            "xy": [
+              30.0,
+              30.0
+            ],
+            "range_m": 204.79549717634382,
+            "direction_deg": 221.64343049375546,
+            "error_ms": -0.21875,
+            "phase_error_ms": 0.3541666666666667,
+            "straight_path_ms": -0.22661104183474556
+          },
+          {
+            "hydrophone": 1,
+            "xy": [
+              330.0,
+              20.0
+            ],
+            "range_m": 231.19463693206774,
+            "direction_deg": 134.84714220342568,
+            "error_ms": -0.041666666666666664,
+            "phase_error_ms": 0.5104166666666666,
+            "straight_path_ms": -0.016475316119257677
+          },
+          {
+            "hydrophone": 2,
+            "xy": [
+              30.0,
+              250.0
+            ],
+            "range_m": 151.6656314917915,
+            "direction_deg": 296.1983847351983,
+            "error_ms": 0.03125,
+            "phase_error_ms": 0.59375,
+            "straight_path_ms": 0.015811127619377863
+          },
+          {
+            "hydrophone": 3,
+            "xy": [
+              200.0,
+              20.0
+            ],
+            "range_m": 166.53257288546564,
+            "direction_deg": 168.24934275057734,
+            "error_ms": -0.125,
+            "phase_error_ms": 0.4375,
+            "straight_path_ms": -0.12346955198158649
+          }
+        ],
+        "median_ms": -0.08333333333333333,
+        "min_ms": -0.21875,
+        "max_ms": 0.03125,
+        "criterion_ms": 0.2,
+        "passed": false,
+        "precision": "float64",
+        "wall_s": 60.9000737760216
+      },
+      "float32": {
+        "source_xy": [
+          166.08514494500886,
+          183.04257247250445
+        ],
+        "source": "ferry",
+        "band_hz": [
+          100.0,
+          760.0
+        ],
+        "c_chart": 1493.682028872403,
+        "time_scheme": "kspace",
+        "uniform_speed": false,
+        "dx": 0.5,
+        "fs": 6000.0,
+        "hydrophones": [
+          {
+            "hydrophone": 0,
+            "xy": [
+              30.0,
+              30.0
+            ],
+            "range_m": 204.79549717634382,
+            "direction_deg": 221.64343049375546,
+            "error_ms": -0.21875,
+            "phase_error_ms": 0.3541666666666667,
+            "straight_path_ms": -0.22661104183474556
+          },
+          {
+            "hydrophone": 1,
+            "xy": [
+              330.0,
+              20.0
+            ],
+            "range_m": 231.19463693206774,
+            "direction_deg": 134.84714220342568,
+            "error_ms": -0.041666666666666664,
+            "phase_error_ms": 0.5104166666666666,
+            "straight_path_ms": -0.016475316119257677
+          },
+          {
+            "hydrophone": 2,
+            "xy": [
+              30.0,
+              250.0
+            ],
+            "range_m": 151.6656314917915,
+            "direction_deg": 296.1983847351983,
+            "error_ms": 0.03125,
+            "phase_error_ms": 0.59375,
+            "straight_path_ms": 0.015811127619377863
+          },
+          {
+            "hydrophone": 3,
+            "xy": [
+              200.0,
+              20.0
+            ],
+            "range_m": 166.53257288546564,
+            "direction_deg": 168.24934275057734,
+            "error_ms": -0.125,
+            "phase_error_ms": 0.4375,
+            "straight_path_ms": -0.12346955198158649
+          }
+        ],
+        "median_ms": -0.08333333333333333,
+        "min_ms": -0.21875,
+        "max_ms": 0.03125,
+        "criterion_ms": 0.2,
+        "passed": false,
+        "precision": "float32",
+        "wall_s": 47.914512936986284
+      }
+    },
+    "harbor": {
+      "arrival_change_ms": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max_arrival_change_ms": 0.0,
+      "worst_relative": 1.6603352548946684e-06,
+      "median_relative": 8.59805383503973e-07,
+      "receivers": 129,
+      "per_step_s": {
+        "float64": 0.0070016693283829,
+        "float32": 0.005252678471863097
+      },
+      "steps": 941,
+      "passed": true,
+      "float64": {
+        "source_xy": [
+          1380.0,
+          620.0
+        ],
+        "source": "ferry",
+        "band_hz": [
+          12.0,
+          78.0
+        ],
+        "c_chart": 1496.0173277498982,
+        "time_scheme": "kspace",
+        "uniform_speed": false,
+        "dx": 5.0,
+        "fs": 600.0,
+        "hydrophones": [
+          {
+            "hydrophone": 0,
+            "xy": [
+              450.0,
+              1100.0
+            ],
+            "range_m": 1046.5658125507446,
+            "direction_deg": 297.2995722113328,
+            "error_ms": -0.4166666666666667,
+            "phase_error_ms": 5.0,
+            "straight_path_ms": -0.5127833633313816
+          },
+          {
+            "hydrophone": 1,
+            "xy": [
+              1250.0,
+              700.0
+            ],
+            "range_m": 152.64337522473747,
+            "direction_deg": 301.6075022462489,
+            "error_ms": 0.10416666666666667,
+            "phase_error_ms": 5.520833333333333,
+            "straight_path_ms": 0.07273922011859224
+          },
+          {
+            "hydrophone": 2,
+            "xy": [
+              1850.0,
+              1100.0
+            ],
+            "range_m": 671.7886572427374,
+            "direction_deg": 44.39690880561947,
+            "error_ms": -0.4166666666666667,
+            "phase_error_ms": 5.0,
+            "straight_path_ms": -0.4829931710363944
+          },
+          {
+            "hydrophone": 3,
+            "xy": [
+              1500.0,
+              380.0
+            ],
+            "range_m": 268.32815729997475,
+            "direction_deg": 153.434948822922,
+            "error_ms": 0.20833333333333334,
+            "phase_error_ms": 4.895833333333334,
+            "straight_path_ms": 0.3677241252952046
+          }
+        ],
+        "median_ms": -0.15625,
+        "min_ms": -0.4166666666666667,
+        "max_ms": 0.20833333333333334,
+        "criterion_ms": null,
+        "passed": null,
+        "precision": "float64",
+        "wall_s": 6.588570838008309
+      },
+      "float32": {
+        "source_xy": [
+          1380.0,
+          620.0
+        ],
+        "source": "ferry",
+        "band_hz": [
+          12.0,
+          78.0
+        ],
+        "c_chart": 1496.0173277498982,
+        "time_scheme": "kspace",
+        "uniform_speed": false,
+        "dx": 5.0,
+        "fs": 600.0,
+        "hydrophones": [
+          {
+            "hydrophone": 0,
+            "xy": [
+              450.0,
+              1100.0
+            ],
+            "range_m": 1046.5658125507446,
+            "direction_deg": 297.2995722113328,
+            "error_ms": -0.4166666666666667,
+            "phase_error_ms": 5.0,
+            "straight_path_ms": -0.5127833633313816
+          },
+          {
+            "hydrophone": 1,
+            "xy": [
+              1250.0,
+              700.0
+            ],
+            "range_m": 152.64337522473747,
+            "direction_deg": 301.6075022462489,
+            "error_ms": 0.10416666666666667,
+            "phase_error_ms": 5.520833333333333,
+            "straight_path_ms": 0.07273922011859224
+          },
+          {
+            "hydrophone": 2,
+            "xy": [
+              1850.0,
+              1100.0
+            ],
+            "range_m": 671.7886572427374,
+            "direction_deg": 44.39690880561947,
+            "error_ms": -0.4166666666666667,
+            "phase_error_ms": 5.0,
+            "straight_path_ms": -0.4829931710363944
+          },
+          {
+            "hydrophone": 3,
+            "xy": [
+              1500.0,
+              380.0
+            ],
+            "range_m": 268.32815729997475,
+            "direction_deg": 153.434948822922,
+            "error_ms": 0.20833333333333334,
+            "phase_error_ms": 4.895833333333334,
+            "straight_path_ms": 0.3677241252952046
+          }
+        ],
+        "median_ms": -0.15625,
+        "min_ms": -0.4166666666666667,
+        "max_ms": 0.20833333333333334,
+        "criterion_ms": null,
+        "passed": null,
+        "precision": "float32",
+        "wall_s": 4.942770442023175
+      }
+    }
+  }
+}

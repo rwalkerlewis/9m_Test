@@ -1,0 +1,11 @@
+[bistatic] grid 801 x 601 at 0.5 m, fs 6000 Hz, band to 800 Hz, 200 channels (592 sample points), 120000 steps
+[bistatic] 2 gathers (ferry, ferry>uuv1) in 113 s
+
+[bistatic] band limited (200 to 760 Hz) rms at the sensors, whole run, live channels
+  component                          cable1  hydrophones     best DAS
+  direct:ferry                       0.1592       0.1375       0.3035
+  scattered:ferry>uuv1              0.02085      0.01423      0.04933
+  noise                             0.03131      0.02326      0.03685
+
+  echo_to_direct_db_median_das -17.7, echo_to_direct_db_best_das -15.8, echo_to_noise_db_median_das -3.5, echo_to_noise_db_best_das +3.9
+wrote output/recordings/bistatic

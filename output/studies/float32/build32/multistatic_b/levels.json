@@ -1,0 +1,99 @@
+{
+  "table": {
+    "direct:ferry": {
+      "cable1": 0.15029079027340247,
+      "hydrophones": 0.10915592590137092,
+      "best_das": 0.250785792690576
+    },
+    "scattered:ferry>bodies": {
+      "cable1": 0.03210264004899691,
+      "hydrophones": 0.045042868504472304,
+      "best_das": 0.050228662542056095
+    },
+    "direct:tug": {
+      "cable1": 0.09652313065451207,
+      "hydrophones": 0.07680734726375804,
+      "best_das": 0.18078213640566304
+    },
+    "scattered:tug>bodies": {
+      "cable1": 0.02728066913006002,
+      "hydrophones": 0.036870587262559526,
+      "best_das": 0.058260731852695515
+    },
+    "direct:boat": {
+      "cable1": NaN,
+      "hydrophones": NaN,
+      "best_das": NaN
+    },
+    "scattered:boat>bodies": {
+      "cable1": NaN,
+      "hydrophones": NaN,
+      "best_das": NaN
+    },
+    "noise": {
+      "cable1": NaN,
+      "hydrophones": NaN,
+      "best_das": NaN
+    }
+  },
+  "summary": {
+    "ferry": {
+      "echo_to_direct_db_median_das": -13.407832376584528,
+      "echo_to_noise_db_median_das": NaN,
+      "echo_to_noise_db_best_das": NaN
+    },
+    "tug": {
+      "echo_to_direct_db_median_das": -10.975527622986817,
+      "echo_to_noise_db_median_das": NaN,
+      "echo_to_noise_db_best_das": NaN
+    },
+    "boat": {
+      "echo_to_direct_db_median_das": NaN,
+      "echo_to_noise_db_median_das": NaN,
+      "echo_to_noise_db_best_das": NaN
+    }
+  },
+  "f_max": 800.0,
+  "bodies": [
+    "uuv1",
+    "uuv2",
+    "diver",
+    "piling1",
+    "piling2",
+    "piling3",
+    "piling4",
+    "piling5",
+    "piling6",
+    "moored"
+  ],
+  "ferry_only_truth_check_db": {
+    "uuv1": NaN,
+    "uuv2": NaN,
+    "diver": NaN,
+    "piling1": NaN,
+    "piling2": NaN,
+    "piling3": NaN,
+    "piling4": NaN,
+    "piling5": NaN,
+    "piling6": NaN,
+    "moored": NaN
+  },
+  "ferry_only_truth_inputs": [
+    "direct path removed with the truth component",
+    "true ferry waveform",
+    "exact ferry track"
+  ],
+  "ferry_only_provenance": {
+    "truth_inputs": [
+      "direct_removal",
+      "components",
+      "waveform",
+      "track"
+    ],
+    "simulator_knowledge": [
+      "band"
+    ],
+    "data": "forward_model",
+    "held_out": false
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "criterion": {
+    "scattered_rel_rms": 0.001
+  },
+  "measure": "rms of (float32 - float64) over the rms of float64, every channel and sample",
+  "built64": "output/recordings",
+  "built32": "scratch/f32/build32a",
+  "recordings": {
+    "simple": {
+      "direct:boat": {
+        "rel_rms": 1.5965354038849057e-05,
+        "worst_channel_rel_rms": 3.071647809652803e-05
+      },
+      "direct:ferry": {
+        "rel_rms": 1.618243345618755e-05,
+        "worst_channel_rel_rms": 3.138491434996187e-05
+      },
+      "scattered:boat>bodies": {
+        "rel_rms": 2.8666463572238274e-05,
+        "worst_channel_rel_rms": 3.74719435561855e-05
+      },
+      "scattered:ferry>bodies": {
+        "rel_rms": 2.908403472198009e-05,
+        "worst_channel_rel_rms": 3.7584970661259884e-05
+      }
+    },
+    "bistatic": {
+      "direct:ferry": {
+        "rel_rms": 5.798503983119621e-05,
+        "worst_channel_rel_rms": 0.0001932611356055934
+      },
+      "scattered:ferry>uuv1": {
+        "rel_rms": 0.00022858435693458087,
+        "worst_channel_rel_rms": 0.007445697407712436
+      }
+    },
+    "multistatic": {
+      "direct:boat": {
+        "rel_rms": 5.213459340130748e-05,
+        "worst_channel_rel_rms": 0.000613850383553553
+      },
+      "direct:ferry": {
+        "rel_rms": 5.798506070102837e-05,
+        "worst_channel_rel_rms": 0.00019326301643144724
+      },
+      "direct:tug": {
+        "rel_rms": 5.494346507088215e-05,
+        "worst_channel_rel_rms": 0.0018897593120425667
+      },
+      "scattered:boat>bodies": {
+        "rel_rms": 0.00012360446276681007,
+        "worst_channel_rel_rms": 0.0004683106026296692
+      },
+      "scattered:ferry>bodies": {
+        "rel_rms": 9.573377673563695e-05,
+        "worst_channel_rel_rms": 0.00022868294968048133
+      },
+      "scattered:tug>bodies": {
+        "rel_rms": 0.00022111711422471476,
+        "worst_channel_rel_rms": 0.001010015480254047
+      }
+    },
+    "multistatic_b": {
+      "direct:boat": {
+        "rel_rms": 3.008153740054847e-05,
+        "worst_channel_rel_rms": 7.488426390867066e-05
+      },
+      "direct:ferry": {
+        "rel_rms": 5.651767024647951e-05,
+        "worst_channel_rel_rms": 9.374602489475323e-05
+      },
+      "direct:tug": {
+        "rel_rms": 5.8217235027632096e-05,
+        "worst_channel_rel_rms": 0.00039110832269591983
+      },
+      "scattered:boat>bodies": {
+        "rel_rms": 0.00012237870350320965,
+        "worst_channel_rel_rms": 0.0010368140379612336
+      },
+      "scattered:ferry>bodies": {
+        "rel_rms": 0.00012207290458783008,
+        "worst_channel_rel_rms": 0.0010118930601656644
+      },
+      "scattered:tug>bodies": {
+        "rel_rms": 0.00014947630735145782,
+        "worst_channel_rel_rms": 0.0011925876293841175
+      }
+    },
+    "harbor": {
+      "clean": {
+        "rel_rms": 4.000675187842209e-06,
+        "worst_channel_rel_rms": 6.4905642043906655e-06
+      }
+    }
+  },
+  "built32_commit": {
+    "simple": "a1ded29c5623b495e768d9ed73943f400889a4db",
+    "bistatic": "a1ded29c5623b495e768d9ed73943f400889a4db",
+    "multistatic": "a1ded29c5623b495e768d9ed73943f400889a4db",
+    "multistatic_b": "a1ded29c5623b495e768d9ed73943f400889a4db",
+    "harbor": "a1ded29c5623b495e768d9ed73943f400889a4db"
+  },
+  "max_scattered_rel_rms": 0.00022858435693458087,
+  "passed": true
+}

@@ -1,0 +1,26 @@
+{
+  "table": {
+    "direct:ferry": {
+      "cable1": 0.1591991521564089,
+      "hydrophones": 0.13751500737980163,
+      "best_das": 0.30354632656573755
+    },
+    "scattered:ferry>uuv1": {
+      "cable1": 0.020847276379511975,
+      "hydrophones": 0.014229565200253008,
+      "best_das": 0.049328191844002445
+    },
+    "noise": {
+      "cable1": 0.031309097807429576,
+      "hydrophones": 0.02325548574685808,
+      "best_das": 0.03685278691388429
+    }
+  },
+  "summary": {
+    "echo_to_direct_db_median_das": -17.65782852932418,
+    "echo_to_direct_db_best_das": -15.782595702252284,
+    "echo_to_noise_db_median_das": -3.5324245856601117,
+    "echo_to_noise_db_best_das": 3.9484928620810935
+  },
+  "f_max": 800.0
+}

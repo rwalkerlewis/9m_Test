@@ -196,3 +196,52 @@ def test_track_smoothing_removes_refinement_jitter(scene):
     assert depths["smoothed"] > depths["jitter"] + 6.0, depths
     assert depths["smoothed"] > 15.0, depths
     assert np.allclose(smooth_track(sp.times, exact, present, 2.0), exact, atol=1e-9)
+
+
+# ----------------------------------------------------------------------
+# The ECA in mixed precision (BistaticConfig.eca_precision = "mixed")
+# ----------------------------------------------------------------------
+
+def test_qr_solve_matches_the_loaded_normal_equations_on_a_well_conditioned_block():
+    """On a well conditioned block (independent columns) the unloaded QR in double precision and the loaded normal
+    equations give the same projection to single precision."""
+    from acoustic_sim.water.bistatic import _project_out_batched, _project_out_qr
+
+    rng = np.random.default_rng(4)
+    S = rng.standard_normal((3, 600, 12))
+    segs = rng.standard_normal((3, 600, 2))
+    a = _project_out_batched(S.copy(), segs.copy())
+    b = _project_out_qr(S.astype(np.float32), segs.astype(np.float32))
+    assert b.dtype == np.float32
+    np.testing.assert_allclose(b, a, rtol=0, atol=2e-5 * np.abs(segs).max())
+
+
+@pytest.mark.parametrize("reference", ["data", "true_waveform"])
+def test_mixed_precision_eca_matches_the_double_one(scene, reference):
+    """The analytic case with a moving ship (per sample delays): the mixed precision ECA removes the direct path within
+    0.3 dB of the double precision one and loses the echo within 0.1 dB of it."""
+    env, layout, _, _, echo, s, _ = scene
+    n = len(s)
+    tt = np.arange(n) / FS
+    ship_t = SHIP[None, :] + np.outer(tt, [4.0, 0.0])
+    rec = layout.receivers
+    direct = np.stack([np.interp(tt - np.hypot(*(ship_t - r).T) / C, tt, s, left=0.0, right=0.0) / np.sqrt(np.hypot(*(SHIP - r)))
+                       for r in rec])
+    traces = direct + echo + 0.002 * np.random.default_rng(5).standard_normal(direct.shape)
+    k = int(T / 0.5)
+    t_ais = np.arange(k) * 0.5
+    ais = AISReports(vessel=np.array(["ship"] * k), t=t_ais, xy=SHIP[None, :] + np.outer(t_ais, [4.0, 0.0]),
+                     sog=np.full(k, 4.0), cog=np.zeros(k))
+    got = {}
+    for prec in ("float64", "mixed"):
+        bc = BistaticConfig(f_hi=F_HI, reference=reference, removal="eca", c=C, refine=False, eca_doppler=True, eca_images=False,
+                            eca_precision=prec)
+        sp = stft(traces, layout, FS, bc)
+        model = ReplicaModel(layout, bc.c)
+        model.weights = sp.weights
+        ship = ship_positions(sp, ais, model, bc)
+        outs, _ = eca_stage(traces, layout, FS, env, sp, ship, bc, s if reference == "true_waveform" else None, [direct, echo])
+        got[prec] = (float(np.median(_depth_db(direct, outs[1]))), float(np.median(_depth_db(echo, outs[2]))))
+    assert got["float64"][0] > 15.0, got                          # a deep removal to compare
+    assert abs(got["mixed"][0] - got["float64"][0]) <= 0.3, got
+    assert abs(got["mixed"][1] - got["float64"][1]) <= 0.1, got

@@ -1,0 +1,13 @@
+simulated 7 vessels in 292 s
+
+band-limited (15-75 Hz) rms pressure [Pa] at the sensors
+  source           cable1  hydrophones
+  ferry            0.6815       0.5443
+  tug              0.2787       0.2602
+  moored           0.0262       0.0340
+  uuv1             0.0184       0.0151
+  uuv2             0.0220       0.0229
+  diver            0.0059       0.0036
+  noise            0.0354       0.0271
+
+wrote scratch/f32/build32a/harbor
