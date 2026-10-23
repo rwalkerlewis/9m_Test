@@ -70,6 +70,8 @@ output/studies/**/tracks.csv
 !output/walkthrough/multistatic/08_geometry_ray_paths.png
 !output/walkthrough/simple/05_direct_path_removal_channels.png
 !output/walkthrough/simple/06_echo_map_full_record.png
+!output/studies/echo_budget/budget_multistatic.png
+!output/studies/echo_budget/budget_multistatic_b.png
 !output/studies/quay_echoes/map_simple.png
 !output/studies/quay_echoes/map_bistatic.png
 !output/studies/quay_echoes/map_multistatic.png

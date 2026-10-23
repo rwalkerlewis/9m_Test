@@ -529,6 +529,48 @@ simple harbor's UUV on its recordings in <!-- reproduce:range:recordings/simple*
 <!-- reproduce:range:@studies/direct_path/summary_before_joint_removal.json:recordings/simple*/objects/uuv1/pd/echo|pct -->30 to 66 %<!-- /reproduce -->). The silent bodies tracked are the UUVs, the moored hull, the
 wreck and, on `multistatic_b` only, the diver; no piling on any recording. Everything else is in the tables above.
 
+### What a piling's echo can give
+
+The pilings (1 m pressure release bodies) have been tracked in none of the frames of any recording. Before an echo chain
+chases them, `examples/harbor/05_detection/harbor_echo_budget.py` (output in `output/studies/echo_budget/`) computes
+whether their echo is above the interference at all. Every silent body is modelled as an infinite pressure release
+cylinder (the partial wave series; 0.5 m radius for a piling, the radius of the body's area for the diver, the UUVs and
+the hull) lit by each ship along its true track, at the ship's level measured from its direct component on every
+channel; the echo is taken through each channel's response (the strain channels' second difference) and set against the
+noise component of the truth plus that ship's direct arrival 20 dB down, the removal depth the chain reaches. Per frame
+of the echo chain, over its band: the ratio on the best channel, and on the best 10 channels summed coherently (the
+echo adding in amplitude, the interference in power). The levels come from the truth: the budget is a diagnostic, not
+an estimate the processing can make. The criterion of the conclusion was fixed before the budget was computed: if no
+piling reaches 0 dB on its best 10 channels in any frame the piling criterion of stage 2 is retired; if one does, the
+budget is the target the next echo chain task is measured against.
+
+<!-- reproduce-table:file:studies/echo_budget/budget.md -->
+<!-- /reproduce-table -->
+
+**Pilings do reach 0 dB, so the budget is the target, not a reason to retire the criterion.** Lit by the ferry, the pilings of the multistatic recording reach
+<!-- reproduce:@studies/echo_budget/results.json:recordings/multistatic/illuminators/ferry/piling1/best10_coherent_db/max|+f1 -->X<!-- /reproduce --> to
+<!-- reproduce:@studies/echo_budget/results.json:recordings/multistatic/illuminators/ferry/piling6/best10_coherent_db/max|+f1 -->X<!-- /reproduce --> dB on their best 10 channels and are at 0 dB
+or more in nearly every frame; on `multistatic_b` the ferry gives them at most
+<!-- reproduce:@studies/echo_budget/results.json:max:@studies/echo_budget/results.json:recordings/multistatic_b/illuminators/ferry/piling*/best10_coherent_db/max|+f1 -->X<!-- /reproduce --> dB, in between <!-- reproduce:count:@studies/echo_budget/results.json:recordings/multistatic_b/illuminators/ferry/piling6/frames_at_0db[*] -->14<!-- /reproduce --> and <!-- reproduce:count:@studies/echo_budget/results.json:recordings/multistatic_b/illuminators/ferry/piling1/frames_at_0db[*] -->75<!-- /reproduce --> of its <!-- reproduce:@studies/echo_budget/results.json:recordings/multistatic_b/frames -->239<!-- /reproduce --> frames,
+and the tug, briefly, in its first seconds. No single channel carries a piling's echo above the interference on the
+multistatic recording (at most <!-- reproduce:@studies/echo_budget/results.json:max:@studies/echo_budget/results.json:recordings/multistatic/illuminators/*/piling*/best_channel_db/max|+f1 -->X<!-- /reproduce --> dB).
+Two cautions. The analytic echoes are <!-- reproduce:@studies/echo_budget/results.json:range:@studies/echo_budget/results.json:recordings/*/calibration_db/*/median|+f1 -->X<!-- /reproduce --> dB above the scattered
+field of the forward model (every body at once, median over channels and frames), so the margin above 0 dB is a few dB
+smaller than the table says. And the budget does not rank what the chain tracks: the UUVs (<!-- reproduce:range:@studies/echo_budget/results.json:recordings/multistatic/illuminators/ferry/uuv?/best10_coherent_db/max|+f1 -->X<!-- /reproduce --> dB with the ferry)
+and the hull are tracked, but the diver is tracked on `multistatic_b`, where the budget gives it
+<!-- reproduce:@studies/echo_budget/results.json:recordings/multistatic_b/illuminators/ferry/diver/best10_coherent_db/max|+f1 -->X<!-- /reproduce --> dB at most, and not on the multistatic
+recording, where it has <!-- reproduce:@studies/echo_budget/results.json:recordings/multistatic/illuminators/ferry/diver/best10_coherent_db/max|+f1 -->X<!-- /reproduce --> dB. A piling's
+echo sits well below a UUV's and the diver's on the multistatic recording (the table): the next echo chain task is
+measured against these numbers.
+
+![echo budget, multistatic](../output/studies/echo_budget/budget_multistatic.png)
+
+Look at the solid lines: every piling stays above 0 dB for nearly the whole record, well under the UUVs and the diver.
+
+![echo budget, multistatic_b](../output/studies/echo_budget/budget_multistatic_b.png)
+
+Look at the solid lines against the dotted one: the pilings hover about 0 dB for the first two thirds of the record and fall below it in the last third.
+
 ## The tracker
 
 Every track, radiator or echo, is a constant velocity Kalman filter (`streaming.RadiatorTrack`): the state is the
@@ -571,6 +613,17 @@ test recordings: the bistatic UUV's echo Pd fell on every test seed
 false tracks on `multistatic_b` went from <!-- reproduce:@studies/false_tracks/criteria.json:criteria[0]/before/multistatic_b|f1 -->6.0<!-- /reproduce --> to only <!-- reproduce:@studies/false_tracks/criteria.json:criteria[0]/values/multistatic_b|f1 -->5.0<!-- /reproduce --> per minute
 against 2, and the boat on `multistatic_b` stayed at <!-- reproduce:@studies/false_tracks/criteria.json:criteria[2]/values|f3 -->0.699<!-- /reproduce --> against 0.8. The settings of every
 processing config are again those from before that change; the study and its outputs are kept as they were.
+
+**Last heard.** A confirmed radiator track that would be dropped (2 s without a gated fix) is kept as last heard for 30 s
+after its last fix (`last_heard_s`; the echo trackers do not use it): at its last filtered position, its velocity set to
+zero, its covariance growing from there with the filter's own process noise. It is reported in `picture.jsonl` with
+`status: "last_heard"` and `last_fix_t`, drawn faded in the operator view, is no illuminator of the echo chain and
+explains no sidelobe; a peak in its gate that no confirmed track takes makes it confirmed again. The value was set on
+the tuning recordings (`examples/harbor/05_detection/harbor_last_heard.py`, `output/studies/last_heard/tuning.json`):
+at 10, 30 and 60 s no number of a tuning recording moved, and the rule fixed before the runs takes 30 s then. The
+scoring keeps `pd` as it was and adds `pd_last_heard`, which also counts a frame held only by a last heard track
+matched to the object when the object is inside that track's 95 % ellipse; a last heard track that never regains a fix
+is matched by its confirmed fixes, so it is false only if it was false when confirmed.
 
 **Scoring of static bodies.** A track is matched to a static body (the pilings, the moored hull, the wreck) by its
 distance to the body's outline, the mask the forward model drew (`scoreboard.ObjectDistance`), and a frame is a hit when

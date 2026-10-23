@@ -58,6 +58,8 @@ What the simulation does: one source, scattering bodies, wavefield and gather vi
 | `harbor_cancellation_depth.py` | The direct path removal depth of every reference estimator (`ref_mode`) on the stage 0a cases (a ship alone at three ranges, stationary and moving). |
 | `harbor_direct_path_depth.py` | The removal depth of every ship's direct path on the recordings, per reference estimator (a diagnostic from the truth components). |
 | `harbor_direct_path_criteria.py` | The criteria of the direct path change on the chain, from the summaries before and after. |
+| `harbor_echo_budget.py` | What a silent body's echo can give: the echo to noise ratio of every body on the multistatic recordings from the analytic pressure release cylinder, against the measured noise and the residual direct path. |
+| `harbor_quay_echoes.py` | The false echo tracks against the quay images, the land and the static bodies (a measurement). |
 
 ## Harbor 6: walkthrough (`harbor/06_walkthrough/`)
 
@@ -98,7 +100,6 @@ Scripts of earlier stages, not part of the system. They stay runnable because co
 | `harbor_survey_grid.py` | Per cell FDTD transfer functions for the empirical localiser. |
 | `harbor_bistatic_demo.py` | The bistatic demo given the truth (direct path removed exactly, true waveform, exact track). |
 | `harbor_bistatic_ablation.py` | Stage 0b: the bistatic demo with its truth inputs removed one at a time. |
-| `harbor_bistatic_budget.py` | The analytic bistatic link budget with idealised cylinders. |
 | `harbor_presentation.py` | Presentation demo: one ship, one silent stopped UUV, in the 5 m harbor. |
 | `harbor_stack_movie.py` | Movie of echoes stacked pulse by pulse. |
 | `harbor_picture_stage1.py` | Stage 1: the threshold scoreboard on the batch and streaming chains. |
