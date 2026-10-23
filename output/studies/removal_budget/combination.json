@@ -1,0 +1,128 @@
+{
+  "qualifying": {
+    "passes1": false,
+    "previous": false,
+    "prefix": false,
+    "hop": true,
+    "band": true
+  },
+  "saving_alone": {
+    "hop": 0.1140660736564314,
+    "band": 1.0968130586930784
+  },
+  "tried": [
+    {
+      "options": [
+        "hop",
+        "band"
+      ],
+      "overrides": {
+        "simple": [
+          "echo.bistatic.hop_s=0.5",
+          "echo.tracker.confirm=4",
+          "echo.bistatic.removal_band=[10, 380]"
+        ],
+        "bistatic": [
+          "echo.bistatic.hop_s=0.5",
+          "echo.tracker.confirm=4",
+          "echo.bistatic.removal_band=[78, 762]"
+        ],
+        "multistatic": [
+          "echo.bistatic.hop_s=0.5",
+          "echo.tracker.confirm=4",
+          "echo.bistatic.removal_band=[100, 760]"
+        ]
+      },
+      "result": {
+        "simple": {
+          "overrides": [
+            "echo.bistatic.hop_s=0.5",
+            "echo.tracker.confirm=4",
+            "echo.bistatic.removal_band=[10, 380]"
+          ],
+          "compute_per_second_of_data": 0.9894322626467329,
+          "latency_median_s": 2.342,
+          "silent_pd": {
+            "uuv1": 0.6363636363636364,
+            "wreck": 1.0
+          },
+          "ships_pd": {
+            "ferry": 1.0,
+            "boat": 1.0
+          },
+          "false_tracks": 0
+        },
+        "bistatic": {
+          "overrides": [
+            "echo.bistatic.hop_s=0.5",
+            "echo.tracker.confirm=4",
+            "echo.bistatic.removal_band=[78, 762]"
+          ],
+          "compute_per_second_of_data": 1.0625376753450837,
+          "latency_median_s": 2.247,
+          "silent_pd": {
+            "uuv1": 0.696969696969697
+          },
+          "ships_pd": {
+            "ferry": 1.0
+          },
+          "false_tracks": 4
+        },
+        "multistatic": {
+          "overrides": [
+            "echo.bistatic.hop_s=0.5",
+            "echo.tracker.confirm=4",
+            "echo.bistatic.removal_band=[100, 760]"
+          ],
+          "compute_per_second_of_data": 1.5970731089539185,
+          "latency_median_s": 2.966,
+          "silent_pd": {
+            "uuv1": 0.9090909090909091,
+            "uuv2": 0.9393939393939394,
+            "diver": 0.0,
+            "piling1": 0.0,
+            "piling2": 0.0,
+            "piling3": 0.0,
+            "piling4": 0.0,
+            "piling5": 0.0,
+            "piling6": 0.0,
+            "moored": 0.8181818181818182
+          },
+          "ships_pd": {
+            "ferry": 1.0,
+            "tug": 1.0,
+            "boat": 1.0
+          },
+          "false_tracks": 3,
+          "depth_db": {
+            "ferry": 20.207009317713606,
+            "tug": 21.09443063776799,
+            "boat": 18.324775105504003
+          }
+        }
+      },
+      "passes_rule": true
+    }
+  ],
+  "chosen": [
+    "hop",
+    "band"
+  ],
+  "overrides": {
+    "simple": [
+      "echo.bistatic.hop_s=0.5",
+      "echo.tracker.confirm=4",
+      "echo.bistatic.removal_band=[10, 380]"
+    ],
+    "bistatic": [
+      "echo.bistatic.hop_s=0.5",
+      "echo.tracker.confirm=4",
+      "echo.bistatic.removal_band=[78, 762]"
+    ],
+    "multistatic": [
+      "echo.bistatic.hop_s=0.5",
+      "echo.tracker.confirm=4",
+      "echo.bistatic.removal_band=[100, 760]"
+    ]
+  }
+}

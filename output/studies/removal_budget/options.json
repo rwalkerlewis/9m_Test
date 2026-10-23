@@ -1,0 +1,378 @@
+{
+  "current": {
+    "simple": {
+      "overrides": [],
+      "compute_per_second_of_data": 1.2122361487570743,
+      "latency_median_s": 2.766,
+      "silent_pd": {
+        "uuv1": 0.578125,
+        "wreck": 1.0
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 1
+    },
+    "bistatic": {
+      "overrides": [],
+      "compute_per_second_of_data": 1.2801028289453824,
+      "latency_median_s": 2.568,
+      "silent_pd": {
+        "uuv1": 0.703125
+      },
+      "ships_pd": {
+        "ferry": 1.0
+      },
+      "false_tracks": 2
+    },
+    "multistatic": {
+      "overrides": [],
+      "compute_per_second_of_data": 2.842139162501553,
+      "latency_median_s": 5.608,
+      "silent_pd": {
+        "uuv1": 0.84375,
+        "uuv2": 0.953125,
+        "diver": 0.0,
+        "piling1": 0.0,
+        "piling2": 0.0,
+        "piling3": 0.0,
+        "piling4": 0.0,
+        "piling5": 0.0,
+        "piling6": 0.0,
+        "moored": 0.828125
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "tug": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 2,
+      "depth_db": {
+        "ferry": 20.253480215375212,
+        "tug": 21.103683514707704,
+        "boat": 18.338776978597267
+      }
+    }
+  },
+  "passes1": {
+    "simple": {
+      "overrides": [
+        "echo.bistatic.joint_passes=1"
+      ],
+      "compute_per_second_of_data": 0.9766403847490437,
+      "latency_median_s": 2.263,
+      "silent_pd": {
+        "uuv1": 0.578125,
+        "wreck": 1.0
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 1
+    },
+    "bistatic": {
+      "overrides": [
+        "echo.bistatic.joint_passes=1"
+      ],
+      "compute_per_second_of_data": 1.1951948528017966,
+      "latency_median_s": 2.354,
+      "silent_pd": {
+        "uuv1": 0.703125
+      },
+      "ships_pd": {
+        "ferry": 1.0
+      },
+      "false_tracks": 2
+    },
+    "multistatic": {
+      "overrides": [
+        "echo.bistatic.joint_passes=1"
+      ],
+      "compute_per_second_of_data": 2.3102574744472806,
+      "latency_median_s": 4.437,
+      "silent_pd": {
+        "uuv1": 0.796875,
+        "uuv2": 0.953125,
+        "diver": 0.0,
+        "piling1": 0.0,
+        "piling2": 0.0,
+        "piling3": 0.0,
+        "piling4": 0.0,
+        "piling5": 0.0,
+        "piling6": 0.0,
+        "moored": 0.8125
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "tug": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 2,
+      "depth_db": {
+        "ferry": 19.320866368712675,
+        "tug": 18.935036021610877,
+        "boat": 17.120133804645562
+      }
+    }
+  },
+  "previous": {
+    "simple": {
+      "overrides": [
+        "echo.bistatic.ref_noise=previous"
+      ],
+      "compute_per_second_of_data": 1.052577226998983,
+      "latency_median_s": 2.626,
+      "silent_pd": {
+        "uuv1": 0.578125,
+        "wreck": 1.0
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 0
+    },
+    "bistatic": {
+      "overrides": [
+        "echo.bistatic.ref_noise=previous"
+      ],
+      "compute_per_second_of_data": 1.2134405914483068,
+      "latency_median_s": 2.376,
+      "silent_pd": {
+        "uuv1": 0.703125
+      },
+      "ships_pd": {
+        "ferry": 1.0
+      },
+      "false_tracks": 2
+    },
+    "multistatic": {
+      "overrides": [
+        "echo.bistatic.ref_noise=previous"
+      ],
+      "compute_per_second_of_data": 2.489600492500176,
+      "latency_median_s": 4.729,
+      "silent_pd": {
+        "uuv1": 0.828125,
+        "uuv2": 0.921875,
+        "diver": 0.0,
+        "piling1": 0.0,
+        "piling2": 0.0,
+        "piling3": 0.0,
+        "piling4": 0.0,
+        "piling5": 0.0,
+        "piling6": 0.0,
+        "moored": 0.828125
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "tug": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 3,
+      "depth_db": {
+        "ferry": 20.200749005880077,
+        "tug": 20.819234436577972,
+        "boat": 18.21045740075727
+      }
+    }
+  },
+  "prefix": {
+    "simple": {
+      "overrides": [
+        "echo.bistatic.joint_gram=prefix"
+      ],
+      "compute_per_second_of_data": 1.2736039598043134,
+      "latency_median_s": 3.114,
+      "silent_pd": {
+        "uuv1": 0.578125,
+        "wreck": 1.0
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 1
+    },
+    "bistatic": {
+      "overrides": [
+        "echo.bistatic.joint_gram=prefix"
+      ],
+      "compute_per_second_of_data": 1.3012433838557627,
+      "latency_median_s": 2.588,
+      "silent_pd": {
+        "uuv1": 0.703125
+      },
+      "ships_pd": {
+        "ferry": 1.0
+      },
+      "false_tracks": 2
+    },
+    "multistatic": {
+      "overrides": [
+        "echo.bistatic.joint_gram=prefix"
+      ],
+      "compute_per_second_of_data": 2.9482047787976624,
+      "latency_median_s": 5.762,
+      "silent_pd": {
+        "uuv1": 0.84375,
+        "uuv2": 0.953125,
+        "diver": 0.0,
+        "piling1": 0.0,
+        "piling2": 0.0,
+        "piling3": 0.0,
+        "piling4": 0.0,
+        "piling5": 0.0,
+        "piling6": 0.0,
+        "moored": 0.828125
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "tug": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 2,
+      "depth_db": {
+        "ferry": 20.25348022019328,
+        "tug": 21.103683526985186,
+        "boat": 18.33877698242199
+      }
+    }
+  },
+  "hop": {
+    "simple": {
+      "overrides": [
+        "echo.bistatic.hop_s=0.5",
+        "echo.tracker.confirm=4"
+      ],
+      "compute_per_second_of_data": 1.1512043341099343,
+      "latency_median_s": 2.7065,
+      "silent_pd": {
+        "uuv1": 0.6363636363636364,
+        "wreck": 1.0
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 0
+    },
+    "bistatic": {
+      "overrides": [
+        "echo.bistatic.hop_s=0.5",
+        "echo.tracker.confirm=4"
+      ],
+      "compute_per_second_of_data": 1.246693868553848,
+      "latency_median_s": 2.3125,
+      "silent_pd": {
+        "uuv1": 0.696969696969697
+      },
+      "ships_pd": {
+        "ferry": 1.0
+      },
+      "false_tracks": 4
+    },
+    "multistatic": {
+      "overrides": [
+        "echo.bistatic.hop_s=0.5",
+        "echo.tracker.confirm=4"
+      ],
+      "compute_per_second_of_data": 2.7280730888451217,
+      "latency_median_s": 5.5815,
+      "silent_pd": {
+        "uuv1": 0.9090909090909091,
+        "uuv2": 0.9393939393939394,
+        "diver": 0.0,
+        "piling1": 0.0,
+        "piling2": 0.0,
+        "piling3": 0.0,
+        "piling4": 0.0,
+        "piling5": 0.0,
+        "piling6": 0.0,
+        "moored": 0.8181818181818182
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "tug": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 3,
+      "depth_db": {
+        "ferry": 20.253480218865366,
+        "tug": 21.103683517501594,
+        "boat": 18.338776973156996
+      }
+    }
+  },
+  "band": {
+    "simple": {
+      "overrides": [
+        "echo.bistatic.removal_band=[10, 380]"
+      ],
+      "compute_per_second_of_data": 1.0485607426999195,
+      "latency_median_s": 2.498,
+      "silent_pd": {
+        "uuv1": 0.578125,
+        "wreck": 1.0
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 0
+    },
+    "bistatic": {
+      "overrides": [
+        "echo.bistatic.removal_band=[78, 762]"
+      ],
+      "compute_per_second_of_data": 1.116681147053896,
+      "latency_median_s": 2.305,
+      "silent_pd": {
+        "uuv1": 0.703125
+      },
+      "ships_pd": {
+        "ferry": 1.0
+      },
+      "false_tracks": 2
+    },
+    "multistatic": {
+      "overrides": [
+        "echo.bistatic.removal_band=[100, 760]"
+      ],
+      "compute_per_second_of_data": 1.7453261038084746,
+      "latency_median_s": 3.131,
+      "silent_pd": {
+        "uuv1": 0.84375,
+        "uuv2": 0.953125,
+        "diver": 0.0,
+        "piling1": 0.0,
+        "piling2": 0.0,
+        "piling3": 0.0,
+        "piling4": 0.0,
+        "piling5": 0.0,
+        "piling6": 0.0,
+        "moored": 0.828125
+      },
+      "ships_pd": {
+        "ferry": 1.0,
+        "tug": 1.0,
+        "boat": 1.0
+      },
+      "false_tracks": 2,
+      "depth_db": {
+        "ferry": 20.20700931773922,
+        "tug": 21.09443063764346,
+        "boat": 18.32477510498748
+      }
+    }
+  },
+  "_qualifies": {
+    "passes1": false,
+    "previous": false,
+    "prefix": false,
+    "hop": true,
+    "band": true
+  }
+}

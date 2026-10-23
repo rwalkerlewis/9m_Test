@@ -863,6 +863,33 @@ class EchoStreamConfig:
     min_separation: float = 20.0
 
 
+def removal_decimation(fs: float, nb: int, band) -> int:
+    """The decimation of the direct path removal for ``BistaticConfig.removal_band`` *band* (``[f1, f2]`` or ``None``):
+    the largest divisor of the ECA block *nb* with ``fs / (2 D)`` at least ``1.25 f2`` (1 without a band)."""
+    if not band:
+        return 1
+    f2 = float(band[1])
+    return max(d for d in range(1, nb + 1) if nb % d == 0 and fs / (2.0 * d) >= 1.25 * f2)
+
+
+def _decimate(x: np.ndarray, D: int) -> np.ndarray:
+    """Rows of *x* low passed (the polyphase filter of ``scipy.signal.resample_poly``, zero phase) and kept every
+    *D*-th sample, from the first: sample ``i`` of the result is sample ``D i`` of *x*."""
+    from scipy.signal import resample_poly
+
+    n = x.shape[1]
+    m = int(np.ceil(n / D)) * D
+    xp_ = np.pad(np.asarray(x, dtype=np.float64), ((0, 0), (0, m - n)))
+    return resample_poly(xp_, 1, D, axis=1)
+
+
+def _interpolate(x: np.ndarray, D: int, n: int) -> np.ndarray:
+    """Rows of *x* brought back up by *D* (``resample_poly``, zero phase) and cut to *n* samples."""
+    from scipy.signal import resample_poly
+
+    return resample_poly(np.asarray(x, dtype=np.float64), D, 1, axis=1)[:, :n]
+
+
 class StreamingEcho:
     """Causal echo chain: ``bistatic.run_bistatic`` with the data reference, ECA with per sample delays and the
     coherent ``"snr"`` map, step by step, with the illuminator and every other radiator located passively.
@@ -918,6 +945,12 @@ class StreamingEcho:
         self.component_energy: dict[str, list[tuple[np.ndarray, np.ndarray]]] = {}
         self.next_block = 0                             # first ECA block not cleaned
         self.next_frame = 0                             # first frame not mapped
+        # bc.ref_noise = "previous": the residual's noise power (N, F) of the previous step and who was removed in it.
+        self.prev_psd: np.ndarray | None = None
+        self.prev_live: set[str] = set()
+        # bc.removal_band: the decimation of the removal (the largest divisor of the ECA block with the decimated
+        # Nyquist at least 1.25 times the band's upper edge).
+        self.decim = removal_decimation(self.fs, self.nb, bc.removal_band)
 
     def _init_channel_greens(self) -> None:
         """Tables of :meth:`_channel_greens`: per channel its (up to three) sample points and the weights of
@@ -1083,12 +1116,37 @@ class StreamingEcho:
         refs = {}                                          # the common mode removed in the STFT
         comps = {k: np.asarray(v[:, a:z], dtype=np.float64) for k, v in self.components.items()} if self.components else {}
         before = {k: self._block_energy(v, b0 - a // self.nb, b1 - a // self.nb) for k, v in comps.items()}
+        D = self.decim
+        fs_r = self.fs / D
+        if D > 1:                                          # the removal on the decimated traces (bc.removal_band)
+            with PROFILE.stage("echo: decimation"):
+                x = _decimate(x, D)
+                comps = {k: _decimate(v, D) for k, v in comps.items()}
+        n_r = x.shape[1]
+        t_r = (a + D * np.arange(n_r)) / self.fs
+        nb_r = self.nb // D
+        mid_r = np.minimum(np.arange(int(np.ceil(n_r / nb_r))) * nb_r + nb_r // 2, n_r - 1)
         ships = []
         for name in live:
-            ship_t = self._smoothed(t_s, name)
-            ships.append((ship_t[mid], ship_t))
-        x, cleaned, ref_list = remove_direct_paths(x, list(comps.values()), self.layout, self.fs, ships, chans, bc,
-                                                   blocks=rel, bodies=self.bodies)
+            ship_t = self._smoothed(t_r, name)
+            ships.append((ship_t[mid_r], ship_t))
+        npsd = None
+        if bc.ref_noise == "previous" and self.prev_psd is not None:
+            npsd = [self.prev_psd if name in self.prev_live else None for name in live]
+        x, cleaned, ref_list = remove_direct_paths(x, list(comps.values()), self.layout, fs_r, ships, chans, bc,
+                                                   blocks=rel, bodies=self.bodies, noise_psd=npsd)
+        if bc.ref_noise == "previous":                     # this step's residual: the next step's noise power
+            from acoustic_sim.water.bistatic import _xp, reference_psd_freqs, residual_psd
+
+            with PROFILE.stage("echo: reference estimation / noise spectra"):
+                cols = np.arange(min(rel) * nb_r, min((max(rel) + 1) * nb_r, n_r))
+                self.prev_psd = residual_psd(x[:, cols], fs_r, reference_psd_freqs(fs_r, bc), bc.ref_psd_s, _xp(bc))
+                self.prev_live = set(live)
+        if D > 1:                                          # back to the recording's rate for the maps
+            with PROFILE.stage("echo: decimation"):
+                x = _interpolate(x, D, z - a)
+                cleaned = [_interpolate(c, D, z - a) for c in cleaned]
+                ref_list = [_interpolate(r[None, :], D, z - a)[0] for r in ref_list]
         refs = dict(zip(live, ref_list))
         comps = dict(zip(comps, cleaned))
         for k, v in comps.items():                         # diagnostic, from the truth: energy before and after per channel

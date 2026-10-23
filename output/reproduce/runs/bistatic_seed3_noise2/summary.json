@@ -4,14 +4,14 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.5510067481969599,
-    "echo": 0.4786314244513051,
-    "characteristics": 0.10880502259969944,
-    "total": 1.1384431952479646
+    "passive": 0.5498680131524452,
+    "echo": 0.3638733739979216,
+    "characteristics": 0.06789166045127785,
+    "total": 0.9816330476016446
   },
   "latency_s": {
-    "median": 2.363,
-    "max": 4.43
+    "median": 2.183,
+    "max": 3.133
   },
   "objects": {
     "ferry": {
@@ -24,19 +24,19 @@
         "any": 1.0
       },
       "frames": {
-        "radiator": 66,
-        "echo": 64,
-        "any": 66
+        "radiator": 31,
+        "echo": 33,
+        "any": 33
       },
       "hits": {
-        "radiator": 66,
+        "radiator": 31,
         "echo": 0,
-        "any": 66
+        "any": 33
       },
       "median_error_m": {
-        "radiator": 0.6113100686231494,
+        "radiator": 0.6168468205316424,
         "echo": null,
-        "any": 0.6113100686231494
+        "any": 0.6181423784210688
       },
       "tracks": [
         "r1"
@@ -48,34 +48,34 @@
       "ais": false,
       "pd": {
         "radiator": 0.0,
-        "echo": 0.796875,
-        "any": 0.7727272727272727
+        "echo": 0.7878787878787878,
+        "any": 0.7878787878787878
       },
       "frames": {
-        "radiator": 66,
-        "echo": 64,
-        "any": 66
+        "radiator": 31,
+        "echo": 33,
+        "any": 33
       },
       "hits": {
         "radiator": 0,
-        "echo": 51,
-        "any": 51
+        "echo": 26,
+        "any": 26
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 1.6774357429050086,
-        "any": 1.6774357429050086
+        "echo": 1.7672407186746413,
+        "any": 1.7672407186746413
       },
       "tracks": [
-        "e2"
+        "e3"
       ]
     }
   },
   "tracks": [
     {
       "track": "r1",
-      "fixes": 66,
-      "first_t": 1.5,
+      "fixes": 33,
+      "first_t": 1.75,
       "last_t": 17.75,
       "true_object": "ferry",
       "false_track": false,
@@ -119,14 +119,14 @@
       "kind": "radiator"
     },
     {
-      "track": "e2",
-      "fixes": 41,
+      "track": "e3",
+      "fixes": 20,
       "first_t": 5.25,
       "last_t": 17.75,
       "true_object": "uuv1",
       "false_track": false,
       "nearest_object": "uuv1",
-      "median_error_m": 2.103552914777342,
+      "median_error_m": 2.07482503682865,
       "first_xy": [
         230.0,
         106.0
@@ -174,9 +174,9 @@
     ]
   },
   "ellipse_coverage": {
-    "fixes": 107,
-    "inside": 98,
-    "fraction": 0.9158878504672897
+    "fixes": 53,
+    "inside": 52,
+    "fraction": 0.9811320754716981
   },
   "held_as_echo": {},
   "sidelobe_peaks": 263,
@@ -185,7 +185,7 @@
     "assoc_radius_m": 10.0,
     "confirm": {
       "radiator": 6,
-      "echo": 8
+      "echo": 4
     }
   },
   "peaks": {
@@ -205,26 +205,26 @@
       }
     },
     "echo": {
-      "frames": 71,
+      "frames": 36,
       "objects": {
         "ferry": {
-          "frames": 71,
+          "frames": 36,
           "hit": 0.0,
           "median_error_m": null
         },
         "uuv1": {
-          "frames": 71,
-          "hit": 0.6619718309859155,
-          "median_error_m": 2.1104775358432537
+          "frames": 36,
+          "hit": 0.6111111111111112,
+          "median_error_m": 2.07482503682865
         }
       }
     }
   },
   "run": {
-    "git_commit": "66201ad4813bb80a6acbaff0d515d3ca404728d5",
+    "git_commit": "fdfae39794a2ce377283b031d837749325d73922",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/bistatic.json",
-    "processing_config_sha256": "7a1083b7beb6a1d4997fb0236002d7d774f478428c4dbefc9cd52cc3b34a3f62",
+    "processing_config_sha256": "90223bca03318e12e06c837553734c59ded751750f608526946ad56e2fbad6f6",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/bistatic/noise2/seed3/dataset.observation.npz",
     "observation_sha256": "3c7cc8e5a4f061e54a6cfe5aef144ae63ff72533fde2232b7c09dfcb0424fa93",
@@ -233,7 +233,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 3,
-    "wall_s": 22.865801241001463,
+    "wall_s": 19.676739254995482,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

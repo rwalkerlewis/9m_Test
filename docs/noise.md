@@ -131,33 +131,35 @@ evaluated on the old model as they were fixed, and reported on harbor_v2 beside 
 <!-- reproduce-table:silent_noise -->
 | Recording | Silent body | Pd, old noise model | Pd, harbor_v2 |
 |---|---|---|---|
-| simple | uuv1 | 58 % | 20 % |
-| simple | wreck | 100 % | 98 % |
-| bistatic | uuv1 | 70 % | 53 % |
-| multistatic | uuv1 | 84 % | 0 % |
-| multistatic | uuv2 | 95 % | 88 % |
-| multistatic | moored | 83 % | 62 % |
-| simple_seed1 | uuv1 | 66 % | 0 % |
-| simple_seed1 | wreck | 100 % | 97 % |
-| simple_seed2 | uuv1 | 64 % | 0 % |
-| simple_seed2 | wreck | 100 % | 98 % |
-| simple_seed3 | uuv1 | 58 % | 25 % |
-| simple_seed3 | wreck | 100 % | 98 % |
-| bistatic_seed1 | uuv1 | 70 % | 78 % |
-| bistatic_seed2 | uuv1 | 59 % | 80 % |
-| bistatic_seed3 | uuv1 | 69 % | 80 % |
-| multistatic_seed1 | uuv1 | 89 % | 0 % |
+| simple | uuv1 | 64 % | 27 % |
+| simple | wreck | 100 % | 100 % |
+| bistatic | uuv1 | 70 % | 55 % |
+| multistatic | uuv1 | 91 % | 0 % |
+| multistatic | uuv2 | 94 % | 88 % |
+| multistatic | moored | 82 % | 64 % |
+| simple_seed1 | uuv1 | 67 % | 30 % |
+| simple_seed1 | wreck | 100 % | 100 % |
+| simple_seed2 | uuv1 | 67 % | 30 % |
+| simple_seed2 | wreck | 100 % | 100 % |
+| simple_seed3 | uuv1 | 64 % | 30 % |
+| simple_seed3 | wreck | 100 % | 100 % |
+| bistatic_seed1 | uuv1 | 70 % | 64 % |
+| bistatic_seed2 | uuv1 | 61 % | 82 % |
+| bistatic_seed3 | uuv1 | 70 % | 79 % |
+| multistatic_seed1 | uuv1 | 97 % | 64 % |
 | multistatic_seed1 | uuv2 | 94 % | 91 % |
-| multistatic_seed1 | moored | 91 % | 62 % |
-| multistatic_seed2 | uuv1 | 80 % | 14 % |
-| multistatic_seed2 | uuv2 | 94 % | 92 % |
-| multistatic_seed2 | moored | 83 % | 72 % |
-| multistatic_seed3 | uuv1 | 80 % | 0 % |
-| multistatic_seed3 | uuv2 | 91 % | 83 % |
-| multistatic_seed3 | moored | 86 % | 62 % |
-| multistatic_b | uuv1 | 60 % | 46 % |
-| multistatic_b | uuv2 | 96 % | 82 % |
-| multistatic_b | diver | 74 % | 0 % |
+| multistatic_seed1 | piling4 | 21 % | 0 % |
+| multistatic_seed1 | moored | 94 % | 79 % |
+| multistatic_seed2 | uuv1 | 91 % | 52 % |
+| multistatic_seed2 | uuv2 | 91 % | 91 % |
+| multistatic_seed2 | moored | 67 % | 73 % |
+| multistatic_seed3 | uuv1 | 88 % | 15 % |
+| multistatic_seed3 | uuv2 | 94 % | 85 % |
+| multistatic_seed3 | piling3 | 45 % | 0 % |
+| multistatic_seed3 | moored | 85 % | 39 % |
+| multistatic_b | uuv1 | 62 % | 47 % |
+| multistatic_b | uuv2 | 96 % | 72 % |
+| multistatic_b | diver | 66 % | 0 % |
 <!-- /reproduce-table -->
 
 What the table says: the simple harbor's wreck and the second UUV of the multi ship scene hardly move; the moored hull

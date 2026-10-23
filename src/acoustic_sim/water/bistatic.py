@@ -126,6 +126,21 @@ class BistaticConfig:
         one), then one least squares solve per block over the delayed copies of every reference at once.
     joint_passes : int
         Passes of ``"joint"`` over the references (0: one solve on the beams of the raw traces).
+    joint_gram : str
+        How the one least squares solve of ``"joint"`` forms its normal equations: ``"matmul"`` (default) the matrix
+        product of the delayed copies; ``"prefix"`` from prefix sums of the sliding products of the references'
+        resampled copies, within one reference and between every two (each column a shift of one of them; equal to
+        rounding).
+    ref_noise : str
+        Where the weighted and joint reference modes take each channel's noise power from: ``"first_eca"`` (default)
+        the residual of a first pass (the beam and its ECA) on the same traces; ``"previous"`` the residual the
+        streaming chain left in its previous step (every illuminator removed), when that illuminator was removed then
+        (an illuminator new in this step still has its first pass).
+    removal_band : list | None
+        ``[f1, f2]`` [Hz]: the streaming chain removes the direct paths on the traces band limited to it and decimated
+        by the largest integer that divides the ECA block with the decimated Nyquist at least 1.25 ``f2``, then brings
+        the cleaned traces and the references back to the recording's rate (what lies outside the band is not kept:
+        the maps read ``f_lo`` to ``f_hi`` only).  ``None`` (default): the full band at the recording's rate.
     patch_half, svd_rtol : float
         Patch half width [m] (3 x 3 points) and singular value cut of the patch replicas.
     adaptive_rank, adaptive_window : int
@@ -208,6 +223,9 @@ class BistaticConfig:
     ref_psd_s: float = 0.5
     removal_order: str = "sequential"
     joint_passes: int = 2
+    joint_gram: str = "matmul"
+    ref_noise: str = "first_eca"
+    removal_band: list | None = None
     patch_half: float = 1.0
     svd_rtol: float = 0.05
     adaptive_rank: int = 2
@@ -708,6 +726,12 @@ def channel_response(layout: SensorLayout, ship_xy: np.ndarray, freqs: np.ndarra
     return H * np.exp(1j * ks[:, None] * r[None, :])
 
 
+def reference_psd_freqs(fs: float, bc: BistaticConfig) -> np.ndarray:
+    """The frequencies [Hz] of the noise power of the weighted reference modes (1 / ``ref_psd_s`` apart, to 0.49 fs)."""
+    df = 1.0 / bc.ref_psd_s
+    return np.arange(df, 0.49 * fs, df)
+
+
 def residual_psd(residual: np.ndarray, fs: float, freqs: np.ndarray, seg_s: float, xp=np) -> np.ndarray:
     """Noise power (Nc, F) of every row of *residual* at *freqs*: Welch with *seg_s* second Hann segments,
     interpolated; floored at a millionth of the median so a dead row does not divide by zero.  With *xp* CuPy the
@@ -793,13 +817,16 @@ def _mode_channels(layout: SensorLayout, chans: np.ndarray, mode: str) -> np.nda
 
 def estimate_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship_b: np.ndarray, bc: BistaticConfig,
                        chans: np.ndarray, ship_t: np.ndarray, blocks: set[int] | None = None,
-                       bodies: list[np.ndarray] | None = None, info: dict | None = None) -> np.ndarray:
+                       bodies: list[np.ndarray] | None = None, info: dict | None = None,
+                       noise_psd: np.ndarray | None = None) -> np.ndarray:
     """The data reference of ``bc.ref_mode`` (:class:`BistaticConfig`), aligned to the emission time, shape (n,).
 
     *ship_b* (K_b, 2): the tracked ship position per ECA block; *ship_t* (n, 2): per sample; *chans*: the live
     channels; *blocks*: the ECA blocks whose residual estimates the noise power (default: all); *bodies*: the
     positions (2,) of the echo tracks whose modelled echo ``"iterated"`` subtracts.  Nothing here reads the truth.
-    *info*, when given, receives the intermediate products (``"psd"``, ``"freqs"``, ``"channels"``)."""
+    *info*, when given, receives the intermediate products (``"psd"``, ``"freqs"``, ``"channels"``).  *noise_psd*
+    (N, F) at the frequencies of :func:`reference_psd_freqs`, every channel (``bc.ref_noise = "previous"``): the noise
+    power of the weighted modes, instead of the residual of a first pass."""
     mode = bc.ref_mode
     beam = replace(bc, reference="data", ref_mode="beam")
     if mode == "beam":
@@ -820,9 +847,11 @@ def estimate_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship
     else:
         ref0 = make_reference(x, layout, fs, ship_b, bc.eca_block_s, beam, chans, ship_t=ship_t)
     PROFILE.end("echo: reference estimation / beam")
-    PROFILE.begin("echo: reference estimation / first ECA")
-    res = eca_remove([x], ref0, layout, fs, ship_b, [], bc.eca_block_s, beam, ship_t=ship_t, blocks=blocks)[0]
-    PROFILE.end("echo: reference estimation / first ECA")
+    res = None
+    if noise_psd is None:
+        PROFILE.begin("echo: reference estimation / first ECA")
+        res = eca_remove([x], ref0, layout, fs, ship_b, [], bc.eca_block_s, beam, ship_t=ship_t, blocks=blocks)[0]
+        PROFILE.end("echo: reference estimation / first ECA")
     if blocks:
         cols = np.concatenate([np.arange(b * nb, min((b + 1) * nb, x.shape[1])) for b in sorted(blocks)])
     else:
@@ -834,11 +863,13 @@ def estimate_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship
     # The weights cover the whole spectrum, not only the processing band: the direct path has energy outside the band
     # and a reference without it leaves that energy in every channel (measured on the analytic case: the true
     # waveform limited to 100 to 600 Hz removes 14 dB of a direct path in 80 to 700 Hz, unlimited 69 dB).
-    df = 1.0 / bc.ref_psd_s
-    wf = np.arange(df, 0.49 * fs, df)
-    PROFILE.begin("echo: reference estimation / noise spectra")
-    psd = residual_psd(res[use][:, cols], fs, wf, bc.ref_psd_s, xp)                                 # (Nc, F)
-    PROFILE.end("echo: reference estimation / noise spectra")
+    wf = reference_psd_freqs(fs, bc)
+    if noise_psd is not None:
+        psd = np.asarray(noise_psd)[use]
+    else:
+        PROFILE.begin("echo: reference estimation / noise spectra")
+        psd = residual_psd(res[use][:, cols], fs, wf, bc.ref_psd_s, xp)                                 # (Nc, F)
+        PROFILE.end("echo: reference estimation / noise spectra")
     if info is not None:
         info.update(psd=psd, freqs=wf, channels=use)
     PROFILE.begin("echo: reference estimation / aligned channels")
@@ -984,6 +1015,30 @@ def _gram_prefix(basep, start, block: int):
     xp.cumsum(basep[:, :, None] * lagged, axis=1, out=P[:, 1:])
     g = xp.arange(Ng)[:, None, None]
     return P[g, lo_all + block, d_all] - P[g, lo_all, d_all]
+
+
+def _gram_cross_prefix(bp, sp, bq, sq, block: int):
+    """``S_p^T S_q`` (Ng, Lp, Lq) for ``S_p[g, t, l] = bp[g, sp[g, l] + t]`` and ``S_q[g, t, m] = bq[g, sq[g, m] + t]``
+    (two bases on the same time axis, one each per channel) from prefix sums of their sliding products:
+    ``G[l, m] = sum_t bp[s + t] bq[s + e + t] = Q_e[s + block] - Q_e[s]`` with ``s = sp[l]``, ``e = sq[m] - sp[l]``
+    and ``Q_e`` the cumulative sum of ``bp[w] bq[w + e]`` (``bq`` zero outside its length)."""
+    xp = _module_of(bp)
+    Ng, n = bp.shape
+    spd, sqd = xp.asarray(sp), xp.asarray(sq)
+    e = sqd[:, None, :] - spd[:, :, None]                                                     # (Ng, Lp, Lq)
+    e0 = e.min(axis=(1, 2))                                                                   # (Ng,)
+    J = int((e.max(axis=(1, 2)) - e0).max()) + 1
+    pad = int(xp.abs(e).max()) + J + 1
+    bqp = xp.concatenate([xp.zeros((Ng, pad)), bq, xp.zeros((Ng, pad + J))], axis=1)
+    win = xp.lib.stride_tricks.sliding_window_view(bqp, J, axis=1)                           # win[g, i, j] = bqp[g, i + j]
+    rows = xp.arange(n)[None, :] + (e0 + pad)[:, None]                                        # bq[w + e0 + j] = bqp[w + e0 + pad + j]
+    shifted = win[xp.arange(Ng)[:, None], rows]                                               # (Ng, n, J)
+    Q = xp.zeros((Ng, n + 1, J))
+    xp.cumsum(bp[:, :, None] * shifted, axis=1, out=Q[:, 1:])
+    g = xp.arange(Ng)[:, None, None]
+    s0 = xp.broadcast_to(spd[:, :, None], e.shape)
+    j = e - e0[:, None, None]
+    return Q[g, s0 + block, j] - Q[g, s0, j]
 
 
 def _project_out_batched(S, segs, loading: float = 1e-14, G=None):
@@ -1298,6 +1353,7 @@ def _eca_remove_joint(traces: list[np.ndarray], references: list[np.ndarray], la
                 idx = np.array(chans[c0:c0 + chunk])
                 PROFILE.begin("joint ECA / delayed copies")
                 Ss = []
+                pref = []                                                                            # (base, starts) per reference
                 for k, (nominal, lag_sets, paths) in enumerate(per):
                     if key[k] == 0:
                         continue
@@ -1312,11 +1368,19 @@ def _eca_remove_joint(traces: list[np.ndarray], references: list[np.ndarray], la
                     start = half + (lo - a) - off
                     W = from_window(basep, block, axis=-1)                                           # (Ng, P, n_win, block)
                     Ss.append(W[xp.asarray(np.arange(len(idx)))[:, None], xp.asarray(owner), xp.asarray(start)])
+                    pref.append((basep[:, 0, :], start) if basep.shape[1] == 1 else None)
                 S = xp.ascontiguousarray(xp.concatenate(Ss, axis=1).transpose(0, 2, 1))                   # (Ng, block, L)
+                G = None
+                if bc.joint_gram == "prefix" and all(x is not None for x in pref):
+                    with PROFILE.stage("joint ECA / prefix Gram"):
+                        G = xp.concatenate([xp.concatenate([_gram_prefix(bp_, sp_, block) if i == j_ else
+                                                            _gram_cross_prefix(bp_, sp_, bq_, sq_, block)
+                                                            for j_, (bq_, sq_) in enumerate(pref)], axis=2)
+                                            for i, (bp_, sp_) in enumerate(pref)], axis=1)
                 segs = xp.asarray(np.stack([out[idx, lo:hi] for out in outs], axis=-1))                    # (Ng, block, R)
                 PROFILE.end("joint ECA / delayed copies")
                 with PROFILE.stage("joint ECA / normal equations and solve"):
-                    cleaned = _asnumpy(_project_out_batched(S, segs))
+                    cleaned = _asnumpy(_project_out_batched(S, segs, G=G))
                 for r_i, out in enumerate(outs):
                     out[idx, lo:hi] = cleaned[:, :, r_i]
     return outs
@@ -1325,7 +1389,8 @@ def _eca_remove_joint(traces: list[np.ndarray], references: list[np.ndarray], la
 def remove_direct_paths(traces: np.ndarray, components: list[np.ndarray], layout: SensorLayout, fs: float,
                         ships: list[tuple[np.ndarray, np.ndarray]], chans: np.ndarray, bc: BistaticConfig,
                         blocks: set[int] | None = None, bodies: list[np.ndarray] | None = None,
-                        images: list[list[np.ndarray]] | None = None) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
+                        images: list[list[np.ndarray]] | None = None,
+                        noise_psd: list[np.ndarray | None] | None = None) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
     """Remove the direct path of every illuminator in *ships* (``(ship_b, ship_t)`` each: the position per ECA block
     and per sample, in removal order) from *traces* (N, n), the same projections applied to every array of
     *components* (a diagnostic).  ``bc.removal_order`` (:class:`BistaticConfig`): ``"sequential"``, each reference
@@ -1333,16 +1398,19 @@ def remove_direct_paths(traces: np.ndarray, components: list[np.ndarray], layout
     its own; ``"joint"``, ``bc.joint_passes`` passes over the illuminators in which each reference is estimated on the
     traces minus the other illuminators' current fits (each fit its own ECA on those traces), then one ECA over all
     references per block (:func:`_eca_remove_joint`).  Returns the cleaned traces, the cleaned components and the
-    references (one per illuminator, in order).
+    references (one per illuminator, in order).  *noise_psd*: per illuminator the channels' noise power its reference
+    takes instead of a first pass (``bc.ref_noise = "previous"``, :func:`estimate_reference`), or ``None``.
     Nothing here reads the truth."""
     x = np.asarray(traces, dtype=np.float64)
     comps = [np.asarray(c, dtype=np.float64) for c in components]
     imgs = images if images is not None else [[] for _ in ships]
+    npsd = noise_psd if noise_psd is not None else [None for _ in ships]
     if bc.removal_order == "sequential" or len(ships) <= 1:
         refs = []
         for k, (ship_b, ship_t) in enumerate(ships):
             with PROFILE.stage("echo: reference estimation"):
-                ref = estimate_reference(x, layout, fs, ship_b, bc, chans, ship_t, blocks=blocks, bodies=bodies)
+                ref = estimate_reference(x, layout, fs, ship_b, bc, chans, ship_t, blocks=blocks, bodies=bodies,
+                                         noise_psd=npsd[k])
             with PROFILE.stage("echo: ECA"):
                 cleaned = eca_remove([x] + comps, ref, layout, fs, ship_b, imgs[k], bc.eca_block_s, bc, ship_t=ship_t,
                                      blocks=blocks)
@@ -1367,7 +1435,8 @@ def remove_direct_paths(traces: np.ndarray, components: list[np.ndarray], layout
             for k, (sb, st) in enumerate(ships):
                 y = x - np.sum([fits[j] for j in range(len(ships)) if j != k], axis=0)
                 with PROFILE.stage("echo: reference estimation"):
-                    refs[k] = estimate_reference(y, layout, fs, sb, bc, chans, st, blocks=blocks, bodies=bodies)
+                    refs[k] = estimate_reference(y, layout, fs, sb, bc, chans, st, blocks=blocks, bodies=bodies,
+                                                 noise_psd=npsd[k])
                 with PROFILE.stage("echo: ECA"):
                     fits[k] = y - eca_remove([y], refs[k], layout, fs, sb, imgs[k], bc.eca_block_s, bc, ship_t=st,
                                              blocks=blocks)[0]
