@@ -1,0 +1,262 @@
+{
+ "multistatic": {
+  "recording": "multistatic",
+  "record_s": 20.0,
+  "passive_frames": 72,
+  "overrides": [],
+  "compute_per_second_of_data": 3.119209524746111,
+  "compute_by_chain": {
+   "passive": 0.5639066146984988,
+   "echo": 2.1768577465503767,
+   "characteristics": 0.3784451634972356
+  },
+  "latency_median_s": 6.273,
+  "profiled": {
+   "compute_per_second_of_data": 3.1523622641980182,
+   "wall_s": 63.30471737500193,
+   "stages_total_per_second_of_data": 3.0582743018472685,
+   "outside_the_stages_per_second_of_data": 0.10696156690282806
+  },
+  "stages": {
+   "echo: reference estimation": {
+    "seconds": 18.269899263003026,
+    "per_frame_ms": 253.74860087504203,
+    "per_second_of_data": 0.9134949631501513,
+    "share": 0.29869621655532314,
+    "calls": 56
+   },
+   "echo: ECA, joint solve": {
+    "seconds": 11.809506332989258,
+    "per_frame_ms": 164.02092129151748,
+    "per_second_of_data": 0.590475316649463,
+    "share": 0.19307467492134442,
+    "calls": 9
+   },
+   "echo: ECA": {
+    "seconds": 8.470327604998602,
+    "per_frame_ms": 117.64343895831391,
+    "per_second_of_data": 0.4235163802499301,
+    "share": 0.13848214334277223,
+    "calls": 56
+   },
+   "passive: map": {
+    "seconds": 5.152010855999833,
+    "per_frame_ms": 71.55570633333102,
+    "per_second_of_data": 0.25760054279999167,
+    "share": 0.08423068612399973,
+    "calls": 9
+   },
+   "characteristics: echoes": {
+    "seconds": 4.819953443991835,
+    "per_frame_ms": 66.94379783321993,
+    "per_second_of_data": 0.24099767219959176,
+    "share": 0.07880184980595874,
+    "calls": 71
+   },
+   "echo: map": {
+    "seconds": 4.1416855819989,
+    "per_frame_ms": 57.523410861095826,
+    "per_second_of_data": 0.20708427909994498,
+    "share": 0.06771278788657423,
+    "calls": 9
+   },
+   "passive: interference projector": {
+    "seconds": 2.722692694987927,
+    "per_frame_ms": 37.815176319276766,
+    "per_second_of_data": 0.13613463474939635,
+    "share": 0.04451354630523753,
+    "calls": 9
+   },
+   "characteristics: radiators": {
+    "seconds": 2.3650103809850407,
+    "per_frame_ms": 32.84736640257001,
+    "per_second_of_data": 0.11825051904925203,
+    "share": 0.03866576617336973,
+    "calls": 72
+   },
+   "passive tracker: predicted maps": {
+    "seconds": 1.769007139992027,
+    "per_frame_ms": 24.569543611000377,
+    "per_second_of_data": 0.08845035699960135,
+    "share": 0.028921655897960263,
+    "calls": 9
+   },
+   "passive tracker: gate and filters": {
+    "seconds": 0.7752176099893404,
+    "per_frame_ms": 10.766911249851951,
+    "per_second_of_data": 0.03876088049946702,
+    "share": 0.012674102017616455,
+    "calls": 72
+   },
+   "echo tracker": {
+    "seconds": 0.38604758401197614,
+    "per_frame_ms": 5.361772000166336,
+    "per_second_of_data": 0.019302379200598806,
+    "share": 0.006311526467374011,
+    "calls": 71
+   },
+   "passive: spectra and whitening": {
+    "seconds": 0.24242540399427526,
+    "per_frame_ms": 3.36701949992049,
+    "per_second_of_data": 0.012121270199713763,
+    "share": 0.003963434605062154,
+    "calls": 9
+   },
+   "picture records and AIS labels": {
+    "seconds": 0.19810678499925416,
+    "per_frame_ms": 2.751483124989641,
+    "per_second_of_data": 0.009905339249962708,
+    "share": 0.003238865540602311,
+    "calls": 71
+   },
+   "echo: buffer and weights": {
+    "seconds": 0.04359535500407219,
+    "per_frame_ms": 0.6054910417232249,
+    "per_second_of_data": 0.0021797677502036093,
+    "share": 0.0007127443568050712,
+    "calls": 9
+   }
+  },
+  "gpu_memory_high_mb": 3273.0,
+  "transfer": {
+   "h2d_s": 1.5891324627955328,
+   "h2d_bytes": 6246949200,
+   "h2d_calls": 9441,
+   "d2h_s": 0.7860405077080941,
+   "d2h_bytes": 4779372054,
+   "d2h_calls": 6187,
+   "h2d_per_second_of_data": 0.07945662313977664,
+   "d2h_per_second_of_data": 0.039302025385404706
+  }
+ },
+ "bistatic": {
+  "recording": "bistatic",
+  "record_s": 20.0,
+  "passive_frames": 72,
+  "overrides": [],
+  "compute_per_second_of_data": 1.1723230319501454,
+  "compute_by_chain": {
+   "passive": 0.545852031202594,
+   "echo": 0.5210971536991564,
+   "characteristics": 0.10537384704839496
+  },
+  "latency_median_s": 2.45,
+  "profiled": {
+   "compute_per_second_of_data": 1.1889849050457997,
+   "wall_s": 23.904305716001545,
+   "stages_total_per_second_of_data": 1.1442405835943645,
+   "outside_the_stages_per_second_of_data": 0.05097470220571267
+  },
+  "stages": {
+   "passive: map": {
+    "seconds": 5.170348915991781,
+    "per_frame_ms": 71.81040161099696,
+    "per_second_of_data": 0.258517445799589,
+    "share": 0.22592927528187898,
+    "calls": 9
+   },
+   "echo: map": {
+    "seconds": 4.120120662002591,
+    "per_frame_ms": 57.22389808336933,
+    "per_second_of_data": 0.20600603310012958,
+    "share": 0.18003734184380152,
+    "calls": 9
+   },
+   "echo: reference estimation": {
+    "seconds": 3.8616301089859917,
+    "per_frame_ms": 53.63375151369433,
+    "per_second_of_data": 0.19308150544929958,
+    "share": 0.16874205321644783,
+    "calls": 12
+   },
+   "passive: interference projector": {
+    "seconds": 2.7159250430049724,
+    "per_frame_ms": 37.72118115284684,
+    "per_second_of_data": 0.13579625215024863,
+    "share": 0.11867805957701344,
+    "calls": 9
+   },
+   "passive tracker: predicted maps": {
+    "seconds": 1.7878783079941059,
+    "per_frame_ms": 24.831643166584804,
+    "per_second_of_data": 0.08939391539970529,
+    "share": 0.07812510470385099,
+    "calls": 9
+   },
+   "echo: ECA": {
+    "seconds": 1.7777637790059089,
+    "per_frame_ms": 24.69116359730429,
+    "per_second_of_data": 0.08888818895029545,
+    "share": 0.07768312907681875,
+    "calls": 12
+   },
+   "characteristics: radiators": {
+    "seconds": 0.7954803219909081,
+    "per_frame_ms": 11.048337805429279,
+    "per_second_of_data": 0.03977401609954541,
+    "share": 0.03476018651130571,
+    "calls": 72
+   },
+   "characteristics: echoes": {
+    "seconds": 0.7752412659465335,
+    "per_frame_ms": 10.767239804812966,
+    "per_second_of_data": 0.03876206329732668,
+    "share": 0.03387579837062299,
+    "calls": 71
+   },
+   "echo tracker": {
+    "seconds": 0.5344041559801553,
+    "per_frame_ms": 7.4222799441688245,
+    "per_second_of_data": 0.026720207799007765,
+    "share": 0.02335191408355092,
+    "calls": 71
+   },
+   "passive tracker: gate and filters": {
+    "seconds": 0.4952436279854737,
+    "per_frame_ms": 6.878383722020469,
+    "per_second_of_data": 0.024762181399273685,
+    "share": 0.02164071241162333,
+    "calls": 72
+   },
+   "echo: ECA, joint solve": {
+    "seconds": 0.48941192799975397,
+    "per_frame_ms": 6.7973878888854715,
+    "per_second_of_data": 0.0244705963999877,
+    "share": 0.021385884009741233,
+    "calls": 1
+   },
+   "passive: spectra and whitening": {
+    "seconds": 0.2507363820041064,
+    "per_frame_ms": 3.4824497500570337,
+    "per_second_of_data": 0.01253681910020532,
+    "share": 0.010956453808712003,
+    "calls": 9
+   },
+   "picture records and AIS labels": {
+    "seconds": 0.06449792398780119,
+    "per_frame_ms": 0.8958044998305721,
+    "per_second_of_data": 0.0032248961993900593,
+    "share": 0.0028183725045477772,
+    "calls": 71
+   },
+   "echo: buffer and weights": {
+    "seconds": 0.04612924900720827,
+    "per_frame_ms": 0.6406840139890038,
+    "per_second_of_data": 0.0023064624503604135,
+    "share": 0.0020157146000845385,
+    "calls": 9
+   }
+  },
+  "gpu_memory_high_mb": 3273.0,
+  "transfer": {
+   "h2d_s": 0.4672563991189236,
+   "h2d_bytes": 1361293456,
+   "h2d_calls": 4175,
+   "d2h_s": 0.17120177089964272,
+   "d2h_bytes": 1064960158,
+   "d2h_calls": 1259,
+   "h2d_per_second_of_data": 0.02336281995594618,
+   "d2h_per_second_of_data": 0.008560088544982136
+  }
+ }
+}

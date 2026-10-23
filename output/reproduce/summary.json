@@ -6,14 +6,14 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.42975993665022544,
-        "echo": 0.8485570015003759,
-        "characteristics": 0.10791602114659327,
-        "total": 1.3862329592971947
+        "passive": 0.43398608970164787,
+        "echo": 0.7048989374470693,
+        "characteristics": 0.11181653590210772,
+        "total": 1.250701563050825
       },
       "latency_s": {
-        "median": 3.146,
-        "max": 4.146
+        "median": 2.872,
+        "max": 3.864
       },
       "false_tracks": {
         "count": 1,
@@ -129,14 +129,14 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5531636391002394,
-        "echo": 0.5373549200998241,
-        "characteristics": 0.11118345290014986,
-        "total": 1.2017020121002133
+        "passive": 0.5603559641007451,
+        "echo": 0.4829541234001226,
+        "characteristics": 0.11447915324861242,
+        "total": 1.15778924074948
       },
       "latency_s": {
-        "median": 2.478,
-        "max": 4.693
+        "median": 2.385,
+        "max": 4.415
       },
       "false_tracks": {
         "count": 2,
@@ -223,14 +223,14 @@
       "held_out": false,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5647075725511967,
-        "echo": 2.187989373750315,
-        "characteristics": 0.39434513235064517,
-        "total": 3.147042078652157
+        "passive": 0.5659174043521489,
+        "echo": 1.8985863609010267,
+        "characteristics": 0.402318145747995,
+        "total": 2.8668219110011703
       },
       "latency_s": {
-        "median": 6.284,
-        "max": 7.748
+        "median": 5.644,
+        "max": 7.094
       },
       "false_tracks": {
         "count": 2,
@@ -517,14 +517,14 @@
       "held_out": false,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5455333427416311,
+        "passive": 0.5326326614665959,
         "echo": 0.0,
-        "characteristics": 0.0034483506500691875,
-        "total": 0.5489816933917003
+        "characteristics": 0.0032467733498075784,
+        "total": 0.5358794348164034
       },
       "latency_s": {
-        "median": 1.114,
-        "max": 2.183
+        "median": 1.107,
+        "max": 1.275
       },
       "false_tracks": {
         "count": 3,
@@ -689,14 +689,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.42505444140406323,
-        "echo": 0.8536586951497156,
-        "characteristics": 0.1097228375980194,
-        "total": 1.3884359741517982
+        "passive": 0.4234358936009812,
+        "echo": 0.6881816466499003,
+        "characteristics": 0.10450836914787942,
+        "total": 1.216125909398761
       },
       "latency_s": {
-        "median": 3.165,
-        "max": 4.166
+        "median": 2.78,
+        "max": 3.78
       },
       "false_tracks": {
         "count": 0,
@@ -802,14 +802,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.426266190948445,
-        "echo": 0.8482819375978579,
-        "characteristics": 0.10895136415128945,
-        "total": 1.3834994926975923
+        "passive": 0.42252194849534136,
+        "echo": 0.6799268385009782,
+        "characteristics": 0.10338849460058555,
+        "total": 1.2058372815969052
       },
       "latency_s": {
-        "median": 3.155,
-        "max": 4.15
+        "median": 2.777,
+        "max": 3.778
       },
       "false_tracks": {
         "count": 0,
@@ -915,14 +915,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.4220176059017831,
-        "echo": 0.8408820282023953,
-        "characteristics": 0.10718712649832014,
-        "total": 1.3700867606024985
+        "passive": 0.4189762520491058,
+        "echo": 0.6778755372495653,
+        "characteristics": 0.10235546280091512,
+        "total": 1.1992072520995862
       },
       "latency_s": {
-        "median": 3.137,
-        "max": 4.138
+        "median": 2.769,
+        "max": 3.769
       },
       "false_tracks": {
         "count": 1,
@@ -1038,14 +1038,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5570861704996787,
-        "echo": 0.6318950127493735,
-        "characteristics": 0.09489489890074765,
-        "total": 1.2838760821497999
+        "passive": 0.5519062002487771,
+        "echo": 0.5506880313503644,
+        "characteristics": 0.09560679869937302,
+        "total": 1.1982010302985144
       },
       "latency_s": {
-        "median": 2.692,
-        "max": 5.182
+        "median": 2.592,
+        "max": 4.754
       },
       "false_tracks": {
         "count": 1,
@@ -1124,14 +1124,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5538304966521537,
-        "echo": 1.0008809437978925,
-        "characteristics": 0.07935800515078881,
-        "total": 1.6340694456008351
+        "passive": 0.5499136256014026,
+        "echo": 0.8745567234491318,
+        "characteristics": 0.08073830460089085,
+        "total": 1.5052086536514253
       },
       "latency_s": {
-        "median": 3.391,
-        "max": 6.939
+        "median": 3.097,
+        "max": 6.333
       },
       "false_tracks": {
         "count": 2,
@@ -1219,14 +1219,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5455344350993983,
-        "echo": 0.7920984907512321,
-        "characteristics": 0.09654338149739487,
-        "total": 1.4341763073480251
+        "passive": 0.5540145666011085,
+        "echo": 0.7130727937004849,
+        "characteristics": 0.0989389692495024,
+        "total": 1.366026329551096
       },
       "latency_s": {
-        "median": 2.685,
-        "max": 6.917
+        "median": 2.596,
+        "max": 6.385
       },
       "false_tracks": {
         "count": 2,
@@ -1315,14 +1315,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5594534593998105,
-        "echo": 2.1642012480009725,
-        "characteristics": 0.3927363586484717,
-        "total": 3.1163910660492546
+        "passive": 0.5587319809994369,
+        "echo": 1.884173990349882,
+        "characteristics": 0.39166794324992227,
+        "total": 2.834573914599241
       },
       "latency_s": {
-        "median": 6.232,
-        "max": 7.676
+        "median": 5.619,
+        "max": 7.015
       },
       "false_tracks": {
         "count": 3,
@@ -1618,14 +1618,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5588525067498267,
-        "echo": 2.175861636500849,
-        "characteristics": 0.3791628316015704,
-        "total": 3.1138769748522463
+        "passive": 0.5576473431981868,
+        "echo": 1.8820407843501017,
+        "characteristics": 0.3748236692008504,
+        "total": 2.8145117967491387
       },
       "latency_s": {
-        "median": 6.255,
-        "max": 7.701
+        "median": 5.619,
+        "max": 6.994
       },
       "false_tracks": {
         "count": 2,
@@ -1912,14 +1912,14 @@
       "held_out": true,
       "record_s": 20.0,
       "compute_per_second_of_data": {
-        "passive": 0.5674450062469987,
-        "echo": 2.1934887249990425,
-        "characteristics": 0.38839344824918953,
-        "total": 3.1493271794952307
+        "passive": 0.567814747952798,
+        "echo": 1.8996079169999576,
+        "characteristics": 0.382169631951183,
+        "total": 2.8495922969039382
       },
       "latency_s": {
-        "median": 6.297,
-        "max": 7.711
+        "median": 5.653,
+        "max": 7.038
       },
       "false_tracks": {
         "count": 3,
@@ -2215,14 +2215,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5455876344246159,
+        "passive": 0.5357239501257937,
         "echo": 0.0,
-        "characteristics": 0.0036598362248696503,
-        "total": 0.5492474706494855
+        "characteristics": 0.0035637122831152133,
+        "total": 0.5392876624089088
       },
       "latency_s": {
-        "median": 1.1135000000000002,
-        "max": 2.276
+        "median": 1.1115,
+        "max": 1.289
       },
       "false_tracks": {
         "count": 4,
@@ -2397,14 +2397,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5385051553341327,
+        "passive": 0.5340975194008327,
         "echo": 0.0,
-        "characteristics": 0.0036321359417949375,
-        "total": 0.5421372912759277
+        "characteristics": 0.0034810141415315835,
+        "total": 0.5375785335423643
       },
       "latency_s": {
-        "median": 1.117,
-        "max": 1.27
+        "median": 1.1095000000000002,
+        "max": 1.3
       },
       "false_tracks": {
         "count": 3,
@@ -2570,14 +2570,14 @@
       "held_out": true,
       "record_s": 120.0,
       "compute_per_second_of_data": {
-        "passive": 0.5399752539167821,
+        "passive": 0.5353448034167134,
         "echo": 0.0,
-        "characteristics": 0.003904759083404012,
-        "total": 0.5438800130001861
+        "characteristics": 0.0037130085580429294,
+        "total": 0.5390578119747563
       },
       "latency_s": {
-        "median": 1.1195,
-        "max": 1.278
+        "median": 1.1105,
+        "max": 1.269
       },
       "false_tracks": {
         "count": 3,
@@ -2743,14 +2743,14 @@
       "held_out": true,
       "record_s": 60.0,
       "compute_per_second_of_data": {
-        "passive": 0.5986935840489119,
-        "echo": 2.171951820767936,
-        "characteristics": 0.3822310885519983,
-        "total": 3.152876493368846
+        "passive": 0.5954395270999764,
+        "echo": 1.8746972547508145,
+        "characteristics": 0.38485925433281715,
+        "total": 2.854996036183608
       },
       "latency_s": {
-        "median": 6.056,
-        "max": 7.821
+        "median": 5.396,
+        "max": 7.102
       },
       "false_tracks": {
         "count": 5,
@@ -5455,7 +5455,7 @@
     }
   ],
   "run": {
-    "git_commit": "79c972383f2a3acc8256623e665fdb0244d0694a",
+    "git_commit": "f4b365c273daae45028c54e6d137a1cfade7ed86",
     "git_dirty": true,
     "processing_config": null,
     "processing_config_sha256": null,
@@ -5467,7 +5467,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": null,
-    "wall_s": 1861.6611230373383,
+    "wall_s": 1781.144062757492,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

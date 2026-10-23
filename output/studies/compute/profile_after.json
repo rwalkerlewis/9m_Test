@@ -1,0 +1,410 @@
+{
+ "multistatic": {
+  "recording": "multistatic",
+  "record_s": 20.0,
+  "passive_frames": 72,
+  "overrides": [],
+  "compute_per_second_of_data": 2.850304203651831,
+  "compute_by_chain": {
+   "passive": 0.5685935862504266,
+   "echo": 1.896276027749991,
+   "characteristics": 0.38543458965141325
+  },
+  "latency_median_s": 5.649,
+  "profiled": {
+   "compute_per_second_of_data": 2.8980662582500374,
+   "wall_s": 58.27443238699925,
+   "stages_total_per_second_of_data": 2.8040603155975985,
+   "outside_the_stages_per_second_of_data": 0.1096613037523639
+  },
+  "stages": {
+   "echo: reference estimation": {
+    "seconds": 12.762977208964003,
+    "per_frame_ms": 177.26357234672227,
+    "per_second_of_data": 0.6381488604482002,
+    "share": 0.22758029023073936,
+    "calls": 56
+   },
+   "echo: ECA, joint solve": {
+    "seconds": 11.804882255011762,
+    "per_frame_ms": 163.95669798627446,
+    "per_second_of_data": 0.5902441127505881,
+    "share": 0.21049622558664394,
+    "calls": 9
+   },
+   "echo: ECA": {
+    "seconds": 8.490102200019464,
+    "per_frame_ms": 117.91808611138146,
+    "per_second_of_data": 0.42450511000097324,
+    "share": 0.15138943611150643,
+    "calls": 56
+   },
+   "passive: map": {
+    "seconds": 5.173021893991972,
+    "per_frame_ms": 71.84752630544406,
+    "per_second_of_data": 0.2586510946995986,
+    "share": 0.09224163020347696,
+    "calls": 9
+   },
+   "characteristics: echoes": {
+    "seconds": 4.893990599986864,
+    "per_frame_ms": 67.97209166648423,
+    "per_second_of_data": 0.24469952999934322,
+    "share": 0.08726614354127867,
+    "calls": 71
+   },
+   "echo: map": {
+    "seconds": 4.29394988900458,
+    "per_frame_ms": 59.63819290284138,
+    "per_second_of_data": 0.21469749445022898,
+    "share": 0.07656664632211124,
+    "calls": 9
+   },
+   "passive: interference projector": {
+    "seconds": 2.7399215099940193,
+    "per_frame_ms": 38.054465416583604,
+    "per_second_of_data": 0.13699607549970097,
+    "share": 0.04885632264672042,
+    "calls": 9
+   },
+   "characteristics: radiators": {
+    "seconds": 2.3571398049680283,
+    "per_frame_ms": 32.738052846778174,
+    "per_second_of_data": 0.11785699024840142,
+    "share": 0.04203083278659213,
+    "calls": 72
+   },
+   "passive tracker: predicted maps": {
+    "seconds": 1.8449212299965438,
+    "per_frame_ms": 25.62390597217422,
+    "per_second_of_data": 0.0922460614998272,
+    "share": 0.03289731714639234,
+    "calls": 9
+   },
+   "passive tracker: gate and filters": {
+    "seconds": 0.7881833599676611,
+    "per_frame_ms": 10.94699111066196,
+    "per_second_of_data": 0.03940916799838305,
+    "share": 0.014054322504822515,
+    "calls": 72
+   },
+   "echo tracker": {
+    "seconds": 0.3929121870241943,
+    "per_frame_ms": 5.457113708669365,
+    "per_second_of_data": 0.019645609351209715,
+    "share": 0.007006129376722362,
+    "calls": 71
+   },
+   "picture records and AIS labels": {
+    "seconds": 0.2531711470364826,
+    "per_frame_ms": 3.516265931062258,
+    "per_second_of_data": 0.01265855735182413,
+    "share": 0.004514366998958919,
+    "calls": 71
+   },
+   "passive: spectra and whitening": {
+    "seconds": 0.2431466299967724,
+    "per_frame_ms": 3.3770365277329497,
+    "per_second_of_data": 0.012157331499838619,
+    "share": 0.004335616973790972,
+    "calls": 9
+   },
+   "echo: buffer and weights": {
+    "seconds": 0.04288639598962618,
+    "per_frame_ms": 0.5956443887448081,
+    "per_second_of_data": 0.002144319799481309,
+    "share": 0.0007647195702437356,
+    "calls": 9
+   }
+  },
+  "sub_stages": {
+   "joint ECA / normal equations and solve": {
+    "seconds": 10.435664118987916,
+    "per_frame_ms": 144.93977943038772,
+    "per_second_of_data": 0.5217832059493958,
+    "calls": 144
+   },
+   "echo: reference estimation / first ECA": {
+    "seconds": 8.258796760012046,
+    "per_frame_ms": 114.70551055572287,
+    "per_second_of_data": 0.4129398380006023,
+    "calls": 56
+   },
+   "ECA / normal equations": {
+    "seconds": 7.989777075017628,
+    "per_frame_ms": 110.9691260419115,
+    "per_second_of_data": 0.3994888537508814,
+    "calls": 448
+   },
+   "ECA / solve": {
+    "seconds": 5.260300530884706,
+    "per_frame_ms": 73.05972959562092,
+    "per_second_of_data": 0.2630150265442353,
+    "calls": 448
+   },
+   "echo: reference estimation / beam": {
+    "seconds": 3.1010537730471697,
+    "per_frame_ms": 43.0701912923218,
+    "per_second_of_data": 0.1550526886523585,
+    "calls": 56
+   },
+   "ECA / delayed copies": {
+    "seconds": 1.0325343100703321,
+    "per_frame_ms": 14.340754306532391,
+    "per_second_of_data": 0.05162671550351661,
+    "calls": 448
+   },
+   "echo: reference estimation / noise spectra": {
+    "seconds": 0.9371875260112574,
+    "per_frame_ms": 13.01649341682302,
+    "per_second_of_data": 0.046859376300562874,
+    "calls": 56
+   },
+   "joint ECA / delayed copies": {
+    "seconds": 0.9097787150094518,
+    "per_frame_ms": 12.635815486242386,
+    "per_second_of_data": 0.045488935750472595,
+    "calls": 144
+   },
+   "echo: reference estimation / joint solve": {
+    "seconds": 0.4510260840470437,
+    "per_frame_ms": 6.264251167320051,
+    "per_second_of_data": 0.022551304202352185,
+    "calls": 56
+   },
+   "ECA / reference upsampled": {
+    "seconds": 0.2344788270202116,
+    "per_frame_ms": 3.2566503752807168,
+    "per_second_of_data": 0.01172394135101058,
+    "calls": 112
+   },
+   "joint ECA / references upsampled": {
+    "seconds": 0.059021677989221644,
+    "per_frame_ms": 0.8197455276280784,
+    "per_second_of_data": 0.002951083899461082,
+    "calls": 9
+   },
+   "echo: reference estimation / aligned channels": {
+    "seconds": 0.0012213919981149957,
+    "per_frame_ms": 0.016963777751597162,
+    "per_second_of_data": 6.106959990574979e-05,
+    "calls": 56
+   }
+  },
+  "gpu_memory_high_mb": 3273.0,
+  "transfer": {
+   "h2d_s": 1.4035228616121458,
+   "h2d_bytes": 5558853872,
+   "h2d_calls": 8713,
+   "d2h_s": 0.8326943051652052,
+   "d2h_bytes": 5038697526,
+   "d2h_calls": 6523,
+   "h2d_per_second_of_data": 0.0701761430806073,
+   "d2h_per_second_of_data": 0.041634715258260256
+  }
+ },
+ "bistatic": {
+  "recording": "bistatic",
+  "record_s": 20.0,
+  "passive_frames": 72,
+  "overrides": [],
+  "compute_per_second_of_data": 1.1294296780506556,
+  "compute_by_chain": {
+   "passive": 0.5503972919519583,
+   "echo": 0.47185188605071743,
+   "characteristics": 0.10718050004797988
+  },
+  "latency_median_s": 2.355,
+  "profiled": {
+   "compute_per_second_of_data": 1.1544676165038255,
+   "wall_s": 23.21838556100556,
+   "stages_total_per_second_of_data": 1.1064975131535904,
+   "outside_the_stages_per_second_of_data": 0.05442176489668782
+  },
+  "stages": {
+   "passive: map": {
+    "seconds": 5.196573868000996,
+    "per_frame_ms": 72.17463705556939,
+    "per_second_of_data": 0.2598286934000498,
+    "share": 0.2348208561802557,
+    "calls": 9
+   },
+   "echo: map": {
+    "seconds": 4.280238194020058,
+    "per_frame_ms": 59.44775269472302,
+    "per_second_of_data": 0.21401190970100287,
+    "share": 0.19341381897104762,
+    "calls": 9
+   },
+   "passive: interference projector": {
+    "seconds": 2.738023953002994,
+    "per_frame_ms": 38.02811045837492,
+    "per_second_of_data": 0.1369011976501497,
+    "share": 0.12372481277429384,
+    "calls": 9
+   },
+   "echo: reference estimation": {
+    "seconds": 2.7210593440031516,
+    "per_frame_ms": 37.79249088893266,
+    "per_second_of_data": 0.13605296720015758,
+    "share": 0.12295822230309197,
+    "calls": 12
+   },
+   "passive tracker: predicted maps": {
+    "seconds": 1.8735132020010496,
+    "per_frame_ms": 26.02101669445902,
+    "per_second_of_data": 0.09367566010005249,
+    "share": 0.08465962099912067,
+    "calls": 9
+   },
+   "echo: ECA": {
+    "seconds": 1.7950710559962317,
+    "per_frame_ms": 24.931542444392107,
+    "per_second_of_data": 0.08975355279981159,
+    "share": 0.08111500634466687,
+    "calls": 12
+   },
+   "characteristics: radiators": {
+    "seconds": 0.8189264900065609,
+    "per_frame_ms": 11.373979027868902,
+    "per_second_of_data": 0.04094632450032805,
+    "share": 0.03700534706456623,
+    "calls": 72
+   },
+   "characteristics: echoes": {
+    "seconds": 0.7805348150141072,
+    "per_frame_ms": 10.840761319640377,
+    "per_second_of_data": 0.039026740750705356,
+    "share": 0.03527051826757079,
+    "calls": 71
+   },
+   "echo tracker": {
+    "seconds": 0.5427570680330973,
+    "per_frame_ms": 7.538292611570796,
+    "per_second_of_data": 0.027137853401654866,
+    "share": 0.02452590546210105,
+    "calls": 71
+   },
+   "passive tracker: gate and filters": {
+    "seconds": 0.5154231050109956,
+    "per_frame_ms": 7.158654236263828,
+    "per_second_of_data": 0.025771155250549783,
+    "share": 0.02329074846006685,
+    "calls": 72
+   },
+   "echo: ECA, joint solve": {
+    "seconds": 0.49740688799647614,
+    "per_frame_ms": 6.908428999951058,
+    "per_second_of_data": 0.02487034439982381,
+    "share": 0.022476638315202083,
+    "calls": 1
+   },
+   "passive: spectra and whitening": {
+    "seconds": 0.2597997640041285,
+    "per_frame_ms": 3.608330055612896,
+    "per_second_of_data": 0.012989988200206425,
+    "share": 0.01173973555817953,
+    "calls": 9
+   },
+   "picture records and AIS labels": {
+    "seconds": 0.06371376298193354,
+    "per_frame_ms": 0.8849133747490769,
+    "per_second_of_data": 0.003185688149096677,
+    "share": 0.0028790739348498466,
+    "calls": 71
+   },
+   "echo: buffer and weights": {
+    "seconds": 0.04690875300002517,
+    "per_frame_ms": 0.6515104583336829,
+    "per_second_of_data": 0.0023454376500012587,
+    "share": 0.002119695364986956,
+    "calls": 9
+   }
+  },
+  "sub_stages": {
+   "echo: reference estimation / first ECA": {
+    "seconds": 1.7816095520029194,
+    "per_frame_ms": 24.744577111151656,
+    "per_second_of_data": 0.08908047760014597,
+    "calls": 12
+   },
+   "ECA / normal equations": {
+    "seconds": 1.7141214090152062,
+    "per_frame_ms": 23.807241791877864,
+    "per_second_of_data": 0.08570607045076031,
+    "calls": 96
+   },
+   "ECA / solve": {
+    "seconds": 1.1331079039737233,
+    "per_frame_ms": 15.737609777412823,
+    "per_second_of_data": 0.05665539519868616,
+    "calls": 96
+   },
+   "echo: reference estimation / beam": {
+    "seconds": 0.6226520669879392,
+    "per_frame_ms": 8.647945374832489,
+    "per_second_of_data": 0.031132603349396958,
+    "calls": 12
+   },
+   "joint ECA / normal equations and solve": {
+    "seconds": 0.4099792479973985,
+    "per_frame_ms": 5.69415622218609,
+    "per_second_of_data": 0.020498962399869924,
+    "calls": 8
+   },
+   "ECA / delayed copies": {
+    "seconds": 0.22401876199728576,
+    "per_frame_ms": 3.111371694406747,
+    "per_second_of_data": 0.011200938099864288,
+    "calls": 96
+   },
+   "echo: reference estimation / noise spectra": {
+    "seconds": 0.21848209400195628,
+    "per_frame_ms": 3.0344735278049484,
+    "per_second_of_data": 0.010924104700097814,
+    "calls": 12
+   },
+   "echo: reference estimation / joint solve": {
+    "seconds": 0.09427009900537087,
+    "per_frame_ms": 1.309306930630151,
+    "per_second_of_data": 0.004713504950268543,
+    "calls": 12
+   },
+   "joint ECA / delayed copies": {
+    "seconds": 0.05200638600217644,
+    "per_frame_ms": 0.7223109166968951,
+    "per_second_of_data": 0.002600319300108822,
+    "calls": 8
+   },
+   "ECA / reference upsampled": {
+    "seconds": 0.050145364984928165,
+    "per_frame_ms": 0.6964634025684467,
+    "per_second_of_data": 0.0025072682492464082,
+    "calls": 24
+   },
+   "joint ECA / references upsampled": {
+    "seconds": 0.003286487997684162,
+    "per_frame_ms": 0.04564566663450225,
+    "per_second_of_data": 0.0001643243998842081,
+    "calls": 1
+   },
+   "echo: reference estimation / aligned channels": {
+    "seconds": 0.0002744730008998886,
+    "per_frame_ms": 0.0038121250124984523,
+    "per_second_of_data": 1.372365004499443e-05,
+    "calls": 12
+   }
+  },
+  "gpu_memory_high_mb": 3273.0,
+  "transfer": {
+   "h2d_s": 0.44140930530556943,
+   "h2d_bytes": 1235677600,
+   "h2d_calls": 4019,
+   "d2h_s": 0.18333282803359907,
+   "d2h_bytes": 1120529902,
+   "d2h_calls": 1331,
+   "h2d_per_second_of_data": 0.02207046526527847,
+   "d2h_per_second_of_data": 0.009166641401679953
+  }
+ }
+}

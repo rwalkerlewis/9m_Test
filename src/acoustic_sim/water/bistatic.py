@@ -33,6 +33,7 @@ from scipy.signal import get_window, resample
 
 from acoustic_sim.contract import ChartEnvironment, Propagator, Provenance
 from acoustic_sim.water.ais import AISReports
+from acoustic_sim.water.profile import PROFILE
 from acoustic_sim.water.detection import DetectionSet, ScanResult, _nms, channel_weights, remove_common_mode
 from acoustic_sim.water.detection import ProcessingConfig
 from acoustic_sim.water.device import get_device
@@ -707,14 +708,26 @@ def channel_response(layout: SensorLayout, ship_xy: np.ndarray, freqs: np.ndarra
     return H * np.exp(1j * ks[:, None] * r[None, :])
 
 
-def residual_psd(residual: np.ndarray, fs: float, freqs: np.ndarray, seg_s: float) -> np.ndarray:
+def residual_psd(residual: np.ndarray, fs: float, freqs: np.ndarray, seg_s: float, xp=np) -> np.ndarray:
     """Noise power (Nc, F) of every row of *residual* at *freqs*: Welch with *seg_s* second Hann segments,
-    interpolated; floored at a millionth of the median so a dead row does not divide by zero."""
-    from scipy.signal import welch
-
+    interpolated; floored at a millionth of the median so a dead row does not divide by zero.  With *xp* CuPy the
+    Welch estimate is made on the device (the same estimate to round off) and the interpolation is one weighted sum
+    of two columns per frequency."""
     nper = min(int(round(seg_s * fs)), residual.shape[1])
-    f, P = welch(np.asarray(residual, dtype=np.float64), fs=fs, nperseg=nper, axis=1)
-    out = np.stack([np.interp(freqs, f, p) for p in P])
+    if xp is np:
+        from scipy.signal import welch
+
+        f, P = welch(np.asarray(residual, dtype=np.float64), fs=fs, nperseg=nper, axis=1)
+        out = np.stack([np.interp(freqs, f, p) for p in P])
+    else:
+        from cupyx.scipy.signal import welch
+
+        f, P = welch(xp.asarray(residual, dtype=np.float64), fs=fs, nperseg=nper, axis=1)
+        f = _asnumpy(f)
+        pos = np.interp(np.asarray(freqs, float), f, np.arange(len(f), dtype=float))      # fractional column of each frequency
+        lo = np.minimum(np.floor(pos).astype(int), len(f) - 2)
+        w = xp.asarray(pos - lo)
+        out = _asnumpy(P[:, lo] * (1.0 - w)[None, :] + P[:, lo + 1] * w[None, :])
     return np.maximum(out, 1e-6 * max(float(np.median(out)), 1e-300))
 
 
@@ -795,8 +808,21 @@ def estimate_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship
     nb = int(round(bc.eca_block_s * fs))
     x = np.asarray(traces, dtype=np.float64)
     # First pass: the beam and the ECA; the residual is the noise of every channel.
-    ref0 = make_reference(x, layout, fs, ship_b, bc.eca_block_s, beam, chans, ship_t=ship_t)
+    PROFILE.begin("echo: reference estimation / beam")
+    Y = None
+    if mode == "joint":
+        # The beam is the mean of the live channels advanced by their ranges: the rows the joint solve needs anyway
+        # (``_aligned_rows``, the same interpolation as ``make_reference``), so they are made once.
+        use0 = np.sort(np.asarray(chans))
+        Y = _aligned_rows(x[use0], layout.receivers[use0], ship_t, fs, bc)
+        live = xp.asarray(np.sum(x[use0] ** 2, axis=1) > 0)
+        ref0 = _asnumpy(xp.sum(Y[live], axis=0)) / max(int(live.sum()), 1)
+    else:
+        ref0 = make_reference(x, layout, fs, ship_b, bc.eca_block_s, beam, chans, ship_t=ship_t)
+    PROFILE.end("echo: reference estimation / beam")
+    PROFILE.begin("echo: reference estimation / first ECA")
     res = eca_remove([x], ref0, layout, fs, ship_b, [], bc.eca_block_s, beam, ship_t=ship_t, blocks=blocks)[0]
+    PROFILE.end("echo: reference estimation / first ECA")
     if blocks:
         cols = np.concatenate([np.arange(b * nb, min((b + 1) * nb, x.shape[1])) for b in sorted(blocks)])
     else:
@@ -810,13 +836,19 @@ def estimate_reference(traces: np.ndarray, layout: SensorLayout, fs: float, ship
     # waveform limited to 100 to 600 Hz removes 14 dB of a direct path in 80 to 700 Hz, unlimited 69 dB).
     df = 1.0 / bc.ref_psd_s
     wf = np.arange(df, 0.49 * fs, df)
-    psd = residual_psd(res[use][:, cols], fs, wf, bc.ref_psd_s)                                     # (Nc, F)
+    PROFILE.begin("echo: reference estimation / noise spectra")
+    psd = residual_psd(res[use][:, cols], fs, wf, bc.ref_psd_s, xp)                                 # (Nc, F)
+    PROFILE.end("echo: reference estimation / noise spectra")
     if info is not None:
         info.update(psd=psd, freqs=wf, channels=use)
-    Y = _aligned_rows(x[use], layout.receivers[use], ship_t, fs, bc)
+    PROFILE.begin("echo: reference estimation / aligned channels")
+    if Y is None or not np.array_equal(use, np.sort(np.asarray(chans))):
+        Y = _aligned_rows(x[use], layout.receivers[use], ship_t, fs, bc)
+    PROFILE.end("echo: reference estimation / aligned channels")
     if mode == "joint":
         sig2 = np.mean(psd[:, (wf >= bc.f_lo) & (wf <= bc.f_hi)], axis=1)
-        return _asnumpy(_joint_reference(Y, sig2, xp.mean(Y, axis=0), nb, bc.ref_iterations, bc))
+        with PROFILE.stage("echo: reference estimation / joint solve"):
+            return _asnumpy(_joint_reference(Y, sig2, xp.mean(Y, axis=0), nb, bc.ref_iterations, bc))
     # Maximum ratio combination: the emitted waveform estimated as sum_i conj(A_i) X_i / N_i / sum_i |A_i|^2 / N_i,
     # then given the response the beam of every live channel has to it (the mean of A over *chans*), so that the
     # reference is the ship's sound as the array receives it, with the least noise.  Without the second factor the
@@ -1060,7 +1092,9 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
     if ship_t is None:
         refp = xp.asarray(np.concatenate([np.zeros(n), ref]))                                # lag L of block [lo, hi): refp[n + lo - L : n + hi - L]
     else:
+        PROFILE.begin("ECA / reference upsampled")
         ref_up = xp.asarray(resample(ref, n * UPSAMPLE))
+        PROFILE.end("ECA / reference upsampled")
         if bc.eca_precision == "mixed":
             ref_up = ref_up.astype(np.float32)
         j_up = xp.arange(n * UPSAMPLE, dtype=float)
@@ -1091,6 +1125,7 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
             for c0 in range(0, len(chans), chunk):
                 idx = np.array(chans[c0:c0 + chunk])
                 lags = np.stack([lag_sets[i] for i in idx])                                    # (Ng, L)
+                PROFILE.begin("ECA / delayed copies")
                 if ship_t is None:
                     W = from_window(refp, block)                                              # (n_win, block): row w = refp[w : w + block]
                     S = W[xp.asarray(n + lo - lags)]                                           # (Ng, L, block)
@@ -1107,15 +1142,20 @@ def _eca_remove_vectorized(traces, reference, layout, fs, ship_xy, images, block
                     start = pad + (lo - a) - off                                                      # window start in basep
                     W = from_window(basep, block, axis=-1)                                           # (Ng, P, n_win, block)
                     S = W[xp.asarray(np.arange(len(idx)))[:, None], xp.asarray(owner), xp.asarray(start)]   # (Ng, L, block)
+                PROFILE.end("ECA / delayed copies")
+                PROFILE.begin("ECA / normal equations")
                 G = None
                 if ship_t is not None and bc.eca_gram == "prefix" and basep.shape[1] == 1 and bc.eca_precision != "mixed":
                     G = _gram_prefix(basep[:, 0, :], start, block)
                 S = xp.ascontiguousarray(S.transpose(0, 2, 1))                                        # (Ng, block, L)
                 segs = xp.asarray(np.stack([out[idx, lo:hi] for out in outs], axis=-1))               # (Ng, block, R)
+                PROFILE.end("ECA / normal equations")
+                PROFILE.begin("ECA / solve")
                 if bc.eca_precision == "mixed":
                     cleaned = _asnumpy(_project_out_qr(S.astype(np.float32), segs.astype(np.float32)))
                 else:
                     cleaned = _asnumpy(_project_out_batched(S, segs, G=G))
+                PROFILE.end("ECA / solve")
                 for r_i, out in enumerate(outs):
                     out[idx, lo:hi] = cleaned[:, :, r_i]
     return outs
@@ -1224,7 +1264,9 @@ def _eca_remove_joint(traces: list[np.ndarray], references: list[np.ndarray], la
     half = int(round(bc.eca_halfwidth_s * fs))
     outs = [np.array(x, dtype=np.float64, copy=True) for x in traces]
     rec = layout.receivers
+    PROFILE.begin("joint ECA / references upsampled")
     refs_up = [xp.asarray(resample(np.asarray(r, dtype=np.float64), n * UPSAMPLE)) for r in references]
+    PROFILE.end("joint ECA / references upsampled")
     j_up = xp.arange(n * UPSAMPLE, dtype=float)
     j_all = xp.arange(n, dtype=float)
     rec_d = xp.asarray(rec)
@@ -1254,6 +1296,7 @@ def _eca_remove_joint(traces: list[np.ndarray], references: list[np.ndarray], la
         for key, chans in groups.items():
             for c0 in range(0, len(chans), chunk):
                 idx = np.array(chans[c0:c0 + chunk])
+                PROFILE.begin("joint ECA / delayed copies")
                 Ss = []
                 for k, (nominal, lag_sets, paths) in enumerate(per):
                     if key[k] == 0:
@@ -1271,7 +1314,9 @@ def _eca_remove_joint(traces: list[np.ndarray], references: list[np.ndarray], la
                     Ss.append(W[xp.asarray(np.arange(len(idx)))[:, None], xp.asarray(owner), xp.asarray(start)])
                 S = xp.ascontiguousarray(xp.concatenate(Ss, axis=1).transpose(0, 2, 1))                   # (Ng, block, L)
                 segs = xp.asarray(np.stack([out[idx, lo:hi] for out in outs], axis=-1))                    # (Ng, block, R)
-                cleaned = _asnumpy(_project_out_batched(S, segs))
+                PROFILE.end("joint ECA / delayed copies")
+                with PROFILE.stage("joint ECA / normal equations and solve"):
+                    cleaned = _asnumpy(_project_out_batched(S, segs))
                 for r_i, out in enumerate(outs):
                     out[idx, lo:hi] = cleaned[:, :, r_i]
     return outs
@@ -1296,8 +1341,11 @@ def remove_direct_paths(traces: np.ndarray, components: list[np.ndarray], layout
     if bc.removal_order == "sequential" or len(ships) <= 1:
         refs = []
         for k, (ship_b, ship_t) in enumerate(ships):
-            ref = estimate_reference(x, layout, fs, ship_b, bc, chans, ship_t, blocks=blocks, bodies=bodies)
-            cleaned = eca_remove([x] + comps, ref, layout, fs, ship_b, imgs[k], bc.eca_block_s, bc, ship_t=ship_t, blocks=blocks)
+            with PROFILE.stage("echo: reference estimation"):
+                ref = estimate_reference(x, layout, fs, ship_b, bc, chans, ship_t, blocks=blocks, bodies=bodies)
+            with PROFILE.stage("echo: ECA"):
+                cleaned = eca_remove([x] + comps, ref, layout, fs, ship_b, imgs[k], bc.eca_block_s, bc, ship_t=ship_t,
+                                     blocks=blocks)
             x, comps = cleaned[0], cleaned[1:]
             refs.append(ref)
         return x, comps, refs
@@ -1318,9 +1366,14 @@ def remove_direct_paths(traces: np.ndarray, components: list[np.ndarray], layout
         for _ in range(bc.joint_passes):
             for k, (sb, st) in enumerate(ships):
                 y = x - np.sum([fits[j] for j in range(len(ships)) if j != k], axis=0)
-                refs[k] = estimate_reference(y, layout, fs, sb, bc, chans, st, blocks=blocks, bodies=bodies)
-                fits[k] = y - eca_remove([y], refs[k], layout, fs, sb, imgs[k], bc.eca_block_s, bc, ship_t=st, blocks=blocks)[0]
-    cleaned = _eca_remove_joint([x] + comps, refs, layout, fs, sb_all, st_all, imgs, bc.eca_block_s, bc, blocks, chunk=chunk)
+                with PROFILE.stage("echo: reference estimation"):
+                    refs[k] = estimate_reference(y, layout, fs, sb, bc, chans, st, blocks=blocks, bodies=bodies)
+                with PROFILE.stage("echo: ECA"):
+                    fits[k] = y - eca_remove([y], refs[k], layout, fs, sb, imgs[k], bc.eca_block_s, bc, ship_t=st,
+                                             blocks=blocks)[0]
+    with PROFILE.stage("echo: ECA, joint solve"):
+        cleaned = _eca_remove_joint([x] + comps, refs, layout, fs, sb_all, st_all, imgs, bc.eca_block_s, bc, blocks,
+                                    chunk=chunk)
     return cleaned[0], cleaned[1:], refs
 
 

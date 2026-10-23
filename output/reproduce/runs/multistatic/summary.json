@@ -4,14 +4,14 @@
   "held_out": false,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.5647075725511967,
-    "echo": 2.187989373750315,
-    "characteristics": 0.39434513235064517,
-    "total": 3.147042078652157
+    "passive": 0.5659174043521489,
+    "echo": 1.8985863609010267,
+    "characteristics": 0.402318145747995,
+    "total": 2.8668219110011703
   },
   "latency_s": {
-    "median": 6.284,
-    "max": 7.748
+    "median": 5.644,
+    "max": 7.094
   },
   "objects": {
     "ferry": {
@@ -763,7 +763,7 @@
     }
   },
   "run": {
-    "git_commit": "79c972383f2a3acc8256623e665fdb0244d0694a",
+    "git_commit": "f4b365c273daae45028c54e6d137a1cfade7ed86",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/multistatic.json",
     "processing_config_sha256": "fb0b48457b3fd96240eeed171e6249b7f5b4a1e500ab3f04d5b054754948ca73",
@@ -775,7 +775,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 0,
-    "wall_s": 63.165265983996505,
+    "wall_s": 57.55317307199584,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
