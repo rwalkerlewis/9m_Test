@@ -1,0 +1,14 @@
+simple: 16 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 4, 'direct_path': 0, 'elsewhere': 9}; false tracks [('e2', 'elsewhere')]
+bistatic: 9 radiator track starts {'radiator': 1, 'silent_body': 3, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 5}; false tracks [('r2', 'elsewhere'), ('e36', 'elsewhere')]
+multistatic: 7 radiator track starts {'radiator': 3, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r4', 'elsewhere'), ('e17', 'elsewhere')]
+harbor: 16 radiator track starts {'radiator': 5, 'silent_body': 0, 'sidelobe_near_miss': 0, 'direct_path': 1, 'elsewhere': 10}; false tracks [('r12', 'elsewhere'), ('r13', 'elsewhere'), ('r14', 'elsewhere')]
+counts {'radiator': 11, 'silent_body': 4, 'sidelobe_near_miss': 5, 'direct_path': 1, 'elsewhere': 27}; confirmed {'radiator': 9, 'silent_body': 1, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 5}
+coherence: separation (AUC) silent body vs radiator 0.75, sidelobe vs radiator 0.9375
+ratio: separation (AUC) silent body vs radiator 0.5555555555555556, sidelobe vs radiator 1.0
+ratio_median: separation (AUC) silent body vs radiator 0.8611111111111112, sidelobe vs radiator 0.9861111111111112
+ratio_max: separation (AUC) silent body vs radiator 0.6666666666666666, sidelobe vs radiator 0.8055555555555556
+coherence_debiased: separation (AUC) silent body vs radiator 0.8125, sidelobe vs radiator 0.9375
+width_major_m: separation (AUC) silent body vs radiator 0.3522727272727273, sidelobe vs radiator 0.44176136363636365
+width_minor_m: separation (AUC) silent body vs radiator 0.26136363636363635, sidelobe vs radiator 0.4431818181818182
+n_fixes: separation (AUC) silent body vs radiator 0.2159090909090909, sidelobe vs radiator 0.1903409090909091
+duration_s: separation (AUC) silent body vs radiator 0.1590909090909091, sidelobe vs radiator 0.17329545454545456

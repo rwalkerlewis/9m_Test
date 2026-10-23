@@ -525,10 +525,14 @@ class TrackerConfig:
     track's own peak, exceeds this fraction of the data map at the peak; an explained peak starts no track and is no fix
     for another track.  ``illuminator_margin_db``: a confirmed radiator track whose peak is this far above the map's
     noise floor (the median of the frame's map over the cells it is above zero) is an illuminator of the echo chain.
-    ``echo_coherence``: a radiator track about to confirm whose least squares source spectrum is coherent with an
-    illuminator's above this level (over its frames, mean over the band) and which sits, within the gate, on an echo map
-    peak of that illuminator is an echo and is never confirmed (``HarborPicture``).  ``exclusion`` [m] (echo tracks): a
-    track does not confirm within this distance of a stronger confirmed track (0: off).
+    ``echo_test``: how a radiator track about to confirm is tested for being an illuminator's echo located passively
+    (``HarborPicture``): ``"coherence"``, its least squares source spectrum coherent with an illuminator's above
+    ``echo_coherence`` (over its frames, mean over the band); ``"ratio"``, the illuminator's predicted map at the
+    track's fixes, scaled to the illuminator's own peak, at least ``echo_ratio`` of the data map (the median over the
+    track's fixes, the frame it confirms in included).  Either way the track must also sit, within the gate, on an echo
+    map peak of that illuminator; it is then never confirmed.  ``exclusion`` [m] (echo tracks): a track does not
+    confirm within this distance of a stronger confirmed track (0: off).  ``drop_confirmed_s``: a confirmed track
+    without a gated fix for this long is dropped (``None``: ``drop_s``, as a tentative one).
     """
 
     accel: float = 0.05
@@ -545,7 +549,10 @@ class TrackerConfig:
     explain_fraction: float = 0.5
     illuminator_margin_db: float = 10.0
     echo_coherence: float = 0.7
+    echo_test: str = "coherence"
+    echo_ratio: float = 0.075
     exclusion: float = 0.0
+    drop_confirmed_s: float | None = None
 
     @property
     def gate_chi2(self) -> float:
@@ -584,6 +591,7 @@ class RadiatorTrack:
     accel: float = 0.05
     held: bool = False                              # about to confirm but held (an echo, ``HarborPicture``)
     states: list = field(default_factory=list)      # (t, x, P) after every update
+    ratios: dict = field(default_factory=dict)      # other confirmed track -> its predicted map / the data map at each fix
 
     def start(self, t: float, z: np.ndarray, R: np.ndarray, init_speed: float) -> None:
         self.x = np.array([z[0], z[1], 0.0, 0.0])
@@ -656,6 +664,7 @@ class RadiatorTracker:
         self.cell = float(np.min(np.diff(xs))) if len(xs) > 1 else 1.0   # the map's cell size [m]
         self.frames: list[float] = []                  # times of the frames the tracker was updated with
         self.explained: list[tuple[float, np.ndarray, str]] = []   # (t, peak, track) peaks dropped as sidelobes
+        self.frame: FrameResult | None = None           # the frame of the update in progress
         self._n = 0
 
     def _fix_cov(self, frame: FrameResult, xy: np.ndarray) -> tuple[np.ndarray, dict | None]:
@@ -695,16 +704,30 @@ class RadiatorTracker:
         return r is not None and r * self._own_peak(frame, src) >= self.cfg.explain_fraction * max(value, 1e-30)
 
     def _explaining(self, frame: FrameResult, xy: np.ndarray, value: float, R: np.ndarray, t: float) -> str | None:
-        """The confirmed track whose predicted map explains the peak at *xy* (not one whose own gate it is in)."""
+        """The confirmed track (or one held as an echo: a real map peak too) whose predicted map explains the peak at
+        *xy* (not one whose own gate it is in)."""
         for k, tr in self.tracks.items():
-            if tr.confirmed and self._explains(frame, tr, xy, value, R, t):
+            if (tr.confirmed or tr.held) and self._explains(frame, tr, xy, value, R, t):
                 return k
         return None
+
+    def ratio(self, frame: FrameResult, src_track: RadiatorTrack, xy: np.ndarray, value: float, t: float) -> float | None:
+        """The predicted map of *src_track* (at its fix of this frame, else its prediction) at *xy*, scaled to its own
+        peak, over the data map *value* there (what ``explain_fraction`` and ``echo_ratio`` compare with)."""
+        if self.grid is None or frame.B is None:
+            return None
+        last = src_track.fixes[-1]
+        src = np.asarray(last[1], float) if last[0] == t else src_track.predict(t)
+        r = self._response(frame, src, np.asarray(xy, float), src_track.id)
+        return None if r is None else r * self._own_peak(frame, src) / max(value, 1e-30)
 
     def update(self, frame: FrameResult) -> None:
         cfg, t = self.cfg, frame.t
         self.frames.append(t)
-        for tid in [k for k, tr in self.tracks.items() if t - tr.fixes[-1][0] > cfg.drop_s]:
+        self.frame = frame
+        conf0 = [tr for tr in self.tracks.values() if tr.confirmed]
+        drop_c = cfg.drop_s if cfg.drop_confirmed_s is None else cfg.drop_confirmed_s
+        for tid in [k for k, tr in self.tracks.items() if t - tr.fixes[-1][0] > (drop_c if tr.confirmed else cfg.drop_s)]:
             tr = self.tracks.pop(tid)
             if tr.confirmed_t is not None:
                 tr.lost_t = t
@@ -729,7 +752,7 @@ class RadiatorTracker:
                         best, dbest = k, d2
                 if best is not None:
                     break
-            if best is None and any(tr.confirmed and tr.innovation(t, xy, R) <= cfg.gate_chi2 for tr in self.tracks.values()):
+            if best is None and any((tr.confirmed or tr.held) and tr.innovation(t, xy, R) <= cfg.gate_chi2 for tr in self.tracks.values()):
                 continue                                # in the gate of a confirmed track that took another peak: no new track
             if best is None:
                 self._n += 1
@@ -741,6 +764,12 @@ class RadiatorTracker:
             else:
                 self.tracks[best].update(t, xy, R)
             self.tracks[best].fixes.append((t, xy, float(sc)))
+            if cfg.echo_test == "ratio":
+                for o in conf0:
+                    if o.id != best:
+                        q = self.ratio(frame, o, xy, float(sc), t)
+                        if q is not None:
+                            self.tracks[best].ratios.setdefault(o.id, []).append(q)
             taken.add(best)
         kept: list[RadiatorTrack] = []
         for tr in sorted(self.tracks.values(), key=lambda x: -x.score):                   # strongest first
