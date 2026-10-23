@@ -1,0 +1,34 @@
+10:47:13 multistatic shrimp.band_fraction_db low (-50.0): false tracks 3.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.86, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.64
+10:48:45 multistatic shrimp.band_fraction_db documented (-40.0): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.62
+11:04:53 multistatic shrimp.band_fraction_db high (-30.0): false tracks 9.0/min, ferry 1.00, tug 1.00, boat 0.92, uuv1 0.00, uuv2 0.00, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.55
+11:06:08 multistatic shrimp.rate_per_m low (0.03): false tracks 9.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.78, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.70
+11:06:08 multistatic shrimp.rate_per_m documented (-40.0): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.62
+11:07:19 multistatic shrimp.rate_per_m high (3.0): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 0.95, uuv1 0.00, uuv2 0.00, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.30
+11:08:31 multistatic fibre.drift_rms low (0.006324555320336759): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.62
+11:08:31 multistatic fibre.drift_rms documented (-40.0): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.62
+11:09:43 multistatic fibre.drift_rms high (0.0632455532033676): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.62
+11:10:55 multistatic interrogator.floor_rms low (0.015811388300841896): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.66
+11:10:55 multistatic interrogator.floor_rms documented (-40.0): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.62
+11:12:05 multistatic interrogator.floor_rms high (0.158113883008419): false tracks 3.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.00, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.64
+11:13:17 multistatic interrogator.fade_fraction low (0.05): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.62
+11:13:17 multistatic interrogator.fade_fraction documented (-40.0): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.62
+11:14:30 multistatic interrogator.fade_fraction high (0.2): false tracks 6.0/min, ferry 1.00, tug 1.00, boat 1.00, uuv1 0.00, uuv2 0.88, diver 0.00, piling1 0.00, piling2 0.00, piling3 0.00, piling4 0.00, piling5 0.00, piling6 0.00, moored 0.62
+11:15:06 bistatic shrimp.band_fraction_db low (-50.0): false tracks 0.0/min, ferry 1.00, uuv1 0.61
+11:15:41 bistatic shrimp.band_fraction_db documented (-40.0): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:16:36 bistatic shrimp.band_fraction_db high (-30.0): false tracks 6.0/min, ferry 1.00, uuv1 0.00
+11:17:11 bistatic shrimp.rate_per_m low (0.03): false tracks 0.0/min, ferry 1.00, uuv1 0.88
+11:17:11 bistatic shrimp.rate_per_m documented (-40.0): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:18:06 bistatic shrimp.rate_per_m high (3.0): false tracks 6.0/min, ferry 1.00, uuv1 0.12
+11:18:41 bistatic fibre.drift_rms low (0.006324555320336759): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:18:41 bistatic fibre.drift_rms documented (-40.0): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:19:16 bistatic fibre.drift_rms high (0.0632455532033676): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:19:52 bistatic interrogator.floor_rms low (0.015811388300841896): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:19:52 bistatic interrogator.floor_rms documented (-40.0): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:20:29 bistatic interrogator.floor_rms high (0.158113883008419): false tracks 3.0/min, ferry 1.00, uuv1 0.47
+11:21:04 bistatic interrogator.fade_fraction low (0.05): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:21:04 bistatic interrogator.fade_fraction documented (-40.0): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:21:40 bistatic interrogator.fade_fraction high (0.2): false tracks 0.0/min, ferry 1.00, uuv1 0.53
+11:22:15 simple machinery.level_pa low (None): false tracks 0.0/min, ferry 1.00, boat 1.00, uuv1 0.34, wreck 1.00
+11:22:51 simple machinery.level_pa documented (0.1): false tracks 6.0/min, ferry 1.00, boat 1.00, uuv1 0.20, wreck 0.98
+11:23:27 simple machinery.level_pa high (0.316227766016838): false tracks 9.0/min, ferry 1.00, boat 1.00, uuv1 0.00, wreck 0.53
+11:23:31 moves a silent body by more than 10 points: {'multistatic': ['interrogator.floor_rms', 'shrimp.band_fraction_db', 'shrimp.rate_per_m'], 'bistatic': ['shrimp.band_fraction_db', 'shrimp.rate_per_m'], 'simple': ['machinery.level_pa']}; moves nothing (3 points or less): {'multistatic': ['fibre.drift_rms', 'interrogator.fade_fraction'], 'bistatic': ['fibre.drift_rms', 'interrogator.fade_fraction'], 'simple': []}

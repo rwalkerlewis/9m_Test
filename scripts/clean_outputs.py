@@ -87,6 +87,7 @@ NAME = r"[A-Za-z0-9_.+-]+"
 LAYOUT = [re.compile(p) for p in (
     rf"recordings/({'|'.join(RECORDINGS)})/{NAME}",
     rf"recordings/({'|'.join(RECORDINGS)})/seed\d+/dataset\.(observation|truth)\.npz",
+    rf"recordings/({'|'.join(RECORDINGS)})/noise2/(seed\d+/)?dataset\.(observation|truth)\.npz",
     rf"recordings/({'|'.join(RECORDINGS)})/cache/.+",
     r"reproduce/(summary\.json|latest\.json|tables\.md|run\.log)",
     rf"reproduce/runs/{NAME}/.+",

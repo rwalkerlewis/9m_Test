@@ -116,3 +116,100 @@ the simple harbor's hydrophones and both silent bodies were lost: the result res
 The finding: the radiating ships' numbers hardly depend on the noise model; the silent bodies' and the false tracks'
 do, by tens of percentage points and several tracks per minute, and most of all on components whose levels are
 assumed (a radiating machine on the quay, the shrimp's energy in the band).
+
+## Both models in the numbers
+
+`scripts/reproduce.py` runs every recording twice: as built, with the old model, and mixed again from the same FDTD
+gathers and the same noise seeds with `harbor_v2` at its documented levels (every component on, the shrimp at the
+assumed latitude of 30 degrees, the quay machinery on the simple harbor only, the one recording with a machinery gather;
+`output/recordings/<recording>/noise2/`, the runs in `output/reproduce/runs/<recording>_noise2/`). `summary.json` carries
+both (`recordings`, `recordings_noise2`) and `--check` compares both. The criteria of [Harbor](harbor.md#criteria) are
+evaluated on the old model as they were fixed, and reported on harbor_v2 beside it: there
+<!-- reproduce:ntrue:criteria_noise2[*]/passed -->1<!-- /reproduce --> of
+<!-- reproduce:count:criteria_noise2[*]/passed -->4<!-- /reproduce --> are met. The silent bodies, by their echo:
+
+<!-- reproduce-table:silent_noise -->
+| Recording | Silent body | Pd, old noise model | Pd, harbor_v2 |
+|---|---|---|---|
+| simple | uuv1 | 58 % | 20 % |
+| simple | wreck | 100 % | 98 % |
+| bistatic | uuv1 | 89 % | 53 % |
+| multistatic | uuv1 | 84 % | 0 % |
+| multistatic | uuv2 | 95 % | 88 % |
+| multistatic | moored | 83 % | 62 % |
+| simple_seed1 | uuv1 | 66 % | 0 % |
+| simple_seed1 | wreck | 100 % | 97 % |
+| simple_seed2 | uuv1 | 64 % | 0 % |
+| simple_seed2 | wreck | 100 % | 98 % |
+| simple_seed3 | uuv1 | 58 % | 25 % |
+| simple_seed3 | wreck | 100 % | 98 % |
+| bistatic_seed1 | uuv1 | 55 % | 78 % |
+| bistatic_seed2 | uuv1 | 6 % | 80 % |
+| bistatic_seed3 | uuv1 | 53 % | 80 % |
+| multistatic_seed1 | uuv1 | 89 % | 0 % |
+| multistatic_seed1 | uuv2 | 94 % | 91 % |
+| multistatic_seed1 | moored | 91 % | 62 % |
+| multistatic_seed2 | uuv1 | 80 % | 14 % |
+| multistatic_seed2 | uuv2 | 94 % | 92 % |
+| multistatic_seed2 | moored | 83 % | 72 % |
+| multistatic_seed3 | uuv1 | 80 % | 0 % |
+| multistatic_seed3 | uuv2 | 91 % | 83 % |
+| multistatic_seed3 | moored | 86 % | 62 % |
+| multistatic_b | uuv1 | 59 % | 46 % |
+| multistatic_b | uuv2 | 96 % | 84 % |
+| multistatic_b | diver | 81 % | 0 % |
+<!-- /reproduce-table -->
+
+What the table says: the simple harbor's wreck and the second UUV of the multi ship scene hardly move; the moored hull
+loses tens of points; the simple harbor's UUV, the first UUV of the multi ship scene and the diver of `multistatic_b`,
+tracked under the old model, are lost or nearly lost under harbor_v2; the bistatic UUV goes the other way and is tracked
+more often under harbor_v2 on its test seeds. The ships do not move ([Harbor](harbor.md#real-time-tuning-recordings-beside-test-recordings)).
+So the silent body numbers of [Harbor](harbor.md) are given as their range over the two models.
+
+## Which assumed number matters
+
+`examples/harbor/05_detection/harbor_noise_sweep.py` (output in `output/studies/noise_model/sweep/`, `results.json`
+with every value used and no criterion): on the multistatic and the bistatic tuning recordings (noise seed 0, mixed
+from the cached gathers), one assumed parameter of harbor_v2 at a time at three settings, everything else at its
+documented value and the chain unchanged: the shrimp's band energy and rate 10 dB below and above, the fibre's drift
+and the interrogator's floor 10 dB below and above, the fading fraction halved and doubled. The quay machinery (off,
+assumed, 10 dB above) needs a machinery gather, which only the simple harbor has, and no FDTD run was allowed, so it
+was swept on the simple harbor's tuning recording instead. The span of each silent body's Pd over the three settings:
+
+* **The shrimp** move the most: their band energy moves the multistatic second UUV by
+  <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/multistatic/shrimp.band_fraction_db/uuv2|pct -->88 %<!-- /reproduce --> and the bistatic UUV by <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/bistatic/shrimp.band_fraction_db/uuv1|pct -->61 %<!-- /reproduce -->;
+  their rate moves the multistatic first UUV by <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/multistatic/shrimp.rate_per_m/uuv1|pct -->78 %<!-- /reproduce -->, its second by
+  <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/multistatic/shrimp.rate_per_m/uuv2|pct -->88 %<!-- /reproduce -->, the moored hull by <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/multistatic/shrimp.rate_per_m/moored|pct -->41 %<!-- /reproduce --> and
+  the bistatic UUV by <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/bistatic/shrimp.rate_per_m/uuv1|pct -->75 %<!-- /reproduce -->.
+* **The interrogator's floor** moves the multistatic second UUV by <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/multistatic/interrogator.floor_rms/uuv2|pct -->88 %<!-- /reproduce -->
+  (the bistatic UUV by <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/bistatic/interrogator.floor_rms/uuv1|pct -->6 %<!-- /reproduce -->).
+* **The machinery** moves the simple harbor's wreck by <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/simple/machinery.level_pa/wreck|pct -->47 %<!-- /reproduce --> and its UUV by
+  <!-- reproduce:@studies/noise_model/sweep/results.json:span_of_pd/simple/machinery.level_pa/uuv1|pct -->34 %<!-- /reproduce -->.
+* **The fibre's drift and the fading fraction** move nothing (3 points or less on every silent body): the drift lies
+  below the processing band and the fading averages out over the cable's channels.
+
+These are the numbers a field recording has to pin, the shrimp first ([One field recording](field_recording.md)).
+
+![multistatic first UUV](../output/studies/noise_model/sweep/pd_multistatic_uuv1.png)
+
+Look at the shrimp's rate: the first UUV is tracked only with ten times fewer clicks than assumed.
+
+![multistatic second UUV](../output/studies/noise_model/sweep/pd_multistatic_uuv2.png)
+
+Look at the three parameters that each take the second UUV from tracked to lost at one end of their range.
+
+![multistatic moored hull](../output/studies/noise_model/sweep/pd_multistatic_moored.png)
+
+Look at the hull's Pd falling as the shrimp's rate rises.
+
+![bistatic UUV](../output/studies/noise_model/sweep/pd_bistatic_uuv1.png)
+
+Look at the shrimp's two parameters, and how little the interrogator's floor does on this recording.
+
+![simple wreck](../output/studies/noise_model/sweep/pd_simple_wreck.png)
+
+Look at the wreck against the machinery's level: down to about half its frames when the pump is 10 dB louder than assumed.
+
+![multistatic false tracks](../output/studies/noise_model/sweep/false_tracks_multistatic.png)
+
+Look at the false tracks of the multistatic recording: each parameter moves them by about one track either way.

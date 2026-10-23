@@ -212,3 +212,37 @@
 2026-10-23 10:26:26 walkthrough figures of bistatic
 2026-10-23 10:27:31 walkthrough figures of multistatic
 2026-10-23 10:29:23 walkthrough figures of harbor
+2026-10-23 10:43:31 mixing simple seed 0 with harbor_v2 from the cached gathers
+2026-10-23 10:43:41 running the chain on simple mixed with harbor_v2
+2026-10-23 10:44:07 mixing bistatic seed 0 with harbor_v2 from the cached gathers
+2026-10-23 10:44:20 running the chain on bistatic mixed with harbor_v2
+2026-10-23 10:44:41 mixing multistatic seed 0 with harbor_v2 from the cached gathers
+2026-10-23 10:44:58 running the chain on multistatic mixed with harbor_v2
+2026-10-23 10:45:58 mixing harbor seed 0 with harbor_v2 from the cached gathers
+2026-10-23 10:46:09 running the chain on harbor mixed with harbor_v2
+2026-10-23 10:47:41 mixing simple seed 1 with harbor_v2 from the cached gathers
+2026-10-23 10:47:53 running the chain on simple_seed1 mixed with harbor_v2
+2026-10-23 10:48:35 mixing simple seed 2 with harbor_v2 from the cached gathers
+2026-10-23 10:48:46 running the chain on simple_seed2 mixed with harbor_v2
+2026-10-23 10:49:14 mixing simple seed 3 with harbor_v2 from the cached gathers
+2026-10-23 10:49:25 running the chain on simple_seed3 mixed with harbor_v2
+2026-10-23 10:49:50 mixing bistatic seed 1 with harbor_v2 from the cached gathers
+2026-10-23 10:50:04 running the chain on bistatic_seed1 mixed with harbor_v2
+2026-10-23 10:50:25 mixing bistatic seed 2 with harbor_v2 from the cached gathers
+2026-10-23 10:50:39 running the chain on bistatic_seed2 mixed with harbor_v2
+2026-10-23 10:51:01 mixing bistatic seed 3 with harbor_v2 from the cached gathers
+2026-10-23 10:51:15 running the chain on bistatic_seed3 mixed with harbor_v2
+2026-10-23 10:51:38 mixing multistatic seed 1 with harbor_v2 from the cached gathers
+2026-10-23 10:51:56 running the chain on multistatic_seed1 mixed with harbor_v2
+2026-10-23 10:52:52 mixing multistatic seed 2 with harbor_v2 from the cached gathers
+2026-10-23 10:53:10 running the chain on multistatic_seed2 mixed with harbor_v2
+2026-10-23 10:54:05 mixing multistatic seed 3 with harbor_v2 from the cached gathers
+2026-10-23 10:54:23 running the chain on multistatic_seed3 mixed with harbor_v2
+2026-10-23 10:55:18 mixing harbor seed 1 with harbor_v2 from the cached gathers
+2026-10-23 10:55:28 running the chain on harbor_seed1 mixed with harbor_v2
+2026-10-23 10:56:33 mixing harbor seed 2 with harbor_v2 from the cached gathers
+2026-10-23 10:56:44 running the chain on harbor_seed2 mixed with harbor_v2
+2026-10-23 10:57:50 mixing harbor seed 3 with harbor_v2 from the cached gathers
+2026-10-23 10:58:01 running the chain on harbor_seed3 mixed with harbor_v2
+2026-10-23 10:59:06 mixing multistatic_b seed 0 with harbor_v2 from the cached gathers
+2026-10-23 11:00:01 running the chain on multistatic_b mixed with harbor_v2

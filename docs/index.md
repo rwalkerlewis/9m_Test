@@ -46,6 +46,7 @@ parametric studies but is not used by the production pipeline.
 | [Layout study](layout_study.md) | Nine sensor layouts of the simple harbor: coverage maps, what the system tracks with each, which coverage quantity predicts detection |
 | [CI](ci.md) | What the two GitHub workflows run, and how to register a GPU runner |
 | [GPU check](gpu_check.md) | How to run `scripts/gpu_determinism.py` on a rented card to tell whether the float32 faults belong to the Quadro or to the code |
+| [Field recording](field_recording.md) | The one field recording that would replace the noise model's assumed numbers with measured ones, and the analysis in the order it answers them |
 | [Generated outputs](outputs.md) | What is tracked under `output/`, how to regenerate it, cleanup |
 | [Glossary](glossary.md) | Definitions of terms, acronyms, and concepts |
 

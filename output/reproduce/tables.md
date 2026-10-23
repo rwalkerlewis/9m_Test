@@ -2,17 +2,17 @@
 
 Pd: fraction of frames, from the first frame the object could have been confirmed, with a confirmed track matched to it within 5 m (radiator tracks for what radiates, echo tracks for silent bodies); test: the three noise seeds (each value) and multistatic_b. False tracks: confirmed tracks matched to no object, per minute.
 
-| Recording | Split | Compute per s of data | Latency (median) | Pd per object | False tracks (per minute) |
-|---|---|---|---|---|---|
-| simple | tuning | 1.25 | 2.9 s | ferry 100 %; boat 100 %; uuv1 58 %; wreck 100 % | 1 (3.0) |
-| simple | test | 1.22 / 1.21 / 1.20 | 2.8 s / 2.8 s / 2.8 s | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 66 % / 64 % / 58 %; wreck 100 % / 100 % / 100 % | 0 (0.0) / 0 (0.0) / 1 (3.0) |
-| bistatic | tuning | 1.16 | 2.4 s | ferry 100 %; uuv1 89 % | 2 (6.0) |
-| bistatic | test | 1.20 / 1.51 / 1.37 | 2.6 s / 3.1 s / 2.6 s | ferry 100 % / 100 % / 100 %; uuv1 55 % / 6 % / 53 % | 1 (3.0) / 2 (6.0) / 2 (6.0) |
-| multistatic | tuning | 2.87 | 5.6 s | ferry 100 %; tug 100 %; boat 100 %; uuv1 84 %; uuv2 95 %; moored 83 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 2 (6.0) |
-| multistatic | test | 2.83 / 2.81 / 2.85 | 5.6 s / 5.6 s / 5.7 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 89 % / 80 % / 80 %; uuv2 94 % / 94 % / 91 %; moored 91 % / 83 % / 86 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | 3 (9.0) / 2 (6.0) / 3 (9.0) |
-| harbor | tuning | 0.54 | 1.1 s | ferry 83 %; tug 4 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | 3 (1.5) |
-| harbor | test | 0.54 / 0.54 / 0.54 | 1.1 s / 1.1 s / 1.1 s | ferry 65 % / 83 % / 63 %; tug 6 % / 7 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | 4 (2.0) / 3 (1.5) / 3 (1.5) |
-| multistatic_b | test | 2.85 | 5.4 s | ferry 99 %; tug 100 %; boat 70 %; uuv1 59 %; uuv2 96 %; diver 81 %; not tracked: piling1, piling2, piling3, piling4, piling5, piling6, moored | 5 (5.0) |
+| Recording | Split | Compute per s of data | Latency (median) | Pd per object, old noise model | Pd per object, harbor_v2 | False tracks (per minute), old / harbor_v2 |
+|---|---|---|---|---|---|---|
+| simple | tuning | 1.25 | 2.9 s | ferry 100 %; boat 100 %; uuv1 58 %; wreck 100 % | ferry 100 %; boat 100 %; uuv1 20 %; wreck 98 % | 1 (3.0); harbor_v2 2 (6.0) |
+| simple | test | 1.22 / 1.21 / 1.20 | 2.8 s / 2.8 s / 2.8 s | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 66 % / 64 % / 58 %; wreck 100 % / 100 % / 100 % | ferry 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 0 % / 0 % / 25 %; wreck 97 % / 98 % / 98 % | 0 (0.0) / 0 (0.0) / 1 (3.0); harbor_v2 1 (3.0) / 2 (6.0) / 1 (3.0) |
+| bistatic | tuning | 1.16 | 2.4 s | ferry 100 %; uuv1 89 % | ferry 100 %; uuv1 53 % | 2 (6.0); harbor_v2 0 (0.0) |
+| bistatic | test | 1.20 / 1.51 / 1.37 | 2.6 s / 3.1 s / 2.6 s | ferry 100 % / 100 % / 100 %; uuv1 55 % / 6 % / 53 % | ferry 100 % / 100 % / 100 %; uuv1 78 % / 80 % / 80 % | 1 (3.0) / 2 (6.0) / 2 (6.0); harbor_v2 0 (0.0) / 0 (0.0) / 1 (3.0) |
+| multistatic | tuning | 2.87 | 5.6 s | ferry 100 %; tug 100 %; boat 100 %; uuv1 84 %; uuv2 95 %; moored 83 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | ferry 100 %; tug 100 %; boat 100 %; uuv1 0 %; uuv2 88 %; moored 62 % | 2 (6.0); harbor_v2 2 (6.0) |
+| multistatic | test | 2.83 / 2.81 / 2.85 | 5.6 s / 5.6 s / 5.7 s | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 89 % / 80 % / 80 %; uuv2 94 % / 94 % / 91 %; moored 91 % / 83 % / 86 %; not tracked: diver, piling1, piling2, piling3, piling4, piling5, piling6 | ferry 100 % / 100 % / 100 %; tug 100 % / 100 % / 100 %; boat 100 % / 100 % / 100 %; uuv1 0 % / 14 % / 0 %; uuv2 91 % / 92 % / 83 %; moored 62 % / 72 % / 62 % | 3 (9.0) / 2 (6.0) / 3 (9.0); harbor_v2 1 (3.0) / 1 (3.0) / 1 (3.0) |
+| harbor | tuning | 0.54 | 1.1 s | ferry 83 %; tug 4 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | ferry 93 %; tug 4 %; moored 0 %; uuv1 0 %; uuv2 0 %; diver 0 % | 3 (1.5); harbor_v2 2 (1.0) |
+| harbor | test | 0.54 / 0.54 / 0.54 | 1.1 s / 1.1 s / 1.1 s | ferry 65 % / 83 % / 63 %; tug 6 % / 7 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | ferry 81 % / 67 % / 94 %; tug 6 % / 6 % / 6 %; moored 0 % / 0 % / 0 %; uuv1 0 % / 0 % / 0 %; uuv2 0 % / 0 % / 0 %; diver 0 % / 0 % / 0 % | 4 (2.0) / 3 (1.5) / 3 (1.5); harbor_v2 0 (0.0) / 4 (2.0) / 3 (1.5) |
+| multistatic_b | test | 2.85 | 5.4 s | ferry 99 %; tug 100 %; boat 70 %; uuv1 59 %; uuv2 96 %; diver 81 %; not tracked: piling1, piling2, piling3, piling4, piling5, piling6, moored | ferry 99 %; tug 100 %; boat 56 %; uuv1 46 %; uuv2 84 %; diver 0 % | 5 (5.0); harbor_v2 2 (2.0) |
 
 ### Criteria
 
