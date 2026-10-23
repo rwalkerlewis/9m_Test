@@ -47,7 +47,9 @@ averaging.
 again from their cached gathers (seeds 0 to 2) with the old model and with harbor_v2 (every component on; the shrimp at
 an assumed latitude of 30 degrees; the machinery on the simple harbor only, the one recording whose machinery was run
 through the forward model), and runs the system with the processing configs exactly as on `main`
-(`output/studies/noise_model/`). No pass or fail criterion: the finding is how far the numbers move.
+(`output/studies/noise_model/`; each run's summary is committed there, its `picture.jsonl` and `tracks.csv` are
+written again by the script and are in git history at commit `1164bb4`). No pass or fail criterion: the finding is how far
+the numbers move.
 
 Old model beside harbor_v2, every recording and seed (`output/studies/noise_model/table.md`):
 
