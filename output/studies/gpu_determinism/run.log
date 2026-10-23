@@ -1,0 +1,64 @@
+versions: {"device": "Quadro RTX 4000", "compute_capability": "7.5", "memory_gb": 7.6, "driver": "580.196.07", "cuda_driver_api": "13.0", "cuda_runtime": "12.9", "cufft": 11401, "cupy": "14.2.0", "numpy": "2.5.4", "python": "3.12.3", "host": "9621f8fc9872"}
+  (a) float32 process  0 done in 19.6 s
+  (a) float32 process  1 done in 19.6 s
+  (a) float32 process  2 done in 19.8 s
+  (a) float32 process  3 done in 19.6 s
+  (a) float32 process  4 done in 19.8 s
+  (a) float32 process  5 done in 19.7 s
+  (a) float32 process  6 done in 19.7 s
+  (a) float32 process  7 done in 19.7 s
+  (a) float32 process  8 done in 20.2 s
+  (a) float32 process  9 done in 20.3 s
+  (a) float32 process 10 done in 19.9 s
+  (a) float32 process 11 done in 19.8 s
+  (a) float32 process 12 done in 19.8 s
+  (a) float32 process 13 done in 19.9 s
+  (a) float32 process 14 done in 19.8 s
+  (a) float32 process 15 done in 19.8 s
+  (a) float32 process 16 done in 19.8 s
+  (a) float32 process 17 done in 19.9 s
+  (a) float32 process 18 done in 19.9 s
+  (a) float32 process 19 done in 20.2 s
+  (a) float32 process  0: largest difference from the median 4.92e-03 of the peak, first at step 8718, first large at step 15783
+  (a) float32 process  1: largest difference from the median 1.60e-03 of the peak, first at step 6588, first large at step 19172
+  (a) float32 process  2: largest difference from the median 1.53e-02 of the peak, first at step 8718, first large at step 20058
+  (a) float32 process  3: largest difference from the median 1.04e-02 of the peak, first at step 8711, first large at step 12400
+  (a) float32 process  4: largest difference from the median 1.67e-02 of the peak, first at step 8718, first large at step 15460
+  (a) float32 process  5: largest difference from the median 6.07e-04 of the peak, first at step 8718, first large at step 25067
+  (a) float32 process  6: largest difference from the median 8.51e-03 of the peak, first at step 8718, first large at step 19524
+  (a) float32 process  7: largest difference from the median 7.99e-03 of the peak, first at step 8718, first large at step 17362
+  (a) float32 process  8: largest difference from the median 9.17e-03 of the peak, first at step 8718, first large at step 21881
+  (a) float32 process  9: largest difference from the median 4.20e-03 of the peak, first at step 8718, first large at step 18464
+  (a) float32 process 10: largest difference from the median 1.17e-06 of the peak, first at step 8718, first large at step -1
+  (a) float32 process 11: largest difference from the median 2.83e-04 of the peak, first at step 5892, first large at step 18158
+  (a) float32 process 12: largest difference from the median 2.65e-03 of the peak, first at step 1352, first large at step 17524
+  (a) float32 process 13: largest difference from the median 4.80e-03 of the peak, first at step 3652, first large at step 13293
+  (a) float32 process 14: largest difference from the median 1.23e-02 of the peak, first at step 5262, first large at step 21309
+  (a) float32 process 15: largest difference from the median 1.19e-03 of the peak, first at step 5853, first large at step 24894
+  (a) float32 process 16: largest difference from the median 3.06e-04 of the peak, first at step 8711, first large at step 16470
+  (a) float32 process 17: largest difference from the median 1.17e-06 of the peak, first at step 2256, first large at step -1
+  (a) float32 process 18: largest difference from the median 9.35e-03 of the peak, first at step 4844, first large at step 23751
+  (a) float32 process 19: largest difference from the median 2.69e-06 of the peak, first at step 5132, first large at step -1
+(a) float32: 0 identical, 3 small, 17 large (largest 1.67e-02) in 20 processes against their median
+  (a) float64 process  0 done in 76.0 s
+  (a) float64 process  1 done in 75.9 s
+  (a) float64 process  2 done in 75.8 s
+  (a) float64 process  3 done in 75.8 s
+  (a) float64 process  4 done in 75.8 s
+  (a) float64 process  0: largest difference from the median 0.00e+00 of the peak, first at step -1, first large at step -1
+  (a) float64 process  1: largest difference from the median 0.00e+00 of the peak, first at step -1, first large at step -1
+  (a) float64 process  2: largest difference from the median 0.00e+00 of the peak, first at step -1, first large at step -1
+  (a) float64 process  3: largest difference from the median 0.00e+00 of the peak, first at step -1, first large at step -1
+  (a) float64 process  4: largest difference from the median 0.00e+00 of the peak, first at step -1, first large at step -1
+(a) float64: 5 identical, 0 small, 0 large (largest 0.00e+00) in 5 processes against their median
+  (b) float32: 5000 of 20000 calls, 2 s
+  (b) float32: 10000 of 20000 calls, 4 s
+  (b) float32: 15000 of 20000 calls, 5 s
+  (b) float32: 20000 of 20000 calls, 7 s
+(b) float32: 21 corrupted in 20000 batched calls (largest 5.18e+07, correct calls at most 3.53e-07)
+  (b) float64: 5000 of 20000 calls, 10 s
+  (b) float64: 10000 of 20000 calls, 19 s
+  (b) float64: 15000 of 20000 calls, 29 s
+  (b) float64: 20000 of 20000 calls, 39 s
+(b) float64: 0 corrupted in 20000 batched calls (largest 9.38e-16, correct calls at most 9.38e-16)
+deterministic (criterion above): False; without the waits: None; 822.6 s

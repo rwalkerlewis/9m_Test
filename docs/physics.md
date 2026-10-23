@@ -245,7 +245,7 @@ in float32 met it three and four times in 20 s, as jumps of up to 4e-5 of the bu
 alone met it not once; a float32 recording is therefore still compared with float64. The criterion now passes on
 every component, which is what a switch of the default needs; the switch was not made: `precision` stays float64 in
 every scenario file, the recordings were left at their float64 build, `scripts/reproduce.py` was not run and no number
-of `docs/harbor.md` moved. Whether to switch is Moyshe's decision.
+of `docs/harbor.md` moved. Whether to switch is the repository owner's decision.
 
 **Section 2, the ECA in mixed precision: pass.** The ECA in mixed precision against double on the stage 0a cases
 (`harbor_cancellation_depth.py --eca-precision`, the gathers of `output/studies/direct_path/cache/`, the processing
@@ -295,8 +295,22 @@ frames, `eca_gpu_<precision>.json`). The echo chain's time per second of data, d
 | multistatic | echo loss, boat>bodies | 1.367 | 1.367 | -0.0000 |
 
 What stays: `precision` is float64 in every scenario file (the scattered criterion passes with the runs alone, but
-the switch is left to Moyshe) and `eca_precision` is
+the switch is left to the repository owner) and `eca_precision` is
 `float64` in every processing config (the prompt leaves processing parameters unchanged; `"mixed"` is available).
+
+**Is it the card?** Three findings on the Quadro RTX 4000 of the development machine: float32 k space runs that differ
+between processes (with the waits now in `FusedFDTD.step`, 1 run in 240 of 300 steps in the study, but
+17 of 20 fresh processes of 5 s each in `scripts/gpu_determinism.py`, by up to 1.7e-2 of the trace's peak, from a
+step that changes from run to run); batched float32 inverse FFTs that return a corrupted field (19 calls in 100 000
+in the study, 21 in 20 000 in the script's run); and the card's own error state during the layout study (the driver
+reported Xid 119 and 154 on 2026-10-21 and CUDA saw no device until a reboot). Float64 was never affected (5 of 5
+processes identical, 0 corrupted calls in 20 000 in the same run). These are consistent with a faulty card or driver
+as much as with the code, CuPy or cuFFT; nothing measured on one card can tell which.
+`scripts/gpu_determinism.py` exists to settle it on another card: it needs no recording, runs the fresh process and
+batched FFT tests in both precisions and writes the card's versions beside the counts
+(`output/studies/gpu_determinism/results.json`; how to run it on a rented card: [GPU check](gpu_check.md)).
+
+The figures of the float32 study (`output/studies/float32/`) are not shown on this page and are no longer committed; they are in git history at commit `1164bb4`, and the study's JSON and write ups stay.
 
 ### CFL stability condition
 

@@ -1,0 +1,290 @@
+{
+ "criterion": "deterministic when, in float32 and in float64, no process of (a) with the solver as committed differs from the median of the processes by 1e-4 of the trace's peak or more and no batched irfft2 call of (b) has a member differing from the unbatched result by 1e-4 of its peak or more",
+ "large_threshold": 0.0001,
+ "versions": {
+  "device": "Quadro RTX 4000",
+  "compute_capability": "7.5",
+  "memory_gb": 7.6,
+  "driver": "580.196.07",
+  "cuda_driver_api": "13.0",
+  "cuda_runtime": "12.9",
+  "cufft": 11401,
+  "cupy": "14.2.0",
+  "numpy": "2.5.4",
+  "python": "3.12.3",
+  "host": "9621f8fc9872"
+ },
+ "args": {
+  "n": 20,
+  "n64": 5,
+  "m": 20000,
+  "seconds": 5.0,
+  "no_waits": false
+ },
+ "started": "2026-10-23 04:32:37",
+ "runs": [
+  {
+   "precision": "float32",
+   "waits": true,
+   "processes": 20,
+   "seconds": 5.0,
+   "grid": [
+    601,
+    801
+   ],
+   "steps": 30000,
+   "identical": 0,
+   "small": 3,
+   "large": 17,
+   "largest": 0.016661540291610967,
+   "per_process": [
+    {
+     "process": 0,
+     "largest": 0.004923154556405497,
+     "first_step": 8718,
+     "first_large_step": 15783,
+     "wall_s": 19.6
+    },
+    {
+     "process": 1,
+     "largest": 0.0016004002551168533,
+     "first_step": 6588,
+     "first_large_step": 19172,
+     "wall_s": 19.6
+    },
+    {
+     "process": 2,
+     "largest": 0.015292776226881667,
+     "first_step": 8718,
+     "first_large_step": 20058,
+     "wall_s": 19.8
+    },
+    {
+     "process": 3,
+     "largest": 0.010366413810607704,
+     "first_step": 8711,
+     "first_large_step": 12400,
+     "wall_s": 19.6
+    },
+    {
+     "process": 4,
+     "largest": 0.016661540291610967,
+     "first_step": 8718,
+     "first_large_step": 15460,
+     "wall_s": 19.8
+    },
+    {
+     "process": 5,
+     "largest": 0.0006070581549414192,
+     "first_step": 8718,
+     "first_large_step": 25067,
+     "wall_s": 19.7
+    },
+    {
+     "process": 6,
+     "largest": 0.008511020122781208,
+     "first_step": 8718,
+     "first_large_step": 19524,
+     "wall_s": 19.7
+    },
+    {
+     "process": 7,
+     "largest": 0.007989570260151473,
+     "first_step": 8718,
+     "first_large_step": 17362,
+     "wall_s": 19.7
+    },
+    {
+     "process": 8,
+     "largest": 0.00917136247599613,
+     "first_step": 8718,
+     "first_large_step": 21881,
+     "wall_s": 20.2
+    },
+    {
+     "process": 9,
+     "largest": 0.004199390392689218,
+     "first_step": 8718,
+     "first_large_step": 18464,
+     "wall_s": 20.3
+    },
+    {
+     "process": 10,
+     "largest": 1.1687220837764646e-06,
+     "first_step": 8718,
+     "first_large_step": -1,
+     "wall_s": 19.9
+    },
+    {
+     "process": 11,
+     "largest": 0.00028304139779768465,
+     "first_step": 5892,
+     "first_large_step": 18158,
+     "wall_s": 19.8
+    },
+    {
+     "process": 12,
+     "largest": 0.002648316714780572,
+     "first_step": 1352,
+     "first_large_step": 17524,
+     "wall_s": 19.8
+    },
+    {
+     "process": 13,
+     "largest": 0.004802540689921068,
+     "first_step": 3652,
+     "first_large_step": 13293,
+     "wall_s": 19.9
+    },
+    {
+     "process": 14,
+     "largest": 0.012308424261755328,
+     "first_step": 5262,
+     "first_large_step": 21309,
+     "wall_s": 19.8
+    },
+    {
+     "process": 15,
+     "largest": 0.0011911921770044694,
+     "first_step": 5853,
+     "first_large_step": 24894,
+     "wall_s": 19.8
+    },
+    {
+     "process": 16,
+     "largest": 0.0003056308534019037,
+     "first_step": 8711,
+     "first_large_step": 16470,
+     "wall_s": 19.8
+    },
+    {
+     "process": 17,
+     "largest": 1.1687232837797065e-06,
+     "first_step": 2256,
+     "first_large_step": -1,
+     "wall_s": 19.9
+    },
+    {
+     "process": 18,
+     "largest": 0.009351771896037248,
+     "first_step": 4844,
+     "first_large_step": 23751,
+     "wall_s": 19.9
+    },
+    {
+     "process": 19,
+     "largest": 2.688678063619087e-06,
+     "first_step": 5132,
+     "first_large_step": -1,
+     "wall_s": 20.2
+    }
+   ]
+  },
+  {
+   "precision": "float64",
+   "waits": true,
+   "processes": 5,
+   "seconds": 5.0,
+   "grid": [
+    601,
+    801
+   ],
+   "steps": 30000,
+   "identical": 5,
+   "small": 0,
+   "large": 0,
+   "largest": 0.0,
+   "per_process": [
+    {
+     "process": 0,
+     "largest": 0.0,
+     "first_step": -1,
+     "first_large_step": -1,
+     "wall_s": 76.0
+    },
+    {
+     "process": 1,
+     "largest": 0.0,
+     "first_step": -1,
+     "first_large_step": -1,
+     "wall_s": 75.9
+    },
+    {
+     "process": 2,
+     "largest": 0.0,
+     "first_step": -1,
+     "first_large_step": -1,
+     "wall_s": 75.8
+    },
+    {
+     "process": 3,
+     "largest": 0.0,
+     "first_step": -1,
+     "first_large_step": -1,
+     "wall_s": 75.8
+    },
+    {
+     "process": 4,
+     "largest": 0.0,
+     "first_step": -1,
+     "first_large_step": -1,
+     "wall_s": 75.8
+    }
+   ]
+  }
+ ],
+ "batched": [
+  {
+   "precision": "float32",
+   "calls": 20000,
+   "batch": 2,
+   "grid": [
+    601,
+    801
+   ],
+   "corrupted": 21,
+   "corrupted_at": [
+    227,
+    323,
+    357,
+    398,
+    972,
+    1075,
+    1609,
+    1837,
+    2549,
+    3044,
+    3269,
+    3606,
+    10261,
+    10283,
+    10386,
+    10466,
+    10484,
+    10492,
+    10519,
+    10521
+   ],
+   "largest": 51797592.1663262,
+   "normal_largest": 3.5269344933387295e-07,
+   "wall_s": 7.1
+  },
+  {
+   "precision": "float64",
+   "calls": 20000,
+   "batch": 2,
+   "grid": [
+    601,
+    801
+   ],
+   "corrupted": 0,
+   "corrupted_at": [],
+   "largest": 9.384893929136488e-16,
+   "normal_largest": 9.384893929136488e-16,
+   "wall_s": 39.0
+  }
+ ],
+ "deterministic": false,
+ "deterministic_without_waits": null,
+ "wall_s": 822.6
+}

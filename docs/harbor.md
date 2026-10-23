@@ -25,6 +25,8 @@ on a Quadro RTX 4000 (real time is 1 s) (for the compute before stage 2 see the
 [history](harbor_history.md#findings-before-stage-2)). Numbers, with tuning beside test recordings, in
 [Numbers on recordings the parameters never saw](#numbers-on-recordings-the-parameters-never-saw).
 
+**What the layout study found** ([The sensor layout study](layout_study.md)). A strain cable has no response broadside, so where the fibre runs decides what the system can see before any processing runs. On the simple harbor, in strain mode, no layout tracked the UUV (at most <!-- reproduce:max:@studies/layout/summary.json:table/[A-H]*/objects/uuv1/pd_max|pct -->0 %<!-- /reproduce --> of the frames of any seed), and the current loop tracked the wreck in about a quarter of the frames (<!-- reproduce:range:@studies/layout/summary.json:table/[EFG]*/objects/wreck/pd_mean|pct -->24 to 31 %<!-- /reproduce --> with none, four or eight hydrophones) against <!-- reproduce:@studies/layout/summary.json:table/P/objects/wreck/pd_mean|pct -->100 %<!-- /reproduce --> as a pressure cable; a zigzag of 45 degree segments over half the length tracked it in <!-- reproduce:@studies/layout/summary.json:table/H/objects/wreck/pd_mean|pct -->90 %<!-- /reproduce -->. Four or eight hydrophones bought nothing: the straight leg tracked the wreck in <!-- reproduce:@studies/layout/summary.json:table/A/objects/wreck/pd_mean|pct -->36 %<!-- /reproduce --> without them and <!-- reproduce:@studies/layout/summary.json:table/B/objects/wreck/pd_mean|pct -->19 %<!-- /reproduce --> with four. Every 0.5 m recording the system is scored on (`bistatic`, `multistatic`, `multistatic_b`) uses a strain cable, so its silent body numbers are numbers about a cable that is deaf in some directions. For a real harbor: fibre laid for strain sensing should turn through several directions around the water to be watched, and a straight run along one quay should not be expected to see what lies broadside of it.
+
 Earlier work (the batch chains with AIS in the loop, stage 0 and stage 1, the performance work) is in
 [Harbor, history](harbor_history.md).
 
@@ -192,7 +194,7 @@ signature alone in the bistatic harbor at about 193, 99 and 29 m from the neares
 at 4 m/s, the scenario noise, the echo chain's own ECA settings, the ship position the AIS prediction refined on the
 traces. The direct component given from the truth goes through the same projection, so the depth (its band energy
 before over after, median and 10th percentile over the live cable channels) is a diagnostic, as is the coherence of
-each reference with the true waveform (`coherence_<case>.png`). The gathers were simulated again for this study with
+each reference with the true waveform (`coherence_<case>.png`, written by the script; the committed ones are in git history at commit `1164bb4`). The gathers were simulated again for this study with
 the k space scheme of the recordings: the cached gathers of the earlier stage 0a predated the trace timing correction
 and could not be used. Depth median / 10th percentile [dB]:
 
@@ -539,7 +541,9 @@ script also runs on its own). The chain runs once (`water/stream.py`, cached in 
 the processing reads the truth or the AIS reports: the truth is drawn (dashed lines, circles) only to show where the
 objects really are, and AIS enters in step 4 only. Below: the multistatic recording (three ships, two UUVs, a diver, six
 pilings and a moored hull) and, for the echo steps, the [simple harbor](#the-simple-harbor). All four recordings have the
-full set (the 5 m harbor without steps 5 and 6).
+full set (the 5 m harbor without steps 5 and 6). Only the figures shown below are committed; the others named in
+this section, and the walkthrough of every other recording, are written by `run_all.sh` (and are in git history at
+commit `1164bb4`).
 
 **1. The recording** (`01_recording.py`). What the system gets: the chart, the sensor positions (a DAS cable and four
 hydrophones) and the traces (`01_recording_gather.png`, `_spectrogram.png`, `_trace.png`). The cable of the bistatic and
@@ -616,7 +620,7 @@ few sensors, the echo path through the strongest peak) and the ellipse of equal 
 
 Look at the solid red path from the illuminator to the strongest echo peak and at the dashed paths from that peak to the sensors.
 
-The same frame geometry is in `check_<chain>_frame_map.png`, `check_echo_frame_rays.png` and `check_echo_frame_ellipse.png` of every run of `harbor_stream.py` and `scripts/reproduce.py`.
+The same frame geometry is in `check_<chain>_frame_map.png`, `check_echo_frame_rays.png` and `check_echo_frame_ellipse.png`, written by every run of `harbor_stream.py` and `scripts/reproduce.py` (not committed).
 
 ## What the objects are: measured characteristics
 
@@ -794,8 +798,9 @@ lost tracks faded. It is saved as `picture.mp4` per recording and shown live wit
 
 Look at the two ships labelled with their AIS identity and source level, the bodies seen by their echo with their size
 indicator, and the grey dots of tentative tracks that never confirm. The frame is three quarters into `multistatic_b`
-(a test recording); every recording's frame is in `output/reproduce/runs/<recording>/picture_frame.png`; the videos
-(`picture.mp4`) are not committed.
+(a test recording); every recording's frame is written to `output/reproduce/runs/<recording>/picture_frame.png` by `scripts/reproduce.py`
+(only this one is committed; the others are in git history at commit `1164bb4`); the videos (`picture.mp4`) are not
+committed.
 
 ### On a field recording
 
@@ -847,7 +852,7 @@ limited cross correlation with the free field prediction at the chart's speed) m
 early. It is written into the truth file's `meta` as `propagation_error_ms` and drawn in
 `output/recordings/<recording>/propagation_error.png` (`--plot-only` redraws the figure from the JSON without the FDTD
 run); the runs with uniform water, another grid or the leapfrog scheme are in
-`output/studies/propagation_error/<recording>/`. Criterion, fixed before the k space recordings were built: within
+`output/studies/propagation_error/<recording>/` (their JSON; their figures are in git history at commit `1164bb4`). Criterion, fixed before the k space recordings were built: within
 0.2 ms at every hydrophone on the 0.5 m and 1 m recordings, within 0.1 ms on the simple harbor (whose water has exactly
 the chart's speed); none for the 5 m harbor.
 
@@ -892,7 +897,8 @@ switch.
 `scripts/reproduce.py --update` on every recording with the processing configs unchanged (no parameter was changed;
 the source level calibration constant was not refitted). Before: `output/reproduce/summary.json` at commit `8cfaabb`
 (`output/studies/forward_fidelity/summary_leapfrog.json`), the leapfrog recordings; after: the k space recordings
-(`output/studies/forward_fidelity/summary_kspace.json`, the summary as that change committed it). "Moved": by more
+(`output/studies/forward_fidelity/summary_kspace.json`, the summary as that change committed it; the study's figures
+are in git history at commit `1164bb4`). "Moved": by more
 than the reproduce tolerance (Pd 3 percentage points, median error 0.5 m, false tracks exactly). Pd and median error
 are of the object's own track kind (radiator tracks for what radiates, echo tracks for silent bodies);
 `examples/harbor/01_datasets/harbor_numbers_before_after.py` writes the table

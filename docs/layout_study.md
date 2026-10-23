@@ -15,9 +15,10 @@ hydrophone respond to every direction), the same **weighted by cylindrical sprea
 **shadowing** (the fraction of sensors whose straight path from the cell stays in water) and the **predicted
 resolution** (the full widths at half maximum of the layout's free field matched field response to a point source at
 the cell, at the band centre, the replica against itself; shown up to the 80 m window it is computed in). The maps of
-every variant are in `output/studies/layout/<variant>/maps/` and of every layout on `main` in
+every variant are written to `output/studies/layout/<variant>/maps/` and of every layout on `main` to
 `output/studies/layout/main/<recording>/maps/`, one figure per quantity, with the objects' true tracks drawn (the truth
-is allowed here: this is a design tool).
+is allowed here: this is a design tool). Only the four maps shown below are committed; the others, and the runs'
+`picture.jsonl` and `tracks.csv`, are written again by `run_layout_study.py` and are in git history at commit `1164bb4`.
 
 ![coverage, straight leg](../output/studies/layout/A/maps/coverage_strain_fraction.png)
 
