@@ -50,12 +50,9 @@
     "static_s": 10.0,
     "lost_s": 4.0,
     "shape_radius": 60,
-    "explain_fraction": 0.42,
+    "explain_fraction": 0.5,
     "illuminator_margin_db": 10.0,
-    "echo_coherence": 0.7,
-    "echo_test": "ratio",
-    "echo_ratio": 0.15,
-    "drop_confirmed_s": 4.5
+    "echo_coherence": 0.7
   },
   "echo": null,
   "characteristics": {

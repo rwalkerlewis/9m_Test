@@ -11,6 +11,7 @@ A forward side that generates synthetic acoustic data by solving the wave equati
 - `main` is the only line of development. Every task is a new branch from `origin/main` named in its prompt; ignore every other branch in the repository.
 - Several sessions may run at once. Each prompt names the files it owns and the files other sessions own; do not edit files you do not own. If `main` moves while you work, rebase before opening the pull request.
 - Commit in small steps. Open one pull request against `main` with the tables the prompt asks for in its description. Stop where the prompt says to stop and report what it asks for.
+- A pull request is merged only when `pytest tests`, `scripts/reproduce.py --check` (or `--update`, recorded) and `scripts/clean_outputs.py --check` pass **and** every criterion the task fixed before running passes, or the task changes no number (a structural task). A task whose criteria fail leaves its pull request open with its results in the description, and `main` keeps the settings it had; the next task starts from `main` as it is.
 
 ## Measurement rules
 

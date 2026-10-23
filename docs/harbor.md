@@ -548,18 +548,29 @@ map the array would produce for that track alone (the layout's response to a poi
 through the same replicas, whitening weights and interference projection as the data map; `StreamingPassive.push(explain=...)`)
 at the cells of the block's peaks (`FrameResult.pair_R`; the whole map with `stream.full_patterns`, exposed for the echo
 chain). A data map peak outside a track's gate is that track's sidelobe if the track's predicted map there, scaled to the
-track's own peak, is at least 0.42 of the data map (`explain_fraction`); a sidelobe starts no track and is no fix of
+track's own peak, is at least 0.5 of the data map (`explain_fraction`); a sidelobe starts no track and is no fix of
 another, and a track confirming in the same frame as a stronger one whose sidelobe it is does not confirm. The fixed
 30 m exclusion and the strong fraction are gone: an illuminator of the echo chain is any confirmed radiator track whose
 peak is 10 dB above the map's noise floor (the median of the frame's map over the cells above zero).
 
-**Echoes located by the passive chain.** A radiator track about to confirm on which an illuminator's predicted map,
-scaled to the illuminator's own peak, is at least 0.15 of the data map (the median over the track's fixes, the frame it
-confirms in included; `echo_test = "ratio"`, `echo_ratio`) and which sits, within its gate, on an echo map peak of that
-illuminator is an echo and never confirms (`HarborPicture._hold_echo`); a track held as an echo explains its sidelobes
-like a confirmed track. The earlier test, the coherence of the track's source spectrum with the illuminator's above 0.7,
-is kept as `echo_test = "coherence"`; it never held a track ([Where the false tracks come from](#where-the-false-tracks-come-from)).
-A confirmed track is dropped after 4.5 s without a gated fix (`drop_confirmed_s`), a tentative one after 2 s.
+**Echoes located by the passive chain.** A radiator track about to confirm whose least squares source spectrum is
+coherent with an illuminator's above 0.7 (over its frames, mean over the band; `echo_test = "coherence"`, `echo_coherence`)
+and which sits, within its gate, on an echo map peak of that illuminator is an echo and never confirms
+(`HarborPicture._hold_echo`); a track held as an echo explains its sidelobes like a confirmed track. This test never held
+a track on any recording ([Where the false tracks come from](#where-the-false-tracks-come-from)). A radiator track of
+the 0.5 m and 1 m recordings is dropped after 2 s without a gated fix, confirmed or tentative (8 s on the 5 m harbor).
+
+**Measured, failed and off by default.** Two rules of [the false tracks study](#the-false-track-change-on-the-chain)
+are in the code and off in every processing config: the echo test by the predicted map ratio (`echo_test = "ratio"`,
+`echo_ratio = 0.15`, with the sidelobe fraction at 0.42) and a longer drop time for a confirmed track
+(`drop_confirmed_s = 4.5`). Both were chosen on the tuning recordings and failed every criterion fixed for them on the
+test recordings: the bistatic UUV's echo Pd fell on every test seed
+(<!-- reproduce:@studies/false_tracks/criteria.json:criteria[3]/values/bistatic_seed1?uuv1/before|pct -->70 %<!-- /reproduce --> to <!-- reproduce:@studies/false_tracks/criteria.json:criteria[3]/values/bistatic_seed1?uuv1/after|pct -->55 %<!-- /reproduce -->,
+<!-- reproduce:@studies/false_tracks/criteria.json:criteria[3]/values/bistatic_seed2?uuv1/before|pct -->59 %<!-- /reproduce --> to <!-- reproduce:@studies/false_tracks/criteria.json:criteria[3]/values/bistatic_seed2?uuv1/after|pct -->6 %<!-- /reproduce -->,
+<!-- reproduce:@studies/false_tracks/criteria.json:criteria[3]/values/bistatic_seed3?uuv1/before|pct -->69 %<!-- /reproduce --> to <!-- reproduce:@studies/false_tracks/criteria.json:criteria[3]/values/bistatic_seed3?uuv1/after|pct -->53 %<!-- /reproduce -->),
+false tracks on `multistatic_b` went from <!-- reproduce:@studies/false_tracks/criteria.json:criteria[0]/before/multistatic_b|f1 -->6.0<!-- /reproduce --> to only <!-- reproduce:@studies/false_tracks/criteria.json:criteria[0]/values/multistatic_b|f1 -->5.0<!-- /reproduce --> per minute
+against 2, and the boat on `multistatic_b` stayed at <!-- reproduce:@studies/false_tracks/criteria.json:criteria[2]/values|f3 -->0.699<!-- /reproduce --> against 0.8. The settings of every
+processing config are again those from before that change; the study and its outputs are kept as they were.
 
 **Scoring of static bodies.** A track is matched to a static body (the pilings, the moored hull, the wreck) by its
 distance to the body's outline, the mask the forward model drew (`scoreboard.ObjectDistance`), and a frame is a hit when
@@ -659,7 +670,7 @@ Look at the same frames with the longer drop time: the confirmed track coasts on
 ### The false track change on the chain
 
 `scripts/reproduce.py --update` with the sidelobe fraction 0.42, the echo test by the ratio at 0.15 and
-`drop_confirmed_s = 4.5` in every processing config. Before: `output/studies/false_tracks/summary_before.json`; after:
+`drop_confirmed_s = 4.5` in every processing config (since removed again: [the tracker](#the-tracker)). Before: `output/studies/false_tracks/summary_before.json`; after:
 `summary_after.json`. Criteria, fixed before the run (`harbor_false_tracks_criteria.py`, `criteria.json`), on the test
 recordings; **every one fails**:
 
