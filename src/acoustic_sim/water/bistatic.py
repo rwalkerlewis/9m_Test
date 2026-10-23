@@ -51,6 +51,7 @@ REF_MODES = ("beam", "weighted", "weighted_cable", "hydrophones", "iterated", "j
 IMPLS = ("reference", "vectorized")
 MAP_SCALES = ("max", "none")
 ECA_GRAMS = ("matmul", "prefix")
+REMOVAL_ORDERS = ("sequential", "joint")
 
 
 @dataclass
@@ -116,6 +117,14 @@ class BistaticConfig:
         Alternations of ``"joint"``.
     ref_psd_s : float
         Segment length [s] of the noise power estimate of the weighted modes (Welch).
+    removal_order : str
+        How the direct paths of several illuminators are removed (:func:`remove_direct_paths`).
+        ``"sequential"``: one after the other, each reference estimated on the traces already cleaned of the
+        previous ones and each ECA on its own.  ``"joint"``: every reference estimated on the traces minus the
+        other illuminators' current fits, ``joint_passes`` times over all of them (the first pass is the sequential
+        one), then one least squares solve per block over the delayed copies of every reference at once.
+    joint_passes : int
+        Passes of ``"joint"`` over the references (0: one solve on the beams of the raw traces).
     patch_half, svd_rtol : float
         Patch half width [m] (3 x 3 points) and singular value cut of the patch replicas.
     adaptive_rank, adaptive_window : int
@@ -196,6 +205,8 @@ class BistaticConfig:
     ref_mode: str = "beam"
     ref_iterations: int = 3
     ref_psd_s: float = 0.5
+    removal_order: str = "sequential"
+    joint_passes: int = 2
     patch_half: float = 1.0
     svd_rtol: float = 0.05
     adaptive_rank: int = 2
@@ -226,6 +237,8 @@ class BistaticConfig:
             raise ValueError(f"impl must be one of {IMPLS}, got {self.impl!r}")
         if self.eca_precision not in ("float64", "mixed"):
             raise ValueError(f"eca_precision must be 'float64' or 'mixed', got {self.eca_precision!r}")
+        if self.removal_order not in REMOVAL_ORDERS:
+            raise ValueError(f"removal_order must be one of {REMOVAL_ORDERS}, got {self.removal_order!r}")
         if self.ref_mode not in REF_MODES:
             raise ValueError(f"ref_mode must be one of {REF_MODES}, got {self.ref_mode!r}")
         if self.eca_gram not in ECA_GRAMS:
@@ -1189,6 +1202,126 @@ def _eca_remove_reference(
             for out, seg in zip(outs, cleaned):
                 out[i, lo:hi] = seg
     return outs
+
+
+def _eca_remove_joint(traces: list[np.ndarray], references: list[np.ndarray], layout: SensorLayout, fs: float,
+                      ships_b: list[np.ndarray], ships_t: list[np.ndarray], images: list[list[np.ndarray]],
+                      block_s: float, bc: BistaticConfig, blocks: set[int] | None = None,
+                      chunk: int = 32) -> list[np.ndarray]:
+    """ECA over several illuminators at once: for every channel and block, one least squares fit on the delayed
+    copies of every illuminator's reference (each at the per sample delays of its own track, ``ships_t[k]`` (n, 2),
+    with the lag windows of :func:`eca_remove` around its direct arrival and, with ``images[k]``, its image
+    arrivals), the fit removed from every array of *traces*.
+
+    Returns the cleaned arrays.  The normal equations are formed by the matrix product (the prefix sum Gram of
+    ``eca_gram = "prefix"`` needs every column to be a shift of one base, which several references are not); with one
+    illuminator use :func:`eca_remove`."""
+    xp = _xp(bc)
+    from_window = xp.lib.stride_tricks.sliding_window_view
+    n = traces[0].shape[1]
+    K = len(references)
+    nb = int(round(block_s * fs))
+    half = int(round(bc.eca_halfwidth_s * fs))
+    outs = [np.array(x, dtype=np.float64, copy=True) for x in traces]
+    rec = layout.receivers
+    refs_up = [xp.asarray(resample(np.asarray(r, dtype=np.float64), n * UPSAMPLE)) for r in references]
+    j_up = xp.arange(n * UPSAMPLE, dtype=float)
+    j_all = xp.arange(n, dtype=float)
+    rec_d = xp.asarray(rec)
+    n_blocks = min(len(sb) for sb in ships_b)
+    for b in range(n_blocks):
+        if blocks is not None and b not in blocks:
+            continue
+        lo, hi = b * nb, min((b + 1) * nb, n)
+        if hi <= lo:
+            break
+        block = hi - lo
+        a, z = max(lo - half, 0), min(hi + half, n)
+        per = []                                                             # per illuminator: nominal, lag sets, paths
+        for k in range(K):
+            imgs = images[k][b] if images and len(images[k]) and len(images[k][b]) else []
+            pts = np.vstack([np.atleast_2d(ships_b[k][b])] + ([np.atleast_2d(imgs)] if len(imgs) else []))
+            nominal = np.rint(np.hypot(pts[None, :, 0] - rec[:, None, 0], pts[None, :, 1] - rec[:, None, 1]) / bc.c * fs).astype(int)
+            s_blk = xp.asarray(ships_t[k][a:z])
+            walls = 0.5 * (pts[1:] + ships_b[k][b][None, :])
+            paths = xp.stack([s_blk] + [2.0 * xp.asarray(w)[None, :] - s_blk for w in walls])
+            per.append((nominal, _eca_lags(nominal, half, hi), paths))
+        groups: dict[tuple, list[int]] = {}
+        for i in range(len(rec)):
+            key = tuple(len(p[1][i]) for p in per)
+            if sum(key):
+                groups.setdefault(key, []).append(i)
+        for key, chans in groups.items():
+            for c0 in range(0, len(chans), chunk):
+                idx = np.array(chans[c0:c0 + chunk])
+                Ss = []
+                for k, (nominal, lag_sets, paths) in enumerate(per):
+                    if key[k] == 0:
+                        continue
+                    lags = np.stack([lag_sets[i] for i in idx])                                      # (Ng, L_k)
+                    d = xp.hypot(paths[None, :, :, 0] - rec_d[idx][:, None, None, 0],
+                                 paths[None, :, :, 1] - rec_d[idx][:, None, None, 1]) / bc.c * fs   # (Ng, P, z - a)
+                    pos = (j_all[a:z][None, None, :] - d) * UPSAMPLE
+                    bases = xp.interp(pos.ravel(), j_up, refs_up[k], left=0.0, right=0.0).reshape(pos.shape)
+                    basep = xp.concatenate([xp.zeros(bases.shape[:2] + (half,)), bases, xp.zeros(bases.shape[:2] + (half,))], axis=-1)
+                    owner = np.argmin(np.abs(lags[:, :, None] - nominal[idx][:, None, :]), axis=2)
+                    off = lags - np.take_along_axis(nominal[idx], owner, axis=1)
+                    start = half + (lo - a) - off
+                    W = from_window(basep, block, axis=-1)                                           # (Ng, P, n_win, block)
+                    Ss.append(W[xp.asarray(np.arange(len(idx)))[:, None], xp.asarray(owner), xp.asarray(start)])
+                S = xp.ascontiguousarray(xp.concatenate(Ss, axis=1).transpose(0, 2, 1))                   # (Ng, block, L)
+                segs = xp.asarray(np.stack([out[idx, lo:hi] for out in outs], axis=-1))                    # (Ng, block, R)
+                cleaned = _asnumpy(_project_out_batched(S, segs))
+                for r_i, out in enumerate(outs):
+                    out[idx, lo:hi] = cleaned[:, :, r_i]
+    return outs
+
+
+def remove_direct_paths(traces: np.ndarray, components: list[np.ndarray], layout: SensorLayout, fs: float,
+                        ships: list[tuple[np.ndarray, np.ndarray]], chans: np.ndarray, bc: BistaticConfig,
+                        blocks: set[int] | None = None, bodies: list[np.ndarray] | None = None,
+                        images: list[list[np.ndarray]] | None = None) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
+    """Remove the direct path of every illuminator in *ships* (``(ship_b, ship_t)`` each: the position per ECA block
+    and per sample, in removal order) from *traces* (N, n), the same projections applied to every array of
+    *components* (a diagnostic).  ``bc.removal_order`` (:class:`BistaticConfig`): ``"sequential"``, each reference
+    (``bc.ref_mode``, :func:`estimate_reference`) on the traces cleaned of the previous illuminators and each ECA on
+    its own; ``"joint"``, ``bc.joint_passes`` passes over the illuminators in which each reference is estimated on the
+    traces minus the other illuminators' current fits (each fit its own ECA on those traces), then one ECA over all
+    references per block (:func:`_eca_remove_joint`).  Returns the cleaned traces, the cleaned components and the
+    references (one per illuminator, in order).
+    Nothing here reads the truth."""
+    x = np.asarray(traces, dtype=np.float64)
+    comps = [np.asarray(c, dtype=np.float64) for c in components]
+    imgs = images if images is not None else [[] for _ in ships]
+    if bc.removal_order == "sequential" or len(ships) <= 1:
+        refs = []
+        for k, (ship_b, ship_t) in enumerate(ships):
+            ref = estimate_reference(x, layout, fs, ship_b, bc, chans, ship_t, blocks=blocks, bodies=bodies)
+            cleaned = eca_remove([x] + comps, ref, layout, fs, ship_b, imgs[k], bc.eca_block_s, bc, ship_t=ship_t, blocks=blocks)
+            x, comps = cleaned[0], cleaned[1:]
+            refs.append(ref)
+        return x, comps, refs
+    if not bc.eca_doppler:
+        raise ValueError("removal_order 'joint' needs eca_doppler (per sample delays)")
+    sb_all, st_all = [sb for sb, _ in ships], [st for _, st in ships]
+    chunk = max(1, bc.eca_chunk // len(ships))                 # channels per solve: the lag count grows with the ships
+    if bc.joint_passes == 0:                                   # one solve on the beams of the raw traces
+        beam = replace(bc, reference="data", ref_mode="beam")
+        refs = [make_reference(x, layout, fs, sb, bc.eca_block_s, beam, chans, ship_t=st) for sb, st in ships]
+    else:
+        # Block coordinate passes: each reference (bc.ref_mode, with its own first pass for the noise power) on the
+        # traces minus the other illuminators' current fits, and its fit (its own ECA on those traces) updated at
+        # once.  The first pass is the sequential removal; each further pass re-estimates every reference with the
+        # others' direct sound taken out.
+        fits = [np.zeros_like(x) for _ in ships]
+        refs = [None] * len(ships)
+        for _ in range(bc.joint_passes):
+            for k, (sb, st) in enumerate(ships):
+                y = x - np.sum([fits[j] for j in range(len(ships)) if j != k], axis=0)
+                refs[k] = estimate_reference(y, layout, fs, sb, bc, chans, st, blocks=blocks, bodies=bodies)
+                fits[k] = y - eca_remove([y], refs[k], layout, fs, sb, imgs[k], bc.eca_block_s, bc, ship_t=st, blocks=blocks)[0]
+    cleaned = _eca_remove_joint([x] + comps, refs, layout, fs, sb_all, st_all, imgs, bc.eca_block_s, bc, blocks, chunk=chunk)
+    return cleaned[0], cleaned[1:], refs
 
 
 def reference_spectrum(sp: Spectra, ship: ShipTrack, model: ReplicaModel, bc: BistaticConfig,

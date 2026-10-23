@@ -831,8 +831,8 @@ class StreamingEcho:
     The caller passes the position fixes of the radiating objects (the passive chain's tracks,
     :class:`RadiatorTracker`) and which of them illuminates.  Every step (``step_blocks`` ECA blocks): each
     track is fitted by a straight line over the past ``track_smooth_s`` only and extrapolated ahead; the
-    direct path of the illuminator and then of every other radiator is removed from the newest blocks by
-    ECA (each with its own reference beam, formed on a short buffer already cleaned of the previous ones);
+    direct path of the illuminator and of every other radiator is removed from the newest blocks by ECA
+    (``bc.removal_order``: one after the other, or all in one solve, ``bistatic.remove_direct_paths``);
     the frames inside the blocks are mapped in single precision with the illuminator's reference.  AIS is
     not used.
     """
@@ -1006,7 +1006,7 @@ class StreamingEcho:
         return out
 
     def _step(self) -> list[FrameResult]:
-        from acoustic_sim.water.bistatic import eca_remove, estimate_reference
+        from acoustic_sim.water.bistatic import remove_direct_paths
 
         t0 = time.perf_counter()
         bc, stc = self.bc, self.stc
@@ -1033,22 +1033,23 @@ class StreamingEcho:
         mid = np.minimum(np.arange(nblk) * self.nb + self.nb // 2, z - a - 1)
         rel = set(range(b0 - a // self.nb, b1 - a // self.nb))
         chans = np.flatnonzero(weights > 0)
-        # The direct path of every live radiator, one after the other in the order the radiators first appeared in a
-        # push (with an illuminator, it first): each reference is the beam on the traces already cleaned of the
-        # previous ones, and each is kept to map that radiator's echoes.  Strongest first (by track score) was
-        # measured worse on the multistatic recording (uuv2 18 -> 13 % of frames).
+        # The direct path of every live radiator (with an illuminator, it first), by bc.removal_order: one after the
+        # other in the order the radiators first appeared in a push, each reference on the traces already cleaned of
+        # the previous ones ("sequential"; strongest first was measured worse on the multistatic recording, uuv2 18 ->
+        # 13 % of frames), or all in one least squares solve per block ("joint"); each reference is kept to map that
+        # radiator's echoes.
         x = buf                                            # as run_bistatic: reference and ECA on the traces,
         refs = {}                                          # the common mode removed in the STFT
         comps = {k: np.asarray(v[:, a:z], dtype=np.float64) for k, v in self.components.items()} if self.components else {}
         before = {k: self._block_energy(v, b0 - a // self.nb, b1 - a // self.nb) for k, v in comps.items()}
+        ships = []
         for name in live:
             ship_t = self._smoothed(t_s, name)
-            ship_b = ship_t[mid]
-            refs[name] = estimate_reference(x, self.layout, self.fs, ship_b, bc, chans, ship_t, blocks=rel, bodies=self.bodies)
-            cleaned = eca_remove([x] + list(comps.values()), refs[name], self.layout, self.fs, ship_b, [], bc.eca_block_s, bc,
-                                 ship_t=ship_t, blocks=rel)
-            x = cleaned[0]
-            comps = dict(zip(comps, cleaned[1:]))
+            ships.append((ship_t[mid], ship_t))
+        x, cleaned, ref_list = remove_direct_paths(x, list(comps.values()), self.layout, self.fs, ships, chans, bc,
+                                                   blocks=rel, bodies=self.bodies)
+        refs = dict(zip(live, ref_list))
+        comps = dict(zip(comps, cleaned))
         for k, v in comps.items():                         # diagnostic, from the truth: energy before and after per channel
             self.component_energy.setdefault(k, []).append((before[k], self._block_energy(v, b0 - a // self.nb, b1 - a // self.nb)))
         for b in range(b0, b1):

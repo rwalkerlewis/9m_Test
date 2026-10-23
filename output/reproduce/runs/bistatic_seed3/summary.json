@@ -4,14 +4,14 @@
   "held_out": true,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.7757261057035066,
-    "echo": 0.6347548199461016,
-    "characteristics": 0.10627860724780476,
-    "total": 1.516759532897413
+    "passive": 0.5861581081484474,
+    "echo": 0.8588893384996481,
+    "characteristics": 0.11001446699883673,
+    "total": 1.5550619136469321
   },
   "latency_s": {
-    "median": 2.775,
-    "max": 4.583
+    "median": 2.686,
+    "max": 7.679
   },
   "objects": {
     "ferry": {
@@ -63,11 +63,11 @@
       },
       "median_error_m": {
         "radiator": 3.1885055516311,
-        "echo": 1.645717366392694,
-        "any": 1.7151323884581067
+        "echo": 1.5710268807202452,
+        "any": 1.6635587763458115
       },
       "tracks": [
-        "e31",
+        "e2",
         "r2"
       ]
     }
@@ -166,7 +166,30 @@
       "kind": "radiator"
     },
     {
-      "track": "e31",
+      "track": "e8",
+      "fixes": 4,
+      "first_t": 3.75,
+      "last_t": 17.75,
+      "true_object": null,
+      "false_track": true,
+      "nearest_object": "ferry",
+      "median_error_m": 89.95534492939234,
+      "first_xy": [
+        56.0,
+        144.0
+      ],
+      "last_xy": [
+        120.0,
+        190.0
+      ],
+      "median_xy": [
+        116.0,
+        187.0
+      ],
+      "kind": "echo"
+    },
+    {
+      "track": "e2",
       "fixes": 44,
       "first_t": 7.0,
       "last_t": 17.75,
@@ -189,7 +212,7 @@
       "kind": "echo"
     },
     {
-      "track": "e44",
+      "track": "e43",
       "fixes": 2,
       "first_t": 17.25,
       "last_t": 17.5,
@@ -213,10 +236,10 @@
     }
   ],
   "false_tracks": {
-    "count": 3,
-    "per_minute": 9.0,
+    "count": 4,
+    "per_minute": 12.0,
     "radiator": 2,
-    "echo": 1,
+    "echo": 2,
     "tracks": [
       {
         "track": "r3",
@@ -265,7 +288,30 @@
         "kind": "radiator"
       },
       {
-        "track": "e44",
+        "track": "e8",
+        "fixes": 4,
+        "first_t": 3.75,
+        "last_t": 17.75,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "ferry",
+        "median_error_m": 89.95534492939234,
+        "first_xy": [
+          56.0,
+          144.0
+        ],
+        "last_xy": [
+          120.0,
+          190.0
+        ],
+        "median_xy": [
+          116.0,
+          187.0
+        ],
+        "kind": "echo"
+      },
+      {
+        "track": "e43",
         "fixes": 2,
         "first_t": 17.25,
         "last_t": 17.5,
@@ -291,8 +337,8 @@
   },
   "ellipse_coverage": {
     "fixes": 116,
-    "inside": 114,
-    "fraction": 0.9827586206896551
+    "inside": 115,
+    "fraction": 0.9913793103448276
   },
   "held_as_echo": {},
   "sidelobe_peaks": 253,
@@ -337,10 +383,10 @@
     }
   },
   "run": {
-    "git_commit": "69c2891c6e8e2c851b223aaddecfd0f800bb4ef3",
+    "git_commit": "0b1cef65544d1d9f8e760ac478156845b98bdef2",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/bistatic.json",
-    "processing_config_sha256": "7a4b77fee449c0b854f4788f79e82a2f9003fd7c6dd52ed57760ac435bb091cd",
+    "processing_config_sha256": "7a1083b7beb6a1d4997fb0236002d7d774f478428c4dbefc9cd52cc3b34a3f62",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/bistatic/seed3/dataset.observation.npz",
     "observation_sha256": "55f8cb709e14beab7efc5daa96365f44abd2960942d5f8704565956437e8e60d",
@@ -349,7 +395,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 3,
-    "wall_s": 30.4537578310119,
+    "wall_s": 31.22059833700041,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

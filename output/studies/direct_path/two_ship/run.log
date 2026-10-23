@@ -1,0 +1,16 @@
+criteria: if (b) the ferry first and (c) the tug first are each more than 6 dB below (a) alone for at least one ship, the sequential removal is the mechanism and the joint removal is built; if not, stop; with removal_order joint, each ship's median depth within 3 dB of its depth alone (a)
+2 FDTD gathers (the ferry's from the stage 0a cache) in 0 s
+src_moving_200: [85.0, 253.0] to [120.2, 253.0], nearest channel 193 to 193 m
+tug: [159.0, 174.0] to [159.0, 147.6], nearest channel 88 to 114 m
+(a) src_moving_200 alone: median 26.5 dB, p10 21.1 dB, track error 0.82 m, 0.41 s/s
+(a) tug alone: median 27.5 dB, p10 20.1 dB, track error 0.40 m, 0.36 s/s
+sequential_ferry_first   src_moving_200:  23.2 /  20.2 dB  tug:  16.2 /  14.5 dB  0.72 s/s
+sequential_tug_first     src_moving_200:  15.8 /  13.7 dB  tug:  24.1 /  18.8 dB  0.72 s/s
+joint_passes0            src_moving_200:  19.2 /  16.1 dB  tug:  16.5 /  13.2 dB  0.59 s/s
+joint_passes1            src_moving_200:  23.2 /  20.2 dB  tug:  21.0 /  17.7 dB  1.28 s/s
+joint_passes2            src_moving_200:  25.4 /  21.5 dB  tug:  25.3 /  19.4 dB  1.98 s/s
+joint_passes3            src_moving_200:  26.1 /  21.9 dB  tug:  26.9 /  20.0 dB  2.67 s/s
+joint_passes4            src_moving_200:  26.5 /  22.1 dB  tug:  27.4 /  20.1 dB  3.37 s/s
+diagnosis, the same ship more than 6 dB down in both orders: no; in each order some ship more than 6 dB down: yes; drops {"sequential_ferry_first": {"src_moving_200": 3.2749710481325955, "tug": 11.296037783282674}, "sequential_tug_first": {"src_moving_200": 10.684375440797625, "tug": 3.4275051994736785}, "joint_passes0": {"src_moving_200": 7.347895889879439, "tug": 10.963334850905024}, "joint_passes1": {"src_moving_200": 3.2521408527587923, "tug": 6.520204825592227}, "joint_passes2": {"src_moving_200": 1.144769858664553, "tug": 2.230623164444875}, "joint_passes3": {"src_moving_200": 0.3659188630672219, "tug": 0.5910405561966066}, "joint_passes4": {"src_moving_200": -0.044398102920130356, "tug": 0.09346447759765297}}
+joint within 3 dB of alone: {'joint_passes0': False, 'joint_passes1': False, 'joint_passes2': True, 'joint_passes3': True, 'joint_passes4': True}
+wrote output/studies/direct_path/two_ship

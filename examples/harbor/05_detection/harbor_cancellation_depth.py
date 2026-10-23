@@ -25,9 +25,18 @@ The FDTD runs are cached in ``output/studies/direct_path/cache/`` (six runs of 1
 ``output/studies/direct_path/``: ``results.json`` (the criterion first, then every number), ``depth_table.md``,
 ``run.log`` and the figures.
 
+Two ships (``--two-ship``, prompt ``joint_removal``): the ferry's signature on the moving case at about 193 m (the
+same gather) and the tug's signature (``harbor_multistatic.scenario.json``) at 3 m/s on a track crossing it, south
+from (159, 174) to (159, 144), 114 to 84 m from the nearest channel (99 m at the middle), 10 s, one more FDTD run.
+Each ship's removal depth (its truth component through the same projections) (a) alone in the traces, (b) with the
+other present and removed one at a time, the ferry first, (c) the tug first, and (d) with
+``removal_order = "joint"`` (``joint_passes`` 0 to 3); the ship positions are each ship's AIS prediction refined on
+the traces, as above.  Criteria in ``TWO_SHIP_CRITERIA``, written into ``two_ship/results.json`` before the run.
+
 Usage::
 
     python examples/harbor/05_detection/harbor_cancellation_depth.py [--time 10] [--cpu] [--out output/studies/direct_path]
+    python examples/harbor/05_detection/harbor_cancellation_depth.py --two-ship [--out output/studies/direct_path]
 """
 
 from __future__ import annotations
@@ -50,7 +59,8 @@ from acoustic_sim.plotting import new_figure, save_figure  # noqa: E402
 from acoustic_sim.water import HarborScenarioConfig, build_environment, build_layout, build_track  # noqa: E402
 from acoustic_sim.water.ais import AISReports  # noqa: E402
 from acoustic_sim.water.ais_sim import AISConfig  # noqa: E402
-from acoustic_sim.water.bistatic import REF_MODES, ReplicaModel, eca_stage, ship_positions, stft  # noqa: E402
+from acoustic_sim.water.bistatic import (REF_MODES, ReplicaModel, eca_stage, remove_direct_paths,  # noqa: E402
+                                         ship_positions, smooth_track, stft)
 from acoustic_sim.water.dataset import vessel_injection  # noqa: E402
 from acoustic_sim.water.fdtd_runner import simulate_sources  # noqa: E402
 from acoustic_sim.water.noise import generate_noise  # noqa: E402
@@ -69,6 +79,17 @@ CRITERION = {
             "the default ref_mode of every processing config",
     "stationary_db": 20.0, "stationary_ranges": (200.0, 100.0), "moving_db": 15.0, "moving_ranges": (200.0,),
 }
+
+
+TWO_SHIP_CRITERIA = {
+    "diagnosis": "if (b) the ferry first and (c) the tug first are each more than 6 dB below (a) alone for at least one "
+                 "ship, the sequential removal is the mechanism and the joint removal is built; if not, stop",
+    "diagnosis_db": 6.0,
+    "joint": "with removal_order joint, each ship's median depth within 3 dB of its depth alone (a)",
+    "joint_db": 3.0,
+}
+TUG_PATH = ((159.0, 174.0), (159.0, 144.0))
+TUG_SPEED = 3.0
 
 
 def nearest_channel_range(layout, pts: np.ndarray) -> np.ndarray:
@@ -123,6 +144,157 @@ def coherence_curve(ref: np.ndarray, true: np.ndarray, fs: float, band) -> tuple
     return f[m], c[m]
 
 
+def per_sample_track(ship, sp, n: int, fs: float, bc) -> tuple[np.ndarray, np.ndarray]:
+    """``(ship_b, ship_t)`` of :func:`remove_direct_paths` from a refined track, as ``eca_stage`` forms them."""
+    nb = int(round(bc.eca_block_s * fs))
+    t_blocks = (np.arange(int(np.ceil(n / nb))) + 0.5) * bc.eca_block_s
+    ship_b = np.column_stack([np.interp(t_blocks, sp.times, ship.refined[:, i]) for i in range(2)])
+    refined = smooth_track(sp.times, ship.refined, ship.present, bc.track_smooth_s)
+    t_s = np.arange(n) / fs
+    ship_t = np.column_stack([np.interp(t_s, sp.times, refined[:, i]) for i in range(2)])
+    return ship_b, ship_t
+
+
+def two_ship(args) -> None:
+    """Section 1 and 2 of prompt ``joint_removal`` on two ships (module docstring)."""
+    out = Path(args.out) / "two_ship"
+    out.mkdir(parents=True, exist_ok=True)
+    cache = Path(args.cache) if args.cache else Path(args.out) / "cache"
+    cfg = HarborScenarioConfig.load(args.config)
+    cfg.fdtd.total_time = args.time
+    cfg.fdtd.use_cuda = not args.cpu
+    env = build_environment(cfg)
+    layout = build_layout(cfg, env)
+    fs, n = cfg.fdtd.fs, cfg.fdtd.n_steps
+    proc = load_processing(Path(args.processing))
+    bc0 = proc.bistatic(env.public(), use_cuda=not args.cpu)
+    band = (bc0.f_lo, bc0.f_hi)
+    log = open(out / "run.log", "w")
+
+    def say(msg: str) -> None:
+        print(msg, flush=True)
+        log.write(msg + "\n")
+        log.flush()
+
+    res = {"criteria": TWO_SHIP_CRITERIA, "status": "running",
+           "provenance": Provenance(truth_inputs=["components"], simulator_knowledge=[]).to_dict()}
+    (out / "results.json").write_text(json.dumps(res, indent=2))
+    say(f"criteria: {TWO_SHIP_CRITERIA['diagnosis']}; {TWO_SHIP_CRITERIA['joint']}")
+
+    ferry0 = next(v for v in cfg.vessels if v.kind == "ship")
+    p = pick_position(env, layout, RANGES[0], SPEED * args.time, edge=cfg.fdtd.damping_width * env.dx + 15.0)
+    ferry = VesselConfig(f"src_moving_{int(RANGES[0])}", "ship", [p.tolist(), (p + [SPEED * args.time, 0.0]).tolist()],
+                         speed=SPEED, level_pa=ferry0.level_pa, ais=True, seed=ferry0.seed)
+    multi = HarborScenarioConfig.load(str(ROOT / "examples" / "configs" / "harbor_multistatic.scenario.json"))
+    tug0 = next(v for v in multi.vessels if v.id == "tug")
+    tug = VesselConfig("tug", "ship", [list(TUG_PATH[0]), list(TUG_PATH[1])], speed=TUG_SPEED, level_pa=tug0.level_pa,
+                       ais=True, seed=tug0.seed)
+    ships = [ferry, tug]
+    tracks = {v.id: build_track(v, cfg.fdtd.total_time, env) for v in ships}
+    jobs = [dict(env=env, layout=layout, cfg=cfg.fdtd, signal=vessel_injection(v, tracks[v.id], env, cfg), position=None,
+                 trajectory=(tracks[v.id].t, tracks[v.id].xy), cache_dir=cache) for v in ships]
+    t0 = time.time()
+    gathers = simulate_sources(env, layout, cfg.fdtd, jobs, cache_dir=cache)
+    say(f"{len(gathers)} FDTD gathers (the ferry's from the stage 0a cache) in {time.time() - t0:.0f} s")
+    for v in ships:
+        r = nearest_channel_range(layout, tracks[v.id].xy)
+        say(f"{v.id}: {tracks[v.id].xy[0].round(1).tolist()} to {tracks[v.id].xy[-1].round(1).tolist()}, nearest channel "
+            f"{r.min():.0f} to {r.max():.0f} m")
+
+    sos = butter(4, [band[0], band[1]], btype="bandpass", fs=fs, output="sos")
+    trim = int(0.5 * fs)
+    noise = generate_noise(layout, fs, n, cfg.noise, np.random.default_rng(cfg.seed))
+    direct = {v.id: v.level_pa * g.traces.astype(np.float64) for v, g in zip(ships, gathers)}
+    comp = {k: noise.gain[:, None] * d for k, d in direct.items()}
+    e0 = {k: band_energy(c, sos, trim) for k, c in comp.items()}
+    cab = layout.slices[layout.cables[0].name]
+    ais_parts = {v.id: ais_from_start(v.id, tracks[v.id], "moving", cfg.ais, np.random.default_rng(sum(map(ord, v.id))))
+                 for v in ships}
+
+    def tracks_on(traces, ids):
+        ais = AISReports(**{f: np.concatenate([getattr(ais_parts[i], f) for i in ids]) for f in ("vessel", "t", "xy", "sog", "cog")})
+        sp = stft(traces, layout, fs, bc0)
+        model = ReplicaModel(layout, bc0.c, propagator=bc0.propagator)
+        model.weights = sp.weights
+        out_ = {}
+        for i in ids:
+            st = ship_positions(sp, ais, model, bc0, vessel=i)
+            err = float(np.median(np.hypot(*(st.refined - tracks[i].position_at(sp.times)).T)))
+            out_[i] = (per_sample_track(st, sp, n, fs, bc0), err)
+        return sp, out_
+
+    def depths(cleaned: dict, sp) -> dict:
+        live = sp.weights > 0
+        r = {}
+        for k, c in cleaned.items():
+            d = 10 * np.log10(np.maximum(e0[k], 1e-30) / np.maximum(band_energy(c, sos, trim), 1e-30))[cab][live[cab]]
+            r[k] = {"cable_median_db": float(np.median(d)), "cable_p10_db": float(np.percentile(d, 10))}
+        return r
+
+    def run(traces, sp, trk, order, bc, ids_comp):
+        chans = np.flatnonzero(sp.weights > 0)
+        t1 = time.perf_counter()
+        _, cl, _ = remove_direct_paths(traces, [comp[i] for i in ids_comp], layout, fs, [trk[i][0] for i in order], chans, bc)
+        dt = time.perf_counter() - t1
+        return depths(dict(zip(ids_comp, cl)), sp), dt / args.time
+
+    ids = [v.id for v in ships]
+    rows = {}
+    for i in ids:                                                            # (a) alone
+        traces = noise.apply(direct[i]).astype(np.float64)
+        sp, trk = tracks_on(traces, [i])
+        d, c = run(traces, sp, trk, [i], bc0, [i])
+        rows[f"alone_{i}"] = {"depth": d, "compute_s_per_s": c, "position_error_median_m": {i: trk[i][1]}}
+        say(f"(a) {i} alone: median {d[i]['cable_median_db']:.1f} dB, p10 {d[i]['cable_p10_db']:.1f} dB, "
+            f"track error {trk[i][1]:.2f} m, {c:.2f} s/s")
+    traces = noise.apply(direct[ids[0]] + direct[ids[1]]).astype(np.float64)
+    sp, trk = tracks_on(traces, ids)
+    conds = [("sequential_ferry_first", ids, replace(bc0, removal_order="sequential")),
+             ("sequential_tug_first", ids[::-1], replace(bc0, removal_order="sequential"))]
+    conds += [(f"joint_passes{k}", ids, replace(bc0, removal_order="joint", joint_passes=k)) for k in range(5)]
+    for name, order, bc in conds:
+        d, c = run(traces, sp, trk, order, bc, ids)
+        rows[name] = {"depth": d, "compute_s_per_s": c, "position_error_median_m": {i: trk[i][1] for i in ids}}
+        say(f"{name:24s} " + "  ".join(f"{i}: {d[i]['cable_median_db']:5.1f} / {d[i]['cable_p10_db']:5.1f} dB" for i in ids)
+            + f"  {c:.2f} s/s")
+
+    alone = {i: rows[f"alone_{i}"]["depth"][i]["cable_median_db"] for i in ids}
+    drop = {name: {i: alone[i] - rows[name]["depth"][i]["cable_median_db"] for i in ids} for name in rows if not name.startswith("alone")}
+    lim = TWO_SHIP_CRITERIA["diagnosis_db"]
+    # Two readings of the criterion: the same ship more than 6 dB down in both orders (as first coded), and in each order
+    # some ship more than 6 dB down (the order dependent loss the diagnosis is about); both are reported.
+    diagnosis = any(drop["sequential_ferry_first"][i] > lim and drop["sequential_tug_first"][i] > lim for i in ids)
+    per_order = all(any(drop[o][i] > lim for i in ids) for o in ("sequential_ferry_first", "sequential_tug_first"))
+    joint_ok = {name: all(abs(drop[name][i]) <= TWO_SHIP_CRITERIA["joint_db"] for i in ids) for name in drop if name.startswith("joint")}
+    res.update(status="done", rows=rows, alone_median_db=alone, drop_db=drop, diagnosis_passed=bool(diagnosis),
+               diagnosis_passed_per_order=bool(per_order),
+               joint_within_3db=joint_ok, band_hz=list(band), simulated_time_s=args.time,
+               ships={v.id: {"waypoints": v.waypoints, "speed": v.speed, "level_pa": v.level_pa} for v in ships})
+    (out / "results.json").write_text(json.dumps(res, indent=2))
+    say(f"diagnosis, the same ship more than {lim:g} dB down in both orders: {'yes' if diagnosis else 'no'}; in each order "
+        f"some ship more than {lim:g} dB down: {'yes' if per_order else 'no'}; drops {json.dumps(drop)}")
+    say(f"joint within 3 dB of alone: {joint_ok}")
+
+    names = list(rows)
+    lines = ["| Condition | " + " | ".join(f"{i}: median / p10 [dB]" for i in ids) + " | Compute per s of data |",
+             "|---|" + "---|" * len(ids) + "---|"]
+    for name in names:
+        lines.append(f"| {name} | " + " | ".join(
+            f"{rows[name]['depth'][i]['cable_median_db']:.1f} / {rows[name]['depth'][i]['cable_p10_db']:.1f}"
+            if i in rows[name]["depth"] else "" for i in ids) + f" | {rows[name]['compute_s_per_s']:.2f} |")
+    (out / "depth_table.md").write_text("\n".join(lines) + "\n")
+    fig, ax = new_figure((13, 8))
+    for i in ids:
+        ax.plot(range(len(names)), [rows[nm]["depth"].get(i, {}).get("cable_median_db", np.nan) for nm in names], "o-", label=i)
+    ax.set_xticks(range(len(names)), [nm.replace("_", " ") for nm in names], rotation=20)
+    ax.set_xlabel("condition")
+    ax.set_ylabel("median direct path removal depth over live cable channels [dB]")
+    ax.set_title("bistatic harbor, two ships: removal depth alone, one at a time and joint")
+    ax.legend()
+    save_figure(fig, out / "depth.png", recording="bistatic")
+    say(f"wrote {out}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=str(ROOT / "examples" / "configs" / "harbor_bistatic.scenario.json"))
@@ -134,7 +306,11 @@ def main() -> None:
     ap.add_argument("--eca-precision", default=None, choices=("float64", "mixed"),
                     help="BistaticConfig.eca_precision of every row (default: the processing config's)")
     ap.add_argument("--cache", default=None, help="the FDTD gathers (default: <out>/cache)")
+    ap.add_argument("--two-ship", action="store_true", help="the two ship case of prompt joint_removal")
     args = ap.parse_args()
+    if args.two_ship:
+        two_ship(args)
+        return
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     cache = Path(args.cache) if args.cache else out / "cache"
