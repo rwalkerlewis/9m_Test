@@ -1,0 +1,76 @@
+simple: 16 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 4, 'direct_path': 0, 'elsewhere': 9}; false tracks [('e2', 'elsewhere')]
+simple_noise2: 15 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 2, 'direct_path': 2, 'elsewhere': 8}; false tracks [('e3', 'elsewhere'), ('e11', 'elsewhere')]
+bistatic: 9 radiator track starts {'radiator': 1, 'silent_body': 3, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 5}; false tracks [('r2', 'elsewhere'), ('e36', 'elsewhere')]
+bistatic_noise2: 14 radiator track starts {'radiator': 1, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 12}; false tracks []
+multistatic: 7 radiator track starts {'radiator': 3, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r4', 'elsewhere'), ('e17', 'elsewhere')]
+multistatic_noise2: 10 radiator track starts {'radiator': 3, 'silent_body': 1, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 5}; false tracks [('e27', 'elsewhere'), ('e13', 'elsewhere')]
+harbor: 16 radiator track starts {'radiator': 5, 'silent_body': 0, 'sidelobe_near_miss': 0, 'direct_path': 1, 'elsewhere': 10}; false tracks [('r12', 'elsewhere'), ('r13', 'elsewhere'), ('r14', 'elsewhere')]
+harbor_noise2: 19 radiator track starts {'radiator': 4, 'silent_body': 0, 'sidelobe_near_miss': 3, 'direct_path': 1, 'elsewhere': 11}; false tracks [('r11', 'elsewhere'), ('r14', 'elsewhere')]
+simple_tune4: 19 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 5, 'direct_path': 1, 'elsewhere': 10}; false tracks [('r4', 'direct_path')]
+simple_tune4_noise2: 18 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 4, 'direct_path': 2, 'elsewhere': 9}; false tracks [('e6', 'elsewhere')]
+simple_tune5: 16 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 3, 'direct_path': 1, 'elsewhere': 9}; false tracks [('r5', 'direct_path')]
+simple_tune5_noise2: 18 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 5, 'direct_path': 1, 'elsewhere': 9}; false tracks [('e2', 'elsewhere')]
+simple_tune6: 19 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 6, 'direct_path': 0, 'elsewhere': 10}; false tracks [('r7', 'direct_path'), ('e10', 'elsewhere')]
+simple_tune6_noise2: 18 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 4, 'direct_path': 1, 'elsewhere': 10}; false tracks [('e1', 'elsewhere'), ('e8', 'elsewhere')]
+simple_tune7: 16 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 4, 'direct_path': 1, 'elsewhere': 8}; false tracks [('r5', 'direct_path')]
+simple_tune7_noise2: 18 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 3, 'direct_path': 1, 'elsewhere': 11}; false tracks [('e2', 'elsewhere')]
+simple_tune8: 16 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 2, 'direct_path': 1, 'elsewhere': 10}; false tracks []
+simple_tune8_noise2: 16 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 3, 'direct_path': 1, 'elsewhere': 9}; false tracks [('e2', 'elsewhere')]
+simple_tune9: 15 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 4, 'direct_path': 1, 'elsewhere': 7}; false tracks [('r5', 'direct_path')]
+simple_tune9_noise2: 16 radiator track starts {'radiator': 2, 'silent_body': 1, 'sidelobe_near_miss': 4, 'direct_path': 1, 'elsewhere': 8}; false tracks [('e3', 'elsewhere')]
+bistatic_tune4: 9 radiator track starts {'radiator': 1, 'silent_body': 2, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 6}; false tracks [('e31', 'elsewhere')]
+bistatic_tune4_noise2: 13 radiator track starts {'radiator': 1, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 11}; false tracks []
+bistatic_tune5: 11 radiator track starts {'radiator': 1, 'silent_body': 3, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 7}; false tracks [('e15', 'elsewhere')]
+bistatic_tune5_noise2: 11 radiator track starts {'radiator': 1, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 9}; false tracks []
+bistatic_tune6: 10 radiator track starts {'radiator': 1, 'silent_body': 3, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 6}; false tracks []
+bistatic_tune6_noise2: 15 radiator track starts {'radiator': 1, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 13}; false tracks []
+bistatic_tune7: 11 radiator track starts {'radiator': 1, 'silent_body': 2, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 8}; false tracks [('r7', 'elsewhere'), ('e39', 'elsewhere')]
+bistatic_tune7_noise2: 11 radiator track starts {'radiator': 1, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 9}; false tracks [('r5', 'elsewhere')]
+bistatic_tune8: 9 radiator track starts {'radiator': 1, 'silent_body': 3, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 5}; false tracks [('e25', 'elsewhere')]
+bistatic_tune8_noise2: 11 radiator track starts {'radiator': 1, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 9}; false tracks [('r5', 'elsewhere')]
+bistatic_tune9: 9 radiator track starts {'radiator': 1, 'silent_body': 3, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 5}; false tracks [('r2', 'elsewhere'), ('e3', 'elsewhere'), ('e29', 'elsewhere')]
+bistatic_tune9_noise2: 15 radiator track starts {'radiator': 1, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 13}; false tracks []
+multistatic_tune4: 6 radiator track starts {'radiator': 3, 'silent_body': 0, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r4', 'elsewhere'), ('e12', 'elsewhere')]
+multistatic_tune4_noise2: 8 radiator track starts {'radiator': 3, 'silent_body': 1, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 3}; false tracks [('e25', 'elsewhere')]
+multistatic_tune5: 7 radiator track starts {'radiator': 3, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r4', 'elsewhere'), ('e16', 'elsewhere'), ('e15', 'elsewhere')]
+multistatic_tune5_noise2: 7 radiator track starts {'radiator': 3, 'silent_body': 1, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r5', 'elsewhere'), ('e19', 'elsewhere')]
+multistatic_tune6: 7 radiator track starts {'radiator': 3, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r4', 'elsewhere'), ('e5', 'elsewhere')]
+multistatic_tune6_noise2: 7 radiator track starts {'radiator': 3, 'silent_body': 1, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 3}; false tracks [('e28', 'elsewhere'), ('e33', 'elsewhere')]
+multistatic_tune7: 7 radiator track starts {'radiator': 3, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r5', 'elsewhere'), ('e5', 'elsewhere')]
+multistatic_tune7_noise2: 7 radiator track starts {'radiator': 3, 'silent_body': 1, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 3}; false tracks [('e12', 'elsewhere')]
+multistatic_tune8: 7 radiator track starts {'radiator': 3, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r4', 'elsewhere'), ('e12', 'elsewhere'), ('e13', 'elsewhere')]
+multistatic_tune8_noise2: 7 radiator track starts {'radiator': 3, 'silent_body': 1, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 3}; false tracks [('e31', 'elsewhere')]
+multistatic_tune9: 7 radiator track starts {'radiator': 3, 'silent_body': 0, 'sidelobe_near_miss': 1, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r4', 'elsewhere'), ('e6', 'elsewhere')]
+multistatic_tune9_noise2: 7 radiator track starts {'radiator': 3, 'silent_body': 1, 'sidelobe_near_miss': 0, 'direct_path': 0, 'elsewhere': 3}; false tracks [('r5', 'elsewhere'), ('e14', 'elsewhere')]
+multistatic_b_tune4: 36 radiator track starts {'radiator': 9, 'silent_body': 0, 'sidelobe_near_miss': 19, 'direct_path': 0, 'elsewhere': 8}; false tracks [('r3', 'elsewhere'), ('e1', 'elsewhere'), ('e2', 'elsewhere'), ('r26', 'elsewhere'), ('e41', 'elsewhere'), ('e58', 'elsewhere')]
+multistatic_b_tune4_noise2: 37 radiator track starts {'radiator': 8, 'silent_body': 0, 'sidelobe_near_miss': 22, 'direct_path': 0, 'elsewhere': 7}; false tracks [('r3', 'elsewhere'), ('e1', 'elsewhere'), ('r29', 'elsewhere'), ('e65', 'elsewhere')]
+multistatic_b_tune5: 34 radiator track starts {'radiator': 8, 'silent_body': 0, 'sidelobe_near_miss': 18, 'direct_path': 0, 'elsewhere': 8}; false tracks [('r3', 'elsewhere'), ('e1', 'elsewhere'), ('e3', 'elsewhere'), ('e33', 'elsewhere'), ('r25', 'elsewhere'), ('e60', 'elsewhere')]
+multistatic_b_tune5_noise2: 44 radiator track starts {'radiator': 8, 'silent_body': 0, 'sidelobe_near_miss': 27, 'direct_path': 0, 'elsewhere': 9}; false tracks [('r3', 'elsewhere'), ('e1', 'elsewhere'), ('r34', 'elsewhere'), ('e98', 'elsewhere')]
+multistatic_b_tune6: 31 radiator track starts {'radiator': 7, 'silent_body': 0, 'sidelobe_near_miss': 17, 'direct_path': 0, 'elsewhere': 7}; false tracks [('r3', 'elsewhere'), ('e1', 'elsewhere'), ('e2', 'elsewhere'), ('e40', 'elsewhere'), ('r21', 'elsewhere'), ('e53', 'elsewhere')]
+multistatic_b_tune6_noise2: 33 radiator track starts {'radiator': 7, 'silent_body': 0, 'sidelobe_near_miss': 18, 'direct_path': 0, 'elsewhere': 8}; false tracks [('r3', 'elsewhere'), ('e1', 'direct_path'), ('r26', 'elsewhere'), ('e85', 'elsewhere')]
+multistatic_b_tune7: 32 radiator track starts {'radiator': 7, 'silent_body': 0, 'sidelobe_near_miss': 18, 'direct_path': 0, 'elsewhere': 7}; false tracks [('r3', 'elsewhere'), ('e3', 'elsewhere'), ('r8', 'elsewhere'), ('r24', 'elsewhere'), ('e55', 'elsewhere')]
+multistatic_b_tune7_noise2: 44 radiator track starts {'radiator': 9, 'silent_body': 0, 'sidelobe_near_miss': 24, 'direct_path': 0, 'elsewhere': 11}; false tracks [('r3', 'elsewhere'), ('r10', 'elsewhere'), ('r37', 'elsewhere'), ('e107', 'elsewhere')]
+multistatic_b_tune8: 32 radiator track starts {'radiator': 7, 'silent_body': 0, 'sidelobe_near_miss': 18, 'direct_path': 0, 'elsewhere': 7}; false tracks [('r3', 'elsewhere'), ('e1', 'elsewhere'), ('r25', 'elsewhere'), ('e52', 'elsewhere'), ('e53', 'elsewhere'), ('e13', 'elsewhere')]
+multistatic_b_tune8_noise2: 40 radiator track starts {'radiator': 7, 'silent_body': 0, 'sidelobe_near_miss': 26, 'direct_path': 0, 'elsewhere': 7}; false tracks [('r3', 'elsewhere'), ('e1', 'elsewhere'), ('r32', 'elsewhere'), ('e68', 'elsewhere')]
+multistatic_b_tune9: 33 radiator track starts {'radiator': 8, 'silent_body': 0, 'sidelobe_near_miss': 17, 'direct_path': 0, 'elsewhere': 8}; false tracks [('r3', 'elsewhere'), ('e1', 'elsewhere'), ('r24', 'elsewhere'), ('e60', 'elsewhere')]
+multistatic_b_tune9_noise2: 37 radiator track starts {'radiator': 7, 'silent_body': 0, 'sidelobe_near_miss': 23, 'direct_path': 0, 'elsewhere': 7}; false tracks [('r3', 'elsewhere'), ('e1', 'direct_path'), ('r28', 'elsewhere'), ('e98', 'elsewhere')]
+counts {'radiator': 185, 'silent_body': 40, 'sidelobe_near_miss': 318, 'direct_path': 16, 'elsewhere': 404}; confirmed {'radiator': 146, 'silent_body': 7, 'sidelobe_near_miss': 14, 'direct_path': 4, 'elsewhere': 34}
+coherence: separation (AUC) silent body vs radiator 0.9078742608154373, sidelobe vs radiator 0.9102328431372549
+ratio: separation (AUC) silent body vs radiator 0.8022851465474417, sidelobe vs radiator 0.9505944874797334
+ratio_median: separation (AUC) silent body vs radiator 0.9244318181818182, sidelobe vs radiator 0.9896760777881912
+ratio_max: separation (AUC) silent body vs radiator 0.7478693181818182, sidelobe vs radiator 0.8940223758200563
+coherence_debiased: separation (AUC) silent body vs radiator 0.9122315592903828, sidelobe vs radiator 0.8973651960784313
+width_major_m: separation (AUC) silent body vs radiator 0.5856756756756757, sidelobe vs radiator 0.4437673130193906
+width_minor_m: separation (AUC) silent body vs radiator 0.6843243243243243, sidelobe vs radiator 0.6538631429213146
+n_fixes: separation (AUC) silent body vs radiator 0.1277027027027027, sidelobe vs radiator 0.10175563375009358
+duration_s: separation (AUC) silent body vs radiator 0.11081081081081082, sidelobe vs radiator 0.09790746425095456
+counts {'radiator': 185, 'silent_body': 40, 'sidelobe_near_miss': 318, 'direct_path': 16, 'elsewhere': 404}; confirmed {'radiator': 146, 'silent_body': 7, 'sidelobe_near_miss': 14, 'direct_path': 4, 'elsewhere': 34}
+coherence: separation (AUC) silent body vs radiator 0.9078742608154373, sidelobe vs radiator 0.9102328431372549
+ratio: separation (AUC) silent body vs radiator 0.8022851465474417, sidelobe vs radiator 0.9505944874797334
+ratio_median: separation (AUC) silent body vs radiator 0.9244318181818182, sidelobe vs radiator 0.9896760777881912
+ratio_max: separation (AUC) silent body vs radiator 0.7478693181818182, sidelobe vs radiator 0.8940223758200563
+coherence_debiased: separation (AUC) silent body vs radiator 0.9122315592903828, sidelobe vs radiator 0.8973651960784313
+width_major_m: separation (AUC) silent body vs radiator 0.5856756756756757, sidelobe vs radiator 0.4437673130193906
+width_minor_m: separation (AUC) silent body vs radiator 0.6843243243243243, sidelobe vs radiator 0.6538631429213146
+n_fixes: separation (AUC) silent body vs radiator 0.1277027027027027, sidelobe vs radiator 0.10175563375009358
+duration_s: separation (AUC) silent body vs radiator 0.11081081081081082, sidelobe vs radiator 0.09790746425095456

@@ -1,0 +1,883 @@
+{
+  "recording": "multistatic_b_tune9_noise2",
+  "record_s": 60.0,
+  "held_out": false,
+  "ais_used_in_processing": false,
+  "compute_per_second_of_data": {
+    "passive": 0.661697938614816,
+    "echo": 1.7990247016496141,
+    "characteristics": 0.3034065874363781,
+    "total": 2.764129227700808
+  },
+  "latency_s": {
+    "median": 5.124,
+    "max": 7.019
+  },
+  "objects": {
+    "ferry": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "pd": {
+        "radiator": 0.9911504424778761,
+        "echo": 0.0,
+        "any": 0.9911504424778761
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 224,
+        "echo": 0,
+        "any": 224
+      },
+      "median_error_m": {
+        "radiator": 0.32523744320135345,
+        "echo": null,
+        "any": 0.32523744320135345
+      },
+      "tracks": [
+        "r2",
+        "r29"
+      ]
+    },
+    "tug": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "pd": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 226,
+        "echo": 0,
+        "any": 226
+      },
+      "median_error_m": {
+        "radiator": 0.480643352206306,
+        "echo": null,
+        "any": 0.480643352206306
+      },
+      "tracks": [
+        "r4"
+      ]
+    },
+    "boat": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": false,
+      "pd": {
+        "radiator": 0.5663716814159292,
+        "echo": 0.0,
+        "any": 0.5663716814159292
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 128,
+        "echo": 0,
+        "any": 128
+      },
+      "median_error_m": {
+        "radiator": 0.2958536090937548,
+        "echo": null,
+        "any": 0.2958536090937548
+      },
+      "tracks": [
+        "r1"
+      ]
+    },
+    "uuv1": {
+      "kind": "uuv",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.5848214285714286,
+        "any": 0.5796460176991151
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 131,
+        "any": 131
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": 1.8496611178886369,
+        "any": 1.8496611178886369
+      },
+      "tracks": [
+        "e7"
+      ]
+    },
+    "uuv2": {
+      "kind": "uuv",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.84375,
+        "any": 0.8362831858407079
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 189,
+        "any": 189
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": 1.1081738267404735,
+        "any": 1.1081738267404735
+      },
+      "tracks": [
+        "e6"
+      ]
+    },
+    "diver": {
+      "kind": "diver",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 0,
+        "any": 0
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": null,
+        "any": null
+      },
+      "tracks": []
+    },
+    "piling1": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 0,
+        "any": 0
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": null,
+        "any": null
+      },
+      "tracks": []
+    },
+    "piling2": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 0,
+        "any": 0
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": null,
+        "any": null
+      },
+      "tracks": []
+    },
+    "piling3": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 0,
+        "any": 0
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": null,
+        "any": null
+      },
+      "tracks": []
+    },
+    "piling4": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 0,
+        "any": 0
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": null,
+        "any": null
+      },
+      "tracks": []
+    },
+    "piling5": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 0,
+        "any": 0
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": null,
+        "any": null
+      },
+      "tracks": []
+    },
+    "piling6": {
+      "kind": "static",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 0,
+        "any": 0
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": null,
+        "any": null
+      },
+      "tracks": []
+    },
+    "moored": {
+      "kind": "ship",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.0,
+        "any": 0.0
+      },
+      "frames": {
+        "radiator": 226,
+        "echo": 224,
+        "any": 226
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 0,
+        "any": 0
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": null,
+        "any": null
+      },
+      "tracks": []
+    }
+  },
+  "tracks": [
+    {
+      "track": "r1",
+      "fixes": 127,
+      "first_t": 1.5,
+      "last_t": 35.25,
+      "true_object": "boat",
+      "false_track": false,
+      "nearest_object": "boat",
+      "median_error_m": 0.8856895086703883,
+      "first_xy": [
+        316.0,
+        96.0
+      ],
+      "last_xy": [
+        250.0,
+        220.0
+      ],
+      "median_xy": [
+        284.0,
+        158.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r2",
+      "fixes": 177,
+      "first_t": 1.5,
+      "last_t": 45.5,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 0.9736887650071271,
+      "first_xy": [
+        256.0,
+        228.0
+      ],
+      "last_xy": [
+        122.0,
+        162.0
+      ],
+      "median_xy": [
+        188.0,
+        194.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r4",
+      "fixes": 203,
+      "first_t": 1.5,
+      "last_t": 57.75,
+      "true_object": "tug",
+      "false_track": false,
+      "nearest_object": "tug",
+      "median_error_m": 1.0431263717887447,
+      "first_xy": [
+        102.0,
+        204.0
+      ],
+      "last_xy": [
+        216.0,
+        122.0
+      ],
+      "median_xy": [
+        164.0,
+        160.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r3",
+      "fixes": 1,
+      "first_t": 1.5,
+      "last_t": 1.5,
+      "true_object": null,
+      "false_track": true,
+      "nearest_object": "boat",
+      "median_error_m": 20.822080200841377,
+      "first_xy": [
+        336.0,
+        104.0
+      ],
+      "last_xy": [
+        336.0,
+        104.0
+      ],
+      "median_xy": [
+        336.0,
+        104.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "e1",
+      "fixes": 3,
+      "first_t": 2.0,
+      "last_t": 4.0,
+      "true_object": null,
+      "false_track": true,
+      "nearest_object": "ferry",
+      "median_error_m": 30.41950254823388,
+      "first_xy": [
+        268.0,
+        200.0
+      ],
+      "last_xy": [
+        274.0,
+        218.0
+      ],
+      "median_xy": [
+        268.0,
+        200.0
+      ],
+      "kind": "echo"
+    },
+    {
+      "track": "e6",
+      "fixes": 125,
+      "first_t": 4.0,
+      "last_t": 43.0,
+      "true_object": "uuv2",
+      "false_track": false,
+      "nearest_object": "uuv2",
+      "median_error_m": 1.4957521012727886,
+      "first_xy": [
+        228.0,
+        154.0
+      ],
+      "last_xy": [
+        216.0,
+        198.0
+      ],
+      "median_xy": [
+        222.0,
+        174.0
+      ],
+      "kind": "echo"
+    },
+    {
+      "track": "e7",
+      "fixes": 106,
+      "first_t": 5.75,
+      "last_t": 47.0,
+      "true_object": "uuv1",
+      "false_track": false,
+      "nearest_object": "uuv1",
+      "median_error_m": 1.969199543510952,
+      "first_xy": [
+        138.0,
+        106.0
+      ],
+      "last_xy": [
+        214.0,
+        120.0
+      ],
+      "median_xy": [
+        168.0,
+        122.0
+      ],
+      "kind": "echo"
+    },
+    {
+      "track": "r28",
+      "fixes": 11,
+      "first_t": 44.75,
+      "last_t": 49.75,
+      "true_object": null,
+      "false_track": true,
+      "nearest_object": "tug",
+      "median_error_m": 19.646960678361687,
+      "first_xy": [
+        176.0,
+        128.0
+      ],
+      "last_xy": [
+        188.0,
+        124.0
+      ],
+      "median_xy": [
+        178.0,
+        124.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "r29",
+      "fixes": 44,
+      "first_t": 47.0,
+      "last_t": 57.75,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 0.01817624266252245,
+      "first_xy": [
+        122.0,
+        160.0
+      ],
+      "last_xy": [
+        120.0,
+        160.0
+      ],
+      "median_xy": [
+        120.0,
+        160.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "e98",
+      "fixes": 8,
+      "first_t": 49.25,
+      "last_t": 51.25,
+      "true_object": null,
+      "false_track": true,
+      "nearest_object": "piling6",
+      "median_error_m": 15.041608956491324,
+      "first_xy": [
+        54.0,
+        258.0
+      ],
+      "last_xy": [
+        56.0,
+        260.0
+      ],
+      "median_xy": [
+        56.0,
+        260.0
+      ],
+      "kind": "echo"
+    }
+  ],
+  "false_tracks": {
+    "count": 4,
+    "per_minute": 4.0,
+    "radiator": 2,
+    "echo": 2,
+    "tracks": [
+      {
+        "track": "r3",
+        "fixes": 1,
+        "first_t": 1.5,
+        "last_t": 1.5,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "boat",
+        "median_error_m": 20.822080200841377,
+        "first_xy": [
+          336.0,
+          104.0
+        ],
+        "last_xy": [
+          336.0,
+          104.0
+        ],
+        "median_xy": [
+          336.0,
+          104.0
+        ],
+        "kind": "radiator"
+      },
+      {
+        "track": "e1",
+        "fixes": 3,
+        "first_t": 2.0,
+        "last_t": 4.0,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "ferry",
+        "median_error_m": 30.41950254823388,
+        "first_xy": [
+          268.0,
+          200.0
+        ],
+        "last_xy": [
+          274.0,
+          218.0
+        ],
+        "median_xy": [
+          268.0,
+          200.0
+        ],
+        "kind": "echo"
+      },
+      {
+        "track": "r28",
+        "fixes": 11,
+        "first_t": 44.75,
+        "last_t": 49.75,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "tug",
+        "median_error_m": 19.646960678361687,
+        "first_xy": [
+          176.0,
+          128.0
+        ],
+        "last_xy": [
+          188.0,
+          124.0
+        ],
+        "median_xy": [
+          178.0,
+          124.0
+        ],
+        "kind": "radiator"
+      },
+      {
+        "track": "e98",
+        "fixes": 8,
+        "first_t": 49.25,
+        "last_t": 51.25,
+        "true_object": null,
+        "false_track": true,
+        "nearest_object": "piling6",
+        "median_error_m": 15.041608956491324,
+        "first_xy": [
+          54.0,
+          258.0
+        ],
+        "last_xy": [
+          56.0,
+          260.0
+        ],
+        "median_xy": [
+          56.0,
+          260.0
+        ],
+        "kind": "echo"
+      }
+    ]
+  },
+  "ellipse_coverage": {
+    "fixes": 782,
+    "inside": 743,
+    "fraction": 0.9501278772378516
+  },
+  "held_as_echo": {},
+  "sidelobe_peaks": 464,
+  "definitions": {
+    "hit_radius_m": 5.0,
+    "assoc_radius_m": 10.0,
+    "confirm": {
+      "radiator": 6,
+      "echo": 8
+    }
+  },
+  "peaks": {
+    "passive": {
+      "frames": 232,
+      "objects": {
+        "ferry": {
+          "frames": 232,
+          "hit": 0.9956896551724138,
+          "median_error_m": 0.9095609490142262
+        },
+        "tug": {
+          "frames": 232,
+          "hit": 0.875,
+          "median_error_m": 0.977939515368136
+        },
+        "boat": {
+          "frames": 232,
+          "hit": 0.5991379310344828,
+          "median_error_m": 0.8266121423362135
+        },
+        "uuv1": {
+          "frames": 232,
+          "hit": 0.004310344827586207,
+          "median_error_m": 3.2983547458678726
+        },
+        "uuv2": {
+          "frames": 232,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "diver": {
+          "frames": 232,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling1": {
+          "frames": 232,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling2": {
+          "frames": 232,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling3": {
+          "frames": 232,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling4": {
+          "frames": 232,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling5": {
+          "frames": 232,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling6": {
+          "frames": 232,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "moored": {
+          "frames": 232,
+          "hit": 0.0,
+          "median_error_m": null
+        }
+      }
+    },
+    "echo": {
+      "frames": 231,
+      "objects": {
+        "ferry": {
+          "frames": 231,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "tug": {
+          "frames": 231,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "boat": {
+          "frames": 231,
+          "hit": 0.08225108225108226,
+          "median_error_m": 2.0
+        },
+        "uuv1": {
+          "frames": 231,
+          "hit": 0.4458874458874459,
+          "median_error_m": 1.8190449897537138
+        },
+        "uuv2": {
+          "frames": 231,
+          "hit": 0.5541125541125541,
+          "median_error_m": 1.5211768923794922
+        },
+        "diver": {
+          "frames": 231,
+          "hit": 0.021645021645021644,
+          "median_error_m": 0.8886129688738695
+        },
+        "piling1": {
+          "frames": 231,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling2": {
+          "frames": 231,
+          "hit": 0.004329004329004329,
+          "median_error_m": 2.23606797749979
+        },
+        "piling3": {
+          "frames": 231,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling4": {
+          "frames": 231,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling5": {
+          "frames": 231,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "piling6": {
+          "frames": 231,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "moored": {
+          "frames": 231,
+          "hit": 0.0,
+          "median_error_m": null
+        }
+      }
+    }
+  },
+  "run": {
+    "git_commit": "cc88d51167dfbcaf91f8d996b37a576e434cb3d5",
+    "git_dirty": true,
+    "processing_config": "/workspace/examples/configs/processing/multistatic.json",
+    "processing_config_sha256": "faab58a8cd180abaf39f66f5610a0238219a78f6c972d0d51193c6c2b28c0e77",
+    "processing_overrides": [],
+    "observation": "/workspace/output/recordings/multistatic_b/noise2/seed9/dataset.observation.npz",
+    "observation_sha256": "4ef0a08452d8488ed58553997a80682f1b1c0ab8504778b47a66bcf02f9b86c1",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 9,
+    "wall_s": 166.78818230499746,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "chunk_s": 0.25
+  },
+  "size_order": {
+    "frames_all_three": 0,
+    "hull_below_piling": 0,
+    "fraction": null
+  }
+}

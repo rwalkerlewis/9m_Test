@@ -5,7 +5,10 @@ compare against the committed numbers.
 Recordings (the processing configs ``examples/configs/processing/<family>.json`` were frozen before any test recording
 existed; ``held_out`` is set in every run block):
 
-* tuning: noise seed 0 of ``simple``, ``bistatic``, ``multistatic``, ``harbor`` (the recordings every parameter was set on);
+* tuning: noise seed 0 of ``simple``, ``bistatic``, ``multistatic``, ``harbor`` (the recordings every parameter was set on),
+  and since run_all_3 noise seeds 4 to 9 of ``simple``, ``bistatic``, ``multistatic`` and ``multistatic_b`` (``<family>_tune<n>``,
+  mixed from the cached gathers like the test seeds, both noise models; in ``summary.json`` under ``recordings_tuning`` and
+  ``recordings_tuning_noise2`` so that no number quoted for the test seeds moves with them);
 * test: noise seeds 1 to 3 of each, mixed from the cached FDTD gathers (``assemble_dataset(seed=...)``, no FDTD), and
   ``multistatic_b`` (``examples/configs/harbor_multistatic_b.scenario.json``: every track, the pilings and the hull moved,
   same sensors and levels; six FDTD runs), run with the ``multistatic`` config unchanged.
@@ -50,6 +53,8 @@ sys.path.insert(0, str(ROOT / "examples" / "harbor" / "05_detection"))
 OUT = ROOT / "output" / "reproduce"
 CONFIGS = ROOT / "examples" / "configs"
 TEST_SEEDS = (1, 2, 3)
+TUNING_SEEDS = (4, 5, 6, 7, 8, 9)     # more tuning recordings (run_all_3, task 4): ``<family>_tune<n>``, mixed from the gathers
+TUNING_FAMILIES = ("simple", "bistatic", "multistatic", "multistatic_b")
 
 # Tolerances of the comparison with the committed numbers.
 TOL_FRACTION = 0.03        # Pd, fractions of frames: 3 percentage points
@@ -97,6 +102,7 @@ class Recording:
     processing: str        # processing config family
     seed: int
     held_out: bool
+    extra_tuning: bool = False      # one of the tuning seeds 4 to 9 (``recordings_tuning``)
 
     @property
     def dataset(self) -> Path:
@@ -116,6 +122,8 @@ def recordings() -> list[Recording]:
     out = [Recording(f, f, f, 0, False) for f in ("simple", "bistatic", "multistatic", "harbor")]
     out += [Recording(f"{f}_seed{s}", f, f, s, True) for f in ("simple", "bistatic", "multistatic", "harbor") for s in TEST_SEEDS]
     out.append(Recording("multistatic_b", "multistatic_b", "multistatic", 0, True))
+    out += [Recording(f"{f}_tune{s}", f, "multistatic" if f == "multistatic_b" else f, s, False, True)
+            for f in TUNING_FAMILIES for s in TUNING_SEEDS]
     return out
 
 
@@ -287,6 +295,9 @@ def compare(new: dict, old: dict) -> list[tuple[str, object, object, str]]:
     a, b = flatten(old.get("recordings", {})), flatten(new.get("recordings", {}))
     a.update(flatten(old.get("recordings_noise2", {}), "noise2"))     # the second noise model (harbor_v2), the same rules
     b.update(flatten(new.get("recordings_noise2", {}), "noise2"))
+    for key in ("recordings_tuning", "recordings_tuning_noise2"):    # the tuning seeds 4 to 9, the same rules
+        a.update(flatten(old.get(key, {}), key))
+        b.update(flatten(new.get(key, {}), key))
     rows = []
     for k in sorted(set(a) | set(b)):
         x, y = a.get(k), b.get(k)
@@ -354,6 +365,7 @@ HEADINGS = {
     "source_levels": "### Source level estimates against the truth (radiator tracks)",
     "propagation_error": "### Propagation error of the forward model (stationary pulse, arrival minus range over the chart speed)",
     "silent_noise": "### Silent bodies by their echo, old noise model beside harbor_v2 (every recording with an echo chain)",
+    "tuning_seeds": "### The tuning seeds 4 to 9 (tuning recordings, both noise models)",
 }
 
 
@@ -411,6 +423,28 @@ def tables_by_name(numbers: dict) -> dict[str, str]:
             if (x or 0.0) > 0 or (y or 0.0) > 0:
                 lines.append(f"| {name} | {oid} | {_pct(x)} | {_pct(y)} |")
     out["silent_noise"] = "\n".join(lines) + "\n"
+    # The tuning seeds 4 to 9: per family Pd per object over the six seeds (each value), both noise models.
+    rt, rt2 = numbers.get("recordings_tuning", {}), numbers.get("recordings_tuning_noise2", {})
+    lines = ["| Recording | Seeds | Pd per object, old noise model | Pd per object, harbor_v2 | False tracks per recording, old / harbor_v2 |",
+             "|---|---|---|---|---|"]
+    for fam in TUNING_FAMILIES:
+        sel = [n for n, r in rt.items() if r["family"] == fam]
+        if not sel:
+            continue
+        objs, objs2 = [], []
+        for oid, o in rt[sel[0]]["objects"].items():
+            kind = "radiator" if o["radiates"] else "echo"
+            vals = [rt[n]["objects"][oid]["pd"].get(kind) for n in sel]
+            vals2 = [rt2[n]["objects"][oid]["pd"].get(kind) if n in rt2 else None for n in sel]
+            if all(v in (None, 0.0) for v in vals + vals2) and not o["radiates"]:
+                continue
+            objs.append(f"{oid} {' / '.join(_pct(v) for v in vals)}")
+            objs2.append(f"{oid} {' / '.join(_pct(v) for v in vals2)}")
+        ft = " / ".join(str(rt[n]["false_tracks"]["count"]) for n in sel)
+        ft2 = " / ".join(str(rt2[n]["false_tracks"]["count"]) if n in rt2 else "-" for n in sel)
+        seeds = ", ".join(str(rt[n]["seed"]) for n in sel)
+        lines.append(f"| {fam} | {seeds} | {'; '.join(objs)} | {'; '.join(objs2)} | {ft}; harbor_v2 {ft2} |")
+    out["tuning_seeds"] = "\n".join(lines) + "\n"
     lines = ["| Criterion | Values | Result |", "|---|---|---|"]
     for c in numbers["criteria"]:
         vals = c.get("values")
@@ -654,7 +688,8 @@ def main() -> int:
         say(f"running the chain on {r.name} ({'test' if r.held_out else 'tuning'} recording)")
         obs = contract_paths(r.dataset.with_suffix(".npz"))[0]
         s = hs.run_recording(r.name, CONFIGS / "processing" / f"{r.processing}.json", obs, contract_paths(r.dataset.with_suffix(".npz"))[1],
-                             out, r.held_out, use_cuda=not a.cpu, seed=r.seed, video=not a.no_video)
+                             out, r.held_out, use_cuda=not a.cpu, seed=r.seed, video=not (a.no_video or r.extra_tuning),
+                             figures=not r.extra_tuning)
         hs.report(s)
     if not a.no_noise2:                                     # every recording again with the second noise model, harbor_v2
         for r in recs:
@@ -669,6 +704,13 @@ def main() -> int:
                                  seed=r.seed, video=False, figures=False)
             hs.report(s)
     if not a.no_walkthrough:
+        try:                                                # the walkthrough is another process: give it the GPU memory
+            import cupy
+
+            cupy.get_default_memory_pool().free_all_blocks()
+            cupy.get_default_pinned_memory_pool().free_all_blocks()
+        except Exception:
+            pass
         for fam in ("simple", "bistatic", "multistatic", "harbor"):
             if a.only is not None and fam not in a.only:
                 continue
@@ -681,12 +723,13 @@ def main() -> int:
 
     numbers = {"recordings": {}, "characteristics": {}}
     for r in recordings():
+        key = "recordings_tuning" if r.extra_tuning else "recordings"
         p = OUT / "runs" / r.name / "summary.json"
         if p.exists():
-            numbers["recordings"][r.name] = collect(r, json.loads(p.read_text()))
+            numbers.setdefault(key, {})[r.name] = collect(r, json.loads(p.read_text()))
         p = OUT / "runs" / f"{r.name}_noise2" / "summary.json"
         if p.exists():
-            numbers.setdefault("recordings_noise2", {})[r.name] = collect(r, json.loads(p.read_text()))
+            numbers.setdefault(f"{key}_noise2", {})[r.name] = collect(r, json.loads(p.read_text()))
     for name in ("multistatic", "multistatic_b", "simple", "simple_seed1", "bistatic", "bistatic_seed1"):
         numbers["characteristics"][name] = characteristics_rows(name)
     cal = json.loads((ROOT / "output" / "studies" / "level_calibration" / "calibration.json").read_text())

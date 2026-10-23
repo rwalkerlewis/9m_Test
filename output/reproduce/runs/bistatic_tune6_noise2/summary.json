@@ -1,0 +1,198 @@
+{
+  "recording": "bistatic_tune6_noise2",
+  "record_s": 20.0,
+  "held_out": false,
+  "ais_used_in_processing": false,
+  "compute_per_second_of_data": {
+    "passive": 0.5395219398538756,
+    "echo": 0.38648950684728334,
+    "characteristics": 0.10270341415307485,
+    "total": 1.0287148608542338
+  },
+  "latency_s": {
+    "median": 2.106,
+    "max": 3.108
+  },
+  "objects": {
+    "ferry": {
+      "kind": "ship",
+      "radiates": true,
+      "ais": true,
+      "pd": {
+        "radiator": 1.0,
+        "echo": 0.0,
+        "any": 1.0
+      },
+      "frames": {
+        "radiator": 66,
+        "echo": 64,
+        "any": 66
+      },
+      "hits": {
+        "radiator": 66,
+        "echo": 0,
+        "any": 66
+      },
+      "median_error_m": {
+        "radiator": 0.59728534890512,
+        "echo": null,
+        "any": 0.59728534890512
+      },
+      "tracks": [
+        "r1"
+      ]
+    },
+    "uuv1": {
+      "kind": "uuv",
+      "radiates": false,
+      "ais": false,
+      "pd": {
+        "radiator": 0.0,
+        "echo": 0.75,
+        "any": 0.7272727272727273
+      },
+      "frames": {
+        "radiator": 66,
+        "echo": 64,
+        "any": 66
+      },
+      "hits": {
+        "radiator": 0,
+        "echo": 48,
+        "any": 48
+      },
+      "median_error_m": {
+        "radiator": null,
+        "echo": 1.4571737065246166,
+        "any": 1.4571737065246166
+      },
+      "tracks": [
+        "e4"
+      ]
+    }
+  },
+  "tracks": [
+    {
+      "track": "r1",
+      "fixes": 66,
+      "first_t": 1.5,
+      "last_t": 17.75,
+      "true_object": "ferry",
+      "false_track": false,
+      "nearest_object": "ferry",
+      "median_error_m": 1.0,
+      "first_xy": [
+        146.0,
+        200.0
+      ],
+      "last_xy": [
+        210.0,
+        200.0
+      ],
+      "median_xy": [
+        178.0,
+        200.0
+      ],
+      "kind": "radiator"
+    },
+    {
+      "track": "e4",
+      "fixes": 44,
+      "first_t": 6.0,
+      "last_t": 17.75,
+      "true_object": "uuv1",
+      "false_track": false,
+      "nearest_object": "uuv1",
+      "median_error_m": 2.1264955710076903,
+      "first_xy": [
+        228.0,
+        106.0
+      ],
+      "last_xy": [
+        210.0,
+        122.0
+      ],
+      "median_xy": [
+        218.0,
+        116.0
+      ],
+      "kind": "echo"
+    }
+  ],
+  "false_tracks": {
+    "count": 0,
+    "per_minute": 0.0,
+    "radiator": 0,
+    "echo": 0,
+    "tracks": []
+  },
+  "ellipse_coverage": {
+    "fixes": 110,
+    "inside": 107,
+    "fraction": 0.9727272727272728
+  },
+  "held_as_echo": {},
+  "sidelobe_peaks": 260,
+  "definitions": {
+    "hit_radius_m": 5.0,
+    "assoc_radius_m": 10.0,
+    "confirm": {
+      "radiator": 6,
+      "echo": 8
+    }
+  },
+  "peaks": {
+    "passive": {
+      "frames": 72,
+      "objects": {
+        "ferry": {
+          "frames": 72,
+          "hit": 1.0,
+          "median_error_m": 1.0
+        },
+        "uuv1": {
+          "frames": 72,
+          "hit": 0.0,
+          "median_error_m": null
+        }
+      }
+    },
+    "echo": {
+      "frames": 71,
+      "objects": {
+        "ferry": {
+          "frames": 71,
+          "hit": 0.0,
+          "median_error_m": null
+        },
+        "uuv1": {
+          "frames": 71,
+          "hit": 0.7183098591549296,
+          "median_error_m": 2.125484572562861
+        }
+      }
+    }
+  },
+  "run": {
+    "git_commit": "81a77217f054a60249ffb8292812368b4b187bf6",
+    "git_dirty": true,
+    "processing_config": "/workspace/examples/configs/processing/bistatic.json",
+    "processing_config_sha256": "7a1083b7beb6a1d4997fb0236002d7d774f478428c4dbefc9cd52cc3b34a3f62",
+    "processing_overrides": [],
+    "observation": "/workspace/output/recordings/bistatic/noise2/seed6/dataset.observation.npz",
+    "observation_sha256": "67fbd9fe3f569da7ae4193d1600e1cd8ae79d28784a4003407084d456c5fc06f",
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "cupy": "14.2.0",
+    "gpu": "Quadro RTX 4000",
+    "seed": 6,
+    "wall_s": 20.653188616008265,
+    "provenance": {
+      "truth_inputs": [],
+      "simulator_knowledge": [],
+      "data": "forward_model",
+      "held_out": false
+    },
+    "chunk_s": 0.25
+  }
+}
