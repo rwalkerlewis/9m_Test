@@ -267,6 +267,40 @@ def test_batched_runs_match_single_runs(scene, tmp_path):
     assert np.array_equal(single.traces, g1[1].traces)
 
 
+def test_runs_alone_only_for_float32_kspace():
+    from acoustic_sim.water.fdtd_runner import runs_alone
+
+    assert runs_alone(_cfg(precision="float32", time_scheme="kspace"))
+    assert not runs_alone(_cfg(precision="float64", time_scheme="kspace"))
+    assert not runs_alone(_cfg(precision="float32"))                    # the leapfrog has no FFT
+
+
+@gpu
+def test_simulate_sources_runs_float32_kspace_alone(scene, tmp_path, monkeypatch):
+    """Float32 k space jobs go through simulate_source one at a time (no HarborFDTDBatch) and are cached as usual;
+    an explicit batch still batches them."""
+    from acoustic_sim.water import fdtd_runner, simulate_source, simulate_sources
+
+    env, moving, body, layout = scene
+    cfg = _cfg(kernel="fused", time_scheme="kspace", precision="float32")
+    sig = _ricker(cfg.n_steps)
+    traj = (moving.times, moving.positions)
+    jobs = [dict(signal=sig, trajectory=traj), dict(signal=sig, trajectory=traj, scatterers=[body])]
+    built = []
+    monkeypatch.setattr(fdtd_runner, "HarborFDTDBatch", lambda *a, **k: built.append(a) or pytest.fail("batched"))
+    g = simulate_sources(env, layout, cfg, jobs, cache_dir=tmp_path)
+    assert not built and len(list(tmp_path.glob("gather_*.npz"))) == 2
+    for job, got in zip(jobs, g):
+        ref = simulate_source(env, layout, cfg, sig, trajectory=traj, scatterers=job.get("scatterers", ()))
+        assert np.array_equal(got.traces, ref.traces)
+    monkeypatch.undo()
+    calls = []
+    real = fdtd_runner.HarborFDTDBatch
+    monkeypatch.setattr(fdtd_runner, "HarborFDTDBatch", lambda *a, **k: calls.append(1) or real(*a, **k))
+    simulate_sources(env, layout, cfg, jobs, batch=2)
+    assert calls == [1]
+
+
 def test_simulate_sources_runs_sequentially_on_cpu(scene, tmp_path):
     from acoustic_sim.water import simulate_source, simulate_sources
 

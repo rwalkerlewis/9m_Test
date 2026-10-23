@@ -305,7 +305,9 @@ class HarborFDTDBatch(HarborFDTDSolver):
     settings and the receivers and differ in their source signal and trajectory and in the set
     of bodies.  Needs the fused kernel on the GPU (``kernel = "fused"`` or ``"auto"``,
     ``use_cuda = True``); bodies use the device masks.  ``run()`` returns traces of shape
-    ``(B, n_receivers, n_steps)``, each identical to the single run of that job (to 1e-12).
+    ``(B, n_receivers, n_steps)``, each identical to the single run of that job (to 1e-12 in float64).  Not for the
+    float32 k space step (:func:`runs_alone`): there the batched inverse FFT couples the members at the rounding level
+    (a member with no source holds 1.5e-6 of the other's level) and sometimes corrupts the whole field.
     """
 
     def __init__(self, env: HarborEnvironment, hcfg: HarborFDTDConfig, jobs: list[tuple], receivers: np.ndarray) -> None:
@@ -381,6 +383,16 @@ def batch_size(n_jobs: int, env: HarborEnvironment, hcfg: HarborFDTDConfig, n_re
     b_dev = int(device_fraction * free_dev // per_run_device)
     b_host = int(host_bytes // per_run_host)
     return int(max(1, min(n_jobs, max_batch, b_dev, b_host)))
+
+
+def runs_alone(hcfg: HarborFDTDConfig) -> bool:
+    """Do :func:`simulate_sources` runs of *hcfg* go one at a time (2D fields) instead of batched?  True for the k space
+    step in float32: on the Quadro RTX 4000 the batched float32 inverse FFT (``irfft2`` over a leading batch axis, cuFFT
+    11.4 and the cuFFT of CUDA 13 alike) sometimes returns a corrupted field (19 in 100 000 calls on the 601 x 801 grid,
+    none in float64 and none in 130 000 calls on a 2D array), and the batched boat runs of ``multistatic_b`` diverged
+    on it (``output/studies/float32/batched_divergence.md``).  The single float32 runs still carry the rarer fault of
+    ``gpu_determinism.md``, so a float32 recording is still checked against float64."""
+    return hcfg.precision == "float32" and hcfg.time_scheme == "kspace"
 
 
 def _fused_available(hcfg: HarborFDTDConfig) -> bool:
@@ -524,7 +536,8 @@ def simulate_sources(
     run together in batches of *batch* (default: :func:`batch_size`, from the free device memory)
     through :class:`HarborFDTDBatch`, and each result is cached as if :func:`simulate_source` had
     produced it (same key, same float32 traces to rounding).  Without the fused kernel (CPU,
-    ``kernel = "reference"``, MPI) the jobs run one after the other.
+    ``kernel = "reference"``, MPI), and for the float32 k space step unless *batch* is given (:func:`runs_alone`),
+    the jobs run one after the other.
     """
     results: list[Gather | None] = [None] * len(jobs)
     pending: list[int] = []
@@ -547,7 +560,7 @@ def simulate_sources(
         pending.append(i)
     if not pending:
         return results  # type: ignore[return-value]
-    if not _fused_available(cfg):
+    if not _fused_available(cfg) or (batch is None and runs_alone(cfg)):
         for i in pending:
             job = jobs[i]
             results[i] = simulate_source(env, layout, cfg, job["signal"], position=job.get("position"), trajectory=job.get("trajectory"),
