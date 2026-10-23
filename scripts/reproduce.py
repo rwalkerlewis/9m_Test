@@ -226,6 +226,8 @@ def collect(rec: Recording, s: dict) -> dict:
     for oid, o in s["objects"].items():
         objs[oid] = {"kind": o["kind"], "radiates": o["radiates"], "pd": o["pd"], "median_error_m": o["median_error_m"],
                      "tracks": o["tracks"]}
+        if o.get("pd_last_heard") is not None:                 # Pd counting last heard frames inside the ellipse (beside pd)
+            objs[oid]["pd_last_heard"] = o["pd_last_heard"]
     peaks = {chain: (None if v is None else {oid: x["hit"] for oid, x in v["objects"].items()}) for chain, v in s["peaks"].items()}
     out = {"family": rec.family, "seed": rec.seed, "held_out": rec.held_out, "record_s": s["record_s"],
            "compute_per_second_of_data": s["compute_per_second_of_data"], "latency_s": s["latency_s"],
