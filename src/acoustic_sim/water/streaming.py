@@ -542,7 +542,12 @@ class TrackerConfig:
     track's fixes, the frame it confirms in included).  Either way the track must also sit, within the gate, on an echo
     map peak of that illuminator; it is then never confirmed.  ``exclusion`` [m] (echo tracks): a track does not
     confirm within this distance of a stronger confirmed track (0: off).  ``drop_confirmed_s``: a confirmed track
-    without a gated fix for this long is dropped (``None``: ``drop_s``, as a tentative one).
+    without a gated fix for this long is dropped (``None``: ``drop_s``, as a tentative one).  ``last_heard_s``: a
+    confirmed track that would be dropped is instead kept as *last heard* until this long after its last fix (0: off):
+    at its last filtered position, its velocity set to zero and its position covariance growing with the filter's own
+    process noise (the velocity covariance times the time squared plus the white acceleration's share); it is not an
+    illuminator, explains no sidelobe and is drawn faded, and a peak in its gate (after the confirmed tracks have taken
+    theirs) makes it confirmed again.
     """
 
     accel: float = 0.05
@@ -563,6 +568,7 @@ class TrackerConfig:
     echo_ratio: float = 0.075
     exclusion: float = 0.0
     drop_confirmed_s: float | None = None
+    last_heard_s: float = 0.0
 
     @property
     def gate_chi2(self) -> float:
@@ -600,6 +606,7 @@ class RadiatorTrack:
     t_state: float = 0.0
     accel: float = 0.05
     held: bool = False                              # about to confirm but held (an echo, ``HarborPicture``)
+    last_heard: bool = False                        # confirmed, its fixes lost, kept at its last position (``last_heard_s``)
     states: list = field(default_factory=list)      # (t, x, P) after every update
     ratios: dict = field(default_factory=dict)      # other confirmed track -> its predicted map / the data map at each fix
 
@@ -639,6 +646,19 @@ class RadiatorTrack:
         self.P = I_KH @ P @ I_KH.T + K @ R @ K.T          # Joseph form
         self.t_state = t
         self.states.append((t, self.x.copy(), self.P.copy()))
+
+    def go_quiet(self) -> None:
+        """Last heard: the state at its last fix kept, the velocity set to zero (the position stays where the ship was
+        last heard; the velocity covariance and the process noise grow its covariance from there)."""
+        self.last_heard = True
+        self.confirmed = False
+        self.static = False
+        if self.x is not None:
+            self.x = self.x.copy()
+            self.x[2:] = 0.0
+            self.P = self.P.copy()
+            self.P[:2, 2:] = 0.0
+            self.P[2:, :2] = 0.0
 
     def velocity(self, fit_s: float | None = None) -> np.ndarray | None:
         """The filter's velocity [m/s] (``None`` before the second fix)."""
@@ -737,8 +757,13 @@ class RadiatorTracker:
         self.frame = frame
         conf0 = [tr for tr in self.tracks.values() if tr.confirmed]
         drop_c = cfg.drop_s if cfg.drop_confirmed_s is None else cfg.drop_confirmed_s
-        for tid in [k for k, tr in self.tracks.items() if t - tr.fixes[-1][0] > (drop_c if tr.confirmed else cfg.drop_s)]:
-            tr = self.tracks.pop(tid)
+        for tid in [k for k, tr in self.tracks.items()
+                    if t - tr.fixes[-1][0] > (cfg.last_heard_s if tr.last_heard else drop_c if tr.confirmed else cfg.drop_s)]:
+            tr = self.tracks[tid]
+            if tr.confirmed and cfg.last_heard_s > drop_c:
+                tr.go_quiet()                           # kept as last heard until last_heard_s after its last fix
+                continue
+            self.tracks.pop(tid)
             if tr.confirmed_t is not None:
                 tr.lost_t = t
                 self.lost[tid] = tr
@@ -753,9 +778,9 @@ class RadiatorTracker:
                 self.explained.append((t, xy, by))
                 continue
             best, dbest = None, cfg.gate_chi2
-            for firm in (True, False):                  # a confirmed track first: a tentative one does not steal its fixes
-                for k, tr in self.tracks.items():
-                    if k in taken or tr.confirmed is not firm:
+            for tier in (0, 1, 2):                      # confirmed tracks first (a tentative one does not steal their fixes),
+                for k, tr in self.tracks.items():       # then the last heard ones, then the tentative ones
+                    if k in taken or (0 if tr.confirmed else 1 if tr.last_heard else 2) != tier:
                         continue
                     d2 = tr.innovation(t, xy, R)
                     if d2 <= dbest:
@@ -773,6 +798,9 @@ class RadiatorTracker:
                 self.tracks[best] = tr
             else:
                 self.tracks[best].update(t, xy, R)
+                if self.tracks[best].last_heard:         # heard again: confirmed as it was
+                    self.tracks[best].last_heard = False
+                    self.tracks[best].confirmed = True
             self.tracks[best].fixes.append((t, xy, float(sc)))
             if cfg.echo_test == "ratio":
                 for o in conf0:
@@ -791,6 +819,8 @@ class RadiatorTracker:
                 Rf, _ = self._fix_cov(frame, fx[1])
                 near = near or any(o.fixes[-1][0] == t and self._explains(frame, o, fx[1], fx[2], Rf, t, src=o.fixes[-1][1])
                                    for o in kept)
+            if tr.last_heard:
+                continue
             if not tr.confirmed and recent >= cfg.confirm and not near:
                 tr.held = bool(self.hold is not None and self.hold(tr, t))
                 tr.confirmed = not tr.held

@@ -274,7 +274,7 @@ class HarborPictureView:
     """The operator view: one figure updated per picture record (``water/stream.py``), the chart and sensors with every
     object as a marker (circle: seen by its own noise, square: by its echo, diamond: both), its half maximum
     ellipse, a velocity vector (5 s ahead) and its label (AIS identity, else "radiator" or "body"; size indicator;
-    source level); tentative tracks as small dots, lost tracks faded.  The truth (``Truth``) is drawn, dashed, only
+    source level); tentative tracks as small dots, lost and last heard tracks faded.  The truth (``Truth``) is drawn, dashed, only
     when given.  :meth:`update` takes a record (live with ``show``), :meth:`save` writes the video and one frame."""
 
     def __init__(self, env: ChartEnvironment, layout: SensorLayout, title: str = "", truth=None, show: bool = False,
@@ -321,7 +321,7 @@ class HarborPictureView:
             if o["status"] == "tentative":
                 ax.plot(*xy, ".", color="0.45", ms=3)
                 continue
-            alpha = 0.3 if o["status"] == "lost" else 1.0
+            alpha = 0.3 if o["status"] == "lost" else 0.45 if o["status"] == "last_heard" else 1.0
             col = {"own noise": "#1f77b4", "echo": "#d62728", "both": "#9467bd"}[o["seen"]]
             mk = {"own noise": "o", "echo": "s", "both": "D"}[o["seen"]]
             ax.plot(*xy, mk, color=col, ms=7, mec="k", alpha=alpha)
@@ -337,7 +337,8 @@ class HarborPictureView:
             if v is not None:
                 ax.annotate("", xy + self.lead_s * np.asarray(v), xy, arrowprops=dict(arrowstyle="->", color=col, lw=1.2, alpha=alpha))
             name = o["ais"]["id"] or ("radiator" if o["seen"] != "echo" else "body")
-            lines = [f"{name} ({o['id']})" + (", static" if o["status"] == "static" else "") + (", lost" if o["status"] == "lost" else "")]
+            lines = [f"{name} ({o['id']})" + (", static" if o["status"] == "static" else "") + (", lost" if o["status"] == "lost" else "")
+                     + (f", last heard {o['last_fix_t']:.0f} s" if o["status"] == "last_heard" and o.get("last_fix_t") is not None else "")]
             if "echo" in o:
                 lines.append(f"{o['echo']['size']} ({o['echo']['size_ratio_db']:+.1f} dB)")
             if "radiator" in o and o["radiator"]["source_level_100m_pa"] is not None:

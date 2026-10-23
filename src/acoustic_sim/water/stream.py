@@ -181,6 +181,8 @@ def _r(x, n: int = 2):
 def _status(tr) -> str:
     if tr.lost_t is not None:
         return "lost"
+    if getattr(tr, "last_heard", False):
+        return "last_heard"
     if tr.static:
         return "static"
     return "confirmed" if tr.confirmed else "tentative"
@@ -536,6 +538,8 @@ class HarborPicture:
                             "cov": _r(kin.get("vcov"), 4), "window_s": _r(kin["window_s"], 3), "n_fixes": kin["n_fixes"]}}
         if main.get("lost_t") is not None:
             obj["lost_t"] = _r(main["lost_t"], 3)
+        if status == "last_heard":                                  # kept at its last position since its last fix
+            obj["last_fix_t"] = _r(main["fix_t"], 3)
         if ro is not None:
             a = ais_match(ro["fixes"], self.reports, t, self.cc.ais_gate_m)
             obj["ais"] = {"id": a["id"], "distance_m": _r(a.get("distance_m")), "fix_t": _r(a.get("t_fix"), 3)} if a["id"] else \
