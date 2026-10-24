@@ -126,6 +126,11 @@ class BistaticConfig:
         one), then one least squares solve per block over the delayed copies of every reference at once.
     joint_passes : int
         Passes of ``"joint"`` over the references (0: one solve on the beams of the raw traces).
+    removal_band : list | None
+        ``[f1, f2]`` [Hz]: the streaming chain removes the direct paths on the traces band limited to it and decimated
+        by the largest integer that divides the ECA block with the decimated Nyquist at least 1.25 ``f2``, then brings
+        the cleaned traces and the references back to the recording's rate (what lies outside the band is not kept:
+        the maps read ``f_lo`` to ``f_hi`` only).  ``None`` (default): the full band at the recording's rate.
     patch_half, svd_rtol : float
         Patch half width [m] (3 x 3 points) and singular value cut of the patch replicas.
     adaptive_rank, adaptive_window : int
@@ -208,6 +213,7 @@ class BistaticConfig:
     ref_psd_s: float = 0.5
     removal_order: str = "sequential"
     joint_passes: int = 2
+    removal_band: list | None = None
     patch_half: float = 1.0
     svd_rtol: float = 0.05
     adaptive_rank: int = 2
