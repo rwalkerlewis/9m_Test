@@ -863,6 +863,33 @@ class EchoStreamConfig:
     min_separation: float = 20.0
 
 
+def removal_decimation(fs: float, nb: int, band) -> int:
+    """The decimation of the direct path removal for ``BistaticConfig.removal_band`` *band* (``[f1, f2]`` or ``None``):
+    the largest divisor of the ECA block *nb* with ``fs / (2 D)`` at least ``1.25 f2`` (1 without a band)."""
+    if not band:
+        return 1
+    f2 = float(band[1])
+    return max(d for d in range(1, nb + 1) if nb % d == 0 and fs / (2.0 * d) >= 1.25 * f2)
+
+
+def _decimate(x: np.ndarray, D: int) -> np.ndarray:
+    """Rows of *x* low passed (the polyphase filter of ``scipy.signal.resample_poly``, zero phase) and kept every
+    *D*-th sample, from the first: sample ``i`` of the result is sample ``D i`` of *x*."""
+    from scipy.signal import resample_poly
+
+    n = x.shape[1]
+    m = int(np.ceil(n / D)) * D
+    xp_ = np.pad(np.asarray(x, dtype=np.float64), ((0, 0), (0, m - n)))
+    return resample_poly(xp_, 1, D, axis=1)
+
+
+def _interpolate(x: np.ndarray, D: int, n: int) -> np.ndarray:
+    """Rows of *x* brought back up by *D* (``resample_poly``, zero phase) and cut to *n* samples."""
+    from scipy.signal import resample_poly
+
+    return resample_poly(np.asarray(x, dtype=np.float64), D, 1, axis=1)[:, :n]
+
+
 class StreamingEcho:
     """Causal echo chain: ``bistatic.run_bistatic`` with the data reference, ECA with per sample delays and the
     coherent ``"snr"`` map, step by step, with the illuminator and every other radiator located passively.
@@ -918,6 +945,9 @@ class StreamingEcho:
         self.component_energy: dict[str, list[tuple[np.ndarray, np.ndarray]]] = {}
         self.next_block = 0                             # first ECA block not cleaned
         self.next_frame = 0                             # first frame not mapped
+        # bc.removal_band: the decimation of the removal (the largest divisor of the ECA block with the decimated
+        # Nyquist at least 1.25 times the band's upper edge).
+        self.decim = removal_decimation(self.fs, self.nb, bc.removal_band)
 
     def _init_channel_greens(self) -> None:
         """Tables of :meth:`_channel_greens`: per channel its (up to three) sample points and the weights of
@@ -1069,9 +1099,6 @@ class StreamingEcho:
                 self.clean[b] = self._raw(b * self.nb, (b + 1) * self.nb)
                 self.refd[b] = {}
             return self._frames(t0, weights)
-        t_s = (a + np.arange(z - a)) / self.fs
-        nblk = int(np.ceil((z - a) / self.nb))
-        mid = np.minimum(np.arange(nblk) * self.nb + self.nb // 2, z - a - 1)
         rel = set(range(b0 - a // self.nb, b1 - a // self.nb))
         chans = np.flatnonzero(weights > 0)
         # The direct path of every live radiator (with an illuminator, it first), by bc.removal_order: one after the
@@ -1083,12 +1110,26 @@ class StreamingEcho:
         refs = {}                                          # the common mode removed in the STFT
         comps = {k: np.asarray(v[:, a:z], dtype=np.float64) for k, v in self.components.items()} if self.components else {}
         before = {k: self._block_energy(v, b0 - a // self.nb, b1 - a // self.nb) for k, v in comps.items()}
+        D = self.decim
+        if D > 1:                                          # the removal on the decimated traces (bc.removal_band)
+            with PROFILE.stage("echo: decimation"):
+                x = _decimate(x, D)
+                comps = {k: _decimate(v, D) for k, v in comps.items()}
+        n_r = x.shape[1]
+        t_r = (a + D * np.arange(n_r)) / self.fs
+        nb_r = self.nb // D
+        mid_r = np.minimum(np.arange(int(np.ceil(n_r / nb_r))) * nb_r + nb_r // 2, n_r - 1)
         ships = []
         for name in live:
-            ship_t = self._smoothed(t_s, name)
-            ships.append((ship_t[mid], ship_t))
-        x, cleaned, ref_list = remove_direct_paths(x, list(comps.values()), self.layout, self.fs, ships, chans, bc,
+            ship_t = self._smoothed(t_r, name)
+            ships.append((ship_t[mid_r], ship_t))
+        x, cleaned, ref_list = remove_direct_paths(x, list(comps.values()), self.layout, self.fs / D, ships, chans, bc,
                                                    blocks=rel, bodies=self.bodies)
+        if D > 1:                                          # back to the recording's rate for the maps
+            with PROFILE.stage("echo: decimation"):
+                x = _interpolate(x, D, z - a)
+                cleaned = [_interpolate(c, D, z - a) for c in cleaned]
+                ref_list = [_interpolate(r[None, :], D, z - a)[0] for r in ref_list]
         refs = dict(zip(live, ref_list))
         comps = dict(zip(comps, cleaned))
         for k, v in comps.items():                         # diagnostic, from the truth: energy before and after per channel

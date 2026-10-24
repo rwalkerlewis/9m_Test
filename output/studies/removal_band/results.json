@@ -1,0 +1,132 @@
+{
+  "criterion": {
+    "text": "every ship's removal depth with the decimated removal band within 0.5 dB of its depth without it, on multistatic noise seeds 0 to 3 and multistatic_b",
+    "tolerance_db": 0.5,
+    "passed": true,
+    "largest_difference_db": 0.04818090963510713
+  },
+  "provenance": {
+    "truth_inputs": [
+      "components"
+    ],
+    "simulator_knowledge": [],
+    "held_out": "test seeds and multistatic_b"
+  },
+  "recordings": {
+    "multistatic": {
+      "without_band": {
+        "depth_db": {
+          "ferry": 20.25348021893924,
+          "tug": 21.103683517103182,
+          "boat": 18.338776982993974
+        },
+        "compute_per_second_of_data": 3.272892053411488
+      },
+      "with_band": {
+        "depth_db": {
+          "ferry": 20.20700931761439,
+          "tug": 21.094430637640162,
+          "boat": 18.324775104987253
+        },
+        "compute_per_second_of_data": 1.9918250843496934
+      },
+      "difference_db": {
+        "ferry": -0.04647090132485232,
+        "tug": -0.00925287946301978,
+        "boat": -0.014001878006720148
+      }
+    },
+    "multistatic_seed1": {
+      "without_band": {
+        "depth_db": {
+          "ferry": 19.99977017616689,
+          "tug": 20.94068537564058,
+          "boat": 19.18554811103333
+        },
+        "compute_per_second_of_data": 3.2843958053083044
+      },
+      "with_band": {
+        "depth_db": {
+          "ferry": 19.951589266531784,
+          "tug": 20.93250527980804,
+          "boat": 19.167122114856944
+        },
+        "compute_per_second_of_data": 2.01706909610657
+      },
+      "difference_db": {
+        "ferry": -0.04818090963510713,
+        "tug": -0.008180095832539536,
+        "boat": -0.018425996176386406
+      }
+    },
+    "multistatic_seed2": {
+      "without_band": {
+        "depth_db": {
+          "ferry": 20.034876224110306,
+          "tug": 23.788727425460774,
+          "boat": 17.66673252527869
+        },
+        "compute_per_second_of_data": 3.2810267005959757
+      },
+      "with_band": {
+        "depth_db": {
+          "ferry": 19.99427527148822,
+          "tug": 23.79900183997824,
+          "boat": 17.662890121636504
+        },
+        "compute_per_second_of_data": 2.001795295552438
+      },
+      "difference_db": {
+        "ferry": -0.04060095262208563,
+        "tug": 0.010274414517464692,
+        "boat": -0.0038424036421851326
+      }
+    },
+    "multistatic_seed3": {
+      "without_band": {
+        "depth_db": {
+          "ferry": 20.219492421215605,
+          "tug": 21.10860102504096,
+          "boat": 18.25561295786322
+        },
+        "compute_per_second_of_data": 3.27496468200261
+      },
+      "with_band": {
+        "depth_db": {
+          "ferry": 20.176476066259617,
+          "tug": 21.10784187488095,
+          "boat": 18.241108317667738
+        },
+        "compute_per_second_of_data": 2.041963368144934
+      },
+      "difference_db": {
+        "ferry": -0.04301635495598788,
+        "tug": -0.0007591501600110462,
+        "boat": -0.01450464019548292
+      }
+    },
+    "multistatic_b": {
+      "without_band": {
+        "depth_db": {
+          "ferry": 19.58173386680038,
+          "tug": 19.478399846139677,
+          "boat": 15.877122871138566
+        },
+        "compute_per_second_of_data": 3.319506972249413
+      },
+      "with_band": {
+        "depth_db": {
+          "ferry": 19.551007609574025,
+          "tug": 19.451057005498125,
+          "boat": 15.848874264617049
+        },
+        "compute_per_second_of_data": 2.0955802176707947
+      },
+      "difference_db": {
+        "ferry": -0.030726257226355358,
+        "tug": -0.027342840641551902,
+        "boat": -0.02824860652151706
+      }
+    }
+  }
+}

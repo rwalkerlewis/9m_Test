@@ -4,14 +4,14 @@
   "held_out": false,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.5843033985489455,
-    "echo": 1.8756226599944057,
-    "characteristics": 0.39507034480702713,
-    "total": 2.8549964033503783
+    "passive": 0.5929094691993668,
+    "echo": 0.7415339248502277,
+    "characteristics": 0.37501832959897,
+    "total": 1.7094617236485647
   },
   "latency_s": {
-    "median": 5.609,
-    "max": 7.023
+    "median": 3.093,
+    "max": 3.972
   },
   "objects": {
     "ferry": {
@@ -119,8 +119,8 @@
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 1.7262476561326243,
-        "any": 1.7262476561326243
+        "echo": 1.718359685326242,
+        "any": 1.718359685326242
       },
       "tracks": [
         "e10"
@@ -147,8 +147,8 @@
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 0.9327387442212284,
-        "any": 0.9327387442212284
+        "echo": 0.9020456746146487,
+        "any": 0.9020456746146487
       },
       "tracks": [
         "e6"
@@ -357,8 +357,8 @@
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 0.6989277502002824,
-        "any": 0.6989277502002824
+        "echo": 0.6198386886924853,
+        "any": 0.6198386886924853
       },
       "tracks": [
         "e12"
@@ -483,13 +483,13 @@
     },
     {
       "track": "e10",
-      "fixes": 33,
+      "fixes": 32,
       "first_t": 4.5,
       "last_t": 17.0,
       "true_object": "uuv1",
       "false_track": false,
       "nearest_object": "uuv1",
-      "median_error_m": 2.103552914777342,
+      "median_error_m": 2.115529742114931,
       "first_xy": [
         232.0,
         106.0
@@ -499,8 +499,8 @@
         122.0
       ],
       "median_xy": [
-        224.0,
-        110.0
+        223.0,
+        111.0
       ],
       "kind": "echo"
     },
@@ -528,7 +528,7 @@
       "kind": "echo"
     },
     {
-      "track": "e17",
+      "track": "e18",
       "fixes": 20,
       "first_t": 12.75,
       "last_t": 17.75,
@@ -581,7 +581,7 @@
         "kind": "radiator"
       },
       {
-        "track": "e17",
+        "track": "e18",
         "fixes": 20,
         "first_t": 12.75,
         "last_t": 17.75,
@@ -606,8 +606,8 @@
     ]
   },
   "ellipse_coverage": {
-    "fixes": 322,
-    "inside": 322,
+    "fixes": 321,
+    "inside": 321,
     "fraction": 1.0
   },
   "held_as_echo": {},
@@ -711,8 +711,8 @@
         },
         "uuv1": {
           "frames": 71,
-          "hit": 0.5633802816901409,
-          "median_error_m": 2.1708470812622913
+          "hit": 0.5492957746478874,
+          "median_error_m": 2.2141875930720634
         },
         "uuv2": {
           "frames": 71,
@@ -736,8 +736,8 @@
         },
         "piling3": {
           "frames": 71,
-          "hit": 0.07042253521126761,
-          "median_error_m": 0.0
+          "hit": 0.08450704225352113,
+          "median_error_m": 1.0
         },
         "piling4": {
           "frames": 71,
@@ -751,8 +751,8 @@
         },
         "piling6": {
           "frames": 71,
-          "hit": 0.028169014084507043,
-          "median_error_m": 1.618033988749895
+          "hit": 0.014084507042253521,
+          "median_error_m": 1.0
         },
         "moored": {
           "frames": 71,
@@ -763,10 +763,10 @@
     }
   },
   "run": {
-    "git_commit": "66201ad4813bb80a6acbaff0d515d3ca404728d5",
+    "git_commit": "1d338c2188ed3068e710729411c7ec87cfdb709c",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/multistatic.json",
-    "processing_config_sha256": "faab58a8cd180abaf39f66f5610a0238219a78f6c972d0d51193c6c2b28c0e77",
+    "processing_config_sha256": "97492248116c8826e10a63dd12a4c1d2692268a89955429ac3a1484054c2a51c",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/multistatic/dataset.observation.npz",
     "observation_sha256": "155d1549a955c96bd19583164646e828c1ef91b50430d5c82323f397f039d5ba",
@@ -775,7 +775,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 0,
-    "wall_s": 57.37640783400275,
+    "wall_s": 34.39987833799387,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],

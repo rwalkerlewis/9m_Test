@@ -4,14 +4,14 @@
   "held_out": false,
   "ais_used_in_processing": false,
   "compute_per_second_of_data": {
-    "passive": 0.5854021697981807,
-    "echo": 1.8820764877513283,
-    "characteristics": 0.3815157112010638,
-    "total": 2.848994368750573
+    "passive": 0.599894333195698,
+    "echo": 0.7789377467001032,
+    "characteristics": 0.4045790363008564,
+    "total": 1.7834111161966575
   },
   "latency_s": {
-    "median": 5.62,
-    "max": 6.984
+    "median": 3.204,
+    "max": 4.028
   },
   "objects": {
     "ferry": {
@@ -104,8 +104,8 @@
       "ais": false,
       "pd": {
         "radiator": 0.0,
-        "echo": 0.703125,
-        "any": 0.6818181818181818
+        "echo": 0.71875,
+        "any": 0.696969696969697
       },
       "frames": {
         "radiator": 66,
@@ -114,13 +114,13 @@
       },
       "hits": {
         "radiator": 0,
-        "echo": 45,
-        "any": 45
+        "echo": 46,
+        "any": 46
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 1.5729836923893818,
-        "any": 1.5729836923893818
+        "echo": 1.5403343373161151,
+        "any": 1.5403343373161151
       },
       "tracks": [
         "e4"
@@ -147,8 +147,8 @@
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 1.1680828308167541,
-        "any": 1.1680828308167541
+        "echo": 1.1548626181818902,
+        "any": 1.1548626181818902
       },
       "tracks": [
         "e5"
@@ -357,8 +357,8 @@
       },
       "median_error_m": {
         "radiator": null,
-        "echo": 1.0127191120937724,
-        "any": 1.0127191120937724
+        "echo": 1.010791768862402,
+        "any": 1.010791768862402
       },
       "tracks": [
         "e8"
@@ -460,13 +460,13 @@
     },
     {
       "track": "e5",
-      "fixes": 37,
+      "fixes": 38,
       "first_t": 2.5,
       "last_t": 14.0,
       "true_object": "uuv2",
       "false_track": false,
       "nearest_object": "uuv2",
-      "median_error_m": 1.244080163630575,
+      "median_error_m": 1.3058320035086164,
       "first_xy": [
         102.0,
         94.0
@@ -476,7 +476,7 @@
         110.0
       ],
       "median_xy": [
-        104.0,
+        103.0,
         102.0
       ],
       "kind": "echo"
@@ -506,13 +506,13 @@
     },
     {
       "track": "e4",
-      "fixes": 22,
-      "first_t": 6.75,
+      "fixes": 23,
+      "first_t": 6.5,
       "last_t": 17.0,
       "true_object": "uuv1",
       "false_track": false,
       "nearest_object": "uuv1",
-      "median_error_m": 2.115529742114931,
+      "median_error_m": 2.103552914777342,
       "first_xy": [
         228.0,
         108.0
@@ -652,9 +652,9 @@
     ]
   },
   "ellipse_coverage": {
-    "fixes": 311,
-    "inside": 308,
-    "fraction": 0.9903536977491961
+    "fixes": 313,
+    "inside": 310,
+    "fraction": 0.9904153354632588
   },
   "held_as_echo": {},
   "sidelobe_peaks": 132,
@@ -757,13 +757,13 @@
         },
         "uuv1": {
           "frames": 71,
-          "hit": 0.4507042253521127,
-          "median_error_m": 2.057937212546566
+          "hit": 0.4647887323943662,
+          "median_error_m": 2.0123215103157897
         },
         "uuv2": {
           "frames": 71,
-          "hit": 0.5774647887323944,
-          "median_error_m": 1.4448505413924366
+          "hit": 0.5915492957746479,
+          "median_error_m": 1.4633962628150776
         },
         "diver": {
           "frames": 71,
@@ -792,7 +792,7 @@
         },
         "piling5": {
           "frames": 71,
-          "hit": 0.07042253521126761,
+          "hit": 0.04225352112676056,
           "median_error_m": 2.0
         },
         "piling6": {
@@ -809,10 +809,10 @@
     }
   },
   "run": {
-    "git_commit": "81a77217f054a60249ffb8292812368b4b187bf6",
+    "git_commit": "1d338c2188ed3068e710729411c7ec87cfdb709c",
     "git_dirty": true,
     "processing_config": "/workspace/examples/configs/processing/multistatic.json",
-    "processing_config_sha256": "faab58a8cd180abaf39f66f5610a0238219a78f6c972d0d51193c6c2b28c0e77",
+    "processing_config_sha256": "97492248116c8826e10a63dd12a4c1d2692268a89955429ac3a1484054c2a51c",
     "processing_overrides": [],
     "observation": "/workspace/output/recordings/multistatic/seed5/dataset.observation.npz",
     "observation_sha256": "eba7c6eeef159c6b9412579e98782b30a0a7fce247539124fbd0e637d0e34be0",
@@ -821,7 +821,7 @@
     "cupy": "14.2.0",
     "gpu": "Quadro RTX 4000",
     "seed": 5,
-    "wall_s": 57.179960160996416,
+    "wall_s": 35.935378851994756,
     "provenance": {
       "truth_inputs": [],
       "simulator_knowledge": [],
